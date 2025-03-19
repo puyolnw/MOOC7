@@ -5,7 +5,7 @@ import UseSticky from "../../hooks/UseSticky"
 import { Link } from "react-router-dom"
 import InjectableSvg from "../../hooks/InjectableSvg"
 import TotalCart from "../../components/common/TotalCart"
-import HeaderTopTwo from "./menu/HeaderTopTwo"
+//import HeaderTopTwo from "./menu/HeaderTopTwo"
 
 const HeaderFive = () => {
 

@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import  { useState } from "react";
+//import { Link } from "react-router-dom";
 import './LessonFaq.css';
 
 interface LessonItem {
@@ -24,7 +24,7 @@ interface LessonFaqProps {
   onSelectLesson: (sectionId: number, itemId: number, title: string, type: 'video' | 'quiz') => void;
 }
 
-const LessonFaq = ({ onViewChange, lessonData, onSelectLesson }: LessonFaqProps) => {
+const LessonFaq = ({ lessonData, onSelectLesson }: LessonFaqProps) => {
    const [activeAccordion, setActiveAccordion] = useState<number | null>(1);
 
    const handleItemClick = (sectionId: number, item: LessonItem) => {

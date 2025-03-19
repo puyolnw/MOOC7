@@ -1,5 +1,5 @@
-import { Link } from "react-router-dom"
-import BtnArrow from "../../svg/BtnArrow"
+//import { Link } from "react-router-dom"
+//import BtnArrow from "../../svg/BtnArrow"
 import InjectableSvg from "../../hooks/InjectableSvg"
 
 const DashboardBannerTwo = () => {

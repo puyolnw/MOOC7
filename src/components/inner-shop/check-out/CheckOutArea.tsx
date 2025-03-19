@@ -1,14 +1,14 @@
 import CheckOutForm from "./CheckOutForm"
-import { useSelector } from "react-redux";
+//import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
-import { RootState } from "../../../redux/store";
+//import { RootState } from "../../../redux/store";
 import UseCartInfo from "../../../hooks/UseCartInfo";
 import { Link } from "react-router-dom";
 
 const CheckOutArea = () => {
 
   const notify = () => toast("Order Submit");
-  const productItem = useSelector((state: RootState) => state.cart.cart);
+  //const productItem = useSelector((state: RootState) => state.cart.cart);
   const { total } = UseCartInfo();
 
   return (
@@ -37,11 +37,7 @@ const CheckOutArea = () => {
               <ul className="list-wrap">
                 <li className="title">Product <span>Subtotal</span></li>
                 {/* <!-- item list --> */}
-                {productItem.map((add_item: any, add_index: any) =>
-                  <li key={add_index}>
-
-                  </li>
-                )}
+    
                 <li>Subtotal <span>${total.toFixed(2)}</span></li>
                 <li>Total <span>${total.toFixed(2)}</span></li>
               </ul>

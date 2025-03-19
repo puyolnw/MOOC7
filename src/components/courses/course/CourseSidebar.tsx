@@ -15,26 +15,26 @@ interface FilterCriteria {
 const CourseSidebar = ({ setCourses }: any) => {
 
    const [showMoreCategory, setShowMoreCategory] = useState(false);
-   const [showMoreLanguage, setShowMoreLanguage] = useState(false);
+  // const [showMoreLanguage, setShowMoreLanguage] = useState(false);
    const [showMoreInstructor, setShowMoreInstructor] = useState(false);
 
    const [categorySelected, setCategorySelected] = useState('');
-   const [languageSelected, setLanguageSelected] = useState('');
-   const [priceSelected, setPriceSelected] = useState('');
-   const [skillSelected, setSkillSelected] = useState('');
+   const [languageSelected] = useState('');
+   const [priceSelected] = useState('');
+   const [skillSelected] = useState('');
    const [instructorSelected, setInstructorSelected] = useState('');
    const [ratingSelected, setRatingSelected] = useState<number | null>(null);
 
    const categoryFilter = useSelector(selectCourses).map(course => course.category);
-   const languageFilter = useSelector(selectCourses).map(course => course.language);
-   const priceFilter = useSelector(selectCourses).map(course => course.price_type);
-   const skillFilter = useSelector(selectCourses).map(course => course.skill_level);
+   //const languageFilter = useSelector(selectCourses).map(course => course.language);
+   //const priceFilter = useSelector(selectCourses).map(course => course.price_type);
+   //const skillFilter = useSelector(selectCourses).map(course => course.skill_level);
    const instructorFilter = useSelector(selectCourses).map(course => course.instructors);
 
    const allCategory = ['หลักสูตรทั้งหมด', ...new Set(categoryFilter)];
-   const allLanguage = ['ภาษาทั้งหมด', ...new Set(languageFilter)];
-   const allPrice = ['ราคาทั้งหมด', ...new Set(priceFilter)];
-   const allSkill = ['ทักษะทั้งหมด', ...new Set(skillFilter)];
+   //const allLanguage = ['ภาษาทั้งหมด', ...new Set(languageFilter)];
+   //const allPrice = ['ราคาทั้งหมด', ...new Set(priceFilter)];
+   //const allSkill = ['ทักษะทั้งหมด', ...new Set(skillFilter)];
    const allInstructor = ['ผู้สอนทั้งหมด', ...new Set(instructorFilter)];
 
    const allCourses = useSelector(selectCourses);
@@ -42,37 +42,40 @@ const CourseSidebar = ({ setCourses }: any) => {
    // Handle category selection
    const handleCategory = (category: string) => {
       setCategorySelected(prevCategory => prevCategory === category ? '' : category);
-      filterCourses({ category: category === categorySelected ? '' : category, language: languageSelected, price: priceSelected, rating: ratingSelected, skill: skillSelected, instructor: instructorSelected });
-   };
-
-   // Handle language selection
-   const handleLanguage = (language: string) => {
-      setLanguageSelected(prevLanguage => prevLanguage === language ? '' : language);
-      filterCourses({ category: categorySelected, language: language === languageSelected ? '' : language, price: priceSelected, rating: ratingSelected, skill: skillSelected, instructor: instructorSelected });
-   };
-
-   // Handle price selection
-   const handlePrice = (price: string) => {
-      setPriceSelected(prevPrice => prevPrice === price ? '' : price);
-      filterCourses({ category: categorySelected, language: languageSelected, price: price === priceSelected ? '' : price, rating: ratingSelected, skill: skillSelected, instructor: instructorSelected });
-   };
-
-   // Handle skill selection
-   const handleSkill = (skill: string) => {
-      setSkillSelected(prevSkill => prevSkill === skill ? '' : skill);
-      filterCourses({ category: categorySelected, language: languageSelected, price: priceSelected, skill: skill === skillSelected ? '' : skill, rating: ratingSelected, instructor: instructorSelected });
+      filterCourses({ 
+         category: category === categorySelected ? '' : category, 
+         language: languageSelected, 
+         price: priceSelected, 
+         rating: ratingSelected, 
+         skill: skillSelected, 
+         instructor: instructorSelected 
+      });
    };
 
    // Handle Instructor selection
    const handleInstructor = (instructor: string) => {
       setInstructorSelected(instructor);
-      filterCourses({ category: categorySelected, language: languageSelected, price: priceSelected, rating: ratingSelected, skill: skillSelected, instructor });
+      filterCourses({ 
+         category: categorySelected, 
+         language: languageSelected, 
+         price: priceSelected, 
+         rating: ratingSelected, 
+         skill: skillSelected, 
+         instructor 
+      });
    };
 
    // Handle rating selection
    const handleRating = (rating: number) => {
       setRatingSelected(prevRating => prevRating === rating ? null : rating);
-      filterCourses({ category: categorySelected, language: languageSelected, price: priceSelected, rating: rating === ratingSelected ? null : rating, skill: skillSelected, instructor: instructorSelected });
+      filterCourses({ 
+         category: categorySelected, 
+         language: languageSelected, 
+         price: priceSelected, 
+         rating: rating === ratingSelected ? null : rating, 
+         skill: skillSelected, 
+         instructor: instructorSelected 
+      });
    };
 
    // Filter courses based on selected criteria
@@ -108,7 +111,7 @@ const CourseSidebar = ({ setCourses }: any) => {
 
    // Determine categories to display based on "Show More" toggle
    const categoriesToShow = showMoreCategory ? allCategory : allCategory.slice(0, 8);
-   const languageToShow = showMoreLanguage ? allLanguage : allLanguage.slice(0, 4);
+   //const languageToShow = showMoreLanguage ? allLanguage : allLanguage.slice(0, 4);
    const instructorToShow = showMoreInstructor ? allInstructor : allInstructor.slice(0, 4);
 
    return (
