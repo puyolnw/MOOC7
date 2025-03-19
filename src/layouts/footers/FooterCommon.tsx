@@ -17,21 +17,7 @@ const FooterCommon = () => {
                </div>
             </div>
          </div>
-         <div className="col-xl-3 col-lg-4 col-md-6 col-sm-6">
-            <div className="footer__widget">
-               <h4 className="footer__widget-title">ลิงค์ที่เป็นประโยชน์</h4>
-               <div className="footer__link">
-                  <ul className="list-wrap">
-                     <li><Link to="/events-details">ค่านิยมของเรา</Link></li>
-                     <li><Link to="/events-details">Our advisory board</Link></li>
-                     <li><Link to="/events-details">คณะกรรมการที่ปรึกษาของเรา</Link></li>
-                     <li><Link to="/events-details">มาเป็นพันธมิตร</Link></li>
-                     <li><Link to="/events-details">ทำงานที่ Future Learning</Link></li>
-                     <li><Link to="/events-details">ควิซเลต พลัส</Link></li>
-                  </ul>
-               </div>
-            </div>
-         </div>
+
          <div className="col-xl-3 col-lg-4 col-md-6 col-sm-6">
             <div className="footer__widget">
                <h4 className="footer__widget-title">บริษัทของเรา</h4>

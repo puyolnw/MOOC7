@@ -15,7 +15,7 @@ const Newsletter = () => {
                      <h2 className="title">ต้องการรับ<span>ข้อมูล</span> เกี่ยวกับ <br /> หลักสูตรและ <span>การศึกษาใหม่ๆ หรือไม่?</span></h2>
                      <div className="newsletter__form">
                         <form onSubmit={(e) => e.preventDefault()}>
-                           <input type="email" placeholder="กรอกอีเมลของคุณ" />
+
                            <button type="submit" className="btn">สมัครสมาชิกตอนนี้</button>
                         </form>
                      </div>
