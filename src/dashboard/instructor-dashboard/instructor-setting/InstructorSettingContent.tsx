@@ -18,7 +18,7 @@ const InstructorSettingContent = ({ style }: any) => {
       <div className="col-lg-9">
          <div className="dashboard__content-wrap">
             <div className="dashboard__content-title">
-               <h4 className="title">Settings</h4>
+               <h4 className="title">ตั้งค่า</h4>
             </div>
             <div className="row">
                <div className="col-lg-12">

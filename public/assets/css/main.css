@@ -19728,7 +19728,7 @@ blockquote > p {
   justify-content: space-between;
   gap: 20px;
   color: var(--tg-common-color-dark);
-  cursor: no-drop;
+
 }
 .lesson__content .course-item-link .item-name {
   display: -webkit-box;

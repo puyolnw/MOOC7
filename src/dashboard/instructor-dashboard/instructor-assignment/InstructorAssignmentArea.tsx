@@ -14,7 +14,7 @@ const InstructorAssignmentArea = () => {
                   <div className="col-lg-9">
                      <div className="dashboard__content-wrap">
                         <div className="dashboard__content-title">
-                           <h4 className="title">Quiz Attempts</h4>
+                           <h4 className="title">ประวัติการทำแบบทดสอบ</h4>
                         </div>
                         <div className="row">
                            <div className="col-12">

@@ -1310,53 +1310,53 @@
 }
 /* ปรับตำแหน่งและการออกแบบ Icon User */
 .user-icon {
-    position: relative;
-    margin-left: 20px;
- 
-    .injectable {
-       width: 40px;
-       height: 40px;
-       background: var(--tg-common-color-gray-7);
-       border-radius: 50%;
-       display: flex;
-       align-items: center;
-       justify-content: center;
-       transition: all 0.3s ease;
-       cursor: pointer;
- 
-       &:hover {
-          background: var(--tg-theme-primary);
-          color: var(--tg-common-color-white);
-       }
-    }
- 
-    .dropdown-menu {
-       position: absolute;
-       top: 100%;
-       right: 0;
-       background: var(--tg-common-color-white);
-       box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-       border-radius: 6px;
-       padding: 10px 0;
-       display: none;
-       z-index: 10;
- 
-       li {
-          padding: 10px 20px;
-          font-size: 14px;
- 
-          a, span {
-             color: var(--tg-heading-color);
-             text-decoration: none;
- 
-             &:hover {
-                color: var(--tg-theme-primary);
-             }
-          }
-       }
-    }
- 
-    &:hover .dropdown-menu {
-       display: block;
-    }
- }
+   position: relative;
+   margin-left: 20px;
+
+   .injectable {
+      width: 40px;
+      height: 40px;
+      background: var(--tg-common-color-gray-7);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+      cursor: pointer;
+
+      &:hover {
+         background: var(--tg-theme-primary);
+         color: var(--tg-common-color-white);
+      }
+   }
+
+   .dropdown-menu {
+      position: absolute;
+      top: 100%;
+      right: 0;
+      background: var(--tg-common-color-white);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      border-radius: 6px;
+      padding: 10px 0;
+      display: none;
+      z-index: 10;
+
+      li {
+         padding: 10px 20px;
+         font-size: 14px;
+
+         a, span {
+            color: var(--tg-heading-color);
+            text-decoration: none;
+
+            &:hover {
+               color: var(--tg-theme-primary);
+            }
+         }
+      }
+   }
+
+   &:hover .dropdown-menu {
+      display: block;
+   }
+}

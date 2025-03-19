@@ -220,3 +220,100 @@
 .row.gx-4 {
     gap: 0px; /* เพิ่มระยะห่างระหว่าง Sidebar และ Main Content */
 }
+.lesson__area {
+    padding: 0px 0;
+    background-color: #f8f9fa;
+}
+
+.lesson__sidebar {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
+    padding: 20px;
+    height: fit-content;
+}
+
+.lesson__content .title {
+    font-size: 1.5rem;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #e9ecef;
+    color: #212529;
+}
+
+.lesson__progress {
+    margin-top: 30px;
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.lesson__progress h4 {
+    font-size: 1.2rem;
+    margin-bottom: 15px;
+    color: #343a40;
+}
+
+.progress-container {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.progress-bar-wrapper {
+    flex-grow: 1;
+    height: 12px;
+    background-color: #e9ecef;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-right: 10px;
+}
+
+.progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #4CAF50, #8BC34A);
+    border-radius: 6px;
+    transition: width 0.5s ease;
+}
+
+.progress-percentage {
+    font-weight: bold;
+    color: #28a745;
+    min-width: 40px;
+    text-align: right;
+}
+
+.progress-status {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9rem;
+}
+
+.status-text {
+    color: #6c757d;
+}
+
+.status-value {
+    font-weight: 600;
+    color: #0d6efd;
+}
+
+.lesson__main {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
+    padding: 20px;
+}
+
+.lesson__video-wrap {
+    margin-bottom: 20px;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.fixed-nav-tab {
+    margin-top: 20px;
+    border-top: 1px solid #e9ecef;
+    padding-top: 20px;
+}

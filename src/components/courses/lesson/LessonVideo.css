@@ -1,49 +1,139 @@
 .video-lesson-container {
-    position: relative;
-    background: #000;
-    border-radius: 8px;
-    overflow: hidden;
+  position: relative;
+  background: #000;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.lesson-title {
+  background: #fff;
+  padding: 15px 20px;
+  border-bottom: 1px solid #eee;
+}
+
+.lesson-title h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #333;
+  font-weight: 600;
+}
+
+.video-player {
+  position: relative;
+  width: 100%;
+  background: #000;
+}
+
+.lesson-progress {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+}
+
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #4CAF50, #8BC34A);
+  transition: width 0.3s ease;
+}
+
+.completion-badge {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: rgba(46, 204, 113, 0.9);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  animation: fadeIn 0.3s ease;
+  z-index: 20;
+}
+
+.completion-badge i {
+  font-size: 16px;
+}
+
+.video-controls-info {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 15px;
+  background: #f8f9fa;
+  border-top: 1px solid #eee;
+}
+
+.video-status {
+  font-size: 0.9rem;
+}
+
+.status-playing {
+  color: #4CAF50;
+  font-weight: 500;
+}
+
+.status-paused {
+  color: #f44336;
+  font-weight: 500;
+}
+
+.video-progress-info {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+/* Plyr custom styles */
+.plyr--full-ui input[type=range] {
+  color: #4CAF50;
+}
+
+.plyr__control--overlaid {
+  background: rgba(76, 175, 80, 0.8);
+}
+
+.plyr--video .plyr__control.plyr__tab-focus,
+.plyr--video .plyr__control:hover,
+.plyr--video .plyr__control[aria-expanded=true] {
+  background: #4CAF50;
+}
+
+.plyr__control.plyr__tab-focus {
+  box-shadow: 0 0 0 5px rgba(76, 175, 80, 0.5);
+}
+
+.plyr__menu__container .plyr__control[role=menuitemradio][aria-checked=true]::before {
+  background: #4CAF50;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
   }
-  
-  .lesson-progress {
-    height: 4px;
-    background: rgba(255,255,255,0.2);
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
-  
-  .progress-bar {
-    height: 100%;
-    background: #2ecc71;
-    transition: width 0.3s ease;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .lesson-title h3 {
+    font-size: 1rem;
   }
   
   .completion-badge {
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    background: rgba(46, 204, 113, 0.9);
-    color: white;
-    padding: 8px 16px;
-    border-radius: 20px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    animation: fadeIn 0.3s ease;
+    padding: 6px 12px;
+    font-size: 0.9rem;
   }
   
-  .completion-icon {
-    color: #2ecc71;
-    margin-left: 8px;
+  .video-controls-info {
+    flex-direction: column;
+    gap: 5px;
   }
-  
-  .course-item.completed {
-    background: rgba(46, 204, 113, 0.1);
-  }
-  
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
+}

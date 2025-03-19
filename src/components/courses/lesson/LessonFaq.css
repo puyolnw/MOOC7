@@ -1,58 +1,84 @@
-.accordion-item {
-   border: 1px solid rgba(0, 0, 0, 0.1);
-   margin-bottom: 10px;
-   border-radius: 5px;
-   overflow: hidden;
-}
-
-.accordion-button {
-   background: #fff;
-   font-size: 16px;
-   font-weight: bold;
-   padding: 15px;
-   display: flex;
-   justify-content: space-between;
-   align-items: center;
-   transition: background 0.3s ease;
-}
-
-.accordion-button.collapsed {
-   background: #f9f9f9;
-}
-
-.accordion-body {
-   padding: 15px;
-   background: #f9f9f9;
-}
-
 .course-item {
-   padding: 10px;
-   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+   position: relative;
+   padding: 12px 15px;
+   border-bottom: 1px solid #e9e9e9;
+   transition: all 0.3s ease;
    cursor: pointer;
-   transition: background 0.3s ease, transform 0.2s ease;
+}
+
+.course-item:last-child {
+   border-bottom: none;
 }
 
 .course-item:hover {
-   background: #f0f0f0;
-   transform: translateY(-2px);
+   background-color: #f8f9fa;
 }
 
 .course-item.completed {
-   background: #e8f5e9; /* สีเขียวอ่อน */
-   border-left: 5px solid #4caf50; /* ขอบสีเขียว */
+   background-color: #f0f7f0;
 }
 
-.course-item.completed:hover {
-   background: #dcedc8;
+.course-item.completed .item-name::before {
+   content: "✓";
+   color: #28a745;
+   margin-right: 8px;
 }
 
-.course-item .course-item-link {
+.course-item-link {
    display: flex;
    justify-content: space-between;
    align-items: center;
 }
 
+.item-name {
+   font-weight: 500;
+   color: #333;
+}
+
+.item-meta.duration {
+   font-size: 0.85rem;
+   color: #6c757d;
+   background-color: #e9ecef;
+   padding: 2px 8px;
+   border-radius: 12px;
+}
+
 .lesson-count {
-   font-size: 14px;
-   color: #666;
+   margin-left: auto;
+   font-size: 0.85rem;
+   background-color: #e9ecef;
+   padding: 2px 8px;
+   border-radius: 12px;
+   color: #495057;
+}
+
+/* แถบความคืบหน้าย่อยในแต่ละรายการ */
+.item-progress-mini {
+   height: 4px;
+   background-color: #e9ecef;
+   border-radius: 2px;
+   margin-top: 8px;
+   overflow: hidden;
+}
+
+.item-progress-bar {
+   height: 100%;
+   background: linear-gradient(90deg, #4CAF50, #8BC34A);
+   border-radius: 2px;
+   transition: width 0.5s ease;
+}
+
+/* ปรับแต่ง accordion */
+.accordion-button {
+   font-weight: 600;
+   padding: 15px 20px;
+}
+
+.accordion-button:not(.collapsed) {
+   background-color: #f1f8ff;
+   color: #0d6efd;
+}
+
+.accordion-body {
+   padding: 0;
 }

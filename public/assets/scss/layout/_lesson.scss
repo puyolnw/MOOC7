@@ -64,7 +64,7 @@
                 justify-content: space-between;
                 gap: 20px;
                 color: var(--tg-common-color-dark);
-                cursor: no-drop;
+      
                 & .item-name {
                     @include flexbox();
                     gap: 10px;

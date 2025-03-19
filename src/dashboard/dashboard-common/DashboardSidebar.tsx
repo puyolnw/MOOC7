@@ -43,12 +43,6 @@ const sidebar_data: DataType[] = [
             icon: "skillgro-book-2",
             title: "รีวิว",
          },
-         {
-            id: 6,
-            link: "/instructor-attempts",
-            icon: "skillgro-question",
-            title: "ประวัติการทำแบบทดสอบ",
-         },
       ],
    },
    {
@@ -86,13 +80,13 @@ const sidebar_data: DataType[] = [
             id: 1,
             link: "/instructor-setting",
             icon: "skillgro-settings",
-            title: "Settings",
+            title: "ตั่งค่า",
          },
          {
             id: 2,
             link: "/",
             icon: "skillgro-logout",
-            title: "Logout",
+            title: "ออกจากระบบ",
          },
       ],
    },
