@@ -1,0 +1,49 @@
+.video-lesson-container {
+    position: relative;
+    background: #000;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  
+  .lesson-progress {
+    height: 4px;
+    background: rgba(255,255,255,0.2);
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+  }
+  
+  .progress-bar {
+    height: 100%;
+    background: #2ecc71;
+    transition: width 0.3s ease;
+  }
+  
+  .completion-badge {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(46, 204, 113, 0.9);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    animation: fadeIn 0.3s ease;
+  }
+  
+  .completion-icon {
+    color: #2ecc71;
+    margin-left: 8px;
+  }
+  
+  .course-item.completed {
+    background: rgba(46, 204, 113, 0.1);
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }

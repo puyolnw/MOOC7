@@ -1,0 +1,222 @@
+/* Reset and base styles */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+/* Main container */
+.lesson-area-container {
+    width: 100%;
+    min-height: 600px; /* กำหนดความสูงขั้นต่ำ */
+    max-height: calc(100vh - 250px); /* ปรับตามความสูงของ header และ footer */
+    display: flex;
+    background-color: #f9f9f9;
+    margin: 40px 0;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+/* Sidebar styles */
+.lesson-sidebar {
+    width: 25%;
+    display: flex;
+    flex-direction: column;
+    background-color: #fff;
+    border-right: 1px solid #ddd;
+}
+
+.sidebar-header {
+    padding: 15px;
+    border-bottom: 1px solid #eee;
+    flex-shrink: 0; /* ไม่ให้ส่วนหัวหด */
+}
+
+.sidebar-header h2 {
+    font-size: 18px;
+    font-weight: bold;
+    margin: 0;
+}
+
+.sidebar-content {
+    flex: 1;
+    overflow-y: auto; /* scrollbar เฉพาะเมื่อจำเป็น */
+    padding: 15px;
+}
+
+.sidebar-footer {
+    padding: 15px;
+    border-top: 1px solid #eee;
+    background-color: #fff;
+    flex-shrink: 0; /* ไม่ให้ส่วนท้ายหด */
+}
+
+.sidebar-footer h4 {
+    margin-bottom: 8px;
+    text-align: center;
+    font-size: 16px;
+}
+
+/* Main content area */
+.lesson-main {
+    width: 75%;
+    display: flex;
+    flex-direction: column;
+    padding: 15px;
+}
+
+.lesson-content {
+    flex: 3;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    margin-bottom: 15px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden; /* ป้องกัน scrollbar ที่ไม่จำเป็น */
+}
+
+.lesson-navigation {
+    flex: 1;
+    min-height: 120px; /* กำหนดความสูงขั้นต่ำ */
+    max-height: 150px; /* กำหนดความสูงสูงสุด */
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    padding: 15px;
+    overflow-y: auto; /* scrollbar เฉพาะเมื่อจำเป็น */
+}
+
+/* Content wrapper */
+.content-wrapper {
+    width: 100%;
+    height: 100%;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Video container */
+.video-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.video-container video,
+.video-container iframe {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+}
+
+/* Quiz container */
+.quiz-container {
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+    padding: 10px;
+}
+
+/* Progress bar styles */
+.progress-bar-wrapper {
+    background: #e0e0e0;
+    border-radius: 10px;
+    overflow: hidden;
+    height: 15px;
+    margin: 8px 0;
+}
+
+.progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #4caf50, #81c784);
+    transition: width 0.3s ease;
+}
+
+.progress-text {
+    font-size: 14px;
+    color: #333;
+    margin-top: 5px;
+    font-weight: bold;
+    text-align: center;
+}
+
+/* Media queries for responsive design */
+@media (max-width: 1199px) {
+    .lesson-sidebar {
+        width: 30%;
+    }
+    
+    .lesson-main {
+        width: 70%;
+    }
+}
+
+@media (max-width: 991px) {
+    .lesson-area-container {
+        flex-direction: column;
+        height: auto;
+        max-height: none;
+    }
+    
+    .lesson-sidebar {
+        width: 100%;
+        height: auto;
+        max-height: 300px;
+        border-right: none;
+        border-bottom: 1px solid #ddd;
+    }
+    
+    .lesson-main {
+        width: 100%;
+        height: auto;
+    }
+    
+    .lesson-content {
+        min-height: 350px;
+    }
+}
+
+@media (max-width: 767px) {
+    .lesson-area-container {
+        margin: 20px 0;
+    }
+    
+    .sidebar-header, 
+    .sidebar-footer, 
+    .content-wrapper {
+        padding: 10px;
+    }
+    
+    .lesson-navigation {
+        min-height: 100px;
+    }
+}
+
+.lesson__video-wrap {
+    margin-top: 20px; /* เพิ่มระยะห่างจากด้านบน */
+    padding: 20px;
+    background: #fdfdfd;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.fixed-nav-tab {
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+    background-color: #fff;
+    box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
+    padding: 10px 15px;
+    border-radius: 10px;
+}
+.row.gx-4 {
+    gap: 0px; /* เพิ่มระยะห่างระหว่าง Sidebar และ Main Content */
+}

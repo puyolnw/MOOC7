@@ -1,0 +1,58 @@
+.accordion-item {
+   border: 1px solid rgba(0, 0, 0, 0.1);
+   margin-bottom: 10px;
+   border-radius: 5px;
+   overflow: hidden;
+}
+
+.accordion-button {
+   background: #fff;
+   font-size: 16px;
+   font-weight: bold;
+   padding: 15px;
+   display: flex;
+   justify-content: space-between;
+   align-items: center;
+   transition: background 0.3s ease;
+}
+
+.accordion-button.collapsed {
+   background: #f9f9f9;
+}
+
+.accordion-body {
+   padding: 15px;
+   background: #f9f9f9;
+}
+
+.course-item {
+   padding: 10px;
+   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+   cursor: pointer;
+   transition: background 0.3s ease, transform 0.2s ease;
+}
+
+.course-item:hover {
+   background: #f0f0f0;
+   transform: translateY(-2px);
+}
+
+.course-item.completed {
+   background: #e8f5e9; /* สีเขียวอ่อน */
+   border-left: 5px solid #4caf50; /* ขอบสีเขียว */
+}
+
+.course-item.completed:hover {
+   background: #dcedc8;
+}
+
+.course-item .course-item-link {
+   display: flex;
+   justify-content: space-between;
+   align-items: center;
+}
+
+.lesson-count {
+   font-size: 14px;
+   color: #666;
+}
