@@ -13,43 +13,55 @@ const category_data: DatatYpe[] = [
    {
       id: 1,
       icon: "flaticon-graphic-design",
-      title: "การออกแบบกราฟิก",
+      title: "คณะวิทยาการจัดการ",
       total: "(22)"
    },
    {
       id: 2,
       icon: "flaticon-investment",
-      title: "การเงิน",
+      title: "คณะรัฐศาสตร์และรัฐประศาสนศาสตร์",
       total: "(41)"
    },
    {
       id: 3,
       icon: "flaticon-coding",
-      title: "การพัฒนา",
+      title: "คณะเทคโนโลยีสารสนเทศ",
       total: "(29)"
    },
    {
       id: 4,
       icon: "flaticon-email",
-      title: "การตลาด",
+      title: "คณะวิทยาการจัดการ",
       total: "(31)"
    },
    {
       id: 5,
       icon: "flaticon-fashion",
-      title: "ไลฟ์สไตล์",
+      title: "คณะมนุษยศาสตร์และสังคมศาสตร์",
       total: "(23)"
    },
    {
       id: 6,
       icon: "flaticon-interaction",
-      title: "การจัดการ",
+      title: "คณะเทคโนโลยีการเกษตร",
       total: "(19)"
    },
    {
       id: 7,
       icon: "flaticon-web-design",
-      title: "การออกแบบแอพ",
+      title: "คณะวิศวกรรมศาสตร์",
+      total: "(18)"
+   },
+   {
+      id: 8,
+      icon: "flaticon-web-design",
+      title: "คณะวิทยาศาสตร์และเทคโนโลยี",
+      total: "(18)"
+   },
+   {
+      id: 9,
+      icon: "flaticon-web-design",
+      title: "ศูนย์สหกิจศึกษา",
       total: "(18)"
    },
 ];
@@ -97,7 +109,7 @@ const Categories = () => {
                <div className="col-xl-5 col-lg-7">
                   <div className="section__title text-center mb-40">
                      <span className="sub-title">หมวดหมู่ที่ได้รับความนิยม</span>
-                     <h2 className="title">หมวดหมู่รายวิชา</h2>
+                     <h2 className="title">หมวดหมู่หลักสูตร</h2>
                      {/* <p className="desc">when known printer took a galley of type scrambl edmake</p> */}
                   </div>
                </div>

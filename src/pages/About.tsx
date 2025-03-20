@@ -5,7 +5,7 @@ import SEO from '../components/SEO';
 const About = () => {
   return (
     <Wrapper>
-      <SEO pageTitle={'SkillGro About'} />
+      <SEO pageTitle={'เกี่ยวกับเรา'} />
       <AboutMain />
     </Wrapper>
   );
