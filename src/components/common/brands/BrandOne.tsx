@@ -1,30 +1,8 @@
-import Marquee from "react-fast-marquee";
-import { useState } from "react";
-import { Link } from "react-router-dom";
-
-const brand_data: string[] = [
-   "/assets/img/brand/brand01.png",
-   "/assets/img/brand/brand02.png",
-   "/assets/img/brand/brand03.png",
-   "/assets/img/brand/brand04.png",
-   "/assets/img/brand/brand05.png",
-   "/assets/img/brand/brand06.png",
-   "/assets/img/brand/brand07.png",
-   "/assets/img/brand/brand04.png",
-   "/assets/img/brand/brand03.png",
-   "/assets/img/brand/brand05.png"];
-
-interface BrandOneProps {
-   style?: boolean;
-}
-const BrandOne = ({ style }: BrandOneProps) => {
-   const [isPaused, setIsPaused] = useState(false);
-
+// Note: อันนี้อันใหม่อันเก่าข้างล่าง
+const BrandOne = () => {
    return (
-
-         <div className="container-fluid">
-         </div>
-
+      <div className="container-fluid">
+      </div>
    );
 }
 
