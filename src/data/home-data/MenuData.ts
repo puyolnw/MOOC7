@@ -35,140 +35,140 @@ const menu_data: MenuItem[] = [
         link: "/courses",
         sub_menus: [
             {
-                link: "/#",
+                link: "/courses",
                 title: "คณะวิทยาการจัดการ",
                 dropdown: true,
                 mega_menus: [
                     {
-                        link: "/#",
+                        link: "/courses",
                         title: "สาขาวิชา1",
                     },
                     {
-                        link: "/#",
+                        link: "/courses",
                         title: "สาขาวิชา2",
                     },
                     {
-                        link: "/#",
+                        link: "/courses",
                         title: "สาขาวิชา3",
                     },
                 ],
             },
             {
-                link: "/#",
+                link: "/courses",
                 title: "คณะเทคโนโลยีสารสนเทศ",
                 dropdown: true,
                 mega_menus: [ 
                     {
-                        link: "/#",
+                        link: "/courses",
                         title: "สาขาวิชา1",
                     },
                     {
-                        link: "/#",
+                        link: "/courses",
                         title: "สาขาวิชา2",
                     },
                     {
-                        link: "/#",
+                        link: "/courses",
                         title: "สาขาวิชา3",
                     },
                 ],
             },
             {
-                link: "/#",
+                link: "/courses",
                 title: "คณะวิศวกรรมศาสตร์",
                 dropdown: true,
                 mega_menus: [ 
                     {
-                        link: "/#",
+                        link: "/courses",
                         title: "สาขาวิชา1",
                     },
                     {
-                        link: "/#",
+                        link: "/courses",
                         title: "สาขาวิชา2",
                     },
                     {
-                        link: "/#",
+                        link: "/courses",
                         title: "สาขาวิชา3",
                     },
                 ],
             },
             {
-                link: "/#",
+                link: "/courses",
                 title: "คณะเทคโนโลยีการเกษตร",
                 dropdown: true,
                 mega_menus: [ 
                     {
-                        link: "/#",
+                        link: "/courses",
                         title: "สาขาวิชา1",
                     },
                     {
-                        link: "/#",
+                        link: "/courses",
                         title: "สาขาวิชา2",
                     },
                     {
-                        link: "/#",
+                        link: "/courses",
                         title: "สาขาวิชา3",
                     },
                 ],
             },
             {
-                link: "/#",
+                link: "/courses",
                 title: "คณะมนุษยศาสตร์และสังคมศาสตร์",
                 dropdown: true,
                 mega_menus: [ 
                     {
-                        link: "/#",
+                        link: "/courses",
                         title: "สาขาวิชา1",
                     },
                     {
-                        link: "/#",
+                        link: "/courses",
                         title: "สาขาวิชา2",
                     },
                     {
-                        link: "/#",
+                        link: "/courses",
                         title: "สาขาวิชา3",
                     },
                 ],
             },
             {
-                link: "/#",
+                link: "/courses",
                 title: "คณะรัฐศาสตร์และรัฐประศาสนศาสตร์",
                 dropdown: true,
                 mega_menus: [ 
                     {
-                        link: "/#",
+                        link: "/courses",
                         title: "สาขาวิชา1",
                     },
                     {
-                        link: "/#",
+                        link: "/courses",
                         title: "สาขาวิชา2",
                     },
                     {
-                        link: "/#",
+                        link: "/courses",
                         title: "สาขาวิชา3",
                     },
                 ],
             },
             {
-                link: "/#",
+                link: "/courses",
                 title: "คณะวิทยาศาสตร์และเทคโนโลยี",
                 dropdown: true,
                 mega_menus: [ 
                     {
-                        link: "/#",
+                        link: "/courses",
                         title: "สาขาวิชา1",
                     },
                     {
-                        link: "/#",
+                        link: "/courses",
                         title: "สาขาวิชา2",
                     },
                     {
-                        link: "/#",
+                        link: "/courses",
                         title: "สาขาวิชา3",
                     },
                 ],
             },
             {
-                link: "/#",
+                link: "/courses",
                 title: "สหกิจศึกษา",
             },
         ],
