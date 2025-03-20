@@ -13,29 +13,29 @@ const instructor_data: DataType[] = [
    {
       id: 1,
       thumb: "/assets/img/instructor/instructor01.png",
-      title: "Mark Jukarberg",
-      designation: "ผการออกแบบ UX",
+      title: "อาจารย์ ดร.วีระพน ภานุรักษ์",
+      designation: "นำร่อง หลักสูตรแบบชุดวิชา",
       rating: "(4.8 รีวิว)"
    },
    {
       id: 2,
       thumb: "/assets/img/instructor/instructor02.png",
-      title: "Olivia Mia",
-      designation: "การออกแบบเว็บไซต์",
+      title: "อาจารย์วินัย โกหลำ",
+      designation: "ปราชญ์ชาวบ้านและภูมิปัญญาท้องถิ่น",
       rating: "(4.8 รีวิว)"
    },
    {
       id: 3,
       thumb: "/assets/img/instructor/instructor03.png",
-      title: "William Hope",
-      designation: "การตลาดดิจิตอล",
+      title: "อาจารย์ทรงพล นามคุณ",
+      designation: "เทคโนโลยีไฟฟ้า",
       rating: "(4.8 รีวิว)"
    },
    {
       id: 4,
       thumb: "/assets/img/instructor/instructor04.png",
-      title: "Sophia Ava",
-      designation: "การพัฒนาเว็บ",
+      title: "อาจารย์วีระเดช โขนสันทียะ",
+      designation: "เทคนิคสัตวแพทย์และการพยาบาลสัตว์",
       rating: "(4.8 รีวิว)"
    },
 ];

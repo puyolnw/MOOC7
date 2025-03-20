@@ -17,8 +17,8 @@ const student_dashboard_data: DataType[] = [
    {
       id: 1,
       thumb: "/assets/img/courses/course_thumb01.jpg",
-      title: "Learning JavaScript With Imagination",
-      tag: "Development",
+      title: "การเรียนรู้ JavaScript ด้วยจินตนาการ",
+      tag: "การพัฒนา",
       avatar_thumb: "/assets/img/courses/course_author001.png",
       avatar_name: "David Millar",
       review: "(4.5 Reviews)",
@@ -31,8 +31,8 @@ const student_dashboard_data: DataType[] = [
    {
       id: 2,
       thumb: "/assets/img/courses/course_thumb02.jpg",
-      title: "The Complete Graphic Design for Beginners",
-      tag: "Design",
+      title: "การออกแบบกราฟิกที่สมบูรณ์แบบสำหรับผู้เริ่มต้น",
+      tag: "การออกแบบ",
       avatar_thumb: "/assets/img/courses/course_author002.png",
       avatar_name: "Wilson",
       review: "(4.5 Reviews)",
@@ -45,8 +45,8 @@ const student_dashboard_data: DataType[] = [
    {
       id: 3,
       thumb: "/assets/img/courses/course_thumb03.jpg",
-      title: "Learning JavaScript With Imagination",
-      tag: "Data Science",
+      title: "การเรียนรู้ JavaScript ด้วยจินตนาการ",
+      tag: "วิทยาศาสตร์ข้อมูล",
       avatar_thumb: "/assets/img/courses/course_author003.png",
       avatar_name: "Warren",
       review: "(4.5 Reviews)",

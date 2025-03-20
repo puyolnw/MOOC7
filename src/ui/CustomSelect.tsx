@@ -4,12 +4,23 @@ import makeAnimated from 'react-select/animated';
 
 const animatedComponents = makeAnimated();
 
+// const options = [
+//    { value: 'business', label: 'ธุรกิจ' },
+//    { value: 'data-science', label: 'วิทยาศาสตร์ข้อมูล' },
+//    { value: 'art-design', label: 'ศิลปะและการออกแบบ' },
+//    { value: 'marketing', label: 'การตลาด' },
+//    { value: 'finance', label: 'การเงิน' },
+// ];
 const options = [
-   { value: 'business', label: 'ธุรกิจ' },
-   { value: 'data-science', label: 'วิทยาศาสตร์ข้อมูล' },
-   { value: 'art-design', label: 'ศิลปะและการออกแบบ' },
-   { value: 'marketing', label: 'การตลาด' },
-   { value: 'finance', label: 'การเงิน' },
+   { value: 'business', label: 'คณะวิทยาการจัดการ' },
+   { value: 'data-science', label: 'คณะรัฐศาสตร์และรัฐประศาสนศาสตร์' },
+   { value: 'art-design', label: 'คณะนิติศาสตร์' },
+   { value: 'marketing', label: 'คณะมนุษยศาสตร์และสังคมศาสตร์ ' },
+   { value: 'finance', label: 'คณะเทคโนโลยีการเกษตร' },
+   { value: 'finance', label: 'คณะวิศวกรรมศาสตร' },
+   { value: 'finance', label: 'คณะเทคโนโลยีสารสนเทศ' },
+   { value: 'finance', label: 'คณะวิทยาศาสตร์และเทคโนโลยี' },
+   { value: 'finance', label: 'ศูนย์สหกิจศึกษา' },
 ];
 
 const CustomSelect = ({ value, onChange }: any) => {

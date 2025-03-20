@@ -4,7 +4,7 @@ import { Autoplay, Navigation } from 'swiper/modules';
 import course_data from "../../../data/home-data/CourseData";
 import { Link } from "react-router-dom";
 
-const tab_title: string[] = ["หลักสูตรทั้งหมด", "การออกแบบ", "ธุรกิจ", "การพัฒนา"];
+const tab_title: string[] = ["หลักสูตรทั้งหมด", "เทคโนโลยีคอมพิวเตอร์และดิจิทัล ", "ภาษาไทยเพื่อการสื่อสาร"];
 
 // slider setting
 const setting = {
