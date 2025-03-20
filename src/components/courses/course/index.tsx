@@ -8,7 +8,7 @@ const Course = () => {
       <>
          <HeaderOne />
          <main className="main-area fix">
-            <BreadcrumbOne title="หลักสูตรทั้งหมด" sub_title="หลักสูตร" sub_title_2="" style={false} />
+            <BreadcrumbOne title="คณะวิทยาศาสตร์และเทคโนโลยี" sub_title="หลักสูตร" sub_title_2="" style={false} />
             <CourseArea />
          </main>
          <FooterOne style={false} style_2={true} />

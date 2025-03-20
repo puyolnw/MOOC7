@@ -3,7 +3,7 @@ import Overview from "../course-details/Overview";
 import Reviews from "../course-details/Reviews";
 import Instructors from "../course-details/Instructors";
 
-const tab_title: string[] = ["Overview", "Instructors", "reviews"];
+const tab_title: string[] = ["ข้อมูลทั่วไป", "ผู้สอน", "ความคิดเห็น"];
 
 const LessonNavTav = () => {
 

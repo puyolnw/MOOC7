@@ -51,7 +51,7 @@ const LessonArea = () => {
        },
        {
          id: 2,
-         title: "เขียนโปรแกรมด้วย React ตอนที่ 1",
+         title: "การวิเคราะห์ข้อมูลเบื้องต้น",
          count: "100%",
          items: [
            {
@@ -74,7 +74,7 @@ const LessonArea = () => {
        },
        {
          id: 3,
-         title: "เขียนโปรแกรมด้วย React ตอนที่ 2",
+         title: "การแจกแจงความน่าจะเป็น (Probability Distributions)",
          count: "0%",
          items: [
            {
@@ -97,7 +97,7 @@ const LessonArea = () => {
        },
        {
          id: 4,
-         title: "เขียนโปรแกรมด้วย React ตอนที่ 3",
+         title: "การสุ่มตัวอย่างและการแจกแจงตัวอย่าง (Sampling and Sampling Distributions)",
          count: "0%",
          items: [
            {
@@ -120,7 +120,7 @@ const LessonArea = () => {
        },
        {
          id: 5,
-         title: "เขียนโปรแกรมด้วย React ตอนที่ 4",
+         title: "การประมาณค่า (Estimation)",
          count: "0%",
          items: [
            {
@@ -253,7 +253,7 @@ const LessonArea = () => {
                {/* Sidebar */}
                <div className="col-xl-3 col-lg-4 lesson__sidebar">
                   <div className="lesson__content">
-                     <h2 className="title">เนื้อหาบทเรียน</h2>
+                     <h2 className="title">เนื้อหาบทเรียน : สถิติประยุกต์</h2>
                      <LessonFaq 
                         onViewChange={setCurrentView} 
                         lessonData={lessonData}

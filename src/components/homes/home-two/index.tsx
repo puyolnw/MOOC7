@@ -19,7 +19,7 @@ const HomeTwo = () => {
          <HeaderTwo />
          <main className="main-area fix">
             <Banner />
-            <BrandOne style={true} />
+            <BrandOne/>
             <Feature style={false} />
             <About />
             <CourseArea style={true} />
