@@ -6,7 +6,7 @@ import Reviews from "./Reviews"
 import Instructors from "./Instructors"
 import { Link } from "react-router-dom";
 
-const tab_title: string[] = ["ข้อมูลทั่วไป", "หลักสูตร", "ผู้สอน", "ความคิดเห็น"];
+const tab_title: string[] = ["ข้อมูลทั่วไป", "บทเรียน", "ผู้สอน", "ความคิดเห็น"];
 
 
 const CourseDetailsArea = ({ single_course }: any) => {
@@ -28,16 +28,16 @@ const CourseDetailsArea = ({ single_course }: any) => {
             <div className="courses__details-content">
               <ul className="courses__item-meta list-wrap">
                 <li className="courses__item-tag">
-                  <Link to="/course">{single_course?.category ? single_course.category : "การพัฒนา"}</Link>
+                  <Link to="/courses">{single_course?.category ? single_course.category : "สถิตประยุกต์"}</Link>
                 </li>
                 <li className="avg-rating"><i className="fas fa-star"></i>{single_course?.rating ? single_course.rating : "(4.5 Reviews)"}</li>
               </ul>
-              <h2 className="title">{single_course?.title ? single_course.title : "เขียนโปรแกรมด้วย React"}</h2>
+              <h2 className="title">{single_course?.title ? single_course.title : "สถิติประยุกต์"}</h2>
               <div className="courses__details-meta">
                 <ul className="list-wrap">
                   <li className="author-two">
-                    <img src="/assets/img/courses/course_author001.png" alt="img" />
-                    By <Link to="#">{single_course?.instructors ? single_course.instructors : "David Millar"}</Link>
+                    <img src="/assets/img/courses/course_author02.png" alt="img" />
+                    By <Link to="#">{single_course?.instructors ? single_course.instructors : "ดร.ปรมาภรณ์ แสงภารา"}</Link>
                   </li>
                   <li className="date"><i className="flaticon-calendar"></i>24/07/2024</li>
                   <li><i className="flaticon-mortarboard"></i>2,250 นักเรียน</li>

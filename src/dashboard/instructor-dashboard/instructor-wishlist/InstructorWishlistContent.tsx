@@ -6,7 +6,7 @@ const InstructorWishlistContent = () => {
       <div className="col-lg-9">
          <div className="dashboard__content-wrap dashboard__content-wrap-two">
             <div className="dashboard__content-title">
-               <h4 className="title">Wishlist</h4>
+               <h4 className="title">ปักหมุด</h4>
             </div>
             <div className="row">
                {wishlist_data.map((item) => (
@@ -20,7 +20,7 @@ const InstructorWishlistContent = () => {
                         <div className="courses__item-content courses__item-content-two">
                            <ul className="courses__item-meta list-wrap">
                               <li className="courses__item-tag">
-                                 <Link to="/course">{item.tag}</Link>
+                                 <Link to="/courses">{item.tag}</Link>
                               </li>
                            
                            </ul>

@@ -7,7 +7,7 @@ const Instructors = () => {
             <img src="/assets/img/courses/course_instructors.png" alt="img" />
          </div>
          <div className="courses__instructors-content">
-            <h2 className="title">อาจารย์ ดร.ปรมาภรณ์ แสงภารา</h2>
+            <h2 className="title">ดร.ปรมาภรณ์ แสงภารา</h2>
             <span className="designation">สถิติประยุกต์</span>
             <p className="avg-rating"><i className="fas fa-star"></i>(4.8 Ratings)</p>
             <p>สาขาสถิติประยุกต์ คณะวิทยาศาสตร์และเทคโนโลยี

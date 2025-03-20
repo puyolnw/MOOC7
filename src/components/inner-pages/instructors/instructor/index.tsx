@@ -8,7 +8,7 @@ const Instructors = () => {
       <>
          <HeaderOne />
          <main className="main-area fix">
-            <BreadcrumbOne title="อาจารย์ทุกท่าน" sub_title="อาจารย์" />
+            <BreadcrumbOne title="รายชื่ออาจารย์" sub_title="อาจารย์" />
             <InstructorArea />
          </main>
          <FooterOne style={false} style_2={false} />

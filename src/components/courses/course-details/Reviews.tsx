@@ -41,7 +41,7 @@ const review_data: DataType[] = [
 const Reviews = () => {
    return (
       <div className="courses__rating-wrap">
-         <h2 className="title">Reviews</h2>
+         <h2 className="title">รีวิว</h2>
          <div className="course-rate">
             <div className="course-rate__summary">
                <div className="course-rate__summary-value">4.8</div>
@@ -53,7 +53,7 @@ const Reviews = () => {
                   <i className="fas fa-star"></i>
                </div>
                <div className="course-rate__summary-text">
-                  12 Ratings
+                  12 การให้คะแนน
                </div>
             </div>
             <div className="course-rate__details">

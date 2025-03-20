@@ -18,10 +18,10 @@ const FooterOne = ({ style, style_2 }: any) => {
                               <Social />
                            </ul>
                         </div>
-                        <div className="app-download">
+                        {/* <div className="app-download">
                            <Link to="#"><img src="/assets/img/others/google-play.svg" alt="img" /></Link>
                            <Link to="#"><img src="/assets/img/others/apple-store.svg" alt="img" /></Link>
-                        </div>
+                        </div> */}
                      </div>
                   </div>
                </div>

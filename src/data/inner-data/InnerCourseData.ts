@@ -29,7 +29,7 @@ const inner_course_data: DataType[] = [
    },
    {
       id: 2,
-      thumb: "/assets/img/courses/course_thumb02.jpg",
+      thumb: "/assets/img/courses/course_thumb03.jpg",
       category: "สาธารณสุขชุมชน",
       rating: 4.5,
       title: "สาธารณสุขชุมชน",
@@ -42,7 +42,7 @@ const inner_course_data: DataType[] = [
    },
    {
       id: 3,
-      thumb: "/assets/img/courses/course_thumb03.jpg",
+      thumb: "/assets/img/courses/course_thumb02.jpg",
       category: "สถิติประยุกต์",
       rating: 4.8,
       title: "สถิติประยุกต์",

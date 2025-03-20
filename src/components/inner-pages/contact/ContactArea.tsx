@@ -15,7 +15,7 @@ const ContactArea = () => {
                            </div>
                            <div className="content">
                               <h4 className="title">ที่อยู่</h4>
-                              <p>Awamileaug Drive, Kensington <br /> London, UK</p>
+                              <p>มหาวิทยาลัยราชภัฎมหาสารคาม 80 ถนนนครสวรรค์ <br /> มหาสารคาม, ต.ตลาด อ.เมือง </p>
                            </div>
                         </li>
                         <li>
@@ -24,8 +24,7 @@ const ContactArea = () => {
                            </div>
                            <div className="content">
                               <h4 className="title">เบอร์โทรศัพท์</h4>
-                              <a href="tel:0123456789">+1 (800) 123 456 789</a>
-                              <a href="tel:0123456789">+1 (800) 123 456 789</a>
+                              <a href="tel:0123456789">+66 043722118</a>
                            </div>
                         </li>
                         <li>
@@ -34,7 +33,6 @@ const ContactArea = () => {
                            </div>
                            <div className="content">
                               <h4 className="title">ที่อยู่อีเมล</h4>
-                              <a href="mailto:info@gmail.com">info@gmail.com</a>
                               <a href="mailto:info@gmail.com">info@gmail.com</a>
                            </div>
                         </li>
@@ -52,7 +50,7 @@ const ContactArea = () => {
                </div>
             </div>
             <div className="contact-map">
-               <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d48409.69813174607!2d-74.05163325136718!3d40.68264649999998!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x89c25bae694479a3%3A0xb9949385da52e69e!2sBarclays%20Center!5e0!3m2!1sen!2sbd!4v1684309529719!5m2!1sen!2sbd" style={{ border: '0' }} loading="lazy" referrerPolicy="no-referrer-when-downgrade"></iframe>
+               <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2709.1936006742667!2d103.27083221920152!3d16.200978310400988!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3122a6ae121c1c2f%3A0x626cae9fcd86bf3d!2z4Lih4Lir4Liy4Lin4Li04LiX4Lii4Liy4Lil4Lix4Lii4Lij4Liy4LiK4Lig4Lix4LiP4Lih4Lir4Liy4Liq4Liy4Lij4LiE4Liy4Lih!5e0!3m2!1sth!2sth!4v1742505416240!5m2!1sth!2sth" style={{ border: '0' }} loading="lazy" referrerPolicy="no-referrer-when-downgrade"></iframe>
             </div>
          </div>
       </section>

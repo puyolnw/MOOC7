@@ -21,7 +21,7 @@ const DashboardCourse = () => {
                      <div className="courses__item-content courses__item-content-two">
                         <ul className="courses__item-meta list-wrap">
                            <li className="courses__item-tag">
-                              <Link to="course">{item.tag}</Link>
+                              <Link to="/courses">{item.tag}</Link>
                            </li>
                         </ul>
                         <h5 className="title"><Link to="/course-details">{item.title}</Link></h5>

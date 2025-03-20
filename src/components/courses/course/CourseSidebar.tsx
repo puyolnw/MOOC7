@@ -13,9 +13,7 @@ interface FilterCriteria {
 }
 
 const CourseSidebar = ({ setCourses }: any) => {
-
    const [showMoreCategory, setShowMoreCategory] = useState(false);
-  // const [showMoreLanguage, setShowMoreLanguage] = useState(false);
    const [showMoreInstructor, setShowMoreInstructor] = useState(false);
 
    const [categorySelected, setCategorySelected] = useState('');
@@ -26,55 +24,51 @@ const CourseSidebar = ({ setCourses }: any) => {
    const [ratingSelected, setRatingSelected] = useState<number | null>(null);
 
    const categoryFilter = useSelector(selectCourses).map(course => course.category);
-   //const languageFilter = useSelector(selectCourses).map(course => course.language);
-   //const priceFilter = useSelector(selectCourses).map(course => course.price_type);
-   //const skillFilter = useSelector(selectCourses).map(course => course.skill_level);
    const instructorFilter = useSelector(selectCourses).map(course => course.instructors);
 
    const allCategory = ['หลักสูตรทั้งหมด', ...new Set(categoryFilter)];
-   //const allLanguage = ['ภาษาทั้งหมด', ...new Set(languageFilter)];
-   //const allPrice = ['ราคาทั้งหมด', ...new Set(priceFilter)];
-   //const allSkill = ['ทักษะทั้งหมด', ...new Set(skillFilter)];
    const allInstructor = ['ผู้สอนทั้งหมด', ...new Set(instructorFilter)];
 
    const allCourses = useSelector(selectCourses);
 
    // Handle category selection
    const handleCategory = (category: string) => {
-      setCategorySelected(prevCategory => prevCategory === category ? '' : category);
-      filterCourses({ 
-         category: category === categorySelected ? '' : category, 
-         language: languageSelected, 
-         price: priceSelected, 
-         rating: ratingSelected, 
-         skill: skillSelected, 
-         instructor: instructorSelected 
+      const newCategory = category === categorySelected ? '' : category;
+      setCategorySelected(newCategory);
+      filterCourses({
+         category: newCategory === 'หลักสูตรทั้งหมด' ? '' : newCategory,
+         language: languageSelected,
+         price: priceSelected,
+         rating: ratingSelected,
+         skill: skillSelected,
+         instructor: instructorSelected
       });
    };
 
    // Handle Instructor selection
    const handleInstructor = (instructor: string) => {
-      setInstructorSelected(instructor);
-      filterCourses({ 
-         category: categorySelected, 
-         language: languageSelected, 
-         price: priceSelected, 
-         rating: ratingSelected, 
-         skill: skillSelected, 
-         instructor 
+      const newInstructor = instructor === instructorSelected ? '' : instructor;
+      setInstructorSelected(newInstructor);
+      filterCourses({
+         category: categorySelected,
+         language: languageSelected,
+         price: priceSelected,
+         rating: ratingSelected,
+         skill: skillSelected,
+         instructor: newInstructor === 'ผู้สอนทั้งหมด' ? '' : newInstructor // ถ้าเลือก "ผู้สอนทั้งหมด" ส่งค่าว่าง
       });
    };
 
    // Handle rating selection
    const handleRating = (rating: number) => {
       setRatingSelected(prevRating => prevRating === rating ? null : rating);
-      filterCourses({ 
-         category: categorySelected, 
-         language: languageSelected, 
-         price: priceSelected, 
-         rating: rating === ratingSelected ? null : rating, 
-         skill: skillSelected, 
-         instructor: instructorSelected 
+      filterCourses({
+         category: categorySelected,
+         language: languageSelected,
+         price: priceSelected,
+         rating: rating === ratingSelected ? null : rating,
+         skill: skillSelected,
+         instructor: instructorSelected
       });
    };
 
@@ -82,7 +76,7 @@ const CourseSidebar = ({ setCourses }: any) => {
    const filterCourses = ({ category, language, price, rating, skill, instructor }: FilterCriteria) => {
       let filteredCourses = allCourses;
 
-      if (category && category !== 'All Category') {
+      if (category && category !== 'หลักสูตรทั้งหมด') {
          filteredCourses = filteredCourses.filter(course => course.category === category);
       }
 
@@ -98,7 +92,7 @@ const CourseSidebar = ({ setCourses }: any) => {
          filteredCourses = filteredCourses.filter(course => course.skill_level === skill);
       }
 
-      if (instructor && instructor !== 'All Instructors') {
+      if (instructor && instructor !== 'ผู้สอนทั้งหมด') {
          filteredCourses = filteredCourses.filter(course => course.instructors === instructor);
       }
 
@@ -109,9 +103,7 @@ const CourseSidebar = ({ setCourses }: any) => {
       setCourses(filteredCourses);
    };
 
-   // Determine categories to display based on "Show More" toggle
    const categoriesToShow = showMoreCategory ? allCategory : allCategory.slice(0, 8);
-   //const languageToShow = showMoreLanguage ? allLanguage : allLanguage.slice(0, 4);
    const instructorToShow = showMoreInstructor ? allInstructor : allInstructor.slice(0, 4);
 
    return (
@@ -124,14 +116,26 @@ const CourseSidebar = ({ setCourses }: any) => {
                      {categoriesToShow.map((category, i) => (
                         <li key={i}>
                            <div onClick={() => handleCategory(category)} className="form-check">
-                              <input className="form-check-input" type="checkbox" checked={category === categorySelected} readOnly id={`cat_${i}`} />
-                              <label className="form-check-label" htmlFor={`cat_${i}`} onClick={() => handleCategory(category)}>{category}</label>
+                              <input
+                                 className="form-check-input"
+                                 type="checkbox"
+                                 checked={category === categorySelected || (category === 'หลักสูตรทั้งหมด' && !categorySelected)}
+                                 readOnly
+                                 id={`cat_${i}`}
+                              />
+                              <label className="form-check-label" htmlFor={`cat_${i}`} onClick={() => handleCategory(category)}>
+                                 {category}
+                              </label>
                            </div>
                         </li>
                      ))}
                   </ul>
                   <div className="show-more">
-                     <a className={`show-more-btn ${showMoreCategory ? 'active' : ''}`} style={{ cursor: "pointer" }} onClick={() => setShowMoreCategory(!showMoreCategory)}>
+                     <a
+                        className={`show-more-btn ${showMoreCategory ? 'active' : ''}`}
+                        style={{ cursor: "pointer" }}
+                        onClick={() => setShowMoreCategory(!showMoreCategory)}
+                     >
                         {showMoreCategory ? "แสดงน้อยลง -" : "แสดงเพิ่มเติม +"}
                      </a>
                   </div>
@@ -145,14 +149,26 @@ const CourseSidebar = ({ setCourses }: any) => {
                      {instructorToShow.map((instructor, i) => (
                         <li key={i}>
                            <div onClick={() => handleInstructor(instructor)} className="form-check">
-                              <input className="form-check-input" type="checkbox" checked={instructor === instructorSelected} readOnly id={`instructor_${i}`} />
-                              <label className="form-check-label" htmlFor={`instructor_${i}`} onClick={() => handleInstructor(instructor)}>{instructor}</label>
+                              <input
+                                 className="form-check-input"
+                                 type="checkbox"
+                                 checked={instructor === instructorSelected || (instructor === 'ผู้สอนทั้งหมด' && !instructorSelected)}
+                                 readOnly
+                                 id={`instructor_${i}`}
+                              />
+                              <label className="form-check-label" htmlFor={`instructor_${i}`} onClick={() => handleInstructor(instructor)}>
+                                 {instructor}
+                              </label>
                            </div>
                         </li>
                      ))}
                   </ul>
                   <div className="show-more">
-                     <a className={`show-more-btn ${showMoreInstructor ? 'active' : ''}`} style={{ cursor: "pointer" }} onClick={() => setShowMoreInstructor(!showMoreInstructor)}>
+                     <a
+                        className={`show-more-btn ${showMoreInstructor ? 'active' : ''}`}
+                        style={{ cursor: "pointer" }}
+                        onClick={() => setShowMoreInstructor(!showMoreInstructor)}
+                     >
                         {showMoreInstructor ? "แสดงน้อยลง -" : "แสดงเพิ่มเติม +"}
                      </a>
                   </div>
@@ -167,7 +183,13 @@ const CourseSidebar = ({ setCourses }: any) => {
                      {[5, 4, 3, 2, 1].map((rating, i) => (
                         <li key={i}>
                            <div onClick={() => handleRating(rating)} className="form-check">
-                              <input className="form-check-input" type="checkbox" checked={rating === ratingSelected} readOnly id={`rating_${i}`} />
+                              <input
+                                 className="form-check-input"
+                                 type="checkbox"
+                                 checked={rating === ratingSelected}
+                                 readOnly
+                                 id={`rating_${i}`}
+                              />
                               <label className="form-check-label" htmlFor={`rating_${i}`} onClick={() => handleRating(rating)}>
                                  <div className="rating">
                                     <Rating initialValue={rating} size={20} readonly />
