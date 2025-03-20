@@ -13,7 +13,7 @@ const FooterOne = ({ style, style_2 }: any) => {
                      <div className="footer__widget">
                         <h4 className="footer__widget-title">ติดต่อเรา</h4>
                         <div className="footer__contact-content">
-                           <p>เมื่อช่างพิมพ์ที่ไม่รู้จักคนหนึ่งเอาไป <br />ห้องครัวประเภทครัวและสัญญาณรบกวน</p>
+                           {/* <p>เมื่อช่างพิมพ์ที่ไม่รู้จักคนหนึ่งเอาไป <br />ห้องครัวประเภทครัวและสัญญาณรบกวน</p> */}
                            <ul className="list-wrap footer__social">
                               <Social />
                            </ul>

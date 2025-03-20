@@ -65,7 +65,7 @@ const FaqArea = () => {
                         <span className="sub-title">คำถามที่พบบ่อย</span>
                         <h2 className="title">เริ่มต้นการเรียนรู้จาก <br /> อาจารย์ผู้สอนมืออาชีพระดับโลก</h2>
                      </div>
-                     <p>กล่องจดหมายแบบแชร์ที่ใช้งานง่ายของ Groove ช่วยให้สมาชิกในทีมจัดระเบียบ กำหนดลำดับความสำคัญ และ... ในตอนนี้</p>
+                     {/* <p>กล่องจดหมายแบบแชร์ที่ใช้งานง่ายของ Groove ช่วยให้สมาชิกในทีมจัดระเบียบ กำหนดลำดับความสำคัญ และ... ในตอนนี้</p> */}
                      <div className="faq__wrap">
                         <div className="accordion" id="accordionExample">
                            {faqData.map((item, index) => (
