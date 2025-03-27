@@ -29,7 +29,7 @@ const LessonVideo = ({ onComplete, currentLesson }: LessonVideoProps) => {
 
          const sourceMP4 = document.createElement('source');
          // ใช้วิดีโอตัวอย่างจากอินเทอร์เน็ต
-         sourceMP4.src = 'https://cdn.plyr.io/static/demo/View_From_A_Blue_Moon_Trailer-720p.mp4';
+         sourceMP4.src = 'https://www.youtube.com/watch?v=3oo356UNY8o&ab_channel=9Arkkhan';
          sourceMP4.type = 'video/mp4';
          
          videoElement.appendChild(sourceMP4);
