@@ -8,12 +8,11 @@ const LoginArea = () => {
             <div className="row justify-content-center">
                <div className="col-xl-6 col-lg-8">
                   <div className="singUp-wrap">
-                     <h2 className="title">Welcome back!</h2>
-                     <p>Hey there! Ready to log in? Just enter your username and password below and you&apos;ll be back in action in no time. Let&apos;s go!</p>
+                     <h2 className="title">เข้าสู่ระบบ</h2>
 
                      <LoginForm />
                      <div className="account__switch">
-                        <p>Don&apos;t have an account?<Link to="/registration">ลงทะเบียน</Link></p>
+                        <p>ยังไม่มีบัญชี?<Link to="/registration">ลงทะเบียน</Link></p>
                      </div>
                   </div>
                </div>
