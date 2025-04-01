@@ -5,7 +5,7 @@ import SEO from '../components/SEO';
 const Login = () => {
    return (
       <Wrapper>
-         <SEO pageTitle={'SkillGro Login'} />
+         <SEO pageTitle={'Creditbank Login'} />
          <LoginMain />
       </Wrapper>
    );

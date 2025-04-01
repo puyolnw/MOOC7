@@ -1,4 +1,5 @@
 import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
+import PrivateRoute from '../hooks/PrivateRoute';
 import Home from '../pages/Home';
 import HomeTwo from '../pages/HomeTwo';
 import HomeEight from '../pages/HomeEight';
@@ -27,6 +28,7 @@ import BlogDetails from '../pages/BlogDetails';
 import Login from '../pages/Login';
 import Registration from '../pages/Registration';
 import Contact from '../pages/Contact';
+import AdminDashboard from '../pages/AdminDashboard';
 import InstructorDashboard from '../pages/InstructorDashboard';
 import InstructorProfile from '../pages/InstructorProfile';
 import InstructorEnrollCourse from '../pages/InstructorEnrolledCourses';
@@ -82,6 +84,10 @@ const AppNavigation = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/registration" element={<Registration />} />
         <Route path="/contact" element={<Contact />} />
+        <Route element={<PrivateRoute allowedRoles={["admin"]} />}>
+          <Route path="/admin-dashboard" element={<AdminDashboard />} />
+        </Route>
+        <Route element={<PrivateRoute allowedRoles={["instructor"]} />}>
         <Route path="/instructor-dashboard" element={<InstructorDashboard />} />
         <Route path="/instructor-profile" element={<InstructorProfile />} />
         <Route path="/instructor-enrolled-courses" element={<InstructorEnrollCourse />} />
@@ -94,7 +100,9 @@ const AppNavigation = () => {
         <Route path="/instructor-quiz" element={<InstructorQuiz />} />
         <Route path="/instructor-assignment" element={<InstructorAssignment />} />
         <Route path="/instructor-setting" element={<InstructorSetting />} />
-        <Route path="/student-dashboard" element={<StudentDashboard />} />
+        </Route>
+        <Route element={<PrivateRoute allowedRoles={["student"]} />}>
+          <Route path="/student-dashboard" element={<StudentDashboard />} />
         <Route path="/student-profile" element={<StudentProfile />} />
         <Route path="/student-enrolled-courses" element={<StudentEnrollCourse />} />
         <Route path="/student-wishlist" element={<StudentWishlist />} />
@@ -103,6 +111,7 @@ const AppNavigation = () => {
         <Route path="/student-history" element={<StudentHistory />} />
         <Route path="/student-setting" element={<StudentSetting />} />
         <Route path="/student-certificate" element={<StudentCertificate />} />
+        </Route>
         {/* <Route path="/blog-details/:id" element={<DynamicBlogDeatils />} /> */}
         <Route path="*" element={<NotFound />} />
       </Routes>
