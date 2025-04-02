@@ -6,13 +6,11 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import { useNavigate } from "react-router-dom"; // ✅ ใช้ Navigate สำหรับ Redirect
 import BtnArrow from "../svg/BtnArrow";
 import { Link } from "react-router-dom";
-
+import { jwtDecode } from "jwt-decode"; // ✅ ใช้ jwt-decode สำหรับตรวจสอบ Token
 interface FormData {
   email: string;
   password: string;
 }
-
-
 
 const LoginForm = () => {
   const navigate = useNavigate(); // ✅ ใช้ Navigate
@@ -22,7 +20,6 @@ const LoginForm = () => {
       password: yup.string().required().label("Password"),
     })
     .required();
-
   const {
     register,
     handleSubmit,
@@ -30,36 +27,75 @@ const LoginForm = () => {
     formState: { errors },
   } = useForm<FormData>({ resolver: yupResolver(schema) });
 
+  const isTokenExpired = (token: string): boolean => {
+    try {
+      const decoded: any = jwtDecode(token);
+      const currentTime = Date.now() / 1000; // เวลาปัจจุบัน (วินาที)
+      return decoded.exp < currentTime;
+    } catch (error) {
+      return true; // ถ้าถอดรหัสไม่ได้ ถือว่าหมดอายุ
+    }
+  };
   const onSubmit = async (data: FormData) => {
     try {
-      const apiUrl = import.meta.env.VITE_API_URL; // ✅ ใช้ VITE_API_URL จาก .env
+      const apiUrl = import.meta.env.VITE_API_URL;
       const response = await axios.post(`${apiUrl}/api/auth/login`, data, {
         headers: { "Content-Type": "application/json" },
       });
-      
 
       const { token, user } = response.data;
-      
-      // ✅ เก็บ Token และ User Data ลง localStorage
+
+      if (isTokenExpired(token)) {
+        toast.error("โทเคนหมดอายุ โปรดเข้าสู่ระบบใหม่", { position: "top-center" });
+        logoutUser(); // ✅ เรียกใช้ logoutUser
+        return;
+      }
+
       localStorage.setItem("token", token);
       localStorage.setItem("user", JSON.stringify(user));
-      localStorage.setItem("role", user.role); 
 
-      toast.success("Login successfully!", { position: "top-center" });
+      toast.success("เข้าสู่ระบบ สำเร็จ!", { position: "top-center" });
 
-      reset(); // ✅ Reset Form
-      // ✅ Redirect ตาม Role
-      if (user.role === "admin") {
-        navigate("/admin-dashboard");
-      } else if (user.role === "instructor") {
-        navigate("/instructor-dashboard");
-      } else {
-        navigate("/student-dashboard");
+      reset();
+
+      // ✅ ดึงค่าเวลาหมดอายุจาก Token
+      const decoded: any = jwtDecode(token);
+      const expiresIn = (decoded.exp * 1000) - Date.now();
+
+      // ✅ ตั้งเวลา logout อัตโนมัติ
+      setTimeout(() => {
+        logoutUser();
+      }, expiresIn);
+
+      switch (user.role) {
+        case "admin":
+          navigate("/admin-dashboard");
+          break;
+        case "instructor":
+          navigate("/instructor-dashboard");
+          break;
+        case "student":
+          navigate("/student-dashboard");
+          break;
+        default:
+          navigate("/");
       }
     } catch (error: any) {
       console.error("Login Error:", error);
       toast.error(error.response?.data?.message || "Login failed", { position: "top-center" });
     }
+  };
+
+  // ✅ ฟังก์ชัน Logout อัตโนมัติ
+  const logoutUser = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    
+    toast.info("เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่", { 
+      position: "top-center",
+      autoClose: 3000, // ✅ แสดงแจ้งเตือน 3 วินาทีก่อน redirect
+      onClose: () => navigate("/login"), // ✅ Redirect หลังจาก toast ปิด
+    });
   };
 
   return (
