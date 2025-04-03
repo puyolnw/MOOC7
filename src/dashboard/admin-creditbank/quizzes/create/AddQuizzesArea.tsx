@@ -7,6 +7,11 @@ import AddQuestionsForm from "../../questions/create/AddQuestionsArea";
 // ประเภทของคำถาม
 type QuestionType = "TF" | "MC" | "SC" | "FB";
 
+interface AddQuizzesAreaProps {
+  isEmbedded?: boolean;
+  onSubmit?: (quizData: any) => void;
+}
+
 // ข้อมูลคำถาม
 interface Question {
   id: string;
@@ -39,7 +44,7 @@ interface QuizData {
 
 
 
-const AddQuizzesArea = () => {
+const AddQuizzesArea: React.FC<AddQuizzesAreaProps> = ({ isEmbedded = false, onSubmit }) => {
   const navigate = useNavigate();
   
   // สร้าง ID สำหรับคำถาม
@@ -304,9 +309,11 @@ const AddQuizzesArea = () => {
     e.preventDefault();
     
     if (validateForm()) {
-      // ส่งข้อมูลไปยัง API หรือ Redux
       console.log("บันทึกข้อมูล:", quizData);
-      
+      if (isEmbedded && onSubmit) {
+        onSubmit(quizData);
+        return;
+      }
       // แสดงข้อความสำเร็จ
       alert("บันทึกข้อมูลสำเร็จ");
       

@@ -11,6 +11,8 @@ interface Course {
   students: number;
   category: string;
   status: "active" | "inactive" | "draft";
+  lessonCount: number; // Added lesson count field
+  branch: string; // Added branch field
 }
 
 const sampleCourses: Course[] = [
@@ -22,6 +24,8 @@ const sampleCourses: Course[] = [
       students: 120,
       category: "เทคโนโลยีสารสนเทศ",
       status: "active",
+      lessonCount: 12,
+      branch: "วิศวกรรมคอมพิวเตอร์",
     },
     {
       id: 2,
@@ -31,6 +35,8 @@ const sampleCourses: Course[] = [
       students: 85,
       category: "วิทยาการข้อมูล",
       status: "active",
+      lessonCount: 8,
+      branch: "วิทยาการคอมพิวเตอร์",
     },
     {
       id: 3,
@@ -40,6 +46,8 @@ const sampleCourses: Course[] = [
       students: 210,
       category: "บริหารธุรกิจ",
       status: "inactive",
+      lessonCount: 10,
+      branch: "บริหารธุรกิจ",
     },
     {
       id: 4,
@@ -49,6 +57,8 @@ const sampleCourses: Course[] = [
       students: 150,
       category: "ภาษา",
       status: "active",
+      lessonCount: 15,
+      branch: "ภาษาศาสตร์",
     },
     {
       id: 5,
@@ -58,6 +68,8 @@ const sampleCourses: Course[] = [
       students: 95,
       category: "ศิลปะและการออกแบบ",
       status: "draft",
+      lessonCount: 9,
+      branch: "ศิลปกรรมศาสตร์",
     },
     {
       id: 6,
@@ -67,6 +79,8 @@ const sampleCourses: Course[] = [
       students: 75,
       category: "บริหารธุรกิจ",
       status: "active",
+      lessonCount: 7,
+      branch: "บริหารธุรกิจ",
     },
     {
       id: 7,
@@ -76,6 +90,8 @@ const sampleCourses: Course[] = [
       students: 110,
       category: "เทคโนโลยีสารสนเทศ",
       status: "active",
+      lessonCount: 14,
+      branch: "วิศวกรรมซอฟต์แวร์",
     },
     {
       id: 8,
@@ -85,6 +101,8 @@ const sampleCourses: Course[] = [
       students: 65,
       category: "บัญชีและการเงิน",
       status: "inactive",
+      lessonCount: 11,
+      branch: "บัญชี",
     },
   ];
 
@@ -202,7 +220,7 @@ const sampleCourses: Course[] = [
                         <i className="fas fa-search"></i>
                       </button>
                     </div>
-                    <Link to="/admin-creditbank/add-course" className="btn btn-primary">
+                    <Link to="/admin-creditbank/create-new" className="btn btn-primary">
                       <i className="fas fa-plus-circle me-2"></i>เพิ่มหลักสูตร
                     </Link>
                   </div>
@@ -210,13 +228,14 @@ const sampleCourses: Course[] = [
                   <div className="card shadow-sm border-0">
                     <div className="card-body p-0">
                       <div className="table-responsive">
-                        <table className="table table-hover table-sm mb-0 text-center align-middle table-striped">
+                        <table className="table table-hover table-sm mb-0 align-middle table-striped">
                           <thead className="table-light">
                             <tr>
+                              <th style={{ width: "80px" }}>ภาพปก</th>
                               <th>ชื่อคอร์ส</th>
-                              <th>จำนวนผู้สอน</th>
-                              <th>นักเรียน</th>
-                              <th>หมวดหมู่</th>
+                              <th>จำนวนรายวิชา</th>
+                              <th>ผู้ลงทะเบียน</th>
+                              <th>สาขา</th>
                               <th>สถานะ</th>
                               <th style={{ width: "100px" }}>จัดการ</th>
                             </tr>
@@ -225,10 +244,18 @@ const sampleCourses: Course[] = [
                             {currentCourses.length > 0 ? (
                               currentCourses.map((course) => (
                                 <tr key={course.id}>
+                                  <td>
+                                    <img 
+                                      src={course.coverImage} 
+                                      alt={course.title}
+                                      className="img-thumbnail"
+                                      style={{ width: "60px", height: "60px", objectFit: "cover" }}
+                                    />
+                                  </td>
                                   <td>{course.title}</td>
-                                  <td>1 คน</td>
-                                  <td>{course.students}</td>
-                                  <td>{course.category}</td>
+                                  <td>{course.lessonCount} บทเรียน</td>
+                                  <td>{course.students} คน</td>
+                                  <td>{course.branch}</td>
                                   <td><StatusBadge status={course.status} /></td>
                                   <td>
                                     <div className="d-flex justify-content-center gap-3">
@@ -246,7 +273,7 @@ const sampleCourses: Course[] = [
                               ))
                             ) : (
                               <tr>
-                                <td colSpan={6} className="text-center py-4">ไม่พบข้อมูลหลักสูตร</td>
+                                <td colSpan={7} className="text-center py-4">ไม่พบข้อมูลหลักสูตร</td>
                               </tr>
                             )}
                           </tbody>
@@ -280,7 +307,7 @@ const sampleCourses: Course[] = [
                                 onClick={() => setCurrentPage(currentPage + 1)}
                                 disabled={currentPage === totalPages}
                               >
-                                <i className="fas fa-chevron-right"></i>
+                                                               <i className="fas fa-chevron-right"></i>
                               </button>
                             </li>
                           </ul>
@@ -302,3 +329,4 @@ const sampleCourses: Course[] = [
   };
   
   export default AdminCreditbankArea;
+

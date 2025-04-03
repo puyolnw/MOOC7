@@ -342,7 +342,7 @@ const LessonsArea = () => {
                       <i className="fas fa-search"></i>
                     </button>
                   </div>
-                  <Link to="/admin-creditbank/add-lesson" className="btn btn-primary">
+                  <Link to="/admin-lessons/create-new" className="btn btn-primary">
                     <i className="fas fa-plus-circle me-2"></i>เพิ่มบทเรียน
                   </Link>
                 </div>

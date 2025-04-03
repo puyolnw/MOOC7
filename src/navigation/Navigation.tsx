@@ -5,9 +5,11 @@ import AdminLessonsbankpage from '../pages/Admin/AdminLessons';
 import AdminQuestionspage from '../pages/Admin/AdminQuestions';
 import AdminQuizzespage from '../pages/Admin/AdminQuizzes';
 import AdminSubjectspage from '../pages/Admin/AdminSubjects';
-
 import AdminAddquestionpage from '../pages/Admin/create/AddQuestions';
 import AdminAddQuizzespage from '../pages/Admin/create/AddQuizzes';
+import AdminAddlessonspage from '../pages/Admin/create/AddLessons';
+import AdminAddSubjectspage from '../pages/Admin/create/AddSubjects';
+import AdminAddCoursepage from '../pages/Admin/create/AddCoures';
 
 import Home from '../pages/Home';
 import HomeTwo from '../pages/HomeTwo';
@@ -105,6 +107,10 @@ const AppNavigation = () => {
 
         <Route path="/admin-questions/create-new" element={<AdminAddquestionpage/>} />
         <Route path="/admin-quizzes/create-new" element={<AdminAddQuizzespage />} />
+        <Route path="/admin-lessons/create-new" element={<AdminAddlessonspage />} />
+        <Route path="/admin-subjects/create-new" element={<AdminAddSubjectspage />} />
+        <Route path="/admin-creditbank/create-new" element={< AdminAddCoursepage />} />
+      
         </Route>
 
         <Route element={<PrivateRoute allowedRoles={["instructor"]} />}>

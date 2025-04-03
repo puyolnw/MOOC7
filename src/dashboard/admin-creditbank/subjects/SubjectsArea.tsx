@@ -211,7 +211,7 @@ const SubjectsArea = () => {
                       <i className="fas fa-search"></i>
                     </button>
                   </div>
-                  <Link to="/admin-subjects/add-subject" className="btn btn-primary">
+                  <Link to="/admin-subjects/create-new" className="btn btn-primary">
                     <i className="fas fa-plus-circle me-2"></i>เพิ่มรายวิชา
                   </Link>
                 </div>
