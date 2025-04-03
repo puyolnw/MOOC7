@@ -1,5 +1,14 @@
 import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 import PrivateRoute from '../hooks/PrivateRoute';
+import AdminCreditbankpage from '../pages/Admin/AdminCreditbank';
+import AdminLessonsbankpage from '../pages/Admin/AdminLessons';
+import AdminQuestionspage from '../pages/Admin/AdminQuestions';
+import AdminQuizzespage from '../pages/Admin/AdminQuizzes';
+import AdminSubjectspage from '../pages/Admin/AdminSubjects';
+
+import AdminAddquestionpage from '../pages/Admin/create/AddQuestions';
+import AdminAddQuizzespage from '../pages/Admin/create/AddQuizzes';
+
 import Home from '../pages/Home';
 import HomeTwo from '../pages/HomeTwo';
 import HomeEight from '../pages/HomeEight';
@@ -28,7 +37,7 @@ import BlogDetails from '../pages/BlogDetails';
 import Login from '../pages/Login';
 import Registration from '../pages/Registration';
 import Contact from '../pages/Contact';
-import AdminDashboard from '../pages/AdminDashboard';
+import AdminDashboard from '../pages/Admin/AdminDashboard';
 import InstructorDashboard from '../pages/InstructorDashboard';
 import InstructorProfile from '../pages/InstructorProfile';
 import InstructorEnrollCourse from '../pages/InstructorEnrolledCourses';
@@ -52,6 +61,7 @@ import StudentSetting from '../pages/StudentSetting';
 import NotFound from '../pages/NotFound';
 
 import StudentCertificate from '../pages/StudentCertificate';
+
 const AppNavigation = () => {
   return (
     <Router>
@@ -84,9 +94,19 @@ const AppNavigation = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/registration" element={<Registration />} />
         <Route path="/contact" element={<Contact />} />
+
         <Route element={<PrivateRoute allowedRoles={["admin"]} />}>
-          <Route path="/admin-dashboard" element={<AdminDashboard />} />
+        <Route path="/admin-dashboard" element={<AdminDashboard />} />
+        <Route path="/admin-creditbank" element={<AdminCreditbankpage/>} />
+        <Route path="/admin-subjects" element={<AdminSubjectspage/>} />
+        <Route path="/admin-lessons" element={<AdminLessonsbankpage/>} />
+        <Route path="/admin-questions" element={<AdminQuestionspage/>} />
+        <Route path="/admin-quizzes" element={<AdminQuizzespage/>} />
+
+        <Route path="/admin-questions/create-new" element={<AdminAddquestionpage/>} />
+        <Route path="/admin-quizzes/create-new" element={<AdminAddQuizzespage />} />
         </Route>
+
         <Route element={<PrivateRoute allowedRoles={["instructor"]} />}>
         <Route path="/instructor-dashboard" element={<InstructorDashboard />} />
         <Route path="/instructor-profile" element={<InstructorProfile />} />

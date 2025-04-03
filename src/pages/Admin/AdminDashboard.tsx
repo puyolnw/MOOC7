@@ -1,6 +1,6 @@
-import Wrapper from '../layouts/Wrapper';
-import AdminDashboardMain from '../dashboard/dashboard-admin/admin-home'
-import SEO from '../components/SEO';
+import Wrapper from '../../layouts/Wrapper';
+import AdminDashboardMain from '../../dashboard/dashboard-admin/admin-home'
+import SEO from '../../components/SEO';
 
 const AdminDashboard = () => {
    return (

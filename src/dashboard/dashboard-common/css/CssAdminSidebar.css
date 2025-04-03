@@ -1,0 +1,203 @@
+/* Menu Item Styling */
+.dashboard__sidebar-menu .menu-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 15px;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    position: relative;
+    text-decoration: none;
+  }
+  
+  .dashboard__sidebar-menu .menu-item:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+  }
+  
+  .dashboard__sidebar-menu .menu-item.active {
+    background-color: rgba(0, 0, 0, 0.08);
+  }
+  
+  .dashboard__sidebar-menu .menu-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    margin-right: 12px;
+    font-size: 16px;
+  }
+  
+  .dashboard__sidebar-menu .menu-text {
+    flex: 1;
+    font-weight: 500;
+  }
+  
+  .dashboard__sidebar-menu .menu-arrow {
+    margin-left: 8px;
+    font-size: 12px;
+    transition: transform 0.3s ease;
+  }
+  
+  .dashboard__sidebar-menu .menu-item.active .menu-arrow i.fa-chevron-down {
+    transform: rotate(0deg);
+  }
+  
+  .dashboard__sidebar-menu .menu-item .menu-arrow i.fa-chevron-right {
+    transform: rotate(0deg);
+  }
+  
+  /* Submenu Styling */
+  .dashboard__sidebar-menu .submenu {
+    max-height: 0;
+    overflow: hidden;
+    padding-left: 36px;
+    margin: 0;
+    transition: max-height 0.3s ease, padding 0.3s ease;
+    list-style: none;
+  }
+  
+  .dashboard__sidebar-menu .submenu.open {
+    max-height: 500px; /* Adjust based on your needs */
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+  
+  .dashboard__sidebar-menu .submenu li {
+    margin-bottom: 10px;
+  }
+  
+  .dashboard__sidebar-menu .submenu li:last-child {
+    margin-bottom: 0;
+  }
+  
+  .dashboard__sidebar-menu .submenu-link {
+    display: flex;
+    align-items: center;
+    padding: 6px 10px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    font-size: 14px;
+  }
+  
+  .dashboard__sidebar-menu .submenu-link:hover {
+    background-color: rgba(0, 0, 0, 0.03);
+  }
+  
+  .dashboard__sidebar-menu .submenu-icon {
+    font-size: 6px;
+    margin-right: 10px;
+    opacity: 0.7;
+  }
+  
+  /* Improve overall sidebar appearance */
+  .dashboard__sidebar-wrap {
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
+    padding: 25px 20px;
+  }
+  
+  .dashboard__sidebar-title .title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 0;
+  }
+  
+  .dashboard__sidebar-menu .list-wrap {
+    padding: 0;
+    margin: 0;
+    list-style: none;
+  }
+  
+  .dashboard__sidebar-menu .has-submenu {
+    margin-bottom: 5px;
+  }
+  .dashboard__sidebar-menu .has-submenu .submenu {
+    padding-left: 20px;
+    margin-top: 5px;
+    display: none;
+  }
+  
+  .dashboard__sidebar-menu .has-submenu .submenu.open {
+    display: block;
+  }
+  
+  .dashboard__sidebar-menu .has-submenu .submenu li {
+    margin-bottom: 5px;
+  }
+  
+  .dashboard__sidebar-menu .has-submenu .submenu li a {
+    font-size: 0.9em;
+    padding: 5px 10px;
+    display: flex;
+    align-items: center;
+    color: #6c757d;
+    text-decoration: none;
+    transition: all 0.3s ease;
+  }
+  
+  .dashboard__sidebar-menu .has-submenu .submenu li a:hover {
+    color: #0d6efd;
+    background-color: rgba(13, 110, 253, 0.05);
+    border-radius: 5px;
+  }
+  
+  .dashboard__sidebar-menu .has-submenu .submenu li a.active {
+    color: #0d6efd;
+    background-color: rgba(13, 110, 253, 0.1);
+    border-radius: 5px;
+    font-weight: 500;
+  }
+  
+  .dashboard__sidebar-menu .has-submenu .submenu li a i {
+    margin-right: 8px;
+    font-size: 8px;
+  }
+  
+  .submenu-arrow {
+    margin-left: 5px;
+    transition: transform 0.3s ease;
+  }
+  
+  .menu-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 15px;
+    color: #495057;
+    text-decoration: none;
+    border-radius: 5px;
+    margin-bottom: 5px;
+    transition: all 0.3s ease;
+  }
+  
+  .menu-item:hover {
+    background-color: rgba(13, 110, 253, 0.05);
+    color: #0d6efd;
+  }
+  
+  .menu-item.active, .menu-item.parent-active {
+    background-color: rgba(13, 110, 253, 0.1);
+    color: #0d6efd;
+    font-weight: 500;
+  }
+  
+  .menu-icon {
+    margin-right: 10px;
+    width: 20px;
+    text-align: center;
+  }
+  
+  .menu-text {
+    flex: 1;
+  }
+  
+  .menu-arrow {
+    margin-left: 5px;
+  }
+  
+  .submenu-icon {
+    font-size: 8px;
+    margin-right: 8px;
+  }
+  

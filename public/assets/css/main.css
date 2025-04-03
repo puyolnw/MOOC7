@@ -19078,6 +19078,9 @@ blockquote > p {
 .dashboard__sidebar-menu .list-wrap li.active a {
   color: var(--tg-theme-primary);
 }
+
+
+
 .dashboard__content-wrap {
   background: var(--tg-common-color-white);
   border-radius: 6px;

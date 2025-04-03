@@ -1,14 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import Plyr from 'plyr';
-import 'plyr/dist/plyr.css'; // นำเข้า CSS ของ Plyr โดยตรง
+import 'plyr/dist/plyr.css';
 import './LessonVideo.css';
 
 interface LessonVideoProps {
   onComplete: () => void;
   currentLesson: string;
+  youtubeId?: string; // เพิ่ม prop สำหรับรับ YouTube ID
 }
 
-const LessonVideo = ({ onComplete, currentLesson }: LessonVideoProps) => {
+const LessonVideo = ({ onComplete, currentLesson, youtubeId = 'glEiPXAYE-U' }: LessonVideoProps) => {
    const containerRef = useRef<HTMLDivElement>(null);
    const playerRef = useRef<Plyr | null>(null);
    const [progress, setProgress] = useState(0);
@@ -22,23 +23,25 @@ const LessonVideo = ({ onComplete, currentLesson }: LessonVideoProps) => {
             containerRef.current.removeChild(containerRef.current.firstChild);
          }
 
-         const videoElement = document.createElement('video');
-         videoElement.setAttribute('playsInline', '');
-         videoElement.setAttribute('controls', '');
-         videoElement.setAttribute('data-poster', '/assets/img/bg/video_bg.webp');
-
-         const sourceMP4 = document.createElement('source');
-         // ใช้วิดีโอตัวอย่างจากอินเทอร์เน็ต
-         sourceMP4.src = 'https://cdn.plyr.io/static/demo/View_From_A_Blue_Moon_Trailer-720p.mp4';
-         sourceMP4.type = 'video/mp4';
+         // สร้าง div สำหรับ Plyr YouTube
+         const videoDiv = document.createElement('div');
+         videoDiv.className = 'plyr__video-embed';
          
-         videoElement.appendChild(sourceMP4);
-         containerRef.current.appendChild(videoElement);
+         // สร้าง iframe สำหรับ YouTube
+         const iframe = document.createElement('iframe');
+         iframe.src = `https://www.youtube.com/embed/${youtubeId}?origin=${window.location.origin}&amp;iv_load_policy=3&amp;modestbranding=1&amp;playsinline=1&amp;showinfo=0&amp;rel=0&amp;enablejsapi=1`;
+         iframe.allowFullscreen = true;
+         iframe.allow = "autoplay";
+         
+         videoDiv.appendChild(iframe);
+         containerRef.current.appendChild(videoDiv);
 
-         playerRef.current = new Plyr(videoElement, {
+         // สร้าง Plyr player สำหรับ YouTube
+         playerRef.current = new Plyr(videoDiv, {
             controls: ['play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'fullscreen']
          });
 
+         // ติดตามความคืบหน้าของวิดีโอ
          playerRef.current.on('timeupdate', () => {
             const currentProgress = (playerRef.current?.currentTime || 0) / (playerRef.current?.duration || 1) * 100;
             setProgress(currentProgress);
@@ -58,14 +61,9 @@ const LessonVideo = ({ onComplete, currentLesson }: LessonVideoProps) => {
             setIsPlaying(false);
          });
 
-         // ตรวจสอบว่าวิดีโอโหลดสำเร็จหรือไม่
-         videoElement.addEventListener('error', (e) => {
-            console.error('Video error:', e);
-         });
-
-         // ตรวจสอบว่าวิดีโอพร้อมเล่นหรือไม่
-         videoElement.addEventListener('canplay', () => {
-            console.log('Video can play');
+         // ตรวจสอบข้อผิดพลาด
+         playerRef.current.on('error', (e) => {
+            console.error('Player error:', e);
          });
       }
 
@@ -73,11 +71,8 @@ const LessonVideo = ({ onComplete, currentLesson }: LessonVideoProps) => {
          if (playerRef.current) {
             playerRef.current.destroy();
          }
-         if (containerRef.current?.firstChild) {
-            containerRef.current.removeChild(containerRef.current.firstChild);
-         }
       };
-   }, [currentLesson]);
+   }, [currentLesson, youtubeId]);
 
    // รีเซ็ตสถานะเมื่อเปลี่ยนบทเรียน
    useEffect(() => {
