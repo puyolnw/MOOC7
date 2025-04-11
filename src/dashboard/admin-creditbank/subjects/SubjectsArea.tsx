@@ -1,109 +1,69 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import axios from "axios";
+import { toast } from "react-toastify";
 import DashboardSidebar from "../../dashboard-common/AdminSidebar";
 import DashboardBanner from "../../dashboard-common/AdminBanner";
 
 // Define subject type
 interface Subject {
-  id: number;
-  coverImage: string;
-  title: string;
-  instructor: string;
-  students: number;
-  category: string;
+  subject_id: number;
+  subject_code: string;
+  subject_name: string;
+  cover_image: string;
+  department_name: string;
+  instructor_count: number;
+  lesson_count: number;
+  course_count: number;
   status: "active" | "inactive" | "draft";
+  created_at: string;
 }
 
-// Sample data for subjects
-const sampleSubjects: Subject[] = [
-  {
-    id: 1,
-    coverImage: "/assets/img/courses/course_thumb01.jpg",
-    title: "การพัฒนาเว็บแอปพลิเคชันด้วย React",
-    instructor: "อาจารย์สมชาย ใจดี",
-    students: 120,
-    category: "เทคโนโลยีสารสนเทศ",
-    status: "active",
-  },
-  {
-    id: 2,
-    coverImage: "/assets/img/courses/course_thumb02.jpg",
-    title: "การวิเคราะห์ข้อมูลด้วย Python",
-    instructor: "ดร.วิชัย นักวิจัย",
-    students: 85,
-    category: "วิทยาการข้อมูล",
-    status: "active",
-  },
-  {
-    id: 3,
-    coverImage: "/assets/img/courses/course_thumb03.jpg",
-    title: "หลักการตลาดดิจิทัล",
-    instructor: "รศ.ดร.มานี ธุรกิจ",
-    students: 210,
-    category: "บริหารธุรกิจ",
-    status: "inactive",
-  },
-  {
-    id: 4,
-    coverImage: "/assets/img/courses/course_thumb04.jpg",
-    title: "ภาษาอังกฤษเพื่อการสื่อสารธุรกิจ",
-    instructor: "อาจารย์แอนนา สมิท",
-    students: 150,
-    category: "ภาษา",
-    status: "active",
-  },
-  {
-    id: 5,
-    coverImage: "/assets/img/courses/course_thumb05.jpg",
-    title: "การออกแบบกราฟิกสำหรับสื่อดิจิทัล",
-    instructor: "อาจารย์ศิลปิน วาดเก่ง",
-    students: 95,
-    category: "ศิลปะและการออกแบบ",
-    status: "draft",
-  },
-  {
-    id: 6,
-    coverImage: "/assets/img/courses/course_thumb06.jpg",
-    title: "การบริหารโครงการ",
-    instructor: "ผศ.ดร.บริหาร จัดการ",
-    students: 75,
-    category: "บริหารธุรกิจ",
-    status: "active",
-  },
-  {
-    id: 7,
-    coverImage: "/assets/img/courses/course_thumb07.jpg",
-    title: "การเขียนโปรแกรมเชิงวัตถุด้วย Java",
-    instructor: "อาจารย์โปรแกรมเมอร์ เก่งมาก",
-    students: 110,
-    category: "เทคโนโลยีสารสนเทศ",
-    status: "active",
-  },
-  {
-    id: 8,
-    coverImage: "/assets/img/courses/course_thumb08.jpg",
-    title: "การบัญชีเบื้องต้น",
-    instructor: "รศ.บัญชี การเงิน",
-    students: 65,
-    category: "บัญชีและการเงิน",
-    status: "inactive",
-  },
-];
-
 const SubjectsArea = () => {
-  const [subjects, setSubjects] = useState<Subject[]>(sampleSubjects);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [modalImage, setModalImage] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
+  
   const closeModal = () => setModalImage(null);
-
   const subjectsPerPage = 10;
+
+  // Fetch subjects from API
+  useEffect(() => {
+    const fetchSubjects = async () => {
+      setIsLoading(true);
+      setError(null);
+      
+      try {
+        const token = localStorage.getItem("token");
+        const response = await axios.get(`${apiUrl}/api/courses/subjects`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
+        
+        if (response.data.success) {
+          setSubjects(response.data.subjects);
+        } else {
+          setError("ไม่สามารถโหลดข้อมูลรายวิชาได้");
+        }
+      } catch (err) {
+        console.error("Error fetching subjects:", err);
+        setError("เกิดข้อผิดพลาดในการโหลดข้อมูลรายวิชา");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchSubjects();
+  }, [apiUrl]);
 
   // Filter subjects based on search term
   const filteredSubjects = subjects.filter(subject =>
-    subject.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    subject.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    subject.instructor.toLowerCase().includes(searchTerm.toLowerCase())
+    subject.subject_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    subject.subject_code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (subject.department_name && subject.department_name.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   // Calculate pagination
@@ -113,9 +73,30 @@ const SubjectsArea = () => {
   const totalPages = Math.ceil(filteredSubjects.length / subjectsPerPage);
 
   // Handle delete subject
-  const handleDeleteSubject = (id: number) => {
+  const handleDeleteSubject = async (id: number) => {
     if (window.confirm("คุณต้องการลบรายวิชานี้ใช่หรือไม่?")) {
-      setSubjects(subjects.filter(subject => subject.id !== id));
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) {
+          toast.error("กรุณาเข้าสู่ระบบก่อนดำเนินการ");
+          return;
+        }
+        
+        const response = await axios.delete(`${apiUrl}/api/courses/subjects/${id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        if (response.data.success) {
+          toast.success("ลบรายวิชาสำเร็จ");
+          // อัปเดตรายการรายวิชาโดยลบรายวิชาที่เพิ่งลบออกไป
+          setSubjects(subjects.filter(subject => subject.subject_id !== id));
+        } else {
+          toast.error(response.data.message || "ไม่สามารถลบรายวิชาได้");
+        }
+      } catch (err) {
+        console.error("Error deleting subject:", err);
+        toast.error("เกิดข้อผิดพลาดในการลบรายวิชา");
+      }
     }
   };
 
@@ -216,139 +197,153 @@ const SubjectsArea = () => {
                   </Link>
                 </div>
 
-                {/* Subjects table */}
-                <div className="card shadow-sm border-0">
-                  <div className="card-body p-0">
-                    <div className="table-responsive">
-                      <table className="table table-hover table-sm mb-0 align-middle table-striped">
-                        <thead className="table-light">
-                          <tr>
-                            <th style={{ width: "80px" }}>รูปปก</th>
-                            <th>ชื่อวิชา</th>
-                            <th>ผู้สอน</th>
-                            <th>นักเรียน</th>
-                            <th>หมวดหมู่</th>
-                            <th>สถานะ</th>
-                            <th style={{ width: "100px" }}>จัดการ</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {currentSubjects.length > 0 ? (
-                            currentSubjects.map((subject) => (
-                              <tr key={subject.id}>
-                                <td>
-                                  <img
-                                    src={subject.coverImage}
-                                    alt={subject.title}
-                                    className="img-thumbnail"
-                                    style={{ width: "70px", height: "50px", objectFit: "cover", cursor: "pointer" }}
-                                    onClick={() => setModalImage(subject.coverImage)}
-                                  />
-                                </td>
-                                <td>{subject.title}</td>
-                                <td>{subject.instructor}</td>
-                                <td>{subject.students}</td>
-                                <td>{subject.category}</td>
-                                <td><StatusBadge status={subject.status} /></td>
-                                <td>
-                                  <div className="d-flex justify-content-center gap-3">
-                                    <Link to={`/admin-subjects/edit-subject/${subject.id}`} className="text-primary">
-                                      <i className="fas fa-edit icon-action"></i>
-                                    </Link>
-                                    <i
-                                      className="fas fa-trash-alt text-danger icon-action"
-                                      style={{ cursor: "pointer" }}
-                                      onClick={() => handleDeleteSubject(subject.id)}
-                                    ></i>
-                                  </div>
-                                </td>
-                              </tr>
-                            ))
-                          ) : (
-                            <tr>
-                              <td colSpan={7} className="text-center py-4">ไม่พบข้อมูลรายวิชา</td>
-                            </tr>
-                          )}
-                        </tbody>
-                      </table>
+                {/* Loading and Error states */}
+                {isLoading ? (
+                  <div className="text-center py-5">
+                    <div className="spinner-border text-primary" role="status">
+                      <span className="visually-hidden">กำลังโหลด...</span>
                     </div>
+                    <p className="mt-3">กำลังโหลดข้อมูลรายวิชา...</p>
                   </div>
-                  {totalPages > 1 && (
-                    <div className="card-footer bg-light text-center">
-                      <nav aria-label="Page navigation">
-                        <ul className="pagination justify-content-center mb-0">
-                          <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
-                            <button
-                              className="page-link"
-                              onClick={() => setCurrentPage(currentPage - 1)}
-                              disabled={currentPage === 1}
-                            >
-                              <i className="fas fa-chevron-left"></i>
-                            </button>
-                          </li>
-                          {Array.from({ length: totalPages }).map((_, index) => (
-                            <li key={index} className={`page-item ${currentPage === index + 1 ? 'active' : ''}`}>
-                              <button className="page-link" onClick={() => setCurrentPage(index + 1)}>
-                                {index + 1}
+                ) : error ? (
+                  <div className="alert alert-danger" role="alert">
+                    <i className="fas fa-exclamation-circle me-2"></i>
+                    {error}
+                  </div>
+                ) : (
+                  /* Subjects table */
+                  <div className="card shadow-sm border-0">
+                    <div className="card-body p-0">
+                      <div className="table-responsive">
+                        <table className="table table-hover table-sm mb-0 align-middle table-striped">
+                          <thead className="table-light">
+                            <tr>
+                              <th style={{ width: "80px" }}>รูปปก</th>
+                              <th style={{ width: "100px" }}>รหัสวิชา</th>
+                              <th>ชื่อวิชา</th>
+                              <th>ผู้สอน</th>
+                              <th>บทเรียน</th>
+                              <th>หมวดหมู่</th>
+                              <th>สถานะ</th>
+                              <th style={{ width: "100px" }}>จัดการ</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {currentSubjects.length > 0 ? (
+                              currentSubjects.map((subject) => (
+                                <tr key={subject.subject_id}>
+                                  <td>
+                                    <img
+                                      src={subject.cover_image ? `${apiUrl}/${subject.cover_image}` : "/assets/img/courses/default-course.jpg"}
+                                      alt={subject.subject_name}
+                                      className="img-thumbnail"
+                                      style={{ width: "70px", height: "50px", objectFit: "cover", cursor: "pointer" }}
+                                      onClick={() => setModalImage(subject.cover_image ? `${apiUrl}/${subject.cover_image}` : "/assets/img/courses/default-course.jpg")}
+                                      onError={(e) => {
+                                        (e.target as HTMLImageElement).src = "/assets/img/courses/default-course.jpg";
+                                      }}
+                                    />
+                                  </td>
+                                  <td>{subject.subject_code}</td>
+                                  <td>{subject.subject_name}</td>
+                                  <td>
+                                    <span className="badge bg-info-subtle text-info rounded-pill px-3 py-1">
+                                      {subject.instructor_count} คน
+                                    </span>
+                                  </td>
+                                  <td>
+                                    <span className="badge bg-primary-subtle text-primary rounded-pill px-3 py-1">
+                                      {subject.lesson_count} บทเรียน
+                                    </span>
+                                  </td>
+                                  <td>{subject.department_name || "ไม่ระบุ"}</td>
+                                  <td><StatusBadge status={subject.status} /></td>
+                                  <td>
+                                    <div className="d-flex justify-content-center gap-3">
+                                      <Link to={`/admin-subjects/edit-subject/${subject.subject_id}`} className="text-primary">
+                                        <i className="fas fa-edit icon-action"></i>
+                                      </Link>
+                                      <i
+                                        className="fas fa-trash-alt text-danger icon-action"
+                                        style={{ cursor: "pointer" }}
+                                        onClick={() => handleDeleteSubject(subject.subject_id)}
+                                      ></i>
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))
+                            ) : (
+                              <tr>
+                                <td colSpan={8} className="text-center py-4">ไม่พบข้อมูลรายวิชา</td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                    {totalPages > 1 && (
+                      <div className="card-footer bg-light text-center">
+                        <nav aria-label="Page navigation">
+                          <ul className="pagination justify-content-center mb-0">
+                            <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+                              <button
+                                className="page-link"
+                                onClick={() => setCurrentPage(currentPage - 1)}
+                                disabled={currentPage === 1}
+                              >
+                                <i className="fas fa-chevron-left small"></i>
                               </button>
                             </li>
-                          ))}
-                          <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
-                            <button
-                              className="page-link"
-                              onClick={() => setCurrentPage(currentPage + 1)}
-                              disabled={currentPage === totalPages}
-                            >
-                              <i className="fas fa-chevron-right"></i>
-                            </button>
-                          </li>
-                        </ul>
-                        <p className="mt-2 mb-0 small text-muted">
-                          แสดง {indexOfFirstSubject + 1} ถึง {Math.min(indexOfLastSubject, filteredSubjects.length)} จากทั้งหมด {filteredSubjects.length} รายการ
-                        </p>
-                      </nav>
+                            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                              <li key={page} className={`page-item ${currentPage === page ? 'active' : ''}`}>
+                                <button
+                                  className="page-link"
+                                  onClick={() => setCurrentPage(page)}
+                                >
+                                  {page}
+                                </button>
+                              </li>
+                            ))}
+                            <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
+                              <button
+                                className="page-link"
+                                onClick={() => setCurrentPage(currentPage + 1)}
+                                disabled={currentPage === totalPages}
+                                >
+                                  <i className="fas fa-chevron-right small"></i>
+                                </button>
+                              </li>
+                            </ul>
+                          </nav>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
-
-                           {/* Modal ภาพ */}
-                           {modalImage && (
-                  <div
-                    className="modal-image"
-                    style={{
-                      position: "fixed",
-                      top: 0,
-                      left: 0,
-                      width: "100vw",
-                      height: "100vh",
-                      backgroundColor: "rgba(0,0,0,0.6)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      zIndex: 1050,
-                    }}
-                    onClick={closeModal}
-                  >
-                    <img
-                      src={modalImage}
-                      alt="Subject"
-                      style={{
-                        maxHeight: "90%",
-                        maxWidth: "90%",
-                        borderRadius: "10px",
-                        boxShadow: "0 0 20px rgba(255,255,255,0.2)",
-                      }}
-                    />
-                  </div>
-                )}
               </div>
             </div>
           </div>
         </div>
-      </div>
-    </section>
-  );
-};
-
-export default SubjectsArea;
-
+  
+        {/* Image Preview Modal */}
+        {modalImage && (
+          <div className="modal fade show" style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+            <div className="modal-dialog modal-dialog-centered">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title">ภาพปกรายวิชา</h5>
+                  <button type="button" className="btn-close" onClick={closeModal}></button>
+                </div>
+                <div className="modal-body text-center">
+                  <img src={modalImage} alt="Subject Cover" className="img-fluid" />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </section>
+    );
+  };
+  
+  export default SubjectsArea;
+  

@@ -160,7 +160,7 @@ const sampleCourses: Course[] = [
     };
   
     return (
-      <section className="dashboard__area section-pb-120">
+      <section className="dashboard__area section-pb-120 bg-red-1000 min-h-screen">
         <div className="container">
           <DashboardBanner />
           <div className="dashboard__inner-wrap">
@@ -253,7 +253,7 @@ const sampleCourses: Course[] = [
                                     />
                                   </td>
                                   <td>{course.title}</td>
-                                  <td>{course.lessonCount} บทเรียน</td>
+                                  <td>{course.lessonCount} วิชา</td>
                                   <td>{course.students} คน</td>
                                   <td>{course.branch}</td>
                                   <td><StatusBadge status={course.status} /></td>

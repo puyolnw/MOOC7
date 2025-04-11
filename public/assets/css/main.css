@@ -18856,6 +18856,7 @@ blockquote > p {
     15. Dashboard
 ===============================*/
 .dashboard__area {
+  background: rgb(179, 178, 178);
   margin-top: -170px;
   position: relative;
   z-index: 2;

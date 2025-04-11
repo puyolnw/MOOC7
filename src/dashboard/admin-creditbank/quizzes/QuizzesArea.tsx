@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import axios from "axios";
 import DashboardSidebar from "../../dashboard-common/AdminSidebar";
 import DashboardBanner from "../../dashboard-common/AdminBanner";
+import { toast } from "react-toastify";
 
 // Define quiz type
 type QuizType = "MC" | "TF" | "SC" | "FB" | "MIX";
@@ -18,167 +20,69 @@ interface Quiz {
   creator: string;
 }
 
-// Sample data for quizzes
-const sampleQuizzes: Quiz[] = [
-  {
-    id: 1,
-    title: "แบบทดสอบ React Hooks",
-    lessonCode: "CS101-L1",
-    lessonTitle: "แนะนำการใช้งาน React Hooks",
-    questionCount: 10,
-    type: "MC",
-    status: "active",
-    creator: "อาจารย์สมชาย ใจดี",
-  },
-  {
-    id: 2,
-    title: "แบบทดสอบ React Components",
-    lessonCode: "CS101-L2",
-    lessonTitle: "การสร้าง Component ใน React",
-    questionCount: 8,
-    type: "TF",
-    status: "active",
-    creator: "อาจารย์สมชาย ใจดี",
-  },
-  {
-    id: 3,
-    title: "แบบทดสอบ State และ Props",
-    lessonCode: "CS101-L3",
-    lessonTitle: "การจัดการ State และ Props",
-    questionCount: 12,
-    type: "SC",
-    status: "active",
-    creator: "อาจารย์สมชาย ใจดี",
-  },
-  {
-    id: 4,
-    title: "แบบทดสอบการวิเคราะห์ข้อมูลเบื้องต้น",
-    lessonCode: "DS201-L1",
-    lessonTitle: "การวิเคราะห์ข้อมูลเบื้องต้นด้วย Python",
-    questionCount: 15,
-    type: "FB",
-    status: "active",
-    creator: "ดร.วิชัย นักวิจัย",
-  },
-  {
-    id: 5,
-    title: "แบบทดสอบการใช้งาน Pandas",
-    lessonCode: "DS201-L2",
-    lessonTitle: "การใช้งาน Pandas สำหรับจัดการข้อมูล",
-    questionCount: 10,
-    type: "MC",
-    status: "active",
-    creator: "ดร.วิชัย นักวิจัย",
-  },
-  {
-    id: 6,
-    title: "แบบทดสอบการสร้างแบบจำลอง",
-    lessonCode: "DS201-L3",
-    lessonTitle: "การสร้างแบบจำลองด้วย Scikit-learn",
-    questionCount: 0,
-    type: "MIX",
-    status: "draft",
-    creator: "ดร.วิชัย นักวิจัย",
-  },
-  {
-    id: 7,
-    title: "แบบทดสอบหลักการตลาดดิจิทัล",
-    lessonCode: "MK301-L1",
-    lessonTitle: "หลักการตลาดดิจิทัลเบื้องต้น",
-    questionCount: 20,
-    type: "TF",
-    status: "active",
-    creator: "รศ.ดร.มานี ธุรกิจ",
-  },
-  {
-    id: 8,
-    title: "แบบทดสอบพฤติกรรมผู้บริโภคออนไลน์",
-    lessonCode: "MK301-L2",
-    lessonTitle: "การวิเคราะห์พฤติกรรมผู้บริโภคออนไลน์",
-    questionCount: 15,
-    type: "SC",
-    status: "active",
-    creator: "รศ.ดร.มานี ธุรกิจ",
-  },
-  {
-    id: 9,
-    title: "แบบทดสอบกลยุทธ์การตลาดบนสื่อสังคมออนไลน์",
-    lessonCode: "MK301-L3",
-    lessonTitle: "กลยุทธ์การตลาดบนสื่อสังคมออนไลน์",
-    questionCount: 12,
-    type: "FB",
-    status: "inactive",
-    creator: "รศ.ดร.มานี ธุรกิจ",
-  },
-  {
-    id: 10,
-    title: "แบบทดสอบการวางแผนแคมเปญการตลาดดิจิทัล",
-    lessonCode: "MK301-L4",
-    lessonTitle: "การวางแผนแคมเปญการตลาดดิจิทัล",
-    questionCount: 0,
-    type: "MIX",
-    status: "draft",
-    creator: "รศ.ดร.มานี ธุรกิจ",
-  },
-  {
-    id: 11,
-    title: "แบบทดสอบไวยากรณ์ภาษาอังกฤษ",
-    lessonCode: "EN202-L1",
-    lessonTitle: "ไวยากรณ์ภาษาอังกฤษสำหรับการสื่อสารธุรกิจ",
-    questionCount: 25,
-    type: "MC",
-    status: "active",
-    creator: "อาจารย์แอนนา สมิท",
-  },
-  {
-    id: 12,
-    title: "แบบทดสอบการเขียนอีเมลธุรกิจ",
-    lessonCode: "EN202-L2",
-    lessonTitle: "การเขียนอีเมลธุรกิจภาษาอังกฤษ",
-    questionCount: 15,
-    type: "FB",
-    status: "active",
-    creator: "อาจารย์แอนนา สมิท",
-  },
-  {
-    id: 13,
-    title: "แบบทดสอบการนำเสนองาน",
-    lessonCode: "EN202-L3",
-    lessonTitle: "การนำเสนองานเป็นภาษาอังกฤษ",
-    questionCount: 10,
-    type: "SC",
-    status: "inactive",
-    creator: "อาจารย์แอนนา สมิท",
-  },
-  {
-    id: 14,
-    title: "แบบทดสอบหลักการออกแบบกราฟิก",
-    lessonCode: "AR105-L1",
-    lessonTitle: "หลักการออกแบบกราฟิก",
-    questionCount: 18,
-    type: "TF",
-    status: "active",
-    creator: "อาจารย์ศิลปิน วาดเก่ง",
-  },
-  {
-    id: 15,
-    title: "แบบทดสอบการใช้งาน Adobe Photoshop",
-    lessonCode: "AR105-L2",
-    lessonTitle: "การใช้งาน Adobe Photoshop เบื้องต้น",
-    questionCount: 20,
-    type: "MC",
-    status: "active",
-    creator: "อาจารย์ศิลปิน วาดเก่ง",
-  },
-];
-
 const QuizzesArea = () => {
-  const [quizzes, setQuizzes] = useState<Quiz[]>(sampleQuizzes);
+  const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const quizzesPerPage = 10;
 
-  // Filter quizzes based on search term
+  // Fetch quizzes from API
+  useEffect(() => {
+    const fetchQuizzes = async () => {
+      try {
+        setLoading(true);
+        const apiUrl = import.meta.env.VITE_API_URL;
+        const token = localStorage.getItem("token");
+        
+        if (!token) {
+          setError("ไม่พบข้อมูลการเข้าสู่ระบบ กรุณาเข้าสู่ระบบใหม่");
+          setLoading(false);
+          return;
+        }
+        
+        const response = await axios.get(`${apiUrl}/api/courses/quizzes`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          },
+          params: {
+            search: searchTerm !== "" ? searchTerm : undefined
+          }
+        });
+        
+        if (response.data && response.data.quizzes) {
+          // Transform API response to match our Quiz interface
+          const transformedQuizzes: Quiz[] = response.data.quizzes.map((quiz: any) => ({
+            id: quiz.quiz_id,
+            title: quiz.title,
+            lessonCode: quiz.lessonCode || "",
+            lessonTitle: quiz.lessonTitle || "",
+            questionCount: quiz.question_count || 0,
+            type: quiz.type || "MIX",
+            status: quiz.status || "draft",
+            creator: quiz.creator || "ไม่ระบุ"
+          }));
+          
+          setQuizzes(transformedQuizzes);
+          setError("");
+        } else {
+          setQuizzes([]);
+          setError("ไม่พบข้อมูลแบบทดสอบ");
+        }
+      } catch (error) {
+        console.error("Error fetching quizzes:", error);
+        setError("เกิดข้อผิดพลาดในการดึงข้อมูลแบบทดสอบ");
+        setQuizzes([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchQuizzes();
+  }, [searchTerm]); // Re-fetch when search term changes
+
+  // Filter quizzes based on search term (client-side filtering as backup)
   const filteredQuizzes = quizzes.filter(quiz =>
     quiz.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     quiz.lessonCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -192,9 +96,30 @@ const QuizzesArea = () => {
   const totalPages = Math.ceil(filteredQuizzes.length / quizzesPerPage);
 
   // Handle delete quiz
-  const handleDeleteQuiz = (id: number) => {
+  const handleDeleteQuiz = async (id: number) => {
     if (window.confirm("คุณต้องการลบแบบทดสอบนี้ใช่หรือไม่?")) {
-      setQuizzes(quizzes.filter(quiz => quiz.id !== id));
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL;
+        const token = localStorage.getItem("token");
+        
+        if (!token) {
+          toast.error("ไม่พบข้อมูลการเข้าสู่ระบบ กรุณาเข้าสู่ระบบใหม่");
+          return;
+        }
+        
+        await axios.delete(`${apiUrl}/api/courses/quizzes/${id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        
+        // Remove the deleted quiz from state
+        setQuizzes(quizzes.filter(quiz => quiz.id !== id));
+        toast.success("ลบแบบทดสอบสำเร็จ");
+      } catch (error) {
+        console.error("Error deleting quiz:", error);
+        toast.error("เกิดข้อผิดพลาดในการลบแบบทดสอบ");
+      }
     }
   };
 
@@ -270,7 +195,6 @@ const QuizzesArea = () => {
     draft: quizzes.filter(q => q.status === "draft").length,
   };
 
-  const totalQuestions = quizzes.reduce((sum, quiz) => sum + quiz.questionCount, 0);
 
   return (
     <section className="dashboard__area section-pb-120">
@@ -301,12 +225,7 @@ const QuizzesArea = () => {
                         <h5 className="mb-0">{countByStatus.active} ชุด</h5>
                       </div>
                     </div>
-                    <div className="col-md-3">
-                      <div className="bg-info-subtle rounded p-3 text-center">
-                        <h6 className="mb-1 text-info">จำนวนคำถาม</h6>
-                        <h5 className="mb-0">{totalQuestions} ข้อ</h5>
-                      </div>
-                    </div>
+                    
                     <div className="col-md-3">
                       <div className="bg-secondary-subtle rounded p-3 text-center">
                         <h6 className="mb-1 text-secondary">ฉบับร่าง</h6>
@@ -338,103 +257,121 @@ const QuizzesArea = () => {
                   </Link>
                 </div>
 
-                {/* Quizzes table */}
-                <div className="card shadow-sm border-0">
-                  <div className="card-body p-0">
-                    <div className="table-responsive">
-                      <table className="table table-hover table-sm mb-0 align-middle table-striped">
-                        <thead className="table-light">
-                          <tr>
-                            <th>ชื่อแบบทดสอบ</th>
-                            <th>รหัสบทเรียน</th>
-                            <th className="text-center">จำนวนคำถาม</th>
-                            <th className="text-center">ประเภท</th>
-                            <th>สถานะ</th>
-                            <th style={{ width: "100px" }}>จัดการ</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {currentQuizzes.length > 0 ? (
-                            currentQuizzes.map((quiz) => (
-                              <tr key={quiz.id}>
-                                <td>
-                                  <div className="d-flex flex-column">
-                                    <span className="fw-medium">{quiz.title}</span>
-                                    <small className="text-muted">{quiz.lessonTitle}</small>
-                                  </div>
-                                </td>
-                                <td>{quiz.lessonCode}</td>
-                                <td className="text-center">
-                                  {quiz.questionCount > 0 ? (
-                                    <span className="fw-medium">{quiz.questionCount} ข้อ</span>
-                                  ) : (
-                                    <span className="text-muted">ไม่มีคำถาม</span>
-                                  )}
-                                </td>
-                                <td className="text-center">
-                                  <QuizTypeBadge type={quiz.type} />
-                                </td>
-                                <td><StatusBadge status={quiz.status} /></td>
-                                <td>
-                                  <div className="d-flex justify-content-center gap-3">
-                                    <Link to={`/admin-creditbank/edit-quiz/${quiz.id}`} className="text-primary">
-                                      <i className="fas fa-edit icon-action"></i>
-                                    </Link>
-                                    <i
-                                      className="fas fa-trash-alt text-danger icon-action"
-                                      style={{ cursor: "pointer" }}
-                                      onClick={() => handleDeleteQuiz(quiz.id)}
-                                    ></i>
-                                  </div>
-                                </td>
-                              </tr>
-                            ))
-                          ) : (
-                            <tr>
-                              <td colSpan={6} className="text-center py-4">ไม่พบข้อมูลแบบทดสอบ</td>
-                            </tr>
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
+                {/* Error message */}
+                {error && (
+                  <div className="alert alert-danger" role="alert">
+                    <i className="fas fa-exclamation-circle me-2"></i>
+                    {error}
                   </div>
-                  {totalPages > 1 && (
-                    <div className="card-footer bg-light text-center">
-                      <nav aria-label="Page navigation">
-                        <ul className="pagination justify-content-center mb-0">
-                          <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
-                            <button
-                              className="page-link"
-                              onClick={() => setCurrentPage(currentPage - 1)}
-                              disabled={currentPage === 1}
-                            >
-                              <i className="fas fa-chevron-left"></i>
-                            </button>
-                          </li>
-                          {Array.from({ length: totalPages }).map((_, index) => (
-                            <li key={index} className={`page-item ${currentPage === index + 1 ? 'active' : ''}`}>
-                              <button className="page-link" onClick={() => setCurrentPage(index + 1)}>
-                                {index + 1}
+                )}
+
+                {/* Loading indicator */}
+                {loading ? (
+                  <div className="text-center py-5">
+                    <div className="spinner-border text-primary" role="status">
+                      <span className="visually-hidden">กำลังโหลด...</span>
+                    </div>
+                    <p className="mt-2">กำลังโหลดข้อมูล...</p>
+                  </div>
+                ) : (
+                  /* Quizzes table */
+                  <div className="card shadow-sm border-0">
+                    <div className="card-body p-0">
+                      <div className="table-responsive">
+                        <table className="table table-hover table-sm mb-0 align-middle table-striped">
+                          <thead className="table-light">
+                            <tr>
+                              <th>ชื่อแบบทดสอบ</th>
+                              <th>รหัสบทเรียน</th>
+                              <th className="text-center">จำนวนคำถาม</th>
+                              <th className="text-center">ประเภท</th>
+                              <th>สถานะ</th>
+                              <th style={{ width: "100px" }}>จัดการ</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {currentQuizzes.length > 0 ? (
+                              currentQuizzes.map((quiz) => (
+                                <tr key={quiz.id}>
+                                  <td>
+                                    <div className="d-flex flex-column">
+                                      <span className="fw-medium">{quiz.title}</span>
+                                      <small className="text-muted">{quiz.lessonTitle}</small>
+                                    </div>
+                                  </td>
+                                  <td>{quiz.lessonCode}</td>
+                                  <td className="text-center">
+                                    {quiz.questionCount > 0 ? (
+                                      <span className="fw-medium">{quiz.questionCount} ข้อ</span>
+                                    ) : (
+                                      <span className="text-muted">ไม่มีคำถาม</span>
+                                    )}
+                                  </td>
+                                  <td className="text-center">
+                                    <QuizTypeBadge type={quiz.type} />
+                                  </td>
+                                  <td><StatusBadge status={quiz.status} /></td>
+                                  <td>
+                                    <div className="d-flex justify-content-center gap-3">
+                                      <Link to={`/admin-creditbank/edit-quiz/${quiz.id}`} className="text-primary">
+                                        <i className="fas fa-edit icon-action"></i>
+                                      </Link>
+                                      <i
+                                        className="fas fa-trash-alt text-danger icon-action"
+                                        style={{ cursor: "pointer" }}
+                                        onClick={() => handleDeleteQuiz(quiz.id)}
+                                      ></i>
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))
+                            ) : (
+                              <tr>
+                                <td colSpan={6} className="text-center py-4">ไม่พบข้อมูลแบบทดสอบ</td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                    {totalPages > 1 && (
+                      <div className="card-footer bg-light text-center">
+                        <nav aria-label="Page navigation">
+                          <ul className="pagination justify-content-center mb-0">
+                            <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+                              <button
+                                className="page-link"
+                                onClick={() => setCurrentPage(currentPage - 1)}
+                                disabled={currentPage === 1}
+                              >
+                                <i className="fas fa-chevron-left"></i>
                               </button>
                             </li>
-                          ))}
-                          <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
-                            <button
-                              className="page-link"
-                              onClick={() => setCurrentPage(currentPage + 1)}
-                              disabled={currentPage === totalPages}
-                            >
-                              <i className="fas fa-chevron-right"></i>
-                            </button>
-                          </li>
-                        </ul>
-                        <p className="mt-2 mb-0 small text-muted">
-                          แสดง {indexOfFirstQuiz + 1} ถึง {Math.min(indexOfLastQuiz, filteredQuizzes.length)} จากทั้งหมด {filteredQuizzes.length} รายการ
-                        </p>
-                      </nav>
-                    </div>
-                  )}
-                </div>
+                            {Array.from({ length: totalPages }).map((_, index) => (
+                              <li key={index} className={`page-item ${currentPage === index + 1 ? 'active' : ''}`}>
+                                <button className="page-link" onClick={() => setCurrentPage(index + 1)}>
+                                  {index + 1}
+                                </button>
+                              </li>
+                            ))}
+                            <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
+                              <button
+                                className="page-link"
+                                onClick={() => setCurrentPage(currentPage + 1)}
+                                disabled={currentPage === totalPages}
+                              >
+                                <i className="fas fa-chevron-right"></i>
+                              </button>
+                            </li>
+                          </ul>
+                          <p className="mt-2 mb-0 small text-muted">
+                            แสดง {indexOfFirstQuiz + 1} ถึง {Math.min(indexOfLastQuiz, filteredQuizzes.length)} จากทั้งหมด {filteredQuizzes.length} รายการ
+                          </p>
+                        </nav>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -445,3 +382,4 @@ const QuizzesArea = () => {
 };
 
 export default QuizzesArea;
+

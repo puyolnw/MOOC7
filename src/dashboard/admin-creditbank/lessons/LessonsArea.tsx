@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import axios from "axios";
+import { toast } from "react-toastify";
 import DashboardSidebar from "../../dashboard-common/AdminSidebar";
 import DashboardBanner from "../../dashboard-common/AdminBanner";
 
@@ -16,173 +18,75 @@ interface Lesson {
   courseName: string;
   status: "active" | "inactive" | "draft";
   testType: TestType;
+  subject?: string; // เพิ่มฟิลด์สำหรับเก็บรายวิชา
 }
 
-// Sample data for lessons
-const sampleLessons: Lesson[] = [
-  {
-    id: 1,
-    title: "แนะนำการใช้งาน React Hooks",
-    hasVideo: true,
-    creator: "อาจารย์สมชาย ใจดี",
-    courseCode: "CS101",
-    courseName: "การพัฒนาเว็บแอปพลิเคชันด้วย React",
-    status: "active",
-    testType: "MC",
-  },
-  {
-    id: 2,
-    title: "การสร้าง Component ใน React",
-    hasVideo: true,
-    creator: "อาจารย์สมชาย ใจดี",
-    courseCode: "CS101",
-    courseName: "การพัฒนาเว็บแอปพลิเคชันด้วย React",
-    status: "active",
-    testType: "TF",
-  },
-  {
-    id: 3,
-    title: "การจัดการ State และ Props",
-    hasVideo: true,
-    creator: "อาจารย์สมชาย ใจดี",
-    courseCode: "CS101",
-    courseName: "การพัฒนาเว็บแอปพลิเคชันด้วย React",
-    status: "active",
-    testType: "SC",
-  },
-  {
-    id: 4,
-    title: "การวิเคราะห์ข้อมูลเบื้องต้นด้วย Python",
-    hasVideo: true,
-    creator: "ดร.วิชัย นักวิจัย",
-    courseCode: "DS201",
-    courseName: "การวิเคราะห์ข้อมูลด้วย Python",
-    status: "active",
-    testType: "FB",
-  },
-  {
-    id: 5,
-    title: "การใช้งาน Pandas สำหรับจัดการข้อมูล",
-    hasVideo: true,
-    creator: "ดร.วิชัย นักวิจัย",
-    courseCode: "DS201",
-    courseName: "การวิเคราะห์ข้อมูลด้วย Python",
-    status: "active",
-    testType: "MC",
-  },
-  {
-    id: 6,
-    title: "การสร้างแบบจำลองด้วย Scikit-learn",
-    hasVideo: false,
-    creator: "ดร.วิชัย นักวิจัย",
-    courseCode: "DS201",
-    courseName: "การวิเคราะห์ข้อมูลด้วย Python",
-    status: "draft",
-    testType: null,
-  },
-  {
-    id: 7,
-    title: "หลักการตลาดดิจิทัลเบื้องต้น",
-    hasVideo: true,
-    creator: "รศ.ดร.มานี ธุรกิจ",
-    courseCode: "MK301",
-    courseName: "หลักการตลาดดิจิทัล",
-    status: "active",
-    testType: "TF",
-  },
-  {
-    id: 8,
-    title: "การวิเคราะห์พฤติกรรมผู้บริโภคออนไลน์",
-    hasVideo: true,
-    creator: "รศ.ดร.มานี ธุรกิจ",
-    courseCode: "MK301",
-    courseName: "หลักการตลาดดิจิทัล",
-    status: "active",
-    testType: "SC",
-  },
-  {
-    id: 9,
-    title: "กลยุทธ์การตลาดบนสื่อสังคมออนไลน์",
-    hasVideo: false,
-    creator: "รศ.ดร.มานี ธุรกิจ",
-    courseCode: "MK301",
-    courseName: "หลักการตลาดดิจิทัล",
-    status: "inactive",
-    testType: "FB",
-  },
-  {
-    id: 10,
-    title: "การวางแผนแคมเปญการตลาดดิจิทัล",
-    hasVideo: false,
-    creator: "รศ.ดร.มานี ธุรกิจ",
-    courseCode: "MK301",
-    courseName: "หลักการตลาดดิจิทัล",
-    status: "draft",
-    testType: null,
-  },
-  {
-    id: 11,
-    title: "ไวยากรณ์ภาษาอังกฤษสำหรับการสื่อสารธุรกิจ",
-    hasVideo: true,
-    creator: "อาจารย์แอนนา สมิท",
-    courseCode: "EN202",
-    courseName: "ภาษาอังกฤษเพื่อการสื่อสารธุรกิจ",
-    status: "active",
-    testType: "MC",
-  },
-  {
-    id: 12,
-    title: "การเขียนอีเมลธุรกิจภาษาอังกฤษ",
-    hasVideo: true,
-    creator: "อาจารย์แอนนา สมิท",
-    courseCode: "EN202",
-    courseName: "ภาษาอังกฤษเพื่อการสื่อสารธุรกิจ",
-    status: "active",
-    testType: "FB",
-  },
-  {
-    id: 13,
-    title: "การนำเสนองานเป็นภาษาอังกฤษ",
-    hasVideo: false,
-    creator: "อาจารย์แอนนา สมิท",
-    courseCode: "EN202",
-    courseName: "ภาษาอังกฤษเพื่อการสื่อสารธุรกิจ",
-    status: "inactive",
-    testType: "SC",
-  },
-  {
-    id: 14,
-    title: "หลักการออกแบบกราฟิก",
-    hasVideo: true,
-    creator: "อาจารย์ศิลปิน วาดเก่ง",
-    courseCode: "AR105",
-    courseName: "การออกแบบกราฟิกสำหรับสื่อดิจิทัล",
-    status: "active",
-    testType: "TF",
-  },
-  {
-    id: 15,
-    title: "การใช้งาน Adobe Photoshop เบื้องต้น",
-    hasVideo: true,
-    creator: "อาจารย์ศิลปิน วาดเก่ง",
-    courseCode: "AR105",
-    courseName: "การออกแบบกราฟิกสำหรับสื่อดิจิทัล",
-    status: "active",
-    testType: "MC",
-  },
-];
-
 const LessonsArea = () => {
-  const [lessons, setLessons] = useState<Lesson[]>(sampleLessons);
+  const [lessons, setLessons] = useState<Lesson[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
   const lessonsPerPage = 10;
+  const apiUrl = import.meta.env.VITE_API_URL;
+
+  // โหลดข้อมูลบทเรียนจาก API
+  useEffect(() => {
+    const fetchLessons = async () => {
+      setIsLoading(true);
+      setError("");
+      
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) {
+          toast.error("กรุณาเข้าสู่ระบบก่อนใช้งาน");
+          setIsLoading(false);
+          return;
+        }
+        
+        const response = await axios.get(`${apiUrl}/api/courses/lessons`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        
+        if (response.data.success) {
+          // แปลงข้อมูลให้ตรงกับ interface
+          const formattedLessons = response.data.lessons.map((lesson: any) => ({
+            id: lesson.lesson_id,
+            title: lesson.title,
+            hasVideo: !!lesson.video_url,
+            creator: lesson.creator_name || "ไม่ระบุ",
+            courseCode: lesson.course_code || "ไม่ระบุ",
+            courseName: lesson.course_name || "ไม่ระบุ",
+            status: lesson.status || "inactive",
+            testType: lesson.quiz_type || null,
+            subject: lesson.subjects && lesson.subjects.length > 0 ? lesson.subjects[0].subject_name : "ไม่มี"
+          }));
+          
+          setLessons(formattedLessons);
+        } else {
+          setError("ไม่สามารถโหลดข้อมูลบทเรียนได้");
+          toast.error("ไม่สามารถโหลดข้อมูลบทเรียนได้");
+        }
+      } catch (error) {
+        console.error("Error fetching lessons:", error);
+        setError("เกิดข้อผิดพลาดในการโหลดข้อมูล");
+        toast.error("เกิดข้อผิดพลาดในการโหลดข้อมูล");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchLessons();
+  }, [apiUrl]);
 
   // Filter lessons based on search term
   const filteredLessons = lessons.filter(lesson =>
     lesson.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     lesson.courseCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    lesson.courseName.toLowerCase().includes(searchTerm.toLowerCase())
+    lesson.courseName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (lesson.subject && lesson.subject.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   // Calculate pagination
@@ -192,9 +96,31 @@ const LessonsArea = () => {
   const totalPages = Math.ceil(filteredLessons.length / lessonsPerPage);
 
   // Handle delete lesson
-  const handleDeleteLesson = (id: number) => {
+  const handleDeleteLesson = async (id: number) => {
     if (window.confirm("คุณต้องการลบบทเรียนนี้ใช่หรือไม่?")) {
-      setLessons(lessons.filter(lesson => lesson.id !== id));
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) {
+          toast.error("กรุณาเข้าสู่ระบบก่อนใช้งาน");
+          return;
+        }
+        
+        const response = await axios.delete(`${apiUrl}/api/courses/lessons/${id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        
+        if (response.data.success) {
+          setLessons(lessons.filter(lesson => lesson.id !== id));
+          toast.success("ลบบทเรียนสำเร็จ");
+        } else {
+          toast.error(response.data.message || "ไม่สามารถลบบทเรียนได้");
+        }
+      } catch (error) {
+        console.error("Error deleting lesson:", error);
+        toast.error("เกิดข้อผิดพลาดในการลบบทเรียน");
+      }
     }
   };
 
@@ -236,8 +162,6 @@ const LessonsArea = () => {
 
   // Test type badge component
   const TestBadge = ({ testType }: { testType: TestType }) => {
-    console.log("Test type:", testType); // เพิ่ม log เพื่อตรวจสอบค่าที่ได้รับ
-    
     if (testType === null || testType === undefined) {
       return <span className="badge bg-secondary-subtle text-secondary rounded-pill px-3 py-1 small">ไม่มี</span>;
     }
@@ -286,7 +210,6 @@ const LessonsArea = () => {
     draft: lessons.filter(l => l.status === "draft").length,
   };
 
-
   return (
     <section className="dashboard__area section-pb-120">
       <div className="container">
@@ -314,7 +237,7 @@ const LessonsArea = () => {
                       <div className="bg-success-subtle rounded p-3 text-center">
                         <h6 className="mb-1 text-success">เปิดใช้งาน</h6>
                         <h5 className="mb-0">{countByStatus.active} บทเรียน</h5>
-                        </div>
+                      </div>
                     </div>
                     <div className="col-md-3">
                       <div className="bg-secondary-subtle rounded p-3 text-center">
@@ -347,101 +270,119 @@ const LessonsArea = () => {
                   </Link>
                 </div>
 
-                {/* Lessons table */}
-                <div className="card shadow-sm border-0">
-                  <div className="card-body p-0">
-                    <div className="table-responsive">
-                      <table className="table table-hover table-sm mb-0 align-middle table-striped">
-                        <thead className="table-light">
-                          <tr>
-                            <th>ชื่อบทเรียน</th>
-                            <th className="text-center">วิดีโอการสอน</th>
-                            <th className="text-center">แบบทดสอบ</th>
-                            <th>ผู้สร้าง</th>
-                            <th>รหัสวิชา</th>
-                            <th>สถานะ</th>
-                            <th style={{ width: "100px" }}>จัดการ</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {currentLessons.length > 0 ? (
-                            currentLessons.map((lesson) => (
-                              <tr key={lesson.id}>
-                                <td>
-                                  <div className="d-flex flex-column">
-                                    <span className="fw-medium">{lesson.title}</span>
-                                    <small className="text-muted">{lesson.courseName}</small>
-                                  </div>
-                                </td>
-                                <td className="text-center">
-                                  <VideoBadge hasVideo={lesson.hasVideo} />
-                                </td>
-                                <td className="text-center">
-                                  <TestBadge testType={lesson.testType} />
-                                </td>
-                                <td>{lesson.creator}</td>
-                                <td>{lesson.courseCode}</td>
-                                <td><StatusBadge status={lesson.status} /></td>
-                                <td>
-                                  <div className="d-flex justify-content-center gap-3">
-                                    <Link to={`/admin-creditbank/edit-lesson/${lesson.id}`} className="text-primary">
-                                      <i className="fas fa-edit icon-action"></i>
-                                    </Link>
-                                    <i
-                                      className="fas fa-trash-alt text-danger icon-action"
-                                      style={{ cursor: "pointer" }}
-                                      onClick={() => handleDeleteLesson(lesson.id)}
-                                    ></i>
-                                  </div>
-                                </td>
-                              </tr>
-                            ))
-                          ) : (
-                            <tr>
-                              <td colSpan={7} className="text-center py-4">ไม่พบข้อมูลบทเรียน</td>
-                            </tr>
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
+                {/* Error message */}
+                {error && (
+                  <div className="alert alert-danger" role="alert">
+                    <i className="fas fa-exclamation-circle me-2"></i>
+                    {error}
                   </div>
-                  {totalPages > 1 && (
-                    <div className="card-footer bg-light text-center">
-                      <nav aria-label="Page navigation">
-                        <ul className="pagination justify-content-center mb-0">
-                          <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
-                            <button
-                              className="page-link"
-                              onClick={() => setCurrentPage(currentPage - 1)}
-                              disabled={currentPage === 1}
-                            >
-                              <i className="fas fa-chevron-left"></i>
-                            </button>
-                          </li>
-                          {Array.from({ length: totalPages }).map((_, index) => (
-                            <li key={index} className={`page-item ${currentPage === index + 1 ? 'active' : ''}`}>
-                              <button className="page-link" onClick={() => setCurrentPage(index + 1)}>
-                                {index + 1}
+                )}
+
+                {/* Loading indicator */}
+                {isLoading ? (
+                  <div className="text-center py-5">
+                    <div className="spinner-border text-primary" role="status">
+                      <span className="visually-hidden">กำลังโหลด...</span>
+                    </div>
+                    <p className="mt-3">กำลังโหลดข้อมูล...</p>
+                  </div>
+                ) : (
+                  /* Lessons table */
+                  <div className="card shadow-sm border-0">
+                    <div className="card-body p-0">
+                      <div className="table-responsive">
+                        <table className="table table-hover table-sm mb-0 align-middle table-striped">
+                          <thead className="table-light">
+                            <tr>
+                              <th>ชื่อบทเรียน</th>
+                              <th className="text-center">วิดีโอการสอน</th>
+                              <th className="text-center">แบบทดสอบ</th>
+                              <th>ผู้สร้าง</th>
+                              <th>รหัสวิชา</th>
+                              <th>สถานะ</th>
+                              <th style={{ width: "100px" }}>จัดการ</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {currentLessons.length > 0 ? (
+                              currentLessons.map((lesson) => (
+                                <tr key={lesson.id}>
+                                  <td>
+                                    <div className="d-flex flex-column">
+                                      <span className="fw-medium">{lesson.title}</span>
+                                      <small className="text-muted">{lesson.subject || "ไม่มี"}</small>
+                                    </div>
+                                  </td>
+                                  <td className="text-center">
+                                    <VideoBadge hasVideo={lesson.hasVideo} />
+                                  </td>
+                                  <td className="text-center">
+                                    <TestBadge testType={lesson.testType} />
+                                  </td>
+                                  <td>{lesson.creator}</td>
+                                  <td>{lesson.courseCode}</td>
+                                  <td><StatusBadge status={lesson.status} /></td>
+                                  <td>
+                                    <div className="d-flex justify-content-center gap-3">
+                                    <Link to={`/admin-creditbank/edit-lesson/${lesson.id}`} className="text-primary">
+                                        <i className="fas fa-edit icon-action"></i>
+                                      </Link>
+                                      <i
+                                        className="fas fa-trash-alt text-danger icon-action"
+                                        style={{ cursor: "pointer" }}
+                                        onClick={() => handleDeleteLesson(lesson.id)}
+                                      ></i>
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))
+                            ) : (
+                              <tr>
+                                <td colSpan={7} className="text-center py-4">ไม่พบข้อมูลบทเรียน</td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                    {totalPages > 1 && (
+                      <div className="card-footer bg-light text-center">
+                        <nav aria-label="Page navigation">
+                          <ul className="pagination justify-content-center mb-0">
+                            <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+                              <button
+                                className="page-link"
+                                onClick={() => setCurrentPage(currentPage - 1)}
+                                disabled={currentPage === 1}
+                              >
+                                <i className="fas fa-chevron-left"></i>
                               </button>
                             </li>
-                          ))}
-                          <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
-                            <button
-                              className="page-link"
-                              onClick={() => setCurrentPage(currentPage + 1)}
-                              disabled={currentPage === totalPages}
-                            >
-                              <i className="fas fa-chevron-right"></i>
-                            </button>
-                          </li>
-                        </ul>
-                        <p className="mt-2 mb-0 small text-muted">
-                          แสดง {indexOfFirstLesson + 1} ถึง {Math.min(indexOfLastLesson, filteredLessons.length)} จากทั้งหมด {filteredLessons.length} รายการ
-                        </p>
-                      </nav>
-                    </div>
-                  )}
-                </div>
+                            {Array.from({ length: totalPages }).map((_, index) => (
+                              <li key={index} className={`page-item ${currentPage === index + 1 ? 'active' : ''}`}>
+                                <button className="page-link" onClick={() => setCurrentPage(index + 1)}>
+                                  {index + 1}
+                                </button>
+                              </li>
+                            ))}
+                            <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
+                              <button
+                                className="page-link"
+                                onClick={() => setCurrentPage(currentPage + 1)}
+                                disabled={currentPage === totalPages}
+                              >
+                                <i className="fas fa-chevron-right"></i>
+                              </button>
+                            </li>
+                          </ul>
+                          <p className="mt-2 mb-0 small text-muted">
+                            แสดง {indexOfFirstLesson + 1} ถึง {Math.min(indexOfLastLesson, filteredLessons.length)} จากทั้งหมด {filteredLessons.length} รายการ
+                          </p>
+                        </nav>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </div>
