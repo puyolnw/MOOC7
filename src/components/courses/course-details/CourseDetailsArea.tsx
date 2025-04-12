@@ -2,20 +2,64 @@ import { useState } from "react";
 import Overview from "./Overview";
 import Sidebar from "./Sidebar";
 import Curriculum from "./Curriculum"
-import Reviews from "./Reviews"
 import Instructors from "./Instructors"
 import { Link } from "react-router-dom";
 
-const tab_title: string[] = ["ข้อมูลทั่วไป", "บทเรียน", "ผู้สอน", "ความคิดเห็น"];
+const tab_title: string[] = ["ข้อมูลทั่วไป", "รายวิชา", "ผู้สอน"];
 
+interface CourseDetailsAreaProps {
+  single_course: {
+    id: number;
+    title: string;
+    category: string;
+    department: string;
+    description: string;
+    thumb: string;
+    subjects: any[];
+    subjectCount: number;
+    totalLessons: number;
+    totalQuizzes: number;
+    instructors: any[];
+    isLoading: boolean;
+    videoUrl?: string; 
+    error: string | null;
+  };
+}
 
-const CourseDetailsArea = ({ single_course }: any) => {
-
+const CourseDetailsArea = ({ single_course }: CourseDetailsAreaProps) => {
   const [activeTab, setActiveTab] = useState(0);
 
   const handleTabClick = (index: number) => {
     setActiveTab(index);
   };
+
+  if (single_course.isLoading) {
+    return (
+      <section className="courses__details-area section-py-120">
+        <div className="container">
+          <div className="text-center py-5">
+            <div className="spinner-border text-primary" role="status">
+              <span className="visually-hidden">กำลังโหลด...</span>
+            </div>
+            <p className="mt-3">กำลังโหลดข้อมูลหลักสูตร...</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (single_course.error) {
+    return (
+      <section className="courses__details-area section-py-120">
+        <div className="container">
+          <div className="alert alert-danger">
+            <i className="fas fa-exclamation-circle me-2"></i>
+            {single_course.error}
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="courses__details-area section-py-120">
@@ -23,24 +67,20 @@ const CourseDetailsArea = ({ single_course }: any) => {
         <div className="row">
           <div className="col-xl-9 col-lg-8">
             <div className="courses__details-thumb">
-              <img src="/assets/img/courses/courses_details.jpg" alt="img" />
+              <img src={single_course.thumb} alt={single_course.title} />
             </div>
             <div className="courses__details-content">
               <ul className="courses__item-meta list-wrap">
                 <li className="courses__item-tag">
-                  <Link to="/courses">{single_course?.category ? single_course.category : "สถิตประยุกต์"}</Link>
+                  <Link to={`/courses?category=${single_course.category}`}>{single_course.category}</Link>
                 </li>
-                <li className="avg-rating"><i className="fas fa-star"></i>{single_course?.rating ? single_course.rating : "(4.5 Reviews)"}</li>
               </ul>
-              <h2 className="title">{single_course?.title ? single_course.title : "สถิติประยุกต์"}</h2>
+              <h2 className="title">{single_course.title}</h2>
               <div className="courses__details-meta">
                 <ul className="list-wrap">
-                  <li className="author-two">
-                    <img src="/assets/img/courses/course_author02.png" alt="img" />
-                    By <Link to="#">{single_course?.instructors ? single_course.instructors : "ดร.ปรมาภรณ์ แสงภารา"}</Link>
-                  </li>
+                  
                   <li className="date"><i className="flaticon-calendar"></i>24/07/2024</li>
-                  <li><i className="flaticon-mortarboard"></i>2,250 นักเรียน</li>
+                  <li><i className="flaticon-mortarboard"></i>{single_course.subjectCount} วิชา</li>
                 </ul>
               </div>
               <ul className="nav nav-tabs" id="myTab" role="tablist">
@@ -52,21 +92,25 @@ const CourseDetailsArea = ({ single_course }: any) => {
               </ul>
               <div className="tab-content" id="myTabContent">
                 <div className={`tab-pane fade ${activeTab === 0 ? 'show active' : ''}`} id="overview-tab-pane" role="tabpanel" aria-labelledby="overview-tab">
-                  <Overview />
+                  <Overview description={single_course.description} />
                 </div>
-                <div className={`tab-pane fade ${activeTab === 1 ? 'show active' : ''}`} id="overview-tab-pane" role="tabpanel" aria-labelledby="overview-tab">
-                  <Curriculum />
+                <div className={`tab-pane fade ${activeTab === 1 ? 'show active' : ''}`} id="curriculum-tab-pane" role="tabpanel" aria-labelledby="curriculum-tab">
+                  <Curriculum subjects={single_course.subjects} />
                 </div>
-                <div className={`tab-pane fade ${activeTab === 2 ? 'show active' : ''}`} id="overview-tab-pane" role="tabpanel" aria-labelledby="overview-tab">
-                  <Instructors />
-                </div>
-                <div className={`tab-pane fade ${activeTab === 3 ? 'show active' : ''}`} id="overview-tab-pane" role="tabpanel" aria-labelledby="overview-tab">
-                  <Reviews />
+                <div className={`tab-pane fade ${activeTab === 2 ? 'show active' : ''}`} id="instructors-tab-pane" role="tabpanel" aria-labelledby="instructors-tab">
+                  <Instructors instructors={single_course.instructors} />
                 </div>
               </div>
             </div>
           </div>
-          <Sidebar />
+          <Sidebar 
+  subjectCount={single_course.subjectCount} 
+  totalLessons={single_course.totalLessons} 
+  totalQuizzes={single_course.totalQuizzes}
+  courseId={single_course.id}
+  videoUrl={single_course.videoUrl} // เพิ่ม videoUrl
+  coverImage={single_course.thumb} // เพิ่ม coverImage
+/>
         </div>
       </div>
     </section>

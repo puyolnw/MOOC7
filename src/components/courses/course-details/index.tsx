@@ -3,14 +3,31 @@ import HeaderOne from "../../../layouts/headers/HeaderOne";
 import BreadcrumbTwo from "../../common/breadcrumb/BreadcrumbTwo";
 import CourseDetailsArea from "./CourseDetailsArea";
 
-const CourseDetails = () => {
+interface CourseDetailsProps {
+  single_course: {
+    id: number;
+    title: string;
+    category: string;
+    department: string;
+    description: string;
+    thumb: string;
+    subjects: any[];
+    subjectCount: number;
+    totalLessons: number;
+    totalQuizzes: number;
+    instructors: any[];
+    isLoading: boolean;
+    error: string | null;
+  };
+}
 
+const CourseDetails = ({ single_course }: CourseDetailsProps) => {
    return (
       <>
          <HeaderOne />
          <main className="main-area fix">
-            <BreadcrumbTwo title="เขียนโปรแกรมด้วย React" sub_title="หลักสูตร" />
-            <CourseDetailsArea />
+            <BreadcrumbTwo title={single_course.title} sub_title="หลักสูตร" />
+            <CourseDetailsArea single_course={single_course} />
          </main>
          <FooterOne style={false} style_2={true} />
       </>

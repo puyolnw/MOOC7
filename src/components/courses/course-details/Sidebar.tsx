@@ -4,17 +4,44 @@ import { Link } from "react-router-dom";
 import BtnArrow from "../../../svg/BtnArrow";
 import VideoPopup from "../../../modals/VideoPopup";
 
-const Sidebar = () => {
+interface SidebarProps {
+  subjectCount: number;
+  totalLessons: number;
+  totalQuizzes: number;
+  courseId: number;
+  videoUrl?: string; // เพิ่ม prop สำหรับ URL วิดีโอ
+  coverImage?: string; // เพิ่ม prop สำหรับรูปภาพปก
+}
 
+const Sidebar = ({ subjectCount, totalLessons, totalQuizzes, videoUrl, coverImage }: SidebarProps) => {
    const [isVideoOpen, setIsVideoOpen] = useState(false);
+   
+   // ดึง video ID จาก YouTube URL (ถ้ามี)
+   const getYoutubeVideoId = (url?: string) => {
+     if (!url) return "Ml4XCF-JS0k"; // ค่าเริ่มต้นถ้าไม่มี URL
+     
+     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+     const match = url.match(regExp);
+     
+     return (match && match[2].length === 11)
+       ? match[2]
+       : "Ml4XCF-JS0k"; // ค่าเริ่มต้นถ้าไม่สามารถดึง ID ได้
+   };
+   
+   // ใช้รูปภาพปกจาก prop หรือใช้รูปเริ่มต้น
+   const thumbnailImage = coverImage || "/assets/img/courses/course_thumb02.jpg";
 
    return (
       <>
          <div className="col-xl-3 col-lg-4">
             <div className="courses__details-sidebar">
                <div className="courses__details-video">
-                  <img src="/assets/img/courses/course_thumb02.jpg" alt="img" />
-                  <a onClick={() => setIsVideoOpen(true)} style={{ cursor: "pointer" }} className="popup-video"><i className="fas fa-play"></i></a>
+                  <img src={thumbnailImage} alt="img" />
+                  {videoUrl && (
+                    <a onClick={() => setIsVideoOpen(true)} style={{ cursor: "pointer" }} className="popup-video">
+                      <i className="fas fa-play"></i>
+                    </a>
+                  )}
                </div>
 
                <div className="courses__information-wrap">
@@ -22,33 +49,23 @@ const Sidebar = () => {
                   <ul className="list-wrap">
                      <li>
                         <InjectableSvg src="/assets/img/icons/course_icon01.svg" alt="img" className="injectable" />
-                        ระดับ
-                        <span>ผู้เชี่ยวชาญ</span>
-                     </li>
-                     <li>
-                        <InjectableSvg src="/assets/img/icons/course_icon02.svg" alt="img" className="injectable" />
-                        ระยะเวลา
-                        <span>11h 20m</span>
+                        วิชา
+                        <span>{subjectCount} วิชา</span>
                      </li>
                      <li>
                         <InjectableSvg src="/assets/img/icons/course_icon03.svg" alt="img" className="injectable" />
                         บทเรียน
-                        <span>12</span>
+                        <span>{totalLessons}</span>
                      </li>
                      <li>
                         <InjectableSvg src="/assets/img/icons/course_icon04.svg" alt="img" className="injectable" />
                         แบบทดสอบ
-                        <span>145</span>
+                        <span>{totalQuizzes}</span>
                      </li>
                      <li>
                         <InjectableSvg src="/assets/img/icons/course_icon05.svg" alt="img" className="injectable" />
                         ใบประกาศนียบัตร
                         <span>ใช่</span>
-                     </li>
-                     <li>
-                        <InjectableSvg src="/assets/img/icons/course_icon06.svg" alt="img" className="injectable" />
-                        สำเร็จการศึกษา
-                        <span>25K</span>
                      </li>
                   </ul>
                </div>
@@ -74,7 +91,7 @@ const Sidebar = () => {
          <VideoPopup
             isVideoOpen={isVideoOpen}
             setIsVideoOpen={setIsVideoOpen}
-            videoId={"Ml4XCF-JS0k"}
+            videoId={getYoutubeVideoId(videoUrl)}
          />
       </>
    )

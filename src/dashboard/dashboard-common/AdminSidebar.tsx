@@ -76,6 +76,25 @@ const sidebar_data: DataType[] = [
                },
             ],
          },
+         {
+            id: 2,
+            link: "/admin-account/instructors",
+            icon: "fas fa-list-ul",    
+            title: "บัญชีผู้ใช้",
+            hasSubmenu: true,
+            submenu: [
+               {
+                  id: 1,
+                  link: "/admin-account/instructors",
+                  title: "อาจารย์",
+               },
+               {
+                  id: 2,
+                  link: "/admin-creditbank",
+                  title: "นักเรียน",
+               }
+            ],
+         },
       ],
    },
    {

@@ -2,7 +2,6 @@ import Wrapper from '../../layouts/Wrapper';
 import AdminCreditbank from '../../dashboard/admin-creditbank';
 import SEO from '../../components/SEO';
 
-
 const AdminCreditbankpage = () => {
    return (
       <Wrapper>
@@ -12,4 +11,4 @@ const AdminCreditbankpage = () => {
    );
 };
 
-export default AdminCreditbankpage;
+export default AdminCreditbankpage ;

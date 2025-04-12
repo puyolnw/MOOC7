@@ -146,48 +146,6 @@ const QuizzesArea = () => {
     return <span className={badgeClass}>{statusText}</span>;
   };
 
-  // Quiz type badge component
-  const QuizTypeBadge = ({ type }: { type: QuizType }) => {
-    let badgeClass = "";
-    let typeText = "";
-    let tooltipText = "";
-
-    switch (type) {
-      case "MC":
-        badgeClass = "badge bg-primary-subtle text-primary rounded-pill px-3 py-1 small";
-        typeText = "MC";
-        tooltipText = "Multi Choice";
-        break;
-      case "TF":
-        badgeClass = "badge bg-success-subtle text-success rounded-pill px-3 py-1 small";
-        typeText = "TF";
-        tooltipText = "True or False";
-        break;
-      case "SC":
-        badgeClass = "badge bg-info-subtle text-info rounded-pill px-3 py-1 small";
-        typeText = "SC";
-        tooltipText = "Single Choice";
-        break;
-      case "FB":
-        badgeClass = "badge bg-warning-subtle text-warning rounded-pill px-3 py-1 small";
-        typeText = "FB";
-        tooltipText = "Fill in Blank";
-        break;
-      case "MIX":
-        badgeClass = "badge bg-purple-subtle text-purple rounded-pill px-3 py-1 small";
-        typeText = "MIX";
-        tooltipText = "Mixed Types";
-        break;
-    }
-
-    return (
-      <span className={badgeClass} title={tooltipText}>
-        {typeText}
-      </span>
-    );
-  };
-
-  // Statistics
   const totalQuizzes = quizzes.length;
   const countByStatus = {
     active: quizzes.filter(q => q.status === "active").length,
@@ -284,7 +242,6 @@ const QuizzesArea = () => {
                               <th>ชื่อแบบทดสอบ</th>
                               <th>รหัสบทเรียน</th>
                               <th className="text-center">จำนวนคำถาม</th>
-                              <th className="text-center">ประเภท</th>
                               <th>สถานะ</th>
                               <th style={{ width: "100px" }}>จัดการ</th>
                             </tr>
@@ -307,9 +264,7 @@ const QuizzesArea = () => {
                                       <span className="text-muted">ไม่มีคำถาม</span>
                                     )}
                                   </td>
-                                  <td className="text-center">
-                                    <QuizTypeBadge type={quiz.type} />
-                                  </td>
+
                                   <td><StatusBadge status={quiz.status} /></td>
                                   <td>
                                     <div className="d-flex justify-content-center gap-3">

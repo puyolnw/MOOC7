@@ -26,7 +26,7 @@ const SubjectsArea = () => {
   const [modalImage, setModalImage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
+  const apiUrl = import.meta.env.VITE_API_URL;
   
   const closeModal = () => setModalImage(null);
   const subjectsPerPage = 10;

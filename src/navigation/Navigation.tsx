@@ -11,6 +11,9 @@ import AdminAddlessonspage from '../pages/Admin/create/AddLessons';
 import AdminAddSubjectspage from '../pages/Admin/create/AddSubjects';
 import AdminAddCoursepage from '../pages/Admin/create/AddCoures';
 
+import AdminAccountInstructorspage from '../pages/Admin/account/AccountInstructors';
+import CreateAccountInstructorspage from '../pages/Admin/account/create/AddInstructors';
+
 import Home from '../pages/Home';
 import HomeTwo from '../pages/HomeTwo';
 import HomeEight from '../pages/HomeEight';
@@ -77,7 +80,7 @@ const AppNavigation = () => {
         <Route path="/home-seven" element={<HomeSeven />} />
         <Route path="/home-eight" element={<HomeEight />} />
         <Route path="/courses" element={<Course />} />
-        <Route path="/course-details" element={<CourseDetails />} />
+        <Route path="/course-details/:id" element={<CourseDetails />} />
         <Route path="/lesson" element={<Lesson />} />
         <Route path="/about-us" element={<About />} />
         <Route path="/instructors" element={<Instructor />} />
@@ -111,6 +114,10 @@ const AppNavigation = () => {
         <Route path="/admin-subjects/create-new" element={<AdminAddSubjectspage />} />
         <Route path="/admin-creditbank/create-new" element={< AdminAddCoursepage />} />
       
+        <Route path="/admin-account/instructors" element={<AdminAccountInstructorspage/>} />
+
+        <Route path="/admin-account/instructors/create-new" element={< CreateAccountInstructorspage />} />
+
         </Route>
 
         <Route element={<PrivateRoute allowedRoles={["instructor"]} />}>

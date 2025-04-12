@@ -5,8 +5,12 @@ import Instructors from "../course-details/Instructors";
 
 const tab_title: string[] = ["ข้อมูลทั่วไป", "ผู้สอน", "ความคิดเห็น"];
 
-const LessonNavTav = () => {
+interface LessonNavTavProps {
+  description?: string;
+  instructors?: any[];
+}
 
+const LessonNavTav = ({ description = "", instructors = [] }: LessonNavTavProps) => {
    const [activeTab, setActiveTab] = useState(0);
 
    const handleTabClick = (index: number) => {
@@ -24,10 +28,10 @@ const LessonNavTav = () => {
          </ul>
          <div className="tab-content" id="myTabContent">
             <div className={`tab-pane fade ${activeTab === 0 ? 'show active' : ''}`} id="overview-tab-pane" role="tabpanel" aria-labelledby="overview-tab">
-               <Overview />
+               <Overview description={description} />
             </div>
             <div className={`tab-pane fade ${activeTab === 1 ? 'show active' : ''}`} id="overview-tab-pane" role="tabpanel" aria-labelledby="overview-tab">
-               <Instructors />
+               <Instructors instructors={instructors} />
             </div>
             <div className={`tab-pane fade ${activeTab === 2 ? 'show active' : ''}`} id="overview-tab-pane" role="tabpanel" aria-labelledby="overview-tab">
                <Reviews />
