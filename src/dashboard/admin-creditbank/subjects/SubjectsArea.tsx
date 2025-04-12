@@ -234,7 +234,7 @@ const SubjectsArea = () => {
                                 <tr key={subject.subject_id}>
                                   <td>
                                     <img
-                                      src={subject.cover_image ? `${apiUrl}/${subject.cover_image}` : "/assets/img/courses/default-course.jpg"}
+                                      src={subject.cover_image ? `${apiUrl}${subject.cover_image}` : "/assets/img/courses/default-course.jpg"}
                                       alt={subject.subject_name}
                                       className="img-thumbnail"
                                       style={{ width: "70px", height: "50px", objectFit: "cover", cursor: "pointer" }}
