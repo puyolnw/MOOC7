@@ -268,12 +268,12 @@ const QuizzesArea = () => {
                                   <td><StatusBadge status={quiz.status} /></td>
                                   <td>
                                     <div className="d-flex justify-content-center gap-3">
-                                      <Link to={`/admin-quizzes/edit-quiz/${quiz.id}`} className="text-primary">
-                                        <i className="fas fa-edit icon-action"></i>
+                                      <Link to={`/admin-quizzes/edit-quiz/${quiz.id}`} className="text-primary" style={{ display: "inline-flex", alignItems: "center" }}>
+                                        <i className="fas fa-edit icon-action" style={{ cursor: "pointer", lineHeight: 1 }}></i>
                                       </Link>
                                       <i
                                         className="fas fa-trash-alt text-danger icon-action"
-                                        style={{ cursor: "pointer" }}
+                                        style={{ cursor: "pointer", lineHeight: 1 }}
                                         onClick={() => handleDeleteQuiz(quiz.id)}
                                       ></i>
                                     </div>
