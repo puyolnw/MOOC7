@@ -268,7 +268,7 @@ const QuizzesArea = () => {
                                   <td><StatusBadge status={quiz.status} /></td>
                                   <td>
                                     <div className="d-flex justify-content-center gap-3">
-                                      <Link to={`/admin-creditbank/edit-quiz/${quiz.id}`} className="text-primary">
+                                      <Link to={`/admin-quizzes/edit-quiz/${quiz.id}`} className="text-primary">
                                         <i className="fas fa-edit icon-action"></i>
                                       </Link>
                                       <i

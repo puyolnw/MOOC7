@@ -35,14 +35,14 @@ const QuestionsArea = () => {
         setIsLoading(true);
         const apiUrl = import.meta.env.VITE_API_URL;
         const token = localStorage.getItem("token");
-        
+
         const response = await axios.get(`${apiUrl}/api/courses/questions`, {
-          headers: { 
+          headers: {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${token}`
           }
         });
-        
+
         if (response.data && response.data.questions) {
           // Transform API data to match our Question interface
           const formattedQuestions = response.data.questions.map((q: any) => ({
@@ -56,7 +56,7 @@ const QuestionsArea = () => {
             score: q.score || 0,
             creator: q.creator_name || "Unknown"
           }));
-          
+
           setQuestions(formattedQuestions);
         }
       } catch (error) {
@@ -89,14 +89,14 @@ const QuestionsArea = () => {
       try {
         const apiUrl = import.meta.env.VITE_API_URL;
         const token = localStorage.getItem("token");
-        
+
         await axios.delete(`${apiUrl}/api/courses/questions/${id}`, {
-          headers: { 
+          headers: {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${token}`
           }
         });
-        
+
         // Remove question from state after successful deletion
         setQuestions(questions.filter(question => question.id !== id));
       } catch (error) {
@@ -293,12 +293,12 @@ const QuestionsArea = () => {
                                     <td><StatusBadge status={question.status} /></td>
                                     <td>
                                       <div className="d-flex justify-content-center gap-3">
-                                        <Link to={`/admin-creditbank/edit-question/${question.id}`} className="text-primary">
-                                          <i className="fas fa-edit icon-action"></i>
+                                        <Link to={`/admin-questions/edit-question/${question.id}`} className="text-primary" style={{ display: "inline-flex", alignItems: "center" }}>
+                                          <i className="fas fa-edit icon-action" style={{ cursor: "pointer", lineHeight: 1 }}></i>
                                         </Link>
                                         <i
                                           className="fas fa-trash-alt text-danger icon-action"
-                                          style={{ cursor: "pointer" }}
+                                          style={{ cursor: "pointer", lineHeight: 1 }}
                                           onClick={() => handleDeleteQuestion(question.id)}
                                         ></i>
                                       </div>
@@ -339,7 +339,7 @@ const QuestionsArea = () => {
                                   className="page-link"
                                   onClick={() => setCurrentPage(currentPage + 1)}
                                   disabled={currentPage === totalPages}
-                                  >
+                                >
                                   <i className="fas fa-chevron-right"></i>
                                 </button>
                               </li>

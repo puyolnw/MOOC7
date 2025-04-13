@@ -21,8 +21,8 @@ const AdminCreditbankArea = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
-  const apiURL = import.meta.env.VITE_API_URL ;
+
+  const apiURL = import.meta.env.VITE_API_URL;
   const coursesPerPage = 10;
 
   // ดึงข้อมูลหลักสูตรทั้งหมด
@@ -31,7 +31,7 @@ const AdminCreditbankArea = () => {
       try {
         setLoading(true);
         const response = await axios.get(`${apiURL}/api/courses`);
-        
+
         if (response.data.success) {
           // แปลงข้อมูลจาก API ให้ตรงกับ interface Course
           const formattedCourses = response.data.courses.map((course: any) => ({
@@ -44,7 +44,7 @@ const AdminCreditbankArea = () => {
             status: course.status || "active",
             branch: "ไม่ระบุสาขา" // ค่าเริ่มต้น
           }));
-          
+
           setCourses(formattedCourses);
         } else {
           setError("ไม่สามารถดึงข้อมูลหลักสูตรได้");
@@ -67,7 +67,7 @@ const AdminCreditbankArea = () => {
         const response = await axios.delete(`${apiURL}/api/courses/${id}`, {
           withCredentials: true // ส่ง cookies สำหรับการยืนยันตัวตน
         });
-        
+
         if (response.data.success) {
           // อัปเดตรายการหลักสูตรหลังจากลบสำเร็จ
           setCourses(courses.filter((course) => course.course_id !== id));
@@ -219,8 +219,8 @@ const AdminCreditbankArea = () => {
                               currentCourses.map((course) => (
                                 <tr key={course.course_id}>
                                   <td>
-                                    <img 
-                                      src={course.cover_image} 
+                                    <img
+                                      src={course.cover_image}
                                       alt={course.title}
                                       className="img-thumbnail"
                                       style={{ width: "60px", height: "60px", objectFit: "cover" }}
@@ -237,12 +237,14 @@ const AdminCreditbankArea = () => {
                                   <td><StatusBadge status={course.status} /></td>
                                   <td>
                                     <div className="d-flex justify-content-center gap-3">
-                                      <Link to={`/admin-creditbank/edit-course/${course.course_id}`} className="text-primary">
-                                        <i className="fas fa-edit icon-action"></i>
+                                      <Link to={`/admin-creditbank/edit-course/${course.course_id}`} className="text-primary"
+                                        style={{ display: "inline-flex", alignItems: "center" }}
+                                      >
+                                        <i className="fas fa-edit icon-action" style={{ lineHeight: 1 }}></i>
                                       </Link>
                                       <i
                                         className="fas fa-trash-alt text-danger icon-action"
-                                        style={{ cursor: "pointer" }}
+                                        style={{ cursor: "pointer", lineHeight: 1 }}
                                         onClick={() => handleDeleteCourse(course.course_id)}
                                       ></i>
                                     </div>

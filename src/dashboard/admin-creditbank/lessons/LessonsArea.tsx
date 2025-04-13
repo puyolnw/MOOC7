@@ -5,12 +5,10 @@ import { toast } from "react-toastify";
 import DashboardSidebar from "../../dashboard-common/AdminSidebar";
 import DashboardBanner from "../../dashboard-common/AdminBanner";
 
-// Define test type
 type TestType = "MC" | "TF" | "SC" | "FB" | null;
 
-// Define lesson type
 interface Lesson {
-  id: number;
+  lesson_id: number | null;
   title: string;
   hasVideo: boolean;
   creator: string;
@@ -18,7 +16,7 @@ interface Lesson {
   courseName: string;
   status: "active" | "inactive" | "draft";
   testType: TestType;
-  subject?: string; // เพิ่มฟิลด์สำหรับเก็บรายวิชา
+  subject?: string;
 }
 
 const LessonsArea = () => {
@@ -30,12 +28,11 @@ const LessonsArea = () => {
   const lessonsPerPage = 10;
   const apiUrl = import.meta.env.VITE_API_URL;
 
-  // โหลดข้อมูลบทเรียนจาก API
   useEffect(() => {
     const fetchLessons = async () => {
       setIsLoading(true);
       setError("");
-      
+
       try {
         const token = localStorage.getItem("token");
         if (!token) {
@@ -43,17 +40,16 @@ const LessonsArea = () => {
           setIsLoading(false);
           return;
         }
-        
+
         const response = await axios.get(`${apiUrl}/api/courses/lessons`, {
           headers: {
             Authorization: `Bearer ${token}`
           }
         });
-        
+
         if (response.data.success) {
-          // แปลงข้อมูลให้ตรงกับ interface
           const formattedLessons = response.data.lessons.map((lesson: any) => ({
-            id: lesson.lesson_id,
+            lesson_id: lesson.lesson_id ?? lesson.id ?? null,
             title: lesson.title,
             hasVideo: !!lesson.video_url,
             creator: lesson.creator_name || "ไม่ระบุ",
@@ -63,7 +59,7 @@ const LessonsArea = () => {
             testType: lesson.quiz_type || null,
             subject: lesson.subjects && lesson.subjects.length > 0 ? lesson.subjects[0].subject_name : "ไม่มี"
           }));
-          
+
           setLessons(formattedLessons);
         } else {
           setError("ไม่สามารถโหลดข้อมูลบทเรียนได้");
@@ -77,11 +73,10 @@ const LessonsArea = () => {
         setIsLoading(false);
       }
     };
-    
+
     fetchLessons();
   }, [apiUrl]);
 
-  // Filter lessons based on search term
   const filteredLessons = lessons.filter(lesson =>
     lesson.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     lesson.courseCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -89,13 +84,11 @@ const LessonsArea = () => {
     (lesson.subject && lesson.subject.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  // Calculate pagination
   const indexOfLastLesson = currentPage * lessonsPerPage;
   const indexOfFirstLesson = indexOfLastLesson - lessonsPerPage;
   const currentLessons = filteredLessons.slice(indexOfFirstLesson, indexOfLastLesson);
   const totalPages = Math.ceil(filteredLessons.length / lessonsPerPage);
 
-  // Handle delete lesson
   const handleDeleteLesson = async (id: number) => {
     if (window.confirm("คุณต้องการลบบทเรียนนี้ใช่หรือไม่?")) {
       try {
@@ -104,15 +97,15 @@ const LessonsArea = () => {
           toast.error("กรุณาเข้าสู่ระบบก่อนใช้งาน");
           return;
         }
-        
+
         const response = await axios.delete(`${apiUrl}/api/courses/lessons/${id}`, {
           headers: {
             Authorization: `Bearer ${token}`
           }
         });
-        
+
         if (response.data.success) {
-          setLessons(lessons.filter(lesson => lesson.id !== id));
+          setLessons(lessons.filter(lesson => lesson.lesson_id !== id));
           toast.success("ลบบทเรียนสำเร็จ");
         } else {
           toast.error(response.data.message || "ไม่สามารถลบบทเรียนได้");
@@ -124,7 +117,6 @@ const LessonsArea = () => {
     }
   };
 
-  // Status badge component
   const StatusBadge = ({ status }: { status: Lesson["status"] }) => {
     let badgeClass = "";
     let statusText = "";
@@ -147,7 +139,6 @@ const LessonsArea = () => {
     return <span className={badgeClass}>{statusText}</span>;
   };
 
-  // Video badge component
   const VideoBadge = ({ hasVideo }: { hasVideo: boolean }) => {
     return hasVideo ? (
       <span className="badge bg-info-subtle text-info rounded-pill px-3 py-1 small">
@@ -160,21 +151,20 @@ const LessonsArea = () => {
     );
   };
 
-  // Test type badge component
   const TestBadge = ({ testType }: { testType: TestType }) => {
-    if (testType === null || testType === undefined) {
+    if (!testType) {
       return <span className="badge bg-secondary-subtle text-secondary rounded-pill px-3 py-1 small">ไม่มี</span>;
     }
-  
+
     let badgeClass = "";
     let testText = "";
     let tooltipText = "";
-  
+
     switch (testType) {
       case "MC":
         badgeClass = "badge bg-primary-subtle text-primary rounded-pill px-3 py-1 small";
         testText = "MC";
-        tooltipText = "Multi Choice";
+        tooltipText = "Multiple Choice";
         break;
       case "TF":
         badgeClass = "badge bg-success-subtle text-success rounded-pill px-3 py-1 small";
@@ -189,12 +179,10 @@ const LessonsArea = () => {
       case "FB":
         badgeClass = "badge bg-warning-subtle text-warning rounded-pill px-3 py-1 small";
         testText = "FB";
-        tooltipText = "Fill in Blank";
+        tooltipText = "Fill in the Blank";
         break;
-      default:
-        return <span className="badge bg-secondary-subtle text-secondary rounded-pill px-3 py-1 small">ไม่มี</span>;
     }
-  
+
     return (
       <span className={badgeClass} title={tooltipText}>
         {testText}
@@ -202,12 +190,11 @@ const LessonsArea = () => {
     );
   };
 
-  // Statistics
   const totalLessons = lessons.length;
   const countByStatus = {
     active: lessons.filter(l => l.status === "active").length,
     inactive: lessons.filter(l => l.status === "inactive").length,
-    draft: lessons.filter(l => l.status === "draft").length,
+    draft: lessons.filter(l => l.status === "draft").length
   };
 
   return (
@@ -224,7 +211,6 @@ const LessonsArea = () => {
                   <p className="desc">จัดการบทเรียนทั้งหมดในระบบ</p>
                 </div>
 
-                {/* Statistics */}
                 <div className="mb-4">
                   <div className="row g-3">
                     <div className="col-md-3">
@@ -248,7 +234,6 @@ const LessonsArea = () => {
                   </div>
                 </div>
 
-                {/* Search and Add button */}
                 <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
                   <div className="input-group w-50">
                     <input
@@ -270,7 +255,6 @@ const LessonsArea = () => {
                   </Link>
                 </div>
 
-                {/* Error message */}
                 {error && (
                   <div className="alert alert-danger" role="alert">
                     <i className="fas fa-exclamation-circle me-2"></i>
@@ -278,7 +262,6 @@ const LessonsArea = () => {
                   </div>
                 )}
 
-                {/* Loading indicator */}
                 {isLoading ? (
                   <div className="text-center py-5">
                     <div className="spinner-border text-primary" role="status">
@@ -287,7 +270,6 @@ const LessonsArea = () => {
                     <p className="mt-3">กำลังโหลดข้อมูล...</p>
                   </div>
                 ) : (
-                  /* Lessons table */
                   <div className="card shadow-sm border-0">
                     <div className="card-body p-0">
                       <div className="table-responsive">
@@ -306,7 +288,7 @@ const LessonsArea = () => {
                           <tbody>
                             {currentLessons.length > 0 ? (
                               currentLessons.map((lesson) => (
-                                <tr key={lesson.id}>
+                                <tr key={lesson.lesson_id ?? Math.random()}>
                                   <td>
                                     <div className="d-flex flex-column">
                                       <span className="fw-medium">{lesson.title}</span>
@@ -324,13 +306,20 @@ const LessonsArea = () => {
                                   <td><StatusBadge status={lesson.status} /></td>
                                   <td>
                                     <div className="d-flex justify-content-center gap-3">
-                                    <Link to={`/admin-creditbank/edit-lesson/${lesson.id}`} className="text-primary">
-                                        <i className="fas fa-edit icon-action"></i>
-                                      </Link>
+                                      {lesson.lesson_id ? (
+                                        <Link to={`/admin-lessons/edit-lessons/${lesson.lesson_id}`} className="text-primary" style={{ display: "inline-flex", alignItems: "center" }} >
+                                          <i className="fas fa-edit icon-action" style={{ cursor: "pointer", lineHeight: 1 }}></i>
+                                        </Link>
+                                      ) : (
+                                        <span className="text-muted" title="ไม่มี ID บทเรียน">
+                                          <i className="fas fa-edit icon-action" style={{ cursor: "pointer", lineHeight: 1 }}></i>
+
+                                        </span>
+                                      )}
                                       <i
                                         className="fas fa-trash-alt text-danger icon-action"
-                                        style={{ cursor: "pointer" }}
-                                        onClick={() => handleDeleteLesson(lesson.id)}
+                                        style={{ cursor: "pointer", lineHeight: 1 }}
+                                        onClick={() => lesson.lesson_id && handleDeleteLesson(lesson.lesson_id)}
                                       ></i>
                                     </div>
                                   </td>
@@ -350,11 +339,7 @@ const LessonsArea = () => {
                         <nav aria-label="Page navigation">
                           <ul className="pagination justify-content-center mb-0">
                             <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
-                              <button
-                                className="page-link"
-                                onClick={() => setCurrentPage(currentPage - 1)}
-                                disabled={currentPage === 1}
-                              >
+                              <button className="page-link" onClick={() => setCurrentPage(currentPage - 1)} disabled={currentPage === 1}>
                                 <i className="fas fa-chevron-left"></i>
                               </button>
                             </li>
@@ -366,11 +351,7 @@ const LessonsArea = () => {
                               </li>
                             ))}
                             <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
-                              <button
-                                className="page-link"
-                                onClick={() => setCurrentPage(currentPage + 1)}
-                                disabled={currentPage === totalPages}
-                              >
+                              <button className="page-link" onClick={() => setCurrentPage(currentPage + 1)} disabled={currentPage === totalPages}>
                                 <i className="fas fa-chevron-right"></i>
                               </button>
                             </li>

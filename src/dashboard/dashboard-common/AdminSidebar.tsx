@@ -90,7 +90,7 @@ const sidebar_data: DataType[] = [
                },
                {
                   id: 2,
-                  link: "/admin-creditbank",
+                  link: "/admin-creditbank/students",
                   title: "นักเรียน",
                }
             ],

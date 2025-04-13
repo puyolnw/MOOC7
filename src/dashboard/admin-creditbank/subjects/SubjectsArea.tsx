@@ -27,7 +27,7 @@ const SubjectsArea = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const apiUrl = import.meta.env.VITE_API_URL;
-  
+
   const closeModal = () => setModalImage(null);
   const subjectsPerPage = 10;
 
@@ -36,13 +36,13 @@ const SubjectsArea = () => {
     const fetchSubjects = async () => {
       setIsLoading(true);
       setError(null);
-      
+
       try {
         const token = localStorage.getItem("token");
         const response = await axios.get(`${apiUrl}/api/courses/subjects`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {}
         });
-        
+
         if (response.data.success) {
           setSubjects(response.data.subjects);
         } else {
@@ -55,7 +55,7 @@ const SubjectsArea = () => {
         setIsLoading(false);
       }
     };
-    
+
     fetchSubjects();
   }, [apiUrl]);
 
@@ -81,11 +81,11 @@ const SubjectsArea = () => {
           toast.error("กรุณาเข้าสู่ระบบก่อนดำเนินการ");
           return;
         }
-        
+
         const response = await axios.delete(`${apiUrl}/api/courses/subjects/${id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        
+
         if (response.data.success) {
           toast.success("ลบรายวิชาสำเร็จ");
           // อัปเดตรายการรายวิชาโดยลบรายวิชาที่เพิ่งลบออกไป
@@ -238,7 +238,7 @@ const SubjectsArea = () => {
                                       alt={subject.subject_name}
                                       className="img-thumbnail"
                                       style={{ width: "70px", height: "50px", objectFit: "cover", cursor: "pointer" }}
-                                      onClick={() => setModalImage(subject.cover_image ? `${apiUrl}/${subject.cover_image}` : "/assets/img/courses/default-course.jpg")}
+                                      onClick={() => setModalImage(subject.cover_image ? `${apiUrl}${subject.cover_image}` : "/assets/img/courses/default-course.jpg")}
                                       onError={(e) => {
                                         (e.target as HTMLImageElement).src = "/assets/img/courses/default-course.jpg";
                                       }}
@@ -260,12 +260,16 @@ const SubjectsArea = () => {
                                   <td><StatusBadge status={subject.status} /></td>
                                   <td>
                                     <div className="d-flex justify-content-center gap-3">
-                                      <Link to={`/admin-subjects/edit-subject/${subject.subject_id}`} className="text-primary">
-                                        <i className="fas fa-edit icon-action"></i>
+                                      <Link
+                                        to={`/admin-subjects/edit-subject/${subject.subject_id}`}
+                                        className="text-primary"
+                                        style={{ display: "inline-flex", alignItems: "center" }}
+                                      >
+                                        <i className="fas fa-edit icon-action" style={{ lineHeight: 1 }}></i>
                                       </Link>
                                       <i
                                         className="fas fa-trash-alt text-danger icon-action"
-                                        style={{ cursor: "pointer" }}
+                                        style={{ cursor: "pointer", lineHeight: 1 }}
                                         onClick={() => handleDeleteSubject(subject.subject_id)}
                                       ></i>
                                     </div>
@@ -309,41 +313,41 @@ const SubjectsArea = () => {
                                 className="page-link"
                                 onClick={() => setCurrentPage(currentPage + 1)}
                                 disabled={currentPage === totalPages}
-                                >
-                                  <i className="fas fa-chevron-right small"></i>
-                                </button>
-                              </li>
-                            </ul>
-                          </nav>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
+                              >
+                                <i className="fas fa-chevron-right small"></i>
+                              </button>
+                            </li>
+                          </ul>
+                        </nav>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </div>
         </div>
-  
-        {/* Image Preview Modal */}
-        {modalImage && (
-          <div className="modal fade show" style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}>
-            <div className="modal-dialog modal-dialog-centered">
-              <div className="modal-content">
-                <div className="modal-header">
-                  <h5 className="modal-title">ภาพปกรายวิชา</h5>
-                  <button type="button" className="btn-close" onClick={closeModal}></button>
-                </div>
-                <div className="modal-body text-center">
-                  <img src={modalImage} alt="Subject Cover" className="img-fluid" />
-                </div>
+      </div>
+
+      {/* Image Preview Modal */}
+      {modalImage && (
+        <div className="modal fade show" style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">ภาพปกรายวิชา</h5>
+                <button type="button" className="btn-close" onClick={closeModal}></button>
+              </div>
+              <div className="modal-body text-center">
+                <img src={modalImage} alt="Subject Cover" className="img-fluid" />
               </div>
             </div>
           </div>
-        )}
-      </section>
-    );
-  };
-  
-  export default SubjectsArea;
-  
+        </div>
+      )}
+    </section>
+  );
+};
+
+export default SubjectsArea;
+

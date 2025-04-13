@@ -11,6 +11,12 @@ import AdminAddlessonspage from '../pages/Admin/create/AddLessons';
 import AdminAddSubjectspage from '../pages/Admin/create/AddSubjects';
 import AdminAddCoursepage from '../pages/Admin/create/AddCoures';
 
+import AdminEditCorusepage from '../pages/Admin/edit/AdminEditCoruse'
+import AdminEditlessonspage from '../pages/Admin/edit/AdminEditLesson';
+import AdminEditQuizzespage from '../pages/Admin/edit/AdminEditQuiz';
+import AdminEditquestionpage from '../pages/Admin/edit/AdminEditQuestion';
+import AdminEditSubjectspage from '../pages/Admin/edit/AdminEditSubject';
+
 import AdminAccountInstructorspage from '../pages/Admin/account/AccountInstructors';
 import CreateAccountInstructorspage from '../pages/Admin/account/create/AddInstructors';
 
@@ -113,7 +119,13 @@ const AppNavigation = () => {
         <Route path="/admin-lessons/create-new" element={<AdminAddlessonspage />} />
         <Route path="/admin-subjects/create-new" element={<AdminAddSubjectspage />} />
         <Route path="/admin-creditbank/create-new" element={< AdminAddCoursepage />} />
-      
+
+        <Route path="/admin-creditbank/edit-course/:courseId" element={<AdminEditCorusepage />} />
+        <Route path="/admin-lessons/edit-lessons/:lessonId" element={<AdminEditlessonspage />} />
+        <Route path="/admin-quizzes/edit-quiz/:quizId" element={<AdminEditQuizzespage />} />
+        <Route path="/admin-questions/edit-question/:questionId" element={<AdminEditquestionpage />} />
+        <Route path="/admin-subjects/edit-subject/:subjectId" element={<AdminEditSubjectspage />} />
+
         <Route path="/admin-account/instructors" element={<AdminAccountInstructorspage/>} />
 
         <Route path="/admin-account/instructors/create-new" element={< CreateAccountInstructorspage />} />
@@ -134,6 +146,7 @@ const AppNavigation = () => {
         <Route path="/instructor-assignment" element={<InstructorAssignment />} />
         <Route path="/instructor-setting" element={<InstructorSetting />} />
         </Route>
+
         <Route element={<PrivateRoute allowedRoles={["student"]} />}>
           <Route path="/student-dashboard" element={<StudentDashboard />} />
         <Route path="/student-profile" element={<StudentProfile />} />
