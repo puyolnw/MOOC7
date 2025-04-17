@@ -20,6 +20,7 @@ import AdminEditSubjectspage from '../pages/Admin/edit/AdminEditSubject';
 import AdminAccountInstructorspage from '../pages/Admin/account/AccountInstructors';
 import CreateAccountInstructorspage from '../pages/Admin/account/create/AddInstructors';
 
+import SubjectDetailsPage from '../pages/SubjectDetails';
 import Home from '../pages/Home';
 import HomeTwo from '../pages/HomeTwo';
 import HomeEight from '../pages/HomeEight';
@@ -105,6 +106,7 @@ const AppNavigation = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/registration" element={<Registration />} />
         <Route path="/contact" element={<Contact />} />
+        <Route path="/subject-details/:id" element={<SubjectDetailsPage />} />
 
         <Route element={<PrivateRoute allowedRoles={["admin"]} />}>
         <Route path="/admin-dashboard" element={<AdminDashboard />} />

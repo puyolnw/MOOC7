@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import InjectableSvg from "../../../hooks/InjectableSvg";
 import { Link } from "react-router-dom";
 import BtnArrow from "../../../svg/BtnArrow";
@@ -13,8 +13,9 @@ interface SidebarProps {
   coverImage?: string; // เพิ่ม prop สำหรับรูปภาพปก
 }
 
-const Sidebar = ({ subjectCount, totalLessons, totalQuizzes, videoUrl, coverImage }: SidebarProps) => {
+const Sidebar = ({ subjectCount, totalLessons, totalQuizzes,videoUrl, coverImage }: SidebarProps) => {
    const [isVideoOpen, setIsVideoOpen] = useState(false);
+   const [thumbnailImage, setThumbnailImage] = useState(coverImage || "/assets/img/courses/course_thumb02.jpg");
    
    // ดึง video ID จาก YouTube URL (ถ้ามี)
    const getYoutubeVideoId = (url?: string) => {
@@ -28,8 +29,29 @@ const Sidebar = ({ subjectCount, totalLessons, totalQuizzes, videoUrl, coverImag
        : "Ml4XCF-JS0k"; // ค่าเริ่มต้นถ้าไม่สามารถดึง ID ได้
    };
    
-   // ใช้รูปภาพปกจาก prop หรือใช้รูปเริ่มต้น
-   const thumbnailImage = coverImage || "/assets/img/courses/course_thumb02.jpg";
+   // ใช้ useEffect เพื่อตั้งค่ารูปภาพปกจาก YouTube เมื่อ videoUrl เปลี่ยนแปลง
+   useEffect(() => {
+     if (videoUrl) {
+       const videoId = getYoutubeVideoId(videoUrl);
+       // ใช้รูปภาพคุณภาพสูงจาก YouTube
+       const youtubeThumbnail = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+       
+       // ตรวจสอบว่ารูปภาพมีอยู่จริงหรือไม่
+       const img = new Image();
+       img.onload = () => {
+         // ถ้ารูปภาพโหลดสำเร็จ ใช้รูปภาพนั้น
+         setThumbnailImage(youtubeThumbnail);
+       };
+       img.onerror = () => {
+         // ถ้ารูปภาพไม่มีอยู่ ใช้รูปภาพคุณภาพต่ำแทน
+         setThumbnailImage(`https://img.youtube.com/vi/${videoId}/hqdefault.jpg`);
+       };
+       img.src = youtubeThumbnail;
+     } else if (coverImage) {
+       // ถ้าไม่มี videoUrl แต่มี coverImage ให้ใช้ coverImage
+       setThumbnailImage(coverImage);
+     }
+   }, [videoUrl, coverImage]);
 
    return (
       <>

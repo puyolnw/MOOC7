@@ -426,7 +426,7 @@ const AddCourses: React.FC<AddCoursesProps> = ({ onSubmit, onCancel }) => {
       
       // เพิ่มข้อมูลอื่นๆ ที่ต้องการส่งไปยัง API
       if (courseData.videoUrl) {
-        formData.append('videoUrl', courseData.videoUrl);
+        formData.append('videoUrl', courseData.videoUrl)// เปลี่ยนจาก 'videoUrl' เป็น 'video_url'
       }
       
       formData.append('hasCertificate', courseData.hasCertificate.toString());

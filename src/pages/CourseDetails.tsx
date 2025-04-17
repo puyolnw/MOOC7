@@ -55,37 +55,41 @@ const CourseDetails = () => {
 
   // คำนวณจำนวนบทเรียนทั้งหมดในหลักสูตร
   const totalLessons = courseDetails?.subjects?.reduce(
-    (total: number, subject: any) => total + (subject.lesson_count || 0), 
+    (total: number, subject: any) => total + (parseInt(subject.lesson_count) || 0), 
     0
   ) || 0;
   
   // คำนวณจำนวนแบบทดสอบทั้งหมดในหลักสูตร
   const totalQuizzes = courseDetails?.subjects?.reduce(
-    (total: number, subject: any) => total + (subject.quiz_count || 0), 
+    (total: number, subject: any) => {
+      // รวมแบบทดสอบในบทเรียน
+      const lessonQuizCount = parseInt(subject.quiz_count) || 0;
+      // รวมแบบทดสอบก่อนเรียนและหลังเรียน
+      const subjectQuizCount = parseInt(subject.subject_quiz_count) || 0;
+      return total + lessonQuizCount + subjectQuizCount;
+    }, 
     0
   ) || 0;
-
   // ส่งข้อมูลไปให้ CourseDetailsMain component
  // ข้อมูลที่จะส่งไปให้ CourseDetailsMain component
-const single_course = {
-   id: courseDetails?.course_id || 0,
-   title: courseDetails?.title || 'กำลังโหลด...',
-   category: courseDetails?.category || '',
-   department: courseDetails?.department_name || 'หลักสูตรกลาง',
-   description: courseDetails?.description || '',
-   thumb: courseDetails?.cover_image 
-     ? `${apiURL}/${courseDetails.cover_image}` 
-     : '/assets/img/courses/course_thumb01.jpg',
-   videoUrl: courseDetails?.video_url || '', // เพิ่ม videoUrl
-   subjects: courseDetails?.subjects || [],
-   subjectCount: courseDetails?.subjects?.length || 0,
-   totalLessons,
-   totalQuizzes,
-   instructors: instructors,
-   isLoading,
-   error
- };
- 
+ const single_course = {
+  id: courseDetails?.course_id || 0,
+  title: courseDetails?.title || 'กำลังโหลด...',
+  category: courseDetails?.category || '',
+  department: courseDetails?.department_name || 'หลักสูตรกลาง',
+  description: courseDetails?.description || '',
+  thumb: courseDetails?.cover_image 
+    ? `${apiURL}/${courseDetails.cover_image}` 
+    : '/assets/img/courses/course_thumb01.jpg',
+  videoUrl: courseDetails?.video_url || '', // ตรวจสอบว่ามีการส่ง video_url จาก API
+  subjects: courseDetails?.subjects || [],
+  subjectCount: courseDetails?.subjects?.length || 0,
+  totalLessons,
+  totalQuizzes,
+  instructors: instructors,
+  isLoading,
+  error
+};
 
   return (
     <Wrapper>

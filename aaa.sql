@@ -2,7 +2,7 @@
 -- PostgreSQL database cluster dump
 --
 
--- Started on 2025-04-12 14:18:35
+-- Started on 2025-04-17 19:38:02
 
 SET default_transaction_read_only = off;
 
@@ -44,7 +44,7 @@ ALTER ROLE postgres WITH SUPERUSER INHERIT CREATEROLE CREATEDB LOGIN REPLICATION
 -- Dumped from database version 16.8
 -- Dumped by pg_dump version 16.8
 
--- Started on 2025-04-12 14:18:35
+-- Started on 2025-04-17 19:38:02
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -57,7 +57,7 @@ SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
--- Completed on 2025-04-12 14:18:42
+-- Completed on 2025-04-17 19:38:09
 
 --
 -- PostgreSQL database dump complete
@@ -76,7 +76,7 @@ SET row_security = off;
 -- Dumped from database version 16.8
 -- Dumped by pg_dump version 16.8
 
--- Started on 2025-04-12 14:18:42
+-- Started on 2025-04-17 19:38:09
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -325,7 +325,8 @@ CREATE TABLE public.departments (
     department_id integer NOT NULL,
     department_name character varying(255) NOT NULL,
     faculty character varying(255),
-    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    description text
 );
 
 
@@ -416,7 +417,8 @@ CREATE TABLE public.instructors (
     updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     user_id integer,
     status character varying(20) DEFAULT 'active'::character varying,
-    description text
+    description text,
+    department integer
 );
 
 
@@ -1316,6 +1318,8 @@ COPY public.blacklisted_tokens (id, token, expires_at, created_at) FROM stdin;
 48	eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MywiZW1haWwiOiJpbnN0cnVjdG9yQGV4YW1wbGUuY29tIiwicm9sZV9pZCI6MiwiaWF0IjoxNzQzOTM2OTU5LCJleHAiOjE3NDQwMjMzNTl9.mNsm6fRSw1kqg9Gqx0WII95SRJApS2QspEEqtLmpZ4w	2025-04-07 17:55:59	2025-04-07 12:03:57
 49	eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MywiZW1haWwiOiJpbnN0cnVjdG9yQGV4YW1wbGUuY29tIiwicm9sZV9pZCI6MiwiaWF0IjoxNzQ0MDAyMjU0LCJleHAiOjE3NDQwODg2NTR9.EDNthxrpSmS1ya8isS82sQbWwpLzNsqtQ0_FNJA29cs	2025-04-08 12:04:14	2025-04-07 12:04:21
 50	eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MiwiZW1haWwiOiJhZG1pbkBleGFtcGxlLmNvbSIsInJvbGVfaWQiOjQsImlhdCI6MTc0NDAxNjM3MSwiZXhwIjoxNzQ0MTAyNzcxfQ.AMDmwoIKm39H3NXPnBp6JR_KeaFjwiy4PiOdfAKFbIk	2025-04-08 15:59:31	2025-04-07 16:02:38
+51	eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MiwiZW1haWwiOiJhZG1pbkBleGFtcGxlLmNvbSIsInJvbGVfaWQiOjQsImlhdCI6MTc0NDM4NTczNSwiZXhwIjoxNzQ0NDcyMTM1fQ.jtWB9luWv-P4vpprBaHN-Q5ajQYqcF_2cwrF5QRcZUc	2025-04-12 22:35:35	2025-04-12 15:52:33
+52	eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NywiZW1haWwiOiJhQGEuY29tIiwicm9sZV9pZCI6MiwiaWF0IjoxNzQ0NDQ3OTU3LCJleHAiOjE3NDQ1MzQzNTd9.Mz77WJmsR6Kq8aoXMAoKpx-fYJ2ZqWC0SS3TDqbGKmU	2025-04-13 15:52:37	2025-04-12 15:52:46
 \.
 
 
@@ -1350,6 +1354,13 @@ COPY public.choices (choice_id, question_id, text, is_correct, created_at, updat
 24	14	ไม่รู้	t	2025-04-11 13:12:07.124588	2025-04-11 13:12:07.124588
 25	14	ถูกทุกข้อ	t	2025-04-11 13:12:07.124588	2025-04-11 13:12:07.124588
 26	14	ไม่รู้เหมือนกัน	t	2025-04-11 13:12:07.124588	2025-04-11 13:12:07.124588
+33	18	ตัวเลือกที่ 1	t	2025-04-13 00:22:09.137539	2025-04-13 00:22:09.137539
+34	18	ตัวเลือกที่ 2	t	2025-04-13 00:22:09.137539	2025-04-13 00:22:09.137539
+35	18	ตัวเลือกที่ 3	f	2025-04-13 00:22:09.137539	2025-04-13 00:22:09.137539
+52	19	True	t	2025-04-13 00:26:50.347459	2025-04-13 00:26:50.347459
+53	19	False	f	2025-04-13 00:26:50.347459	2025-04-13 00:26:50.347459
+54	21	True	t	2025-04-13 00:43:58.002797	2025-04-13 00:43:58.002797
+55	21	False	f	2025-04-13 00:43:58.002797	2025-04-13 00:43:58.002797
 \.
 
 
@@ -1373,8 +1384,9 @@ COPY public.course_subjects (course_id, subject_id, order_number) FROM stdin;
 4	4	1
 4	6	2
 5	6	1
-5	7	2
 5	4	3
+6	4	1
+6	8	2
 \.
 
 
@@ -1385,8 +1397,9 @@ COPY public.course_subjects (course_id, subject_id, order_number) FROM stdin;
 --
 
 COPY public.courses (course_id, title, category, description, created_at, updated_at, cover_image_path, status) FROM stdin;
-4	ชื่อหลักสูตร	หมวดหมู่	คำอธิบายหลักสูตร	2025-04-12 05:40:51.087977	2025-04-12 05:40:51.087977	\N	active
 5	dasdad	\N	sadasd	2025-04-12 06:01:56.511332	2025-04-12 06:01:56.511332	C:\\Users\\acer NITRO 5\\OneDrive - Rajabhat Mahasarakham University\\Desktop\\workkkkk\\creditbank\\back_creditbank\\uploads\\courses\\covers\\course-cover-1744437716286-608888241.png	active
+4	ชื่อหลักสูตร	หมวดหมู่	คำอธิบายหลักสูตร	2025-04-12 05:40:51.087977	2025-04-13 05:00:42.506	\N	active
+6	พัฒนาตัวตนระดับจักรวาล	\N	ไม่มี	2025-04-12 07:44:23.132496	2025-04-13 01:36:20.209	C:\\Users\\Jakkapat\\Desktop\\CreditBlank\\back_creditbank\\uploads\\courses\\covers\\course-cover-1744491601359-518875489.jpg	active
 \.
 
 
@@ -1396,7 +1409,10 @@ COPY public.courses (course_id, title, category, description, created_at, update
 -- Data for Name: departments; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.departments (department_id, department_name, faculty, created_at) FROM stdin;
+COPY public.departments (department_id, department_name, faculty, created_at, description) FROM stdin;
+1	คณิตศาสตร์	คณะวิทยาศาสตร์	2025-04-12 14:26:22.093754	\N
+2	วิทยาการคอมพิวเตอร์	คณะวิทยาศาสตร์	2025-04-12 14:26:36.354001	\N
+3	เทคโนโลยีสารสนเทศ	คณะเทคโนโลยีสารสนเทศ	2025-04-12 14:26:45.436531	\N
 \.
 
 
@@ -1416,7 +1432,11 @@ COPY public.enrollments (enrollment_id, user_id, subject_id, enrollment_date, co
 -- Data for Name: instructors; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.instructors (instructor_id, name, "position", avatar_path, created_at, updated_at, user_id, status, description) FROM stdin;
+COPY public.instructors (instructor_id, name, "position", avatar_path, created_at, updated_at, user_id, status, description, department) FROM stdin;
+1	ชื่อ นามสกุล	อาจารย์	\N	2025-04-12 07:20:46.36414	2025-04-12 07:20:46.36414	5	active	รายละเอียดผู้สอน	1
+2	adads das	asdad	\N	2025-04-12 07:30:18.462773	2025-04-12 07:30:18.462773	6	active	asdadad	1
+3	asdad sadasd	asdsad	\N	2025-04-12 08:52:28.276675	2025-04-12 08:52:28.276675	7	active	sadasd	1
+4	aaa aaa	aaa	C:\\Users\\acer NITRO 5\\OneDrive - Rajabhat Mahasarakham University\\Desktop\\workkkkk\\creditbank\\back_creditbank\\uploads\\avatars\\avatar-1744893430286-256001472.png	2025-04-17 12:37:10.095991	2025-04-17 12:37:10.095991	8	active	aaa	1
 \.
 
 
@@ -1459,7 +1479,7 @@ COPY public.lesson_sections (section_id, title, subject_id, order_number, create
 COPY public.lesson_subjects (lesson_id, subject_id) FROM stdin;
 4	4
 5	6
-6	6
+7	8
 \.
 
 
@@ -1474,7 +1494,7 @@ COPY public.lesson_videos (video_id, lesson_id, video_url, duration, created_at,
 2	3	https://www.youtube.com/watch?v=C2RGkVVpD84	1800	2025-04-11 14:09:13.01371	2025-04-11 14:09:13.01371
 3	4	https://www.youtube.com/watch?v=gqOZjgLqck8&t=3051s	1800	2025-04-11 14:59:17.95012	2025-04-11 14:59:17.95012
 4	5	https://www.youtube.com/watch?v=C2RGkVVpD84	1800	2025-04-12 05:11:51.037662	2025-04-12 05:11:51.037662
-5	6	https://www.youtube.com/watch?v=dJ9uVVNWClk	1800	2025-04-12 05:12:25.80188	2025-04-12 05:12:25.80188
+6	7	https://www.youtube.com/watch?v=dJ9uVVNWClk	1800	2025-04-12 07:40:26.501447	2025-04-12 07:40:26.501447
 \.
 
 
@@ -1489,7 +1509,7 @@ COPY public.lessons (lesson_id, title, description, video_url, can_preview, has_
 3	อะไรเอ้ย	หหห5555	https://www.youtube.com/watch?v=C2RGkVVpD84	f	f	\N	2025-04-11 14:09:13.01371	2025-04-11 14:09:13.01371	\N	2
 4	sda	adas	https://www.youtube.com/watch?v=gqOZjgLqck8&t=3051s	t	f	\N	2025-04-11 14:59:17.95012	2025-04-11 14:59:17.95012	\N	2
 5	ไม่มี	วิชาหลัก	https://www.youtube.com/watch?v=C2RGkVVpD84	f	f	\N	2025-04-12 05:11:51.037662	2025-04-12 05:11:51.037662	\N	2
-6	ปหก	หกหก	https://www.youtube.com/watch?v=dJ9uVVNWClk	f	f	12	2025-04-12 05:12:25.80188	2025-04-12 05:12:25.80188	\N	2
+7	บทที่ 1 การทดสอบ	อะไร	https://www.youtube.com/watch?v=dJ9uVVNWClk	f	f	\N	2025-04-12 07:40:26.501447	2025-04-13 00:28:00.643935	\N	2
 \.
 
 
@@ -1508,6 +1528,10 @@ COPY public.questions (question_id, title, description, type, score, created_at,
 12	ข้อใดเป็นภาษาโปรแกรมมิ่ง?	เลือกคำตอบที่ถูกต้องทั้งหมด	MC	2	2025-04-11 13:10:59.963368	2025-04-11 13:10:59.963368
 13	JavaScript เป็นภาษาโปรแกรมมิ่งที่ใช้ในการพัฒนาเว็บไซต์	พิจารณาว่าข้อความนี้ถูกหรือผิด	TF	1	2025-04-11 13:11:08.232636	2025-04-11 13:11:08.232636
 14	อะไรเอ่ย	คำถามอะไรเอ่ย	MC	1	2025-04-11 13:12:07.124588	2025-04-11 13:12:07.124588
+18	คำถามทดสอบ 1	1	MC	1	2025-04-12 07:39:01.436136	2025-04-13 00:22:09.137539
+19	คำถามทดสอบ 2	เทส1	TF	1	2025-04-12 07:39:14.9922	2025-04-13 00:26:50.347459
+20	คำถามทดสอบ 1	\N	MC	1	2025-04-13 00:42:55.630688	2025-04-13 00:42:55.630688
+21	คำถามทดสอบ 2	23	TF	2	2025-04-13 00:42:55.630688	2025-04-13 00:43:58.002797
 \.
 
 
@@ -1556,6 +1580,10 @@ COPY public.quiz_questions (quiz_id, question_id) FROM stdin;
 12	11
 12	10
 12	9
+13	18
+13	19
+14	20
+14	21
 \.
 
 
@@ -1569,6 +1597,8 @@ COPY public.quizzes (quiz_id, title, description, time_limit_enabled, time_limit
 7	แบบทดสอบพื้นฐาน	แบบทดสอบสำหรับทดสอบระบบ	t	30	minutes	t	70	t	f	2	draft	2025-04-11 09:57:49.832684	2025-04-11 09:57:49.832684	standard
 8	แบบทดสอบพื้นฐาน	แบบทดสอบสำหรับทดสอบระบบ	t	30	minutes	t	70	t	f	2	draft	2025-04-11 13:09:13.602489	2025-04-11 13:09:13.602489	standard
 12	กก	กก	f	60	minutes	f	0	t	f	1	active	2025-04-11 14:01:49.041736	2025-04-11 14:01:49.041736	\N
+13	แบบทดสอบ 1 	\N	f	60	minutes	f	0	t	f	1	draft	2025-04-12 07:39:40.132537	2025-04-12 07:39:40.132537	\N
+14	แบบทดสอบ 2		f	60	minutes	f	0	f	t	1	active	2025-04-12 07:40:00.542846	2025-04-13 01:06:00.062158	\N
 \.
 
 
@@ -1628,9 +1658,9 @@ COPY public.subject_lessons (subject_id, lesson_id, order_number) FROM stdin;
 6	3	1
 6	1	2
 6	4	3
-7	4	1
-7	3	2
-7	1	3
+8	7	1
+8	5	2
+9	7	1
 \.
 
 
@@ -1643,7 +1673,8 @@ COPY public.subject_lessons (subject_id, lesson_id, order_number) FROM stdin;
 COPY public.subjects (subject_id, code, title, description, credits, department, cover_image_path, allow_all_lessons, pre_test_id, post_test_id, status, created_at, updated_at) FROM stdin;
 4	CS4223	การเขียนโปรแกรมเว็บขั้นสูง	รายวิชาเกี่ยวกับการพัฒนาเว็บแอปพลิเคชันขั้นสูงด้วย Node.js และ React	3	1	\N	t	\N	\N	active	2025-04-11 14:43:51.840954	2025-04-11 14:43:51.840954
 6	adasd	asda		3	\N	\N	f	8	7	active	2025-04-11 15:30:56.54441	2025-04-11 15:30:56.54441
-7	sadasd	sadasd	sada	3	\N	C:\\Users\\acer NITRO 5\\OneDrive - Rajabhat Mahasarakham University\\Desktop\\workkkkk\\creditbank\\back_creditbank\\uploads\\subjects\\covers\\subject-cover-1744385519349-116066751.jpg	f	8	8	active	2025-04-11 15:31:59.411018	2025-04-11 15:31:59.411018
+8	TH-8000	วิชาภาษาเอก 		3	\N	\N	f	13	14	active	2025-04-12 07:40:55.663519	2025-04-12 07:40:55.663519
+9	101212	ทดสอบเทส ๆ	เทส	3	\N	/app/uploads/subjects/covers/subject-cover-1744465503653-207860860.png	f	14	13	inactive	2025-04-12 13:45:03.722141	2025-04-13 05:09:45.446
 \.
 
 
@@ -1657,6 +1688,10 @@ COPY public.users (user_id, name, email, password, role_id, created_at, updated_
 1	jakkapat	email@example.com	$2b$10$FMakc9xhps3RwVSm.XKEyuaQ6vThtlcxF0naojYN5ZL4h9lzb/wlW	1	2025-03-31 19:26:32.153598	2025-03-31 19:26:32.153598	active	email	jakkapat	
 2	Admin	admin@example.com	$2b$10$LKzv0BnS2xN94Cjdt3KQmu4LIBSO0Mn7CBPy0Ua2a7lyOu79tBsNi	4	2025-04-01 09:02:33.648537	2025-04-01 09:02:33.648537	active	admin	Admin	
 3	Instructor	instructor@example.com	$2b$10$X8u28AV.ZN9Qz09IdqTh5uN.3EkI88GRsszJpA.D4SY3WXRgBGswe	2	2025-04-01 10:59:03.150143	2025-04-01 10:59:03.150143	active	instructor	Instructor	
+5	ชื่อ นามสกุล	instructor1@example.com	$2b$10$NEsC1nckJ67urGI01o.sK.c./yQIsLpZJpzw7O.TBkODSv/G7TCMe	2	2025-04-12 07:20:46.36414	2025-04-12 07:20:46.36414	active	instructor1	ชื่อ	นามสกุล
+6	adads das	asdasd@gmail.com	$2b$10$TKPSVb.Q.7jEzqY/9ua0P.aktz6IQ9SDYkBOXFtwKLt6bIiK2oSA.	2	2025-04-12 07:30:18.462773	2025-04-12 07:30:18.462773	active	asdsad	adads	das
+7	asdad sadasd	a@a.com	$2b$10$Xjm113nkGfDMhyJKJa35ZeCj58Z6rV8dNeWJIHbO8joVcQJr9pTS.	2	2025-04-12 08:52:28.276675	2025-04-12 08:52:28.276675	active	asss	asdad	sadasd
+8	aaa aaa	aaa@aaa.com	$2b$10$lnqDaREVDgi6xBg0o8YrAeZ3DEh1TTV53OAn5Pry9ed.tQmyLbfM.	2	2025-04-17 12:37:10.095991	2025-04-17 12:37:10.095991	active	main	aaa	aaa
 \.
 
 
@@ -1675,7 +1710,7 @@ SELECT pg_catalog.setval('public.admins_admin_id_seq', 1, false);
 -- Name: blacklisted_tokens_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.blacklisted_tokens_id_seq', 50, true);
+SELECT pg_catalog.setval('public.blacklisted_tokens_id_seq', 52, true);
 
 
 --
@@ -1684,7 +1719,7 @@ SELECT pg_catalog.setval('public.blacklisted_tokens_id_seq', 50, true);
 -- Name: choices_choice_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.choices_choice_id_seq', 26, true);
+SELECT pg_catalog.setval('public.choices_choice_id_seq', 55, true);
 
 
 --
@@ -1702,7 +1737,7 @@ SELECT pg_catalog.setval('public.course_lessons_id_seq', 1, false);
 -- Name: courses_course_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.courses_course_id_seq', 5, true);
+SELECT pg_catalog.setval('public.courses_course_id_seq', 6, true);
 
 
 --
@@ -1711,7 +1746,7 @@ SELECT pg_catalog.setval('public.courses_course_id_seq', 5, true);
 -- Name: departments_department_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.departments_department_id_seq', 1, false);
+SELECT pg_catalog.setval('public.departments_department_id_seq', 3, true);
 
 
 --
@@ -1729,7 +1764,7 @@ SELECT pg_catalog.setval('public.enrollments_enrollment_id_seq', 1, false);
 -- Name: instructors_instructor_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.instructors_instructor_id_seq', 1, false);
+SELECT pg_catalog.setval('public.instructors_instructor_id_seq', 4, true);
 
 
 --
@@ -1765,7 +1800,7 @@ SELECT pg_catalog.setval('public.lesson_sections_section_id_seq', 1, false);
 -- Name: lesson_videos_video_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.lesson_videos_video_id_seq', 5, true);
+SELECT pg_catalog.setval('public.lesson_videos_video_id_seq', 6, true);
 
 
 --
@@ -1774,7 +1809,7 @@ SELECT pg_catalog.setval('public.lesson_videos_video_id_seq', 5, true);
 -- Name: lessons_lesson_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.lessons_lesson_id_seq', 6, true);
+SELECT pg_catalog.setval('public.lessons_lesson_id_seq', 7, true);
 
 
 --
@@ -1783,7 +1818,7 @@ SELECT pg_catalog.setval('public.lessons_lesson_id_seq', 6, true);
 -- Name: questions_question_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.questions_question_id_seq', 17, true);
+SELECT pg_catalog.setval('public.questions_question_id_seq', 21, true);
 
 
 --
@@ -1810,7 +1845,7 @@ SELECT pg_catalog.setval('public.quiz_attempts_attempt_id_seq', 1, false);
 -- Name: quizzes_quiz_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.quizzes_quiz_id_seq', 12, true);
+SELECT pg_catalog.setval('public.quizzes_quiz_id_seq', 14, true);
 
 
 --
@@ -1837,7 +1872,7 @@ SELECT pg_catalog.setval('public.students_student_id_seq', 1, false);
 -- Name: subjects_subject_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.subjects_subject_id_seq', 7, true);
+SELECT pg_catalog.setval('public.subjects_subject_id_seq', 9, true);
 
 
 --
@@ -1846,7 +1881,7 @@ SELECT pg_catalog.setval('public.subjects_subject_id_seq', 7, true);
 -- Name: users_user_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.users_user_id_seq', 4, true);
+SELECT pg_catalog.setval('public.users_user_id_seq', 8, true);
 
 
 --
@@ -2561,13 +2596,13 @@ ALTER TABLE ONLY public.subjects
     ADD CONSTRAINT subjects_pre_test_id_fkey FOREIGN KEY (pre_test_id) REFERENCES public.quizzes(quiz_id) ON DELETE SET NULL;
 
 
--- Completed on 2025-04-12 14:18:54
+-- Completed on 2025-04-17 19:38:22
 
 --
 -- PostgreSQL database dump complete
 --
 
--- Completed on 2025-04-12 14:18:54
+-- Completed on 2025-04-17 19:38:22
 
 --
 -- PostgreSQL database cluster dump complete
