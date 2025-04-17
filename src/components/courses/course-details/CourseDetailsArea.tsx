@@ -1,65 +1,24 @@
 import { useState } from "react";
-import Overview from "./Overview";
-import Sidebar from "./Sidebar";
-import Curriculum from "./Curriculum"
-import Instructors from "./Instructors"
 import { Link } from "react-router-dom";
-
-const tab_title: string[] = ["ข้อมูลทั่วไป", "รายวิชา", "ผู้สอน"];
+import Curriculum from "./Curriculum";
+import Overview from "./Overview";
+import Instructors from "./Instructors";
+import Reviews from "./Reviews";
+import Sidebar from "./Sidebar";
 
 interface CourseDetailsAreaProps {
-  single_course: {
-    id: number;
-    title: string;
-    category: string;
-    department: string;
-    description: string;
-    thumb: string;
-    subjects: any[];
-    subjectCount: number;
-    totalLessons: number;
-    totalQuizzes: number;
-    instructors: any[];
-    isLoading: boolean;
-    videoUrl?: string; 
-    error: string | null;
-  };
+  single_course: any;
+  onEnroll: () => void; // เพิ่ม prop นี้
 }
 
-const CourseDetailsArea = ({ single_course }: CourseDetailsAreaProps) => {
+const CourseDetailsArea = ({ single_course, onEnroll }: CourseDetailsAreaProps) => {
   const [activeTab, setActiveTab] = useState(0);
 
   const handleTabClick = (index: number) => {
     setActiveTab(index);
   };
 
-  if (single_course.isLoading) {
-    return (
-      <section className="courses__details-area section-py-120">
-        <div className="container">
-          <div className="text-center py-5">
-            <div className="spinner-border text-primary" role="status">
-              <span className="visually-hidden">กำลังโหลด...</span>
-            </div>
-            <p className="mt-3">กำลังโหลดข้อมูลหลักสูตร...</p>
-          </div>
-        </div>
-      </section>
-    );
-  }
-
-  if (single_course.error) {
-    return (
-      <section className="courses__details-area section-py-120">
-        <div className="container">
-          <div className="alert alert-danger">
-            <i className="fas fa-exclamation-circle me-2"></i>
-            {single_course.error}
-          </div>
-        </div>
-      </section>
-    );
-  }
+  const tab_titles = ["ภาพรวม", "รายวิชา", "อาจารย์ผู้สอน", "รีวิว"];
 
   return (
     <section className="courses__details-area section-py-120">
@@ -72,19 +31,28 @@ const CourseDetailsArea = ({ single_course }: CourseDetailsAreaProps) => {
             <div className="courses__details-content">
               <ul className="courses__item-meta list-wrap">
                 <li className="courses__item-tag">
-                  <Link to={`/courses?category=${single_course.category}`}>{single_course.category}</Link>
+                  <Link to="/course">{single_course.category}</Link>
+                </li>
+                <li className="department">
+                  <i className="flaticon-department"></i>{single_course.department}
                 </li>
               </ul>
               <h2 className="title">{single_course.title}</h2>
               <div className="courses__details-meta">
                 <ul className="list-wrap">
-                  
-                  <li className="date"><i className="flaticon-calendar"></i>24/07/2024</li>
-                  <li><i className="flaticon-mortarboard"></i>{single_course.subjectCount} วิชา</li>
+                  {single_course.instructors && single_course.instructors.length > 0 && (
+                    <li className="author-two">
+                      <img src={single_course.instructors[0].avatar || "/assets/img/courses/course_author001.png"} alt="img" />
+                      โดย <Link to="#">{single_course.instructors[0].name}</Link>
+                      {single_course.instructors.length > 1 && ` และอีก ${single_course.instructors.length - 1} ท่าน`}
+                    </li>
+                  )}
+                  <li><i className="flaticon-book"></i>{single_course.totalLessons} บทเรียน</li>
+                  <li><i className="flaticon-quiz"></i>{single_course.totalQuizzes} แบบทดสอบ</li>
                 </ul>
               </div>
               <ul className="nav nav-tabs" id="myTab" role="tablist">
-                {tab_title.map((tab, index) => (
+                {tab_titles.map((tab, index) => (
                   <li key={index} onClick={() => handleTabClick(index)} className="nav-item" role="presentation">
                     <button className={`nav-link ${activeTab === index ? "active" : ""}`}>{tab}</button>
                   </li>
@@ -100,21 +68,25 @@ const CourseDetailsArea = ({ single_course }: CourseDetailsAreaProps) => {
                 <div className={`tab-pane fade ${activeTab === 2 ? 'show active' : ''}`} id="instructors-tab-pane" role="tabpanel" aria-labelledby="instructors-tab">
                   <Instructors instructors={single_course.instructors} />
                 </div>
+                <div className={`tab-pane fade ${activeTab === 3 ? 'show active' : ''}`} id="reviews-tab-pane" role="tabpanel" aria-labelledby="reviews-tab">
+                  <Reviews />
+                </div>
               </div>
             </div>
           </div>
           <Sidebar 
-  subjectCount={single_course.subjectCount} 
-  totalLessons={single_course.totalLessons} 
-  totalQuizzes={single_course.totalQuizzes}
-  courseId={single_course.id}
-  videoUrl={single_course.videoUrl} // เพิ่ม videoUrl
-  coverImage={single_course.thumb} // เพิ่ม coverImage
-/>
+            subjectCount={single_course.subjectCount} 
+            totalLessons={single_course.totalLessons} 
+            totalQuizzes={single_course.totalQuizzes} 
+            courseId={single_course.id}
+            videoUrl={single_course.videoUrl}
+            coverImage={single_course.thumb}
+            onEnroll={onEnroll} // ส่ง prop นี้ไปให้ Sidebar
+          />
         </div>
       </div>
     </section>
-  )
-}
+  );
+};
 
-export default CourseDetailsArea
+export default CourseDetailsArea;

@@ -88,7 +88,7 @@ const AppNavigation = () => {
         <Route path="/home-eight" element={<HomeEight />} />
         <Route path="/courses" element={<Course />} />
         <Route path="/course-details/:id" element={<CourseDetails />} />
-        <Route path="/lesson" element={<Lesson />} />
+        <Route path="/course-learning/:subjectId" element={<Lesson />} />
         <Route path="/about-us" element={<About />} />
         <Route path="/instructors" element={<Instructor />} />
         <Route path="/instructor-details" element={<InstructorDetails />} />

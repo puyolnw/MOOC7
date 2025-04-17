@@ -1,6 +1,12 @@
 import React, { useState, CSSProperties, useEffect } from "react";
 import { Link } from "react-router-dom";
 
+interface Prerequisite {
+  prerequisite_id: number;
+  prerequisite_name: string;
+  prerequisite_code: string;
+}
+
 interface Subject {
   subject_id: number;
   subject_code: string;
@@ -10,6 +16,7 @@ interface Subject {
   instructor_count: number;
   lesson_count: number;
   cover_image?: string;
+  prerequisites?: Prerequisite[];
 }
 
 interface CurriculumProps {
@@ -110,6 +117,38 @@ const Curriculum: React.FC<CurriculumProps> = ({ subjects }) => {
       justifyContent: "center",
       color: "#6c757d",
       fontSize: "1rem",
+    },
+    prerequisitesBadge: {
+      display: "inline-block",
+      padding: "0.25rem 0.5rem",
+      fontSize: "0.75rem",
+      fontWeight: "bold",
+      lineHeight: "1",
+      textAlign: "center",
+      whiteSpace: "nowrap",
+      verticalAlign: "baseline",
+      borderRadius: "0.25rem",
+      color: "#fff",
+      backgroundColor: "#6c757d",
+      marginRight: "0.5rem",
+      marginBottom: "0.5rem",
+    },
+    prerequisitesContainer: {
+      marginTop: "1rem",
+      borderTop: "1px dashed #e0e0e0",
+      paddingTop: "1rem",
+    },
+    prerequisitesTitle: {
+      fontSize: "0.875rem",
+      fontWeight: "bold",
+      marginBottom: "0.5rem",
+      color: "#495057",
+    },
+    prerequisitesList: {
+      display: "flex",
+      flexWrap: "wrap",
+      margin: "0",
+      padding: "0",
     }
   };
 
@@ -211,6 +250,27 @@ const Curriculum: React.FC<CurriculumProps> = ({ subjects }) => {
                       <span>{subject.instructor_count} ผู้สอน</span>
                     </li>
                   </ul>
+                  
+                  {/* แสดงรายวิชาที่ต้องเรียนก่อน (ถ้ามี) */}
+                  {subject.prerequisites && subject.prerequisites.length > 0 && (
+                    <div style={styles.prerequisitesContainer}>
+                      <h6 style={styles.prerequisitesTitle}>
+                        <i className="fas fa-project-diagram" style={{ marginRight: "8px" }}></i>
+                        วิชาที่ต้องเรียนก่อน:
+                      </h6>
+                      <div style={styles.prerequisitesList}>
+                        {subject.prerequisites.map(prereq => (
+                          <span 
+                            key={prereq.prerequisite_id} 
+                            style={styles.prerequisitesBadge}
+                            title={prereq.prerequisite_name}
+                          >
+                            {prereq.prerequisite_code}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
                 
                 <div style={styles.cardFooter}>

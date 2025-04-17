@@ -1,0 +1,123 @@
+.lesson-questions-container {
+    padding: 15px;
+  }
+  
+  .question-form {
+    background-color: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+  }
+  
+  .question-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .question-item {
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  
+  .question-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    background-color: #f8f9fa;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+  }
+  
+  .question-header:hover {
+    background-color: #e9ecef;
+  }
+  
+  .question-title {
+    flex: 1;
+  }
+  
+  .question-title h5 {
+    margin-bottom: 5px;
+    font-size: 1.1rem;
+  }
+  
+  .question-meta {
+    display: flex;
+    gap: 15px;
+    font-size: 0.85rem;
+    color: #6c757d;
+  }
+  
+  .question-toggle {
+    margin-left: 15px;
+    color: #6c757d;
+  }
+  
+  .question-content {
+    padding: 15px;
+    border-top: 1px solid #e9ecef;
+  }
+  
+  .question-body {
+    margin-bottom: 20px;
+  }
+  
+  .answer-list {
+    margin-bottom: 20px;
+  }
+  
+  .answer-list-title {
+    margin-bottom: 10px;
+    font-size: 1rem;
+    color: #495057;
+  }
+  
+  .answer-item {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+  }
+  
+  .answer-item.instructor-answer {
+    background-color: #e8f4f8;
+    border-left: 4px solid #0dcaf0;
+  }
+  
+  .answer-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    font-size: 0.9rem;
+    color: #6c757d;
+  }
+  
+  .answer-author {
+    font-weight: 600;
+  }
+  
+  .answer-body p {
+    margin-bottom: 0;
+  }
+  
+  .answer-form {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+  }
+  
+  @media (max-width: 768px) {
+    .question-meta {
+      flex-direction: column;
+      gap: 5px;
+    }
+    
+    .answer-header {
+      flex-direction: column;
+      gap: 5px;
+    }
+  }
+  

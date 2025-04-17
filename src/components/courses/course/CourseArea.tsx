@@ -24,12 +24,14 @@ interface CourseExtraInfo {
 }
 
 const CourseArea = () => {
-   const apiURL = import.meta.env.VITE_API_URL ;
+   const apiURL = import.meta.env.VITE_API_URL;
    const { courses, setCourses } = UseCourses();
    const [isLoading, setIsLoading] = useState(false);
    const [error, setError] = useState<string | null>(null);
    // เก็บข้อมูลเพิ่มเติมแยกต่างหาก
    const [courseExtraInfo, setCourseExtraInfo] = useState<Record<number, CourseExtraInfo>>({});
+   // เพิ่ม state เก็บรายการหลักสูตรที่ผู้ใช้ลงทะเบียนแล้ว
+   const [enrolledCourses, setEnrolledCourses] = useState<number[]>([]);
 
    // ดึงข้อมูลหลักสูตรจาก API
    useEffect(() => {
@@ -81,6 +83,35 @@ const CourseArea = () => {
       fetchCourses();
    }, [apiURL, setCourses]);
 
+   // เพิ่ม useEffect ใหม่เพื่อตรวจสอบหลักสูตรที่ผู้ใช้ลงทะเบียนแล้ว
+   useEffect(() => {
+      const checkEnrolledCourses = async () => {
+         try {
+            // ตรวจสอบว่ามี token หรือไม่ (user ล็อกอินหรือไม่)
+            const token = localStorage.getItem('token');
+            if (!token) return;
+            
+            // เรียก API เพื่อดึงรายการหลักสูตรที่ลงทะเบียนแล้ว
+            const response = await axios.get(`${apiURL}/api/courses/user/enrolled`, {
+               headers: {
+                  Authorization: `Bearer ${token}`
+               }
+            });
+            
+            if (response.data.success && response.data.courses) {
+               // เก็บเฉพาะ ID ของหลักสูตรที่ลงทะเบียนแล้ว
+               const enrolledIds = response.data.courses.map((course: any) => course.course_id);
+               setEnrolledCourses(enrolledIds);
+            }
+         } catch (error) {
+            console.error('Error fetching enrolled courses:', error);
+            // ไม่ต้องแสดง error เพราะเป็นฟีเจอร์เสริม
+         }
+      };
+      
+      checkEnrolledCourses();
+   }, [apiURL]);
+
    const itemsPerPage = 12;
    const [itemOffset, setItemOffset] = useState(0);
    const endOffset = itemOffset + itemsPerPage;
@@ -104,6 +135,11 @@ const CourseArea = () => {
    // ฟังก์ชันสำหรับดึงข้อมูลเพิ่มเติม
    const getExtraInfo = (courseId: number): CourseExtraInfo => {
       return courseExtraInfo[courseId] || { description: '', departmentName: 'หลักสูตรกลาง' };
+   };
+
+   // ฟังก์ชันตรวจสอบว่าหลักสูตรนี้ลงทะเบียนแล้วหรือไม่
+   const isEnrolled = (courseId: number): boolean => {
+      return enrolledCourses.includes(courseId);
    };
 
    return (
@@ -159,8 +195,10 @@ const CourseArea = () => {
                                           <p className="author">By <Link to="#">{getExtraInfo(item.id).departmentName}</Link></p>
                                           <div className="courses__item-bottom">
                                              <div className="button">
-                                                <Link to={`/course-details/${item.id}`}>
-                                                   <span className="text">ลงทะเบียนตอนนี้</span>
+                                                <Link to={isEnrolled(item.id) ? `/student-enrolled-courses/${item.id}` : `/course-details/${item.id}`}>
+                                                   <span className="text">
+                                                      {isEnrolled(item.id) ? "ตรวจสอบความคืบหน้า" : "ลงทะเบียนตอนนี้"}
+                                                   </span>
                                                    <i className="flaticon-arrow-right"></i>
                                                 </Link>
                                              </div>
@@ -207,8 +245,10 @@ const CourseArea = () => {
                                           <p className="info">{getExtraInfo(item.id).description}</p>
                                           <div className="courses__item-bottom">
                                              <div className="button">
-                                                <Link to={`/course-details/${item.id}`}>
-                                                   <span className="text">ลงทะเบียนตอนนี้</span>
+                                                <Link to={isEnrolled(item.id) ? `/student-enrolled-courses/${item.id}` : `/course-details/${item.id}`}>
+                                                   <span className="text">
+                                                      {isEnrolled(item.id) ? "ตรวจสอบความคืบหน้า" : "ลงทะเบียนตอนนี้"}
+                                                   </span>
                                                    <i className="flaticon-arrow-right"></i>
                                                 </Link>
                                              </div>
@@ -239,5 +279,4 @@ const CourseArea = () => {
       </section>
    );
 };
-
 export default CourseArea;
