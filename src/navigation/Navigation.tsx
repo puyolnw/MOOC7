@@ -19,6 +19,7 @@ import AdminEditSubjectspage from '../pages/Admin/edit/AdminEditSubject';
 
 import AdminAccountInstructorspage from '../pages/Admin/account/AccountInstructors';
 import CreateAccountInstructorspage from '../pages/Admin/account/create/AddInstructors';
+import AdminStudentpage from '../pages/Admin/account/AccountStudent';
 
 import SubjectDetailsPage from '../pages/SubjectDetails';
 import Home from '../pages/Home';
@@ -129,6 +130,7 @@ const AppNavigation = () => {
         <Route path="/admin-subjects/edit-subject/:subjectId" element={<AdminEditSubjectspage />} />
 
         <Route path="/admin-account/instructors" element={<AdminAccountInstructorspage/>} />
+        <Route path="/admin-account/students" element={<AdminStudentpage/>} />
 
         <Route path="/admin-account/instructors/create-new" element={< CreateAccountInstructorspage />} />
 
