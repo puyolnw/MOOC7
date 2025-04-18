@@ -308,7 +308,7 @@ const LessonsArea = () => {
                                     <div className="d-flex justify-content-center gap-3">
                                       {lesson.lesson_id ? (
                                         <Link to={`/admin-lessons/edit-lessons/${lesson.lesson_id}`} className="text-primary" style={{ display: "inline-flex", alignItems: "center" }} >
-                                          <i className="fas fa-edit icon-action" style={{ cursor: "pointer", lineHeight: 1 }}></i>
+                                          <i className="btbtnn-sm btn-outline-primary" style={{ cursor: "pointer", lineHeight: 1 }}></i>
                                         </Link>
                                       ) : (
                                         <span className="text-muted" title="ไม่มี ID บทเรียน">
