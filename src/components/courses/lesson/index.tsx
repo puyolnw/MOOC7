@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams} from "react-router-dom";
 import axios from "axios";
 import FooterOne from "../../../layouts/footers/FooterOne";
 import HeaderOne from "../../../layouts/headers/HeaderOne";
@@ -7,7 +7,6 @@ import LessonArea from "./LessonArea";
 
 const Lesson = () => {
    const { subjectId } = useParams();
-   const navigate = useNavigate();
    const [isLoading, setIsLoading] = useState(true);
    const [subjectData, setSubjectData] = useState<any>(null);
    const [error, setError] = useState<string | null>(null);

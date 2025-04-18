@@ -22,7 +22,6 @@ const LessonVideo = ({ onComplete, currentLesson, youtubeId = 'BboMpayJomw', les
   const [isCompleted, setIsCompleted] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [watchedTime, setWatchedTime] = useState(0);
-  const [duration, setDuration] = useState(0);
 
   useEffect(() => {
     if (lessonData?.completed) {
@@ -56,7 +55,7 @@ const LessonVideo = ({ onComplete, currentLesson, youtubeId = 'BboMpayJomw', les
       });
 
       playerRef.current.on('ready', () => {
-        setDuration(playerRef.current?.duration || 0);
+        (playerRef.current?.duration || 0);
       });
 
       playerRef.current.on('play', () => {
