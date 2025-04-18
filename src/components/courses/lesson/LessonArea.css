@@ -317,3 +317,51 @@
     border-top: 1px solid #e9ecef;
     padding-top: 20px;
 }
+/* ปรับปรุงสไตล์สำหรับแบบทดสอบ */
+.course-item .badge {
+    font-size: 0.7rem;
+    padding: 0.25em 0.5em;
+    border-radius: 10px;
+  }
+  
+  /* ปรับปรุงสไตล์สำหรับบทเรียนที่กำลังเรียนอยู่ */
+  .course-item.active {
+    background-color: #e8f4ff;
+    border-left: 3px solid #0d6efd;
+  }
+  
+  /* ปรับปรุงสไตล์สำหรับบทเรียนที่ถูกล็อค */
+  .course-item.locked {
+    opacity: 0.7;
+    cursor: not-allowed;
+    background-color: #f8f9fa;
+  }
+  
+  .course-item.locked .item-name {
+    color: #6c757d;
+  }
+  
+  .course-item.locked .fa-lock {
+    margin-right: 5px;
+    color: #dc3545;
+  }
+  
+  /* ปรับปรุงสไตล์สำหรับบทเรียนที่เรียนจบแล้ว */
+  .course-item.completed .item-name::before {
+    content: "\f00c";
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
+    margin-right: 8px;
+    color: #198754;
+  }
+  
+  /* ปรับปรุงสไตล์สำหรับหัวข้อบท */
+  .accordion-button[data-progress="100"] {
+    color: #198754;
+  }
+  
+  .accordion-button[data-progress="100"] .lesson-count {
+    background-color: #d1e7dd;
+    color: #0f5132;
+  }
+  
