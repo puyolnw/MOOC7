@@ -9,9 +9,11 @@ interface LessonVideoProps {
   currentLesson: string;
   youtubeId: string;
   lessonData: any;
+  progressData?: any;
+  subjectId?: string;
 }
 
-const LessonVideo = ({ onComplete, currentLesson, youtubeId = 'BboMpayJomw', lessonData }: LessonVideoProps) => {
+const LessonVideo = ({ onComplete, currentLesson, youtubeId = 'BboMpayJomw', lessonData, progressData, subjectId }: LessonVideoProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<Plyr | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -22,6 +24,8 @@ const LessonVideo = ({ onComplete, currentLesson, youtubeId = 'BboMpayJomw', les
   const [isCompleted, setIsCompleted] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [watchedTime, setWatchedTime] = useState(0);
+  const [videoDuration, setVideoDuration] = useState(0);
+  const [lastUpdateTime, setLastUpdateTime] = useState(0);
 
   useEffect(() => {
     if (lessonData?.completed) {
@@ -55,7 +59,18 @@ const LessonVideo = ({ onComplete, currentLesson, youtubeId = 'BboMpayJomw', les
       });
 
       playerRef.current.on('ready', () => {
-        (playerRef.current?.duration || 0);
+        const duration = playerRef.current?.duration || 0;
+        setVideoDuration(duration);
+        
+        if (progressData && progressData.lessons) {
+          const lessonProgress = progressData.lessons.find(
+            (lesson: any) => lesson.lesson_id === parseInt(lessonData?.lesson_id)
+          );
+          
+          if (lessonProgress && lessonProgress.last_position_seconds) {
+            playerRef.current?.forward(lessonProgress.last_position_seconds);
+          }
+        }
       });
 
       playerRef.current.on('play', () => {
@@ -90,12 +105,24 @@ const LessonVideo = ({ onComplete, currentLesson, youtubeId = 'BboMpayJomw', les
 
       playerRef.current.on('ended', () => {
         if (timerRef.current) clearInterval(timerRef.current);
+        setProgress(100);
         handleVideoComplete();
       });
 
       playerRef.current.on('error', (e) => {
         console.error('Player error:', e);
       });
+      
+      const durationCheckInterval = setInterval(() => {
+        if (playerRef.current && playerRef.current.duration > 0) {
+          setVideoDuration(playerRef.current.duration);
+          clearInterval(durationCheckInterval);
+        }
+      }, 1000);
+      
+      return () => {
+        clearInterval(durationCheckInterval);
+      };
     }
 
     return () => {
@@ -106,13 +133,12 @@ const LessonVideo = ({ onComplete, currentLesson, youtubeId = 'BboMpayJomw', les
         clearInterval(timerRef.current);
       }
     };
-  }, [currentLesson, youtubeId]);
+  }, [currentLesson, youtubeId, progressData, lessonData]);
 
   useEffect(() => {
     setWatchedTime(0);
     setIsPlaying(false);
     
-    // If the lesson is already completed, set progress to 100%
     if (lessonData?.completed) {
       setIsCompleted(true);
       setProgress(100);
@@ -130,28 +156,51 @@ const LessonVideo = ({ onComplete, currentLesson, youtubeId = 'BboMpayJomw', les
       if (!token) return;
       
       const currentTime = playerRef.current?.currentTime || 0;
-      const videoDuration = playerRef.current?.duration || 1;
-      const currentProgress = (currentTime / videoDuration) * 100;
+      const duration = playerRef.current?.duration || 0;
       
-      setProgress(currentProgress);
-      
-      // Update progress on server every 5 seconds or when progress changes significantly
-      if (Math.abs(currentProgress - progress) > 5 || watchedTime % 5 === 0) {
-        await axios.post(
-          `${apiURL}/api/courses/lessons/${lessonData.lesson_id}/progress`, 
-          {
-            position: currentTime,
-            duration: videoDuration
-          },
-          {
-            headers: { Authorization: `Bearer ${token}` }
+      if (duration > 0) {
+        if (currentTime >= duration) {
+          setProgress(100);
+          
+          if (!isCompleted) {
+            handleVideoComplete();
           }
-        );
-      }
-      
-      // Mark as completed if watched more than 90%
-      if (currentProgress > 90 && !isCompleted) {
-        handleVideoComplete();
+        } else {
+          const currentProgress = (currentTime / duration) * 100;
+          setProgress(currentProgress);
+          
+          if (currentProgress > 90 && !isCompleted) {
+            handleVideoComplete();
+          }
+        }
+        
+        const now = Date.now();
+        if (watchedTime % 5 === 0 || now - lastUpdateTime > 5000 || Math.abs(currentTime - lastUpdateTime) > 10) {
+          setLastUpdateTime(now);
+          
+          await axios.post(
+            `${apiURL}/api/courses/lessons/${lessonData.lesson_id}/progress`, 
+            {
+              last_position_seconds: currentTime,
+              duration_seconds: duration,
+              completed: currentTime >= duration || progress >= 100,
+              subject_id: subjectId
+            },
+            {
+              headers: { Authorization: `Bearer ${token}` }
+            }
+          );
+          
+          if (subjectId && (currentTime >= duration || progress >= 90)) {
+            try {
+              await axios.get(`${apiURL}/api/courses/subjects/${subjectId}/progress`, {
+                headers: { Authorization: `Bearer ${token}` }
+              });
+            } catch (error) {
+              console.error("Error updating subject progress:", error);
+            }
+          }
+        }
       }
     } catch (error) {
       console.error("Error updating progress:", error);
@@ -167,7 +216,7 @@ const LessonVideo = ({ onComplete, currentLesson, youtubeId = 'BboMpayJomw', les
       
       await axios.post(
         `${apiURL}/api/courses/lessons/${lessonData.lesson_id}/complete`,
-        {},
+        { subject_id: subjectId },
         {
           headers: { Authorization: `Bearer ${token}` }
         }
@@ -175,7 +224,18 @@ const LessonVideo = ({ onComplete, currentLesson, youtubeId = 'BboMpayJomw', les
       
       setIsCompleted(true);
       setProgress(100);
+      
       onComplete();
+      
+      if (subjectId) {
+        try {
+          await axios.get(`${apiURL}/api/courses/subjects/${subjectId}/progress`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+        } catch (error) {
+          console.error("Error updating subject progress:", error);
+        }
+      }
     } catch (error) {
       console.error("Error marking lesson as complete:", error);
     }
@@ -205,7 +265,15 @@ const LessonVideo = ({ onComplete, currentLesson, youtubeId = 'BboMpayJomw', les
           )}
         </div>
         <div className="video-progress-info">
-          <span>{progress.toFixed(0)}% ของวิดีโอ</span>
+          {isCompleted || (playerRef.current && playerRef.current.currentTime >= playerRef.current.duration) ? (
+            <span>100% ของวิดีโอ</span>
+          ) : (
+            <span>{progress.toFixed(0)}% ของวิดีโอ</span>
+          )}
+          <span className="video-duration">
+            {" "}({isCompleted ? videoDuration.toFixed(1) : (playerRef.current ? playerRef.current.currentTime.toFixed(1) : 0)}/
+            {playerRef.current ? playerRef.current.duration.toFixed(1) : 0} วินาที)
+          </span>
         </div>
       </div>
     </div>

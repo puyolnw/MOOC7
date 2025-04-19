@@ -223,4 +223,198 @@
      margin-bottom: 30px;
    }
  }
- 
+ .lesson-progress-bar {
+  height: 4px;
+  background-color: #e9ecef;
+  border-radius: 2px;
+  margin-top: 5px;
+  width: 100%;
+}
+
+.lesson-progress-fill {
+  height: 100%;
+  background-color: #4CAF50;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.lesson-item.completed .lesson-title {
+  color: #4CAF50;
+}
+
+.lesson-item.completed i {
+  color: #4CAF50;
+}
+
+.lesson-item {
+  cursor: pointer;
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+  transition: background-color 0.2s;
+}
+
+.lesson-item:hover {
+  background-color: #f8f9fa;
+}
+
+.lesson-item.locked {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.lesson-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.lesson-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}
+
+.lesson-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: #6c757d;
+  margin-top: 5px;
+  margin-left: 24px;
+}
+/* เพิ่ม CSS สำหรับแสดงความก้าวหน้าในเมนูบทเรียน */
+
+/* ปรับปรุงสไตล์สำหรับแถบความก้าวหน้า */
+.item-progress-mini {
+  height: 4px;
+  background-color: #e9ecef;
+  border-radius: 2px;
+  margin-top: 8px;
+  overflow: hidden;
+  width: 100%;
+}
+
+.item-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #4CAF50, #8BC34A);
+  border-radius: 2px;
+  transition: width 0.5s ease;
+}
+
+/* ปรับปรุงสไตล์สำหรับบทเรียนที่เรียนจบแล้ว */
+.course-item.completed {
+  background-color: #f0f7f0;
+}
+
+.course-item.completed .item-name {
+  color: #28a745;
+  font-weight: 500;
+}
+
+.course-item.completed .item-name::before {
+  content: "\f00c";
+  font-family: "Font Awesome 5 Free";
+  font-weight: 900;
+  margin-right: 8px;
+  color: #28a745;
+}
+
+/* ปรับปรุงสไตล์สำหรับบทเรียนที่กำลังเรียน */
+.course-item.active {
+  background-color: #e8f4ff;
+  border-left: 3px solid #007bff;
+}
+
+.course-item.active .item-name {
+  color: #007bff;
+  font-weight: 500;
+}
+
+/* ปรับปรุงสไตล์สำหรับบทเรียนที่ถูกล็อค */
+.course-item.locked {
+  opacity: 0.7;
+  cursor: not-allowed;
+  background-color: #f8f9fa;
+}
+
+.course-item.locked .item-name {
+  color: #6c757d;
+}
+
+.course-item.locked .fa-lock {
+  color: #dc3545;
+  margin-right: 5px;
+}
+
+/* ปรับปรุงสไตล์สำหรับหัวข้อบท */
+.accordion-button[data-progress="100"] {
+  color: #28a745;
+}
+
+.accordion-button[data-progress="100"] .lesson-count {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+/* เพิ่มสไตล์สำหรับแสดงสถานะการเรียน */
+.item-status {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-size: 0.7rem;
+  margin-left: 5px;
+}
+
+.item-status.completed {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.item-status.in-progress {
+  background-color: #cce5ff;
+  color: #004085;
+}
+
+.item-status.not-started {
+  background-color: #f8f9fa;
+  color: #6c757d;
+}
+
+/* ปรับปรุงสไตล์สำหรับรายการบทเรียน */
+.list-wrap {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.course-item {
+  padding: 10px 15px;
+  border-bottom: 1px solid #e9ecef;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  position: relative;
+}
+
+.course-item:hover {
+  background-color: #f8f9fa;
+}
+
+.course-item:last-child {
+  border-bottom: none;
+}
+
+.course-item-link {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.item-name {
+  font-size: 0.9rem;
+  color: #212529;
+}
+
+.item-meta {
+  font-size: 0.8rem;
+  color: #6c757d;
+}

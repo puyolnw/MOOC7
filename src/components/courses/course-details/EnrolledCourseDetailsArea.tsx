@@ -8,9 +8,13 @@ import EnrolledSidebar from "./EnrolledSidebar"; // ต้องสร้าง�
 interface EnrolledCourseDetailsAreaProps {
   single_course: any;
   enrollmentData: any;
+  onStartLearning?: () => void; // เพิ่มบรรทัดนี้
 }
 
-const EnrolledCourseDetailsArea = ({ single_course, enrollmentData }: EnrolledCourseDetailsAreaProps) => {
+const EnrolledCourseDetailsArea = ({ 
+  single_course, 
+  enrollmentData
+}: EnrolledCourseDetailsAreaProps) => {
   const [activeTab, setActiveTab] = useState(0);
 
   const handleTabClick = (index: number) => {
@@ -21,10 +25,8 @@ const EnrolledCourseDetailsArea = ({ single_course, enrollmentData }: EnrolledCo
 
   return (
     <section className="courses__details-area section-py-120">
-      <div className="container">
-
-        
-        <div className="row">
+    <div className="container">
+      <div className="row">
           <div className="col-xl-9 col-lg-8">
             <div className="courses__details-thumb">
               <img src={single_course.thumb} alt={single_course.title} />
@@ -81,7 +83,7 @@ const EnrolledCourseDetailsArea = ({ single_course, enrollmentData }: EnrolledCo
                               <h5 className="mb-0">{subject.subject_name}</h5>
                               <span className="badge bg-primary">{typeof subject.progress_percentage === 'number' 
   ? subject.progress_percentage.toFixed(1) 
-  : parseFloat(subject.progress_percentage).toFixed(1)}%%</span>
+  : parseFloat(subject.progress_percentage).toFixed(1)}%</span>
                             </div>
                             <div className="progress" style={{ height: "8px" }}>
                               <div 
@@ -149,15 +151,16 @@ const EnrolledCourseDetailsArea = ({ single_course, enrollmentData }: EnrolledCo
             </div>
           </div>
           <EnrolledSidebar 
-            subjectCount={single_course.subjectCount} 
-            totalLessons={single_course.totalLessons} 
-            totalQuizzes={single_course.totalQuizzes} 
-            courseId={single_course.id}
-            videoUrl={single_course.videoUrl}
-            coverImage={single_course.thumb}
-            progress={enrollmentData?.enrollment?.progress || 0}
-            enrollmentStatus={enrollmentData?.enrollment?.status || 'in_progress'}
-          />
+  subjectCount={single_course.subjectCount} 
+  totalLessons={single_course.totalLessons} 
+  totalQuizzes={single_course.totalQuizzes} 
+  courseId={single_course.id}
+  videoUrl={single_course.videoUrl}
+  coverImage={single_course.thumb}
+  progress={enrollmentData?.enrollment?.progress || 0}
+  enrollmentStatus={enrollmentData?.enrollment?.status || 'in_progress'}
+  subjects={single_course.subjects} // เพิ่มบรรทัดนี้
+/>
         </div>
       </div>
     </section>

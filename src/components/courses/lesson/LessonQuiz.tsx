@@ -3,8 +3,9 @@ import axios from 'axios';
 import './LessonQuiz.css';
 
 interface LessonQuizProps {
-  onComplete: () => void;
+  onComplete: (score?: number, passed?: boolean) => void; // เพิ่ม parameters
   quizData: any;
+  subjectId?: string; // เพิ่ม subjectId เพื่อใช้ในการส่งข้อมูลไปยัง API
 }
 
 // Define different question types
@@ -40,7 +41,7 @@ interface TextQuestion extends BaseQuestion {
 
 type Question = SingleChoiceQuestion | MultipleChoiceQuestion | TrueFalseQuestion | TextQuestion;
 
-const LessonQuiz = ({ onComplete, quizData }: LessonQuizProps) => {
+const LessonQuiz = ({ onComplete, quizData, subjectId }: LessonQuizProps) => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [showResult, setShowResult] = useState(false);
   const [score, setScore] = useState(0);
@@ -66,7 +67,6 @@ const LessonQuiz = ({ onComplete, quizData }: LessonQuizProps) => {
   useEffect(() => {
     const loadQuizData = async () => {
       if (!quizData) {
-
         setIsLoading(false);
         setError("ไม่พบข้อมูลแบบทดสอบ");
         return;
@@ -76,11 +76,8 @@ const LessonQuiz = ({ onComplete, quizData }: LessonQuizProps) => {
         setIsLoading(true);
         setError(null);
         
-
-        
         // If we already have the questions in quizData
         if (quizData.questions && Array.isArray(quizData.questions)) {
-
           processQuizQuestions(quizData.questions);
           return;
         }
@@ -88,7 +85,6 @@ const LessonQuiz = ({ onComplete, quizData }: LessonQuizProps) => {
         // Otherwise fetch questions from API
         const token = localStorage.getItem("token");
         if (!token) {
-
           setError("ต้องเข้าสู่ระบบก่อนทำแบบทดสอบ");
           setIsLoading(false);
           return;
@@ -96,14 +92,12 @@ const LessonQuiz = ({ onComplete, quizData }: LessonQuizProps) => {
         
         const quizId = quizData.quiz_id;
         if (!quizId) {
-
           setError("ไม่พบรหัสแบบทดสอบ");
           setIsLoading(false);
           return;
         }
         
         const apiEndpoint = `${apiURL}/api/courses/quizzes/${quizId}/questions`;
-
         
         const response = await axios.get(
           apiEndpoint,
@@ -111,8 +105,6 @@ const LessonQuiz = ({ onComplete, quizData }: LessonQuizProps) => {
             headers: { Authorization: `Bearer ${token}` }
           }
         );
-        
-       
         
         // Check different possible locations for questions in the response
         if (response.data.questions && Array.isArray(response.data.questions)) {
@@ -122,12 +114,11 @@ const LessonQuiz = ({ onComplete, quizData }: LessonQuizProps) => {
         } else if (response.data.data && Array.isArray(response.data.data)) {
           processQuizQuestions(response.data.data);
         } else {
-
           setError("ไม่พบข้อมูลคำถามในแบบทดสอบ");
           setIsLoading(false);
         }
       } catch (error) {
-
+        console.error("Error loading quiz data:", error);
         setError("เกิดข้อผิดพลาดในการโหลดคำถาม");
         setIsLoading(false);
       }
@@ -140,8 +131,6 @@ const LessonQuiz = ({ onComplete, quizData }: LessonQuizProps) => {
   // Process quiz questions from API
   const processQuizQuestions = (apiQuestions: any[]) => {
     try {
-
-      
       if (!apiQuestions || apiQuestions.length === 0) {
         setError("ไม่พบคำถามในแบบทดสอบ");
         setIsLoading(false);
@@ -182,8 +171,6 @@ const LessonQuiz = ({ onComplete, quizData }: LessonQuizProps) => {
           );
         }
         
-
-        
         // สร้างออบเจ็กต์คำถามตามประเภท
         const baseQuestion = {
           question: questionText,
@@ -223,7 +210,7 @@ const LessonQuiz = ({ onComplete, quizData }: LessonQuizProps) => {
       setQuestions(formattedQuestions);
       setIsLoading(false);
     } catch (error) {
-
+      console.error("Error processing quiz questions:", error);
       setError("เกิดข้อผิดพลาดในการประมวลผลคำถาม");
       setIsLoading(false);
     }
@@ -279,7 +266,7 @@ const LessonQuiz = ({ onComplete, quizData }: LessonQuizProps) => {
   const submitQuizAnswers = async () => {
     try {
       const token = localStorage.getItem("token");
-      if (!token || !quizData?.quiz_id) return;
+      if (!token || !quizData?.quiz_id) return false;
       
       const answers = questions.map((question, index) => {
         let answer;
@@ -306,13 +293,24 @@ const LessonQuiz = ({ onComplete, quizData }: LessonQuizProps) => {
         };
       });
       
+      // ปรับปรุง URL ให้ตรงกับ API
+      const submitEndpoint = `${apiURL}/api/courses/quizzes/${quizData.quiz_id}/submit`;
+      console.log("Submitting quiz answers to:", submitEndpoint);
+      console.log("Quiz data:", quizData);
+      console.log("Answers:", answers);
+      
       const response = await axios.post(
-        `${apiURL}/api/courses/quizzes/${quizData.quiz_id}/submit`,
-        { answers },
+        submitEndpoint,
+        { 
+          answers,
+          subject_id: subjectId // เพิ่ม subject_id เพื่อให้ API รู้ว่าเป็นแบบทดสอบของรายวิชาใด
+        },
         {
           headers: { Authorization: `Bearer ${token}` }
         }
       );
+      
+      console.log("Quiz submission response:", response.data);
       
       if (response.data.success) {
         setScore(response.data.score || 0);
@@ -321,7 +319,8 @@ const LessonQuiz = ({ onComplete, quizData }: LessonQuizProps) => {
       
       return false;
     } catch (error) {
- return false;
+      console.error("Error submitting quiz answers:", error);
+      return false;
     }
   };
 
@@ -352,16 +351,26 @@ const LessonQuiz = ({ onComplete, quizData }: LessonQuizProps) => {
       if (!token || !quizData?.quiz_id) return;
       
       // Mark quiz as completed
-      await axios.post(
-        `${apiURL}/api/courses/quizzes/${quizData.quiz_id}/complete`,
-        {},
+      const completeEndpoint = `${apiURL}/api/courses/quizzes/${quizData.quiz_id}/complete`;
+      console.log("Marking quiz as completed:", completeEndpoint);
+      
+      const response = await axios.post(
+        completeEndpoint,
+        {
+          subject_id: subjectId // เพิ่ม subject_id เพื่อให้ API รู้ว่าเป็นแบบทดสอบของรายวิชาใด
+        },
         {
           headers: { Authorization: `Bearer ${token}` }
         }
       );
       
-      // Call the onComplete callback
-      onComplete();
+      console.log("Quiz completion response:", response.data);
+      
+      // ตรวจสอบว่าคะแนนผ่านเกณฑ์หรือไม่
+      const passed = response.data.passed !== undefined ? response.data.passed : true;
+      
+      // Call the onComplete callback with score and passed status
+      onComplete(score, passed);
       
       // Reset quiz state
       setCurrentQuestion(0);
@@ -371,245 +380,225 @@ const LessonQuiz = ({ onComplete, quizData }: LessonQuizProps) => {
       setTextAnswers([]);
       setShowResult(false);
     } catch (error) {
-
+      console.error("Error completing quiz:", error);
     }
   };
 
-  // Check if current question has been answered
-  const isCurrentQuestionAnswered = () => {
+   // Check if current question has been answered
+   const isCurrentQuestionAnswered = () => {
     if (!questions[currentQuestion]) return false;
     
-    const question = questions[currentQuestion];
-    
-    switch (question.type) {
+    switch (questions[currentQuestion].type) {
       case 'single':
         return selectedSingleAnswers[currentQuestion] !== undefined;
-        
       case 'multiple':
         return selectedMultipleAnswers[currentQuestion]?.length > 0;
-        
       case 'truefalse':
         return selectedTrueFalseAnswers[currentQuestion] !== undefined;
-        
       case 'text':
         return textAnswers[currentQuestion]?.trim().length > 0;
-        
       default:
         return false;
     }
   };
 
-  // Render the current question based on its type
-  const renderQuestion = () => {
-    if (isLoading || !questions[currentQuestion]) {
-      return (
-        <div className="text-center py-4">
-          <div className="spinner-border text-primary" role="status">
-            <span className="visually-hidden">Loading...</span>
-          </div>
-          <p className="mt-2">กำลังโหลดคำถาม...</p>
-        </div>
-      );
-    }
-    
-    const question = questions[currentQuestion];
-    
-    switch (question.type) {
-      case 'single':
-        return (
-          <div className="quiz-question">
-          <h4>{question.question}</h4>
-          <div className="quiz-options">
-            {question.options.map((option, index) => (
-              <div 
-                key={index} 
-                className={`quiz-option ${selectedSingleAnswers[currentQuestion] === index ? 'selected' : ''}`}
-                onClick={() => handleSingleAnswerSelect(index)}
-              >
-                <span className="option-letter">{String.fromCharCode(65 + index)}</span>
-                <span className="option-text">{option}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      );
-      
-    case 'multiple':
-      return (
-        <div className="quiz-question">
-          <h4>{question.question}</h4>
-          <p className="text-muted small">เลือกได้มากกว่า 1 ข้อ</p>
-          <div className="quiz-options">
-            {question.options.map((option, index) => (
-              <div 
-                key={index} 
-                className={`quiz-option ${selectedMultipleAnswers[currentQuestion]?.includes(index) ? 'selected' : ''}`}
-                onClick={() => handleMultipleAnswerSelect(index)}
-              >
-                <span className="option-checkbox">
-                  <input 
-                    type="checkbox" 
-                    checked={selectedMultipleAnswers[currentQuestion]?.includes(index) || false}
-                    onChange={() => {}} // Handled by the onClick of the parent div
-                    className="me-2"
-                  />
-                </span>
-                <span className="option-text">{option}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      );
-      
-    case 'truefalse':
-      return (
-        <div className="quiz-question">
-        <h4>{question.question}</h4>
-        <div className="quiz-options">
-          <div 
-            className={`quiz-option ${selectedTrueFalseAnswers[currentQuestion] === true ? 'selected' : ''}`}
-            onClick={() => handleTrueFalseSelect(true)}
-          >
-            <span className="option-letter">A</span>
-            <span className="option-text">ถูก (True)</span>
-          </div>
-          <div 
-            className={`quiz-option ${selectedTrueFalseAnswers[currentQuestion] === false ? 'selected' : ''}`}
-            onClick={() => handleTrueFalseSelect(false)}
-          >
-            <span className="option-letter">B</span>
-            <span className="option-text">ผิด (False)</span>
-          </div>
-        </div>
-      </div>
-    );
-    
-  case 'text':
-    return (
-      <div className="quiz-question">
-        <h4>{question.question}</h4>
-        <textarea
-          className="form-control mt-3"
-          rows={6}
-          placeholder="พิมพ์คำตอบของคุณที่นี่..."
-          value={textAnswers[currentQuestion] || ''}
-          onChange={handleTextAnswerChange}
-          maxLength={5000}
-        ></textarea>
-        <p className="text-muted small mt-2">
-          {textAnswers[currentQuestion]?.length || 0}/5000 ตัวอักษร
-        </p>
-      </div>
-    );
-    
-  default:
-    return (
-      <div className="quiz-question">
-        <h4>ไม่รองรับรูปแบบคำถามนี้</h4>
-      </div>
-    );
-}
-};
+  // Calculate progress percentage
+  const progressPercentage = Math.round(((currentQuestion + 1) / questions.length) * 100);
 
-if (isLoading) {
-  return (
-    <div className="lesson-quiz-container">
-      <div className="text-center py-5">
+  if (isLoading) {
+    return (
+      <div className="quiz-container loading">
         <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">กำลังโหลดแบบทดสอบ...</span>
+          <span className="visually-hidden">กำลังโหลด...</span>
         </div>
-        <p className="mt-3">กำลังโหลดแบบทดสอบ...</p>
+        <p>กำลังโหลดแบบทดสอบ...</p>
       </div>
-    </div>
-  );
-}
+    );
+  }
 
-if (error) {
-return (
-  <div className="lesson-quiz-container">
-    <div className="alert alert-danger">
-      <i className="fas fa-exclamation-circle me-2"></i>
-      {error}
-    </div>
-    <button 
-      className="btn btn-primary mt-3"
-      onClick={() => window.location.reload()}
-    >
-      <i className="fas fa-sync-alt me-2"></i>
-      ลองใหม่อีกครั้ง
-    </button>
-  </div>
-);
-}
+  if (error) {
+    return (
+      <div className="quiz-container error">
+        <div className="alert alert-danger" role="alert">
+          <i className="fas fa-exclamation-triangle me-2"></i>
+          {error}
+        </div>
+      </div>
+    );
+  }
 
-return (
-<div className="lesson-quiz-container">
-  {!showResult ? (
-    <>
+  if (showResult) {
+    // Calculate percentage score
+    const percentage = questions.length > 0 ? Math.round((score / questions.length) * 100) : 0;
+    
+    return (
+      <div className="quiz-container result">
+        <div className="quiz-result">
+          <h2>ผลการทดสอบ</h2>
+          
+          <div className="score-display">
+            <div className="score-circle">
+              <span className="score-number">{percentage}%</span>
+            </div>
+            <p>คุณได้คะแนน {score} จาก {questions.length} คะแนน</p>
+          </div>
+          
+          
+          <button 
+            className="btn btn-primary btn-lg mt-4"
+            onClick={handleFinish}
+          >
+            เสร็จสิ้น
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (questions.length === 0) {
+    return (
+      <div className="quiz-container empty">
+        <div className="alert alert-warning" role="alert">
+          <i className="fas fa-exclamation-circle me-2"></i>
+          ไม่พบคำถามในแบบทดสอบนี้
+        </div>
+      </div>
+    );
+  }
+
+  const currentQ = questions[currentQuestion];
+
+  return (
+    <div className="quiz-container">
       <div className="quiz-header">
         <h3>{quizData?.title || "แบบทดสอบ"}</h3>
         <div className="quiz-progress">
-          <span>คำถามที่ {currentQuestion + 1} จาก {questions.length}</span>
-          <div className="quiz-progress-bar">
+          <div className="progress">
             <div 
-              className="quiz-progress-fill" 
-              style={{ width: `${((currentQuestion + 1) / questions.length) * 100}%` }}
+              className="progress-bar" 
+              role="progressbar" 
+              style={{ width: `${progressPercentage}%` }} 
+              aria-valuenow={progressPercentage} 
+              aria-valuemin={0} 
+              aria-valuemax={100}
             ></div>
+          </div>
+          <span className="progress-text">
+            {currentQuestion + 1} / {questions.length}
+          </span>
+        </div>
+      </div>
+      
+      <div className="quiz-content">
+        <div className="question-container">
+          <h4 className="question-text">
+            <span className="question-number">{currentQuestion + 1}.</span> {currentQ.question}
+          </h4>
+          
+          <div className="answer-options">
+            {currentQ.type === 'single' && (
+              <div className="single-choice-options">
+                {(currentQ as SingleChoiceQuestion).options.map((option, index) => (
+                  <div 
+                    key={index} 
+                    className={`option-item ${selectedSingleAnswers[currentQuestion] === index ? 'selected' : ''}`}
+                    onClick={() => handleSingleAnswerSelect(index)}
+                  >
+                    <div className="option-marker">
+                      <div className="option-radio"></div>
+                    </div>
+                    <div className="option-text">{option}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            {currentQ.type === 'multiple' && (
+              <div className="multiple-choice-options">
+                {(currentQ as MultipleChoiceQuestion).options.map((option, index) => (
+                  <div 
+                    key={index} 
+                    className={`option-item ${selectedMultipleAnswers[currentQuestion]?.includes(index) ? 'selected' : ''}`}
+                    onClick={() => handleMultipleAnswerSelect(index)}
+                  >
+                    <div className="option-marker checkbox">
+                      <div className="option-checkbox"></div>
+                    </div>
+                    <div className="option-text">{option}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            {currentQ.type === 'truefalse' && (
+              <div className="truefalse-options">
+                <div 
+                  className={`option-item ${selectedTrueFalseAnswers[currentQuestion] === true ? 'selected' : ''}`}
+                  onClick={() => handleTrueFalseSelect(true)}
+                >
+                  <div className="option-marker">
+                    <div className="option-radio"></div>
+                  </div>
+                  <div className="option-text">ถูก (True)</div>
+                </div>
+                <div 
+                  className={`option-item ${selectedTrueFalseAnswers[currentQuestion] === false ? 'selected' : ''}`}
+                  onClick={() => handleTrueFalseSelect(false)}
+                >
+                  <div className="option-marker">
+                    <div className="option-radio"></div>
+                  </div>
+                  <div className="option-text">ผิด (False)</div>
+                </div>
+              </div>
+            )}
+            
+            {currentQ.type === 'text' && (
+              <div className="text-answer">
+                <textarea
+                  className="form-control"
+                  rows={4}
+                  placeholder="พิมพ์คำตอบของคุณที่นี่..."
+                  value={textAnswers[currentQuestion] || ''}
+                  onChange={handleTextAnswerChange}
+                ></textarea>
+              </div>
+            )}
           </div>
         </div>
       </div>
       
-      {renderQuestion()}
-      
       <div className="quiz-navigation">
         <button 
-          className="quiz-btn previous" 
+          className="btn btn-outline-primary"
           onClick={handlePrevious}
           disabled={currentQuestion === 0}
         >
-          ย้อนกลับ
+          <i className="fas fa-arrow-left me-2"></i>
+          ข้อก่อนหน้า
         </button>
+        
         <button 
-          className="quiz-btn next" 
+          className="btn btn-primary"
           onClick={handleNext}
           disabled={!isCurrentQuestionAnswered()}
         >
-          {currentQuestion < questions.length - 1 ? 'ถัดไป' : 'ส่งคำตอบ'}
+          {currentQuestion < questions.length - 1 ? (
+            <>
+              ข้อถัดไป
+              <i className="fas fa-arrow-right ms-2"></i>
+            </>
+          ) : (
+            <>
+              ส่งคำตอบ
+              <i className="fas fa-check ms-2"></i>
+            </>
+          )}
         </button>
       </div>
-    </>
-  ) : (
-    <div className="quiz-result">
-      <h3>ผลการทดสอบ</h3>
-      <div className="result-score">
-        <div className="score-circle">
-          <span className="score-number">{score}</span>
-          <span className="score-total">/{questions.length}</span>
-        </div>
-        <p className="score-percentage">
-          {Math.round((score / questions.length) * 100)}%
-        </p>
-      </div>
-      
-      <div className="result-message">
-        {score === questions.length ? (
-          <p>ยอดเยี่ยม! คุณตอบถูกทุกข้อ</p>
-        ) : score >= questions.length * 0.7 ? (
-          <p>ดีมาก! คุณทำได้ดี</p>
-        ) : score >= questions.length * 0.5 ? (
-          <p>ดี! แต่ยังมีพื้นที่ให้ปรับปรุง</p>
-        ) : (
-          <p>คุณอาจต้องทบทวนเนื้อหาอีกครั้ง</p>
-        )}
-      </div>
-      
-      <button className="quiz-btn finish" onClick={handleFinish}>
-        เสร็จสิ้น
-      </button>
     </div>
-  )}
-</div>
-);
+  );
 };
 
 export default LessonQuiz;
+

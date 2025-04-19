@@ -83,7 +83,7 @@ const AddAdmins: React.FC<AddAdminsProps> = ({ onSubmit, onCancel }) => {
           return;
         }
         
-        const response = await axios.get(`${apiURL}/api/subjects/departments/list`, {
+        const response = await axios.get(`${apiURL}/api/courses/subjects/departments/list`, {
           headers: {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${token}`

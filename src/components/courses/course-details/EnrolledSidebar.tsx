@@ -1,7 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react"; // เพิ่ม useRef
 import InjectableSvg from "../../../hooks/InjectableSvg";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import BtnArrow from "../../../svg/BtnArrow";
 import VideoPopup from "../../../modals/VideoPopup";
+import axios from "axios";
 
 interface EnrolledSidebarProps {
   subjectCount: number;
@@ -12,20 +14,63 @@ interface EnrolledSidebarProps {
   coverImage?: string;
   progress: number;
   enrollmentStatus: string;
+  subjects?: any[];
 }
 
 const EnrolledSidebar = ({ 
   subjectCount, 
   totalLessons, 
-  totalQuizzes, 
-  courseId, 
+  totalQuizzes,
+  courseId,
   videoUrl, 
   coverImage,
   progress,
-  enrollmentStatus
+  enrollmentStatus,
+  subjects = []
 }: EnrolledSidebarProps) => {
+  const navigate = useNavigate();
   const [isVideoOpen, setIsVideoOpen] = useState(false);
-  const [thumbnailImage, setThumbnailImage] = useState(coverImage || "/assets/img/courses/course_thumb02.jpg");
+  const videoRef = useRef<HTMLDivElement>(null); // เพิ่ม ref สำหรับวิดีโอ
+  const apiURL = import.meta.env.VITE_API_URL;
+  
+  // ฟังก์ชันสำหรับเริ่มเรียน
+  const handleStartLearning = async () => {
+    try {
+      // ถ้ามี subjects ที่ส่งมาและมีอย่างน้อย 1 วิชา
+      if (subjects && subjects.length > 0) {
+        // ใช้วิชาแรก
+        const firstSubject = subjects[0];
+        navigate(`/course-learning/${courseId}/${firstSubject.subject_id}`);
+        return;
+      }
+      
+      // ถ้าไม่มี subjects ที่ส่งมา ให้เรียก API เพื่อดึงข้อมูลวิชา
+      const token = localStorage.getItem("token");
+      if (!token) {
+        navigate('/login');
+        return;
+      }
+      
+      const response = await axios.get(
+        `${apiURL}/api/courses/${courseId}/enrolled-subjects`,
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+      
+      if (response.data.success && response.data.subjects.length > 0) {
+        // ถ้ามีวิชาที่ลงทะเบียน ให้นำทางไปยังวิชาแรก
+        const firstSubject = response.data.subjects[0];
+        navigate(`/course-learning/${courseId}/${firstSubject.subject_id}`);
+      } else {
+        // ถ้าไม่มีวิชาที่ลงทะเบียน ให้แสดงข้อความแจ้งเตือน
+        alert("คุณยังไม่ได้ลงทะเบียนวิชาในคอร์สนี้");
+      }
+    } catch (error) {
+      console.error("Error fetching enrolled subjects:", error);
+      alert("เกิดข้อผิดพลาดในการเริ่มเรียน กรุณาลองใหม่อีกครั้ง");
+    }
+  };
   
   // ดึง video ID จาก YouTube URL (ถ้ามี)
   const getYoutubeVideoId = (url?: string) => {
@@ -39,36 +84,41 @@ const EnrolledSidebar = ({
       : "Ml4XCF-JS0k"; // ค่าเริ่มต้นถ้าไม่สามารถดึง ID ได้
   };
   
-  // ใช้ useEffect เพื่อตั้งค่ารูปภาพปกจาก YouTube เมื่อ videoUrl เปลี่ยนแปลง
+  // ใช้ useEffect เพื่อตั้งค่า YouTube iframe เมื่อ videoUrl เปลี่ยนแปลง
   useEffect(() => {
-    if (videoUrl) {
+    if (videoUrl && videoRef.current) {
       const videoId = getYoutubeVideoId(videoUrl);
-      // ใช้รูปภาพคุณภาพสูงจาก YouTube
-      const youtubeThumbnail = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
       
-      // ตรวจสอบว่ารูปภาพมีอยู่จริงหรือไม่
-      const img = new Image();
-      img.onload = () => {
-        // ถ้ารูปภาพโหลดสำเร็จ ใช้รูปภาพนั้น
-        setThumbnailImage(youtubeThumbnail);
-      };
-      img.onerror = () => {
-        // ถ้ารูปภาพไม่มีอยู่ ใช้รูปภาพคุณภาพต่ำแทน
-        setThumbnailImage(`https://img.youtube.com/vi/${videoId}/hqdefault.jpg`);
-      };
-      img.src = youtubeThumbnail;
-    } else if (coverImage) {
-      // ถ้าไม่มี videoUrl แต่มี coverImage ให้ใช้ coverImage
-      setThumbnailImage(coverImage);
+      // ล้างเนื้อหาเดิมใน videoRef
+      while (videoRef.current.firstChild) {
+        videoRef.current.removeChild(videoRef.current.firstChild);
+      }
+      
+      // สร้าง iframe สำหรับ YouTube
+      const iframe = document.createElement('iframe');
+      iframe.width = "100%";
+      iframe.height = "100%";
+      iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=0&controls=1&showinfo=0&rel=0`;
+      iframe.frameBorder = "0";
+      iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture";
+      iframe.allowFullscreen = true;
+      
+      // เพิ่ม iframe ลงใน videoRef
+      videoRef.current.appendChild(iframe);
     }
-  }, [videoUrl, coverImage]);
+  }, [videoUrl]);
 
   return (
     <>
       <div className="col-xl-3 col-lg-4">
         <div className="courses__details-sidebar">
+          {/* แสดงวิดีโอจาก YouTube โดยตรง */}
           <div className="courses__details-video">
-            <img src={thumbnailImage} alt="img" />
+            {videoUrl ? (
+              <div ref={videoRef} className="video-container" style={{ width: "100%", height: "200px" }}></div>
+            ) : (
+              <img src={coverImage || "/assets/img/courses/course_thumb02.jpg"} alt="img" />
+            )}
             {videoUrl && (
               <a onClick={() => setIsVideoOpen(true)} style={{ cursor: "pointer" }} className="popup-video">
                 <i className="fas fa-play"></i>
@@ -138,9 +188,12 @@ const EnrolledSidebar = ({
           
           <div className="courses__details-enroll">
             <div className="tg-button-wrap">
-              <Link to={`/course-learning/${courseId}`} className="btn btn-two arrow-btn">
-                เข้าสู่บทเรียน <i className="fas fa-arrow-right ms-2"></i>
-              </Link>
+              <button 
+                onClick={handleStartLearning} 
+                className="btn btn-two arrow-btn"
+              >
+                เริ่มเรียน<BtnArrow />
+              </button>
             </div>
           </div>
         </div>

@@ -21,7 +21,9 @@ interface CourseDetailsProps {
     totalQuizzes: number;
     instructors: any[];
     isLoading: boolean;
+    onStartLearning?: () => void; // เพิ่มฟังก์ชันนี้
     error: string | null;
+   
   };
 }
 
@@ -30,7 +32,7 @@ const CourseDetails = ({ single_course }: CourseDetailsProps) => {
   const [enrollmentData, setEnrollmentData] = useState<any>(null);
   const [isCheckingEnrollment, setIsCheckingEnrollment] = useState(true);
   const [enrollError, setEnrollError] = useState<string | null>(null);
-  const apiURL = import.meta.env.VITE_API_URL || 'http://localhost:3301';
+  const apiURL = import.meta.env.VITE_API_URL ;
 
   // ในส่วนของ useEffect ที่ตรวจสอบการลงทะเบียน
   useEffect(() => {
@@ -194,9 +196,10 @@ const CourseDetails = ({ single_course }: CourseDetailsProps) => {
         ) : isEnrolled ? (
           // แสดงหน้าสำหรับผู้ที่ลงทะเบียนแล้ว
           <EnrolledCourseDetailsArea 
-            single_course={single_course} 
-            enrollmentData={enrollmentData} 
-          />
+  single_course={single_course} 
+  enrollmentData={enrollmentData} 
+  onStartLearning={single_course.onStartLearning} // เพิ่ม prop นี้
+/>
         ) : (
           // แสดงหน้าปกติสำหรับผู้ที่ยังไม่ได้ลงทะเบียน
           <>

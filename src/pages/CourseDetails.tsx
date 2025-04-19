@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Wrapper from '../layouts/Wrapper';
 import CourseDetailsMain from '../components/courses/course-details';
@@ -7,6 +7,7 @@ import SEO from '../components/SEO';
 
 const CourseDetails = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const apiURL = import.meta.env.VITE_API_URL || 'http://localhost:3301';
   const [courseDetails, setCourseDetails] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -70,26 +71,71 @@ const CourseDetails = () => {
     }, 
     0
   ) || 0;
-  // ส่งข้อมูลไปให้ CourseDetailsMain component
- // ข้อมูลที่จะส่งไปให้ CourseDetailsMain component
- const single_course = {
-  id: courseDetails?.course_id || 0,
-  title: courseDetails?.title || 'กำลังโหลด...',
-  category: courseDetails?.category || '',
-  department: courseDetails?.department_name || 'หลักสูตรกลาง',
-  description: courseDetails?.description || '',
-  thumb: courseDetails?.cover_image 
-    ? `${apiURL}/${courseDetails.cover_image}` 
-    : '/assets/img/courses/course_thumb01.jpg',
-  videoUrl: courseDetails?.video_url || '', // ตรวจสอบว่ามีการส่ง video_url จาก API
-  subjects: courseDetails?.subjects || [],
-  subjectCount: courseDetails?.subjects?.length || 0,
-  totalLessons,
-  totalQuizzes,
-  instructors: instructors,
-  isLoading,
-  error
-};
+
+  // ฟังก์ชันสำหรับเริ่มเรียนคอร์ส
+  const handleStartLearning = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        navigate('/login');
+        return;
+      }
+      
+      // เรียก API เพื่อดึงข้อมูลวิชาที่ลงทะเบียนในคอร์สนี้
+      const response = await axios.get(
+        `${apiURL}/api/courses/${id}/enrolled-subjects`,
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+      
+      if (response.data.success && response.data.subjects.length > 0) {
+        // ถ้ามีวิชาที่ลงทะเบียน ให้นำทางไปยังวิชาแรก
+        const firstSubject = response.data.subjects[0];
+        navigate(`/course-learning/${id}/${firstSubject.subject_id}`);
+      } else {
+        // ถ้าไม่มีวิชาที่ลงทะเบียน ให้แสดงข้อความแจ้งเตือน
+        alert("คุณยังไม่ได้ลงทะเบียนวิชาในคอร์สนี้");
+      }
+    } catch (error: unknown) {
+      console.error("Error fetching enrolled subjects:", error);
+      
+      // Type narrowing for error
+      if (error && typeof error === 'object' && 'response' in error) {
+        // This is likely an Axios error
+        const axiosError = error as { response?: { status?: number } };
+        if (axiosError.response && axiosError.response.status === 403) {
+          alert("คุณยังไม่ได้ลงทะเบียนในคอร์สนี้");
+        } else {
+          alert("เกิดข้อผิดพลาดในการเริ่มเรียน กรุณาลองใหม่อีกครั้ง");
+        }
+      } else {
+        // Generic error handling
+        alert("เกิดข้อผิดพลาดในการเริ่มเรียน กรุณาลองใหม่อีกครั้ง");
+      }
+    }
+  };
+  
+  // ข้อมูลที่จะส่งไปให้ CourseDetailsMain component
+  const single_course = {
+    id: courseDetails?.course_id || 0,
+    title: courseDetails?.title || 'กำลังโหลด...',
+    category: courseDetails?.category || '',
+    department: courseDetails?.department_name || 'หลักสูตรกลาง',
+    description: courseDetails?.description || '',
+    thumb: courseDetails?.cover_image 
+      ? `${apiURL}/${courseDetails.cover_image}` 
+      : '/assets/img/courses/course_thumb01.jpg',
+    videoUrl: courseDetails?.video_url || '', // ตรวจสอบว่ามีการส่ง video_url จาก API
+    subjects: courseDetails?.subjects || [],
+    subjectCount: courseDetails?.subjects?.length || 0,
+    totalLessons,
+    totalQuizzes,
+    instructors: instructors,
+    isLoading,
+    error,
+    onStartLearning: handleStartLearning // เพิ่มฟังก์ชันสำหรับเริ่มเรียน
+  };
 
   return (
     <Wrapper>

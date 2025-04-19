@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams} from "react-router-dom";
+import { useParams } from "react-router-dom";
 import axios from "axios";
 import FooterOne from "../../../layouts/footers/FooterOne";
 import HeaderOne from "../../../layouts/headers/HeaderOne";
@@ -9,6 +9,7 @@ const Lesson = () => {
    const { subjectId } = useParams();
    const [isLoading, setIsLoading] = useState(true);
    const [subjectData, setSubjectData] = useState<any>(null);
+   const [progressData, setProgressData] = useState<any>(null);
    const [error, setError] = useState<string | null>(null);
    const apiURL = import.meta.env.VITE_API_URL;
 
@@ -21,24 +22,64 @@ const Lesson = () => {
                return;
             }
             
+       
+            
             setIsLoading(true);
             setError(null);
             
             const token = localStorage.getItem("token");
             const headers = token ? { Authorization: `Bearer ${token}` } : {};
             
+            // ดึงข้อมูลรายวิชา
             const response = await axios.get(`${apiURL}/api/courses/subjects/${subjectId}`, {
                headers
             });
             
+   
+            
             if (response.data.success) {
                setSubjectData(response.data.subject);
+               
+               if (!response.data.subject) {
+                  setError("ไม่พบข้อมูลรายวิชา");
+               }
             } else {
-               setError("ไม่สามารถโหลดข้อมูลรายวิชาได้");
+               setError(response.data.message || "ไม่สามารถโหลดข้อมูลรายวิชาได้");
             }
-         } catch (error) {
+
+            // ดึงข้อมูลความก้าวหน้าของรายวิชา
+            if (token) {
+               try {
+                  const progressResponse = await axios.get(`${apiURL}/api/courses/subjects/${subjectId}/progress`, {
+                     headers
+                  });
+                  
+                  console.log("Progress Response:", progressResponse.data);
+                  
+                  if (progressResponse.data.success) {
+                     setProgressData(progressResponse.data.progress);
+                  }
+               } catch (progressError) {
+                  console.error("Error fetching progress data:", progressError);
+                  // ไม่ต้อง set error เพราะไม่ใช่ข้อมูลหลัก
+               }
+            }
+         } catch (error: any) {
             console.error("Error fetching subject data:", error);
-            setError("เกิดข้อผิดพลาดในการโหลดข้อมูลรายวิชา");
+            
+            if (error.response) {
+               console.error("Error response:", error.response.data);
+               
+               if (error.response.status === 404) {
+                  setError("ไม่พบรายวิชาที่ระบุ");
+               } else if (error.response.status === 401) {
+                  setError("คุณไม่มีสิทธิ์เข้าถึงรายวิชานี้");
+               } else {
+                  setError(`เกิดข้อผิดพลาด: ${error.response.data.message || "ไม่สามารถโหลดข้อมูลรายวิชาได้"}`);
+               }
+            } else {
+               setError("เกิดข้อผิดพลาดในการโหลดข้อมูลรายวิชา");
+            }
          } finally {
             setIsLoading(false);
          }
@@ -47,6 +88,36 @@ const Lesson = () => {
       fetchSubjectData();
    }, [subjectId, apiURL]);
 
+   // เพิ่มฟังก์ชันสำหรับรีเฟรชข้อมูลความก้าวหน้า
+   const refreshProgress = async () => {
+      try {
+         if (!subjectId) return;
+         
+         const token = localStorage.getItem("token");
+         if (!token) return;
+         
+         // ดึงข้อมูลรายวิชาใหม่
+         const response = await axios.get(`${apiURL}/api/courses/subjects/${subjectId}`, {
+            headers: { Authorization: `Bearer ${token}` }
+         });
+         
+         if (response.data.success) {
+            setSubjectData(response.data.subject);
+         }
+         
+         // ดึงข้อมูลความก้าวหน้าใหม่
+         const progressResponse = await axios.get(`${apiURL}/api/courses/subjects/${subjectId}/progress`, {
+            headers: { Authorization: `Bearer ${token}` }
+         });
+         
+         if (progressResponse.data.success) {
+            setProgressData(progressResponse.data.progress);
+         }
+      } catch (error) {
+         console.error("Error refreshing progress data:", error);
+      }
+   };
+
    return (
       <>
          <HeaderOne />
@@ -54,6 +125,7 @@ const Lesson = () => {
             <LessonArea 
                isLoading={isLoading}
                subjectData={subjectData}
+               progressData={progressData}
                error={error}
                subjectId={subjectId}
             />
