@@ -13,10 +13,11 @@ interface Question {
   text: string;
   quizCode: string;
   quizTitle: string;
+  quizzes: { quiz_id: number; title: string }[]; // เพิ่มข้อมูลแบบฝึกหัด
   type: QuestionType;
   status: "active" | "inactive" | "draft";
   difficulty: "easy" | "medium" | "hard";
-  score: number; // Added score field
+  score: number;
   creator: string;
 }
 
@@ -50,6 +51,7 @@ const QuestionsArea = () => {
             text: q.title,
             quizCode: q.quiz_code || "N/A",
             quizTitle: q.quiz_title || "N/A",
+            quizzes: q.quizzes || [], // เพิ่มการดึงข้อมูลแบบฝึกหัด
             type: q.type as QuestionType,
             status: q.status || "active",
             difficulty: q.difficulty || "medium",
@@ -279,11 +281,15 @@ const QuestionsArea = () => {
                                   <tr key={question.id}>
                                     <td>
                                       <div className="d-flex flex-column">
-                                        <span className="fw-medium">{question.text.length > 60 ? question.text.substring(0, 60) + "..." : question.text}</span>
-                                        <small className="text-muted">{question.quizTitle}</small>
+                                        <span className="fw-medium">
+                                          {question.text.length > 60 ? question.text.substring(0, 60) + "..." : question.text}
+                                        </span>
+                                        <small className="text-muted">
+                                          {question.quizzes.length > 0 ? question.quizzes[0].title : "N/A"}
+                                        </small>
                                       </div>
                                     </td>
-                                    <td>{question.quizCode}</td>
+                                    <td>{question.quizzes.length > 0 ? question.quizzes[0].quiz_id : "N/A"}</td> {/* แก้ไขส่วนนี้ */}
                                     <td className="text-center">
                                       <QuestionTypeBadge type={question.type} />
                                     </td>
@@ -363,3 +369,4 @@ const QuestionsArea = () => {
 };
 
 export default QuestionsArea;
+

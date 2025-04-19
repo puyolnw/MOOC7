@@ -12,11 +12,12 @@ interface Lesson {
   title: string;
   hasVideo: boolean;
   creator: string;
-  courseCode: string;
+  subjectCodes: string;
   courseName: string;
   status: "active" | "inactive" | "draft";
   testType: TestType;
   subject?: string;
+  quizCount?: number; // ✅ เพิ่ม property นี้
 }
 
 const LessonsArea = () => {
@@ -42,22 +43,21 @@ const LessonsArea = () => {
         }
 
         const response = await axios.get(`${apiUrl}/api/courses/lessons`, {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
+          headers: { Authorization: `Bearer ${token}` }
         });
 
         if (response.data.success) {
           const formattedLessons = response.data.lessons.map((lesson: any) => ({
-            lesson_id: lesson.lesson_id ?? lesson.id ?? null,
+            lesson_id: lesson.id ?? null,
             title: lesson.title,
             hasVideo: !!lesson.video_url,
-            creator: lesson.creator_name || "ไม่ระบุ",
-            courseCode: lesson.course_code || "ไม่ระบุ",
-            courseName: lesson.course_name || "ไม่ระบุ",
+            creator: lesson.creator?.name || "ไม่ระบุ",
+            subjectCodes: lesson.subjectCodes || "ไม่ระบุ",
+            courseName: lesson.courseName || "ไม่ระบุ",
             status: lesson.status || "inactive",
-            testType: lesson.quiz_type || null,
-            subject: lesson.subjects && lesson.subjects.length > 0 ? lesson.subjects[0].subject_name : "ไม่มี"
+            testType: lesson.testType || null,
+            subject: lesson.subjects || "ไม่ระบุ",
+            quizCount: lesson.quiz_count || 0 // ✅ ดึงจาก backend
           }));
 
           setLessons(formattedLessons);
@@ -79,7 +79,7 @@ const LessonsArea = () => {
 
   const filteredLessons = lessons.filter(lesson =>
     lesson.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    lesson.courseCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    lesson.subjectCodes.toLowerCase().includes(searchTerm.toLowerCase()) ||
     lesson.courseName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (lesson.subject && lesson.subject.toLowerCase().includes(searchTerm.toLowerCase()))
   );
@@ -99,9 +99,7 @@ const LessonsArea = () => {
         }
 
         const response = await axios.delete(`${apiUrl}/api/courses/lessons/${id}`, {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
+          headers: { Authorization: `Bearer ${token}` }
         });
 
         if (response.data.success) {
@@ -118,25 +116,13 @@ const LessonsArea = () => {
   };
 
   const StatusBadge = ({ status }: { status: Lesson["status"] }) => {
-    let badgeClass = "";
-    let statusText = "";
-
-    switch (status) {
-      case "active":
-        badgeClass = "badge bg-success-subtle text-success rounded-pill px-3 py-1 small";
-        statusText = "เปิดใช้งาน";
-        break;
-      case "inactive":
-        badgeClass = "badge bg-danger-subtle text-danger rounded-pill px-3 py-1 small";
-        statusText = "ปิดใช้งาน";
-        break;
-      case "draft":
-        badgeClass = "badge bg-secondary-subtle text-secondary rounded-pill px-3 py-1 small";
-        statusText = "ฉบับร่าง";
-        break;
-    }
-
-    return <span className={badgeClass}>{statusText}</span>;
+    const map = {
+      active: { class: "bg-success-subtle text-success", text: "เปิดใช้งาน" },
+      inactive: { class: "bg-danger-subtle text-danger", text: "ปิดใช้งาน" },
+      draft: { class: "bg-secondary-subtle text-secondary", text: "ฉบับร่าง" }
+    };
+    const badge = map[status];
+    return <span className={`badge rounded-pill px-3 py-1 small ${badge.class}`}>{badge.text}</span>;
   };
 
   const VideoBadge = ({ hasVideo }: { hasVideo: boolean }) => {
@@ -156,36 +142,18 @@ const LessonsArea = () => {
       return <span className="badge bg-secondary-subtle text-secondary rounded-pill px-3 py-1 small">ไม่มี</span>;
     }
 
-    let badgeClass = "";
-    let testText = "";
-    let tooltipText = "";
+    const map = {
+      MC: { class: "bg-primary-subtle text-primary", text: "MC", title: "Multiple Choice" },
+      TF: { class: "bg-success-subtle text-success", text: "TF", title: "True or False" },
+      SC: { class: "bg-info-subtle text-info", text: "SC", title: "Single Choice" },
+      FB: { class: "bg-warning-subtle text-warning", text: "FB", title: "Fill in the Blank" }
+    };
 
-    switch (testType) {
-      case "MC":
-        badgeClass = "badge bg-primary-subtle text-primary rounded-pill px-3 py-1 small";
-        testText = "MC";
-        tooltipText = "Multiple Choice";
-        break;
-      case "TF":
-        badgeClass = "badge bg-success-subtle text-success rounded-pill px-3 py-1 small";
-        testText = "TF";
-        tooltipText = "True or False";
-        break;
-      case "SC":
-        badgeClass = "badge bg-info-subtle text-info rounded-pill px-3 py-1 small";
-        testText = "SC";
-        tooltipText = "Single Choice";
-        break;
-      case "FB":
-        badgeClass = "badge bg-warning-subtle text-warning rounded-pill px-3 py-1 small";
-        testText = "FB";
-        tooltipText = "Fill in the Blank";
-        break;
-    }
+    const badge = map[testType];
 
     return (
-      <span className={badgeClass} title={tooltipText}>
-        {testText}
+      <span className={`badge rounded-pill px-3 py-1 small ${badge.class}`} title={badge.title}>
+        {badge.text}
       </span>
     );
   };
@@ -292,33 +260,34 @@ const LessonsArea = () => {
                                   <td>
                                     <div className="d-flex flex-column">
                                       <span className="fw-medium">{lesson.title}</span>
-                                      <small className="text-muted">{lesson.subject || "ไม่มี"}</small>
+                                      <small className="text-muted">รายวิชา: {lesson.subject || "ไม่ระบุ"}</small>
                                     </div>
                                   </td>
                                   <td className="text-center">
                                     <VideoBadge hasVideo={lesson.hasVideo} />
                                   </td>
                                   <td className="text-center">
-                                    <TestBadge testType={lesson.testType} />
+                                    <div className="d-flex flex-column align-items-center">
+                                      <TestBadge testType={lesson.testType} />
+                                    </div>
                                   </td>
                                   <td>{lesson.creator}</td>
-                                  <td>{lesson.courseCode}</td>
+                                  <td>{lesson.subjectCodes}</td>
                                   <td><StatusBadge status={lesson.status} /></td>
                                   <td>
                                     <div className="d-flex justify-content-center gap-3">
                                       {lesson.lesson_id ? (
-                                        <Link to={`/admin-lessons/edit-lessons/${lesson.lesson_id}`} className="text-primary" style={{ display: "inline-flex", alignItems: "center" }} >
-                                          <i className="btbtnn-sm btn-outline-primary" style={{ cursor: "pointer", lineHeight: 1 }}></i>
+                                        <Link to={`/admin-lessons/edit-lessons/${lesson.lesson_id}`} className="text-primary">
+                                          <i className="fas fa-edit icon-action"></i>
                                         </Link>
                                       ) : (
                                         <span className="text-muted" title="ไม่มี ID บทเรียน">
-                                          <i className="fas fa-edit icon-action" style={{ cursor: "pointer", lineHeight: 1 }}></i>
-
+                                          <i className="fas fa-edit icon-action"></i>
                                         </span>
                                       )}
                                       <i
                                         className="fas fa-trash-alt text-danger icon-action"
-                                        style={{ cursor: "pointer", lineHeight: 1 }}
+                                        style={{ cursor: "pointer" }}
                                         onClick={() => lesson.lesson_id && handleDeleteLesson(lesson.lesson_id)}
                                       ></i>
                                     </div>
@@ -334,6 +303,7 @@ const LessonsArea = () => {
                         </table>
                       </div>
                     </div>
+
                     {totalPages > 1 && (
                       <div className="card-footer bg-light text-center">
                         <nav aria-label="Page navigation">
