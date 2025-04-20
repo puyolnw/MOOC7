@@ -2,7 +2,6 @@ import React, { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import Select, { MultiValue, SingleValue } from "react-select";
 
 interface SubjectData {
   subjectId: string;
@@ -32,6 +31,19 @@ interface Quiz {
   quiz_id: string;
   title: string;
   question_count: number;
+}
+
+interface Instructor {
+  instructor_id: string;
+  name: string;
+  position: string;
+}
+
+interface Course {
+  course_id: string;
+  title: string;
+  category: string;
+  subjects: number;
 }
 
 const EditSubject: React.FC = () => {
@@ -66,20 +78,31 @@ const EditSubject: React.FC = () => {
     code: "",
     description: "",
     credits: "",
+    lessons: "",
   });
 
-  const [lessonsOptions, setLessonsOptions] = useState<
-    { value: string; label: string }[]
+  // Modal states
+  const [showLessonModal, setShowLessonModal] = useState(false);
+  const [showQuizModal, setShowQuizModal] = useState(false);
+  const [showInstructorModal, setShowInstructorModal] = useState(false);
+  const [showCourseModal, setShowCourseModal] = useState(false);
+  const [quizType, setQuizType] = useState<"pre" | "post">("pre");
+
+  // Search states
+  const [lessonSearchTerm, setLessonSearchTerm] = useState("");
+  const [quizSearchTerm, setQuizSearchTerm] = useState("");
+  const [instructorSearchTerm, setInstructorSearchTerm] = useState("");
+  const [courseSearchTerm, setCourseSearchTerm] = useState("");
+
+  // Available options
+  const [availableLessons, setAvailableLessons] = useState<
+    { id: string; title: string }[]
   >([]);
-  const [quizzesOptions, setQuizzesOptions] = useState<
-    { value: string; label: string; quiz: Quiz }[]
+  const [availableQuizzes, setAvailableQuizzes] = useState<Quiz[]>([]);
+  const [availableInstructors, setAvailableInstructors] = useState<
+    Instructor[]
   >([]);
-  const [instructorsOptions, setInstructorsOptions] = useState<
-    { value: string; label: string }[]
-  >([]);
-  const [coursesOptions, setCoursesOptions] = useState<
-    { value: string; label: string }[]
-  >([]);
+  const [availableCourses, setAvailableCourses] = useState<Course[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -93,15 +116,26 @@ const EditSubject: React.FC = () => {
         setIsLoading(true);
         setApiError(null);
 
-        const response = await axios.get(
-          `${apiUrl}/api/courses/subjects/${subjectId}`
-        );
-
-        if (!response.data.success) {
-          throw new Error(response.data.message || "ไม่พบข้อมูลวิชา");
+        const token = localStorage.getItem("token");
+        if (!token) {
+          throw new Error("ไม่พบข้อมูลการเข้าสู่ระบบ กรุณาเข้าสู่ระบบใหม่");
         }
 
-        const subject = response.data.subject;
+        // Fetch subject data
+        const subjectResponse = await axios.get(
+          `${apiUrl}/api/courses/subjects/${subjectId}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+
+        if (!subjectResponse.data.success) {
+          throw new Error(
+            subjectResponse.data.message || "ไม่พบข้อมูลวิชา"
+          );
+        }
+
+        const subject = subjectResponse.data.subject;
         const newSubjectData = {
           subjectId: String(subject.subject_id) || "",
           title: subject.subject_name || "",
@@ -123,57 +157,82 @@ const EditSubject: React.FC = () => {
               title: l.title,
               order: l.order_number,
             })) || [],
-          preTestId: subject.preTest ? String(subject.preTest.quiz_id) : null,
-          postTestId: subject.postTest ? String(subject.postTest.quiz_id) : null,
+          preTestId: subject.preTest
+            ? String(subject.preTest.quiz_id)
+            : null,
+          postTestId: subject.postTest
+            ? String(subject.postTest.quiz_id)
+            : null,
           instructors:
-            subject.instructors?.map((i: any) => String(i.instructor_id)) || [],
+            subject.instructors?.map((i: any) =>
+              String(i.instructor_id)
+            ) || [],
           allowAllLessons: subject.allow_all_lessons || false,
-          courses: subject.courses?.map((c: any) => String(c.course_id)) || [],
-          status: subject.status || "",
+          courses:
+            subject.courses?.map((c: any) => String(c.course_id)) || [],
+          status: subject.status || "active",
         };
-
         setSubjectData(newSubjectData);
 
-        setLessonsOptions(
-          subject.lessons?.map((l: any) => ({
-            value: String(l.lesson_id),
-            label: l.title,
-          })) || []
+        // Fetch available lessons
+        const lessonsResponse = await axios.get(
+          `${apiUrl}/api/courses/subjects/lessons/available`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
         );
-        setQuizzesOptions(
-          [
-            subject.preTest && {
-              value: String(subject.preTest.quiz_id),
-              label: `${subject.preTest.title} (${subject.preTest.question_count} questions)`,
-              quiz: {
-                quiz_id: String(subject.preTest.quiz_id),
-                title: subject.preTest.title,
-                question_count: subject.preTest.question_count,
-              },
-            },
-            subject.postTest && {
-              value: String(subject.postTest.quiz_id),
-              label: `${subject.postTest.title} (${subject.postTest.question_count} questions)`,
-              quiz: {
-                quiz_id: String(subject.postTest.quiz_id),
-                title: subject.postTest.title,
-                question_count: subject.postTest.question_count,
-              },
-            },
-          ].filter(Boolean) as { value: string; label: string; quiz: Quiz }[]
+        if (lessonsResponse.data.success) {
+          setAvailableLessons(
+            lessonsResponse.data.lessons.map((lesson: any) => ({
+              id: String(lesson.lesson_id),
+              title: lesson.title || "",
+            }))
+          );
+        }
+
+        // Fetch available quizzes
+        const quizzesResponse = await axios.get(
+          `${apiUrl}/api/courses/quizzes`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
         );
-        setInstructorsOptions(
-          subject.instructors?.map((i: any) => ({
-            value: String(i.instructor_id),
-            label: i.name,
-          })) || []
+        if (quizzesResponse.data.message === "ดึงข้อมูลแบบทดสอบสำเร็จ") {
+          setAvailableQuizzes(
+            quizzesResponse.data.quizzes.map((quiz: any) => ({
+              quiz_id: String(quiz.quiz_id),
+              title: quiz.title || "",
+              question_count: quiz.question_count || 0,
+            }))
+          );
+        }
+
+        // Fetch available instructors
+        const instructorsResponse = await axios.get(
+          `${apiUrl}/api/courses/subjects/instructors/available`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
         );
-        setCoursesOptions(
-          subject.courses?.map((c: any) => ({
-            value: String(c.course_id),
-            label: c.title,
-          })) || []
-        );
+        if (instructorsResponse.data.success) {
+          setAvailableInstructors(instructorsResponse.data.instructors);
+        }
+
+        // Fetch available courses
+        const coursesResponse = await axios.get(`${apiUrl}/api/courses/`, {
+          headers: { Authorization: `Bearer ${token}` },
+          timeout: 5000,
+        });
+        if (coursesResponse.data.success) {
+          setAvailableCourses(
+            coursesResponse.data.courses.map((course: any) => ({
+              course_id: String(course.course_id),
+              title: course.title || "",
+              category: course.category || "ไม่ระบุ",
+              subjects: course.subject_count || 0,
+            }))
+          );
+        }
       } catch (error: any) {
         console.error("Error fetching data:", error);
         setApiError(error.message || "ไม่สามารถโหลดข้อมูลได้");
@@ -185,6 +244,27 @@ const EditSubject: React.FC = () => {
 
     fetchData();
   }, [subjectId, apiUrl, navigate]);
+
+  // Filter functions
+  const filteredLessons = availableLessons.filter((lesson) =>
+    lesson.title.toLowerCase().includes(lessonSearchTerm.toLowerCase())
+  );
+
+  const filteredQuizzes = availableQuizzes.filter((quiz) =>
+    quiz.title.toLowerCase().includes(quizSearchTerm.toLowerCase())
+  );
+
+  const filteredInstructors = availableInstructors.filter(
+    (instructor) =>
+      instructor.name.toLowerCase().includes(instructorSearchTerm.toLowerCase()) ||
+      instructor.position.toLowerCase().includes(instructorSearchTerm.toLowerCase())
+  );
+
+  const filteredCourses = availableCourses.filter(
+    (course) =>
+      course.title.toLowerCase().includes(courseSearchTerm.toLowerCase()) ||
+      course.category.toLowerCase().includes(courseSearchTerm.toLowerCase())
+  );
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -241,44 +321,77 @@ const EditSubject: React.FC = () => {
     }
   };
 
-  const handleLessonsChange = (
-    selected: MultiValue<{ value: string; label: string }>
-  ) => {
+  const handleAddLesson = (lessonId: string) => {
+    const lesson = availableLessons.find((l) => l.id === lessonId);
+    if (!lesson) return;
+
+    if (subjectData.lessons.some((l) => l.id === lessonId)) return;
+
+    if (subjectData.lessons.length >= 20) {
+      toast.warning("สามารถเพิ่มบทเรียนได้สูงสุด 20 บทเรียนเท่านั้น");
+      return;
+    }
+
+    const newLesson: SelectedLesson = {
+      id: lessonId,
+      title: lesson.title,
+      order: subjectData.lessons.length + 1,
+    };
+
     setSubjectData((prev) => ({
       ...prev,
-      lessons: selected.map((opt, index) => ({
-        id: opt.value,
-        title: opt.label,
-        order: index + 1,
-      })),
+      lessons: [...prev.lessons, newLesson],
+    }));
+
+    setErrors((prev) => ({
+      ...prev,
+      lessons: "",
     }));
   };
 
-  const handleQuizChange = (
-    selected: SingleValue<{ value: string; label: string; quiz: Quiz }>,
-    field: "preTestId" | "postTestId"
-  ) => {
+  const handleRemoveLesson = (lessonId: string) => {
+    const updatedLessons = subjectData.lessons.filter(
+      (lesson) => lesson.id !== lessonId
+    );
+    const reorderedLessons = updatedLessons.map((lesson, index) => ({
+      ...lesson,
+      order: index + 1,
+    }));
+
     setSubjectData((prev) => ({
       ...prev,
-      [field]: selected ? selected.value : null,
+      lessons: reorderedLessons,
     }));
   };
 
-  const handleInstructorsChange = (
-    selected: MultiValue<{ value: string; label: string }>
-  ) => {
+  const handleOpenQuizModal = (type: "pre" | "post") => {
+    setQuizType(type);
+    setShowQuizModal(true);
+  };
+
+  const handleSelectQuiz = (quizId: string) => {
     setSubjectData((prev) => ({
       ...prev,
-      instructors: selected.map((opt) => opt.value),
+      [quizType === "pre" ? "preTestId" : "postTestId"]: quizId,
+    }));
+    setShowQuizModal(false);
+  };
+
+  const handleToggleInstructor = (instructorId: string) => {
+    setSubjectData((prev) => ({
+      ...prev,
+      instructors: prev.instructors.includes(instructorId)
+        ? prev.instructors.filter((id) => id !== instructorId)
+        : [...prev.instructors, instructorId],
     }));
   };
 
-  const handleCoursesChange = (
-    selected: MultiValue<{ value: string; label: string }>
-  ) => {
+  const handleToggleCourse = (courseId: string) => {
     setSubjectData((prev) => ({
       ...prev,
-      courses: selected.map((opt) => opt.value),
+      courses: prev.courses.includes(courseId)
+        ? prev.courses.filter((id) => id !== courseId)
+        : [...prev.courses, courseId],
     }));
   };
 
@@ -296,6 +409,7 @@ const EditSubject: React.FC = () => {
       code: "",
       description: "",
       credits: "",
+      lessons: "",
     };
 
     if (!subjectData.title.trim()) {
@@ -315,6 +429,11 @@ const EditSubject: React.FC = () => {
 
     if (subjectData.credits <= 0) {
       newErrors.credits = "กรุณาระบุหน่วยกิตที่มากกว่า 0";
+      isValid = false;
+    }
+
+    if (subjectData.lessons.length === 0) {
+      newErrors.lessons = "กรุณาเพิ่มบทเรียนอย่างน้อย 1 บทเรียน";
       isValid = false;
     }
 
@@ -348,13 +467,21 @@ const EditSubject: React.FC = () => {
       formData.append("description", subjectData.description);
       formData.append("credits", String(subjectData.credits));
       formData.append("department", subjectData.department);
-      formData.append("lessons", JSON.stringify(subjectData.lessons));
+      formData.append(
+        "lessons",
+        JSON.stringify(
+          subjectData.lessons.map((lesson) => ({
+            id: lesson.id,
+            order: lesson.order,
+          }))
+        )
+      );
       formData.append("preTestId", subjectData.preTestId || "");
       formData.append("postTestId", subjectData.postTestId || "");
       formData.append("instructors", JSON.stringify(subjectData.instructors));
       formData.append("allowAllLessons", String(subjectData.allowAllLessons));
       formData.append("courses", JSON.stringify(subjectData.courses));
-      formData.append("status", subjectData.status);    
+      formData.append("status", subjectData.status);
       if (subjectData.coverImage) {
         formData.append("coverImage", subjectData.coverImage);
       }
@@ -395,6 +522,21 @@ const EditSubject: React.FC = () => {
     navigate("/admin-subjects");
   };
 
+  const findQuizById = (quizId: string | null) => {
+    if (!quizId) return null;
+    return availableQuizzes.find((quiz) => quiz.quiz_id === quizId);
+  };
+
+  const findCourseById = (courseId: string) => {
+    return availableCourses.find((course) => course.course_id === courseId);
+  };
+
+  const findInstructorById = (instructorId: string) => {
+    return availableInstructors.find(
+      (instructor) => instructor.instructor_id === instructorId
+    );
+  };
+
   if (isLoading) {
     return (
       <div className="p-4 text-center">
@@ -417,6 +559,43 @@ const EditSubject: React.FC = () => {
 
   return (
     <form onSubmit={handleSubmit} className="max-w-3xl mx-auto p-4">
+      {/* Inline CSS for modal animation and scrollable body */}
+      <style>
+        {`
+          .modal-body-scrollable {
+            max-height: 60vh;
+            overflow-y: auto;
+          }
+
+          .modal-slide-down {
+            animation: slideDown 0.3s ease-out;
+          }
+
+          @keyframes slideDown {
+            from {
+              transform: translateY(-100%);
+              opacity: 0;
+            }
+            to {
+              transform: translateY(0);
+              opacity: 1;
+            }
+          }
+
+          .modal-dialog-centered {
+            display: flex;
+            align-items: center;
+            min-height: calc(100% - 1rem);
+          }
+
+          @media (min-width: 576px) {
+            .modal-dialog-centered {
+              min-height: calc(100% - 3.5rem);
+            }
+          }
+        `}
+      </style>
+
       {apiSuccess && (
         <div className="alert alert-success mb-4">
           <i className="fas fa-check-circle me-2"></i>
@@ -600,96 +779,287 @@ const EditSubject: React.FC = () => {
           </div>
 
           <div className="mb-3">
-            <label className="form-label">บทเรียน</label>
-            <Select
-              isMulti
-              options={lessonsOptions}
-              value={lessonsOptions.filter((option) =>
-                subjectData.lessons.some((lesson) => lesson.id === option.value)
-              )}
-              onChange={handleLessonsChange}
-              placeholder="เลือกบทเรียน"
-            />
+            <label className="form-label">
+              บทเรียน <span className="text-danger">*</span>
+            </label>
+            {errors.lessons && (
+              <div className="alert alert-danger" role="alert">
+                {errors.lessons}
+              </div>
+            )}
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <span className="badge bg-primary rounded-pill">
+                {subjectData.lessons.length} / 20 บทเรียน
+              </span>
+              <button
+                type="button"
+                className="btn btn-primary btn-sm"
+                onClick={() => setShowLessonModal(true)}
+                disabled={subjectData.lessons.length >= 20}
+              >
+                <i className="fas fa-plus-circle me-2"></i>เพิ่มบทเรียน
+              </button>
+            </div>
+            {subjectData.lessons.length > 0 ? (
+              <div className="table-responsive">
+                <table className="table table-hover align-middle">
+                  <thead className="table-light">
+                    <tr>
+                      <th style={{ width: "60px" }}>ลำดับ</th>
+                      <th>ชื่อบทเรียน</th>
+                      <th style={{ width: "80px" }}>จัดการ</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {subjectData.lessons.map((lesson, index) => (
+                      <tr key={lesson.id}>
+                        <td className="text-center">{index + 1}</td>
+                        <td>{lesson.title}</td>
+                        <td>
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-outline-danger"
+                            onClick={() => handleRemoveLesson(lesson.id)}
+                          >
+                            <i className="fas fa-trash-alt"></i>
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="alert alert-info" role="alert">
+                ยังไม่มีบทเรียนในรายวิชานี้ กรุณาเพิ่มบทเรียนอย่างน้อย 1 บทเรียน
+              </div>
+            )}
           </div>
 
           <div className="mb-3">
             <label className="form-label">แบบทดสอบก่อนเรียน</label>
-            <Select
-              options={quizzesOptions}
-              value={quizzesOptions.find(
-                (option) => option.value === subjectData.preTestId
-              )}
-              onChange={(selected: SingleValue<{ value: string; label: string; quiz: Quiz }>) =>
-                handleQuizChange(selected, "preTestId")
-              }
-              isClearable
-              placeholder="เลือกแบบทดสอบก่อนเรียน"
-            />
+            <div className="d-flex">
+              <div className="flex-grow-1">
+                {subjectData.preTestId ? (
+                  <div className="border rounded p-3 bg-light">
+                    <div className="d-flex justify-content-between align-items-center">
+                      <div>
+                        <h6 className="mb-0">
+                          {findQuizById(subjectData.preTestId)?.title ||
+                            "แบบทดสอบที่เลือก"}
+                        </h6>
+                        <small className="text-muted">
+                          {findQuizById(subjectData.preTestId)?.question_count || 0}{" "}
+                          คำถาม
+                        </small>
+                      </div>
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline-danger"
+                        onClick={() =>
+                          setSubjectData((prev) => ({
+                            ...prev,
+                            preTestId: null,
+                          }))
+                        }
+                      >
+                        <i className="fas fa-times"></i>
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    className="btn btn-outline-primary w-100"
+                    onClick={() => handleOpenQuizModal("pre")}
+                  >
+                    <i className="fas fa-plus-circle me-2"></i>เลือกแบบทดสอบก่อนเรียน
+                  </button>
+                )}
+              </div>
+            </div>
+            <small className="text-muted d-block mt-2">
+              แบบทดสอบก่อนเรียนจะให้ผู้เรียนทำก่อนเริ่มเรียนรายวิชา
+            </small>
           </div>
 
           <div className="mb-3">
             <label className="form-label">แบบทดสอบหลังเรียน</label>
-            <Select
-              options={quizzesOptions}
-              value={quizzesOptions.find(
-                (option) => option.value === subjectData.postTestId
-              )}
-              onChange={(selected: SingleValue<{ value: string; label: string; quiz: Quiz }>) =>
-                handleQuizChange(selected, "postTestId")
-              }
-              isClearable
-              placeholder="เลือกแบบทดสอบหลังเรียน"
-            />
+            <div className="d-flex">
+              <div className="flex-grow-1">
+                {subjectData.postTestId ? (
+                  <div className="border rounded p-3 bg-light">
+                    <div className="d-flex justify-content-between align-items-center">
+                      <div>
+                        <h6 className="mb-0">
+                          {findQuizById(subjectData.postTestId)?.title ||
+                            "แบบทดสอบที่เลือก"}
+                        </h6>
+                        <small className="text-muted">
+                          {findQuizById(subjectData.postTestId)?.question_count || 0}{" "}
+                          คำถาม
+                        </small>
+                      </div>
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline-danger"
+                        onClick={() =>
+                          setSubjectData((prev) => ({
+                            ...prev,
+                            postTestId: null,
+                          }))
+                        }
+                      >
+                        <i className="fas fa-times"></i>
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    className="btn btn-outline-primary w-100"
+                    onClick={() => handleOpenQuizModal("post")}
+                  >
+                    <i className="fas fa-plus-circle me-2"></i>เลือกแบบทดสอบหลังเรียน
+                  </button>
+                )}
+              </div>
+            </div>
+            <small className="text-muted d-block mt-2">
+              แบบทดสอบหลังเรียนจะให้ผู้เรียนทำหลังจากเรียนรายวิชาเสร็จสิ้น
+            </small>
           </div>
 
           <div className="mb-3">
             <label className="form-label">อาจารย์ผู้สอน</label>
-            <Select
-              isMulti
-              options={instructorsOptions}
-              value={instructorsOptions.filter((option) =>
-                subjectData.instructors.includes(option.value)
-              )}
-              onChange={handleInstructorsChange}
-              placeholder="เลือกอาจารย์ผู้สอน"
-            />
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <div>
+                {subjectData.instructors.length > 0 ? (
+                  <span className="badge bg-success rounded-pill">
+                    เลือกแล้ว {subjectData.instructors.length} อาจารย์
+                  </span>
+                ) : (
+                  <span className="badge bg-secondary rounded-pill">
+                    ยังไม่ได้เลือกอาจารย์
+                  </span>
+                )}
+              </div>
+              <button
+                type="button"
+                className="btn btn-outline-primary btn-sm"
+                onClick={() => setShowInstructorModal(true)}
+              >
+                <i className="fas fa-user-plus me-2"></i>เลือกอาจารย์
+              </button>
+            </div>
+            {subjectData.instructors.length > 0 && (
+              <div className="selected-instructors">
+                <h6 className="mb-2">อาจารย์ที่เลือก:</h6>
+                <div className="row g-2">
+                  {subjectData.instructors.map((instructorId) => {
+                    const instructor = findInstructorById(instructorId);
+                    return instructor ? (
+                      <div key={instructor.instructor_id} className="col-md-6">
+                        <div className="card border h-100">
+                          <div className="card-body py-2 px-3">
+                            <div className="d-flex justify-content-between align-items-center">
+                              <div>
+                                <h6 className="mb-1">{instructor.name}</h6>
+                                <p className="mb-0 small text-muted">
+                                  {instructor.position}
+                                </p>
+                              </div>
+                              <button
+                                type="button"
+                                className="btn btn-sm text-danger"
+                                onClick={() =>
+                                  handleToggleInstructor(instructor.instructor_id)
+                                }
+                              >
+                                <i className="fas fa-times-circle"></i>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ) : null;
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="mb-3">
             <label className="form-label">คอร์สที่เกี่ยวข้อง</label>
-            <Select
-              isMulti
-              options={coursesOptions}
-              value={coursesOptions.filter((option) =>
-                subjectData.courses.includes(option.value)
-              )}
-              onChange={handleCoursesChange}
-              placeholder="เลือกคอร์สที่เกี่ยวข้อง"
-            />
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <div>
+                {subjectData.courses.length > 0 ? (
+                  <span className="badge bg-success rounded-pill">
+                    เลือกแล้ว {subjectData.courses.length} หลักสูตร
+                  </span>
+                ) : (
+                  <span className="badge bg-secondary rounded-pill">
+                    ยังไม่ได้เลือกหลักสูตร
+                  </span>
+                )}
+              </div>
+              <button
+                type="button"
+                className="btn btn-outline-primary btn-sm"
+                onClick={() => setShowCourseModal(true)}
+              >
+                <i className="fas fa-book me-2"></i>เลือกหลักสูตร
+              </button>
+            </div>
+            {subjectData.courses.length > 0 && (
+              <div className="selected-courses">
+                <h6 className="mb-2">หลักสูตรที่เลือก:</h6>
+                <div className="row g-2">
+                  {subjectData.courses.map((courseId) => {
+                    const course = findCourseById(courseId);
+                    return course ? (
+                      <div key={course.course_id} className="col-md-6">
+                        <div className="card border h-100">
+                          <div className="card-body py-2 px-3">
+                            <div className="d-flex justify-content-between align-items-center">
+                              <div>
+                                <h6 className="mb-1">{course.title}</h6>
+                                <p className="mb-0 small text-muted">
+                                  หมวดหมู่: {course.category} | รายวิชา:{" "}
+                                  {course.subjects} วิชา
+                                </p>
+                              </div>
+                              <button
+                                type="button"
+                                className="btn btn-sm text-danger"
+                                onClick={() => handleToggleCourse(course.course_id)}
+                              >
+                                <i className="fas fa-times-circle"></i>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ) : null;
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="mb-3">
             <label className="form-label">อนุญาตให้เข้าถึงทุกบทเรียน</label>
-            <div>
-              <button
-                type="button"
-                className={`btn ${
-                  subjectData.allowAllLessons
-                    ? "btn-success"
-                    : "btn-outline-secondary"
-                }`}
-                onClick={handleAllowAllLessonsChange}
-              >
-                {subjectData.allowAllLessons ? (
-                  <>
-                    <i className="fas fa-check me-2"></i>เปิดใช้งาน
-                  </>
-                ) : (
-                  <>
-                    <i className="fas fa-times me-2"></i>ปิดใช้งาน
-                  </>
-                )}
-              </button>
+            <div className="form-check">
+              <input
+                className="form-check-input"
+                type="checkbox"
+                id="allowAllLessons"
+                checked={subjectData.allowAllLessons}
+                onChange={handleAllowAllLessonsChange}
+              />
+              <label className="form-check-label" htmlFor="allowAllLessons">
+                อนุญาตให้เข้าถึงบทเรียนทั้งหมดได้ทันที (ไม่ต้องเรียนตามลำดับ)
+              </label>
             </div>
           </div>
 
@@ -741,6 +1111,305 @@ const EditSubject: React.FC = () => {
           )}
         </button>
       </div>
+
+      {/* Modal เลือกบทเรียน */}
+      {showLessonModal && (
+        <div className="modal fade show" style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}>
+          <div className="modal-dialog modal-lg modal-dialog-centered modal-slide-down">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">เลือกบทเรียน</h5>
+                <button type="button" className="btn-close" onClick={() => setShowLessonModal(false)}></button>
+              </div>
+              <div className="modal-body modal-body-scrollable">
+                <div className="mb-3">
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="ค้นหาบทเรียน..."
+                    value={lessonSearchTerm}
+                    onChange={(e) => setLessonSearchTerm(e.target.value)}
+                  />
+                </div>
+                <div className="lesson-list">
+                  {filteredLessons.length > 0 ? (
+                    <div className="list-group">
+                      {filteredLessons.map((lesson) => {
+                        const isSelected = subjectData.lessons.some(
+                          (l) => l.id === lesson.id
+                        );
+                        return (
+                          <div
+                            key={lesson.id}
+                            className={`list-group-item list-group-item-action d-flex justify-content-between align-items-center ${
+                              isSelected ? "bg-light" : ""
+                            }`}
+                          >
+                            <div>
+                              <h6 className="mb-0">{lesson.title}</h6>
+                            </div>
+                            <button
+                              type="button"
+                              className={`btn btn-sm ${
+                                isSelected
+                                  ? "btn-success disabled"
+                                  : "btn-outline-primary"
+                              }`}
+                              onClick={() => handleAddLesson(lesson.id)}
+                              disabled={isSelected}
+                            >
+                              {isSelected ? (
+                                <>
+                                  <i className="fas fa-check me-1"></i>เลือกแล้ว
+                                </>
+                              ) : (
+                                <>เลือก</>
+                              )}
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="text-center py-4">
+                      <p className="text-muted">ไม่พบบทเรียนที่ตรงกับคำค้นหา</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => setShowLessonModal(false)}
+                >
+                  เสร็จสิ้น
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal เลือกแบบทดสอบ */}
+      {showQuizModal && (
+        <div className="modal fade show" style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}>
+          <div className="modal-dialog modal-lg modal-dialog-centered modal-slide-down">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">
+                  เลือกแบบทดสอบ{quizType === "pre" ? "ก่อนเรียน" : "หลังเรียน"}
+                </h5>
+                <button type="button" className="btn-close" onClick={() => setShowQuizModal(false)}></button>
+              </div>
+              <div className="modal-body modal-body-scrollable">
+                <div className="mb-3">
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="ค้นหาแบบทดสอบ..."
+                    value={quizSearchTerm}
+                    onChange={(e) => setQuizSearchTerm(e.target.value)}
+                  />
+                </div>
+                <div className="quiz-list">
+                  {filteredQuizzes.length > 0 ? (
+                    <div className="list-group">
+                      {filteredQuizzes.map((quiz) => (
+                        <div
+                          key={quiz.quiz_id}
+                          className="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
+                        >
+                          <div>
+                            <h6 className="mb-1">{quiz.title}</h6>
+                            <p className="mb-0 small text-muted">
+                              จำนวนคำถาม: {quiz.question_count} ข้อ
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-outline-primary"
+                            onClick={() => handleSelectQuiz(quiz.quiz_id)}
+                          >
+                            เลือก
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-4">
+                      <p className="text-muted">ไม่พบแบบทดสอบที่ตรงกับคำค้นหา</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setShowQuizModal(false)}
+                >
+                  ยกเลิก
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal เลือกอาจารย์ */}
+      {showInstructorModal && (
+        <div className="modal fade show" style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}>
+          <div className="modal-dialog modal-lg modal-dialog-centered modal-slide-down">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">เลือกอาจารย์</h5>
+                <button type="button" className="btn-close" onClick={() => setShowInstructorModal(false)}></button>
+              </div>
+              <div className="modal-body modal-body-scrollable">
+                <div className="mb-3">
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="ค้นหาอาจารย์..."
+                    value={instructorSearchTerm}
+                    onChange={(e) => setInstructorSearchTerm(e.target.value)}
+                  />
+                </div>
+                <div className="instructor-list">
+                  {filteredInstructors.length > 0 ? (
+                    <div className="list-group">
+                      {filteredInstructors.map((instructor) => {
+                        const isSelected = subjectData.instructors.includes(
+                          instructor.instructor_id
+                        );
+                        return (
+                          <div
+                            key={instructor.instructor_id}
+                            className={`list-group-item list-group-item-action d-flex justify-content-between align-items-center ${
+                              isSelected ? "bg-light" : ""
+                            }`}
+                          >
+                            <div>
+                              <h6 className="mb-1">{instructor.name}</h6>
+                              <p className="mb-0 small text-muted">
+                                {instructor.position}
+                              </p>
+                            </div>
+                            <div className="d-flex align-items-center gap-2">
+                              <div className="form-check">
+                                <input
+                                  className="form-check-input"
+                                  type="checkbox"
+                                  id={`select-instructor-${instructor.instructor_id}`}
+                                  checked={isSelected}
+                                  onChange={() =>
+                                    handleToggleInstructor(instructor.instructor_id)
+                                  }
+                                />
+                              </div>
+                              {isSelected && (
+                                <button
+                                  type="button"
+                                  className="btn btn-sm btn-outline-danger"
+                                  onClick={() =>
+                                    handleToggleInstructor(instructor.instructor_id)
+                                  }
+                                >
+                                  <i className="fas fa-trash-alt me-1"></i>ลบ
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="text-center py-4">
+                      <p className="text-muted">ไม่พบอาจารย์ที่ตรงกับคำค้นหา</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => setShowInstructorModal(false)}
+                >
+                  เสร็จสิ้น
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal เลือกหลักสูตร */}
+      {showCourseModal && (
+        <div className="modal fade show" style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}>
+          <div className="modal-dialog modal-lg modal-dialog-centered modal-slide-down">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">เลือกหลักสูตร</h5>
+                <button type="button" className="btn-close" onClick={() => setShowCourseModal(false)}></button>
+              </div>
+              <div className="modal-body modal-body-scrollable">
+                <div className="mb-3">
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="ค้นหาหลักสูตร..."
+                    value={courseSearchTerm}
+                    onChange={(e) => setCourseSearchTerm(e.target.value)}
+                  />
+                </div>
+                <div className="course-list">
+                  {filteredCourses.length > 0 ? (
+                    <div className="list-group">
+                      {filteredCourses.map((course) => (
+                        <div
+                          key={course.course_id}
+                          className="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
+                        >
+                          <div>
+                            <h6 className="mb-1">{course.title}</h6>
+                            <p className="mb-0 small text-muted">
+                              หมวดหมู่: {course.category} | รายวิชา: {course.subjects} วิชา
+                            </p>
+                          </div>
+                          <div className="form-check">
+                            <input
+                              className="form-check-input"
+                              type="checkbox"
+                              id={`select-course-${course.course_id}`}
+                              checked={subjectData.courses.includes(course.course_id)}
+                              onChange={() => handleToggleCourse(course.course_id)}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-4">
+                      <p className="text-muted">ไม่พบหลักสูตรที่ตรงกับคำค้นหา</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => setShowCourseModal(false)}
+                >
+                  เสร็จสิ้น
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </form>
   );
 };
