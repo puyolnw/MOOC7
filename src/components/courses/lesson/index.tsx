@@ -89,34 +89,6 @@ const Lesson = () => {
    }, [subjectId, apiURL]);
 
    // เพิ่มฟังก์ชันสำหรับรีเฟรชข้อมูลความก้าวหน้า
-   const refreshProgress = async () => {
-      try {
-         if (!subjectId) return;
-         
-         const token = localStorage.getItem("token");
-         if (!token) return;
-         
-         // ดึงข้อมูลรายวิชาใหม่
-         const response = await axios.get(`${apiURL}/api/courses/subjects/${subjectId}`, {
-            headers: { Authorization: `Bearer ${token}` }
-         });
-         
-         if (response.data.success) {
-            setSubjectData(response.data.subject);
-         }
-         
-         // ดึงข้อมูลความก้าวหน้าใหม่
-         const progressResponse = await axios.get(`${apiURL}/api/courses/subjects/${subjectId}/progress`, {
-            headers: { Authorization: `Bearer ${token}` }
-         });
-         
-         if (progressResponse.data.success) {
-            setProgressData(progressResponse.data.progress);
-         }
-      } catch (error) {
-         console.error("Error refreshing progress data:", error);
-      }
-   };
 
    return (
       <>

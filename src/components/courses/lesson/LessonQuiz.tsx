@@ -3,12 +3,11 @@ import axios from 'axios';
 import './LessonQuiz.css';
 
 interface LessonQuizProps {
-  onComplete: (score?: number, passed?: boolean) => void; // เพิ่ม parameters
+  onComplete: (score?: number, passed?: boolean) => void;
   quizData: any;
-  subjectId?: string; // เพิ่ม subjectId เพื่อใช้ในการส่งข้อมูลไปยัง API
+  subjectId?: string;
 }
 
-// Define different question types
 type QuestionType = 'single' | 'multiple' | 'truefalse' | 'text' | 'original';
 
 interface BaseQuestion {
@@ -51,19 +50,11 @@ const LessonQuiz = ({ onComplete, quizData, subjectId }: LessonQuizProps) => {
   
   const apiURL = import.meta.env.VITE_API_URL;
   
-  // For single choice questions
   const [selectedSingleAnswers, setSelectedSingleAnswers] = useState<number[]>([]);
-  
-  // For multiple choice questions
   const [selectedMultipleAnswers, setSelectedMultipleAnswers] = useState<number[][]>([]);
-  
-  // For true/false questions
   const [selectedTrueFalseAnswers, setSelectedTrueFalseAnswers] = useState<boolean[]>([]);
-  
-  // For text questions
   const [textAnswers, setTextAnswers] = useState<string[]>([]);
 
-  // Load quiz data
   useEffect(() => {
     const loadQuizData = async () => {
       if (!quizData) {
@@ -76,13 +67,11 @@ const LessonQuiz = ({ onComplete, quizData, subjectId }: LessonQuizProps) => {
         setIsLoading(true);
         setError(null);
         
-        // If we already have the questions in quizData
         if (quizData.questions && Array.isArray(quizData.questions)) {
           processQuizQuestions(quizData.questions);
           return;
         }
         
-        // Otherwise fetch questions from API
         const token = localStorage.getItem("token");
         if (!token) {
           setError("ต้องเข้าสู่ระบบก่อนทำแบบทดสอบ");
@@ -106,7 +95,6 @@ const LessonQuiz = ({ onComplete, quizData, subjectId }: LessonQuizProps) => {
           }
         );
         
-        // Check different possible locations for questions in the response
         if (response.data.questions && Array.isArray(response.data.questions)) {
           processQuizQuestions(response.data.questions);
         } else if (response.data.quiz && response.data.quiz.questions && Array.isArray(response.data.quiz.questions)) {
@@ -127,8 +115,6 @@ const LessonQuiz = ({ onComplete, quizData, subjectId }: LessonQuizProps) => {
     loadQuizData();
   }, [quizData, apiURL]);
 
-  
-  // Process quiz questions from API
   const processQuizQuestions = (apiQuestions: any[]) => {
     try {
       if (!apiQuestions || apiQuestions.length === 0) {
@@ -138,14 +124,11 @@ const LessonQuiz = ({ onComplete, quizData, subjectId }: LessonQuizProps) => {
       }
       
       const formattedQuestions: Question[] = apiQuestions.map(q => {
-        // ดึงข้อมูลคำถาม
         const questionText = q.question_text || q.title || q.question || "";
         const questionId = q.question_id || q.id || 0;
         
-        // แปลงประเภทคำถาม
         let type: QuestionType = 'single';
         
-        // แปลงประเภทคำถามจาก API เป็นประเภทที่ frontend เข้าใจ
         if (q.type === 'SC' || q.type === 'single_choice') {
           type = 'single';
         } else if (q.type === 'MC' || q.type === 'multiple_choice') {
@@ -156,22 +139,18 @@ const LessonQuiz = ({ onComplete, quizData, subjectId }: LessonQuizProps) => {
           type = 'text';
         }
         
-        // ดึงตัวเลือก - ตรวจสอบทุกรูปแบบที่เป็นไปได้
         let options: string[] = [];
         
         if (q.options && Array.isArray(q.options)) {
-          // กรณีที่มี options เป็น array ตรง ๆ
           options = q.options.map((opt: any) => 
             typeof opt === 'string' ? opt : (opt.text || opt.title || "")
           );
         } else if (q.choices && Array.isArray(q.choices)) {
-          // กรณีที่มี choices เป็น array
           options = q.choices.map((choice: any) => 
             typeof choice === 'string' ? choice : (choice.text || choice.title || "")
           );
         }
         
-        // สร้างออบเจ็กต์คำถามตามประเภท
         const baseQuestion = {
           question: questionText,
           type,
@@ -187,7 +166,6 @@ const LessonQuiz = ({ onComplete, quizData, subjectId }: LessonQuizProps) => {
             };
             
           case 'truefalse':
-            // สำหรับคำถามถูก/ผิด ถ้าไม่มีตัวเลือกให้สร้างตัวเลือกเอง
             return {
               ...baseQuestion,
               options: options.length > 0 ? options : ["ถูก (True)", "ผิด (False)"]
@@ -215,54 +193,44 @@ const LessonQuiz = ({ onComplete, quizData, subjectId }: LessonQuizProps) => {
       setIsLoading(false);
     }
   };
-  
 
-  // Handle single choice answer selection
   const handleSingleAnswerSelect = (answerIndex: number) => {
     const newSelectedAnswers = [...selectedSingleAnswers];
     newSelectedAnswers[currentQuestion] = answerIndex;
     setSelectedSingleAnswers(newSelectedAnswers);
   };
 
-  // Handle multiple choice answer selection
   const handleMultipleAnswerSelect = (answerIndex: number) => {
     const newSelectedAnswers = [...selectedMultipleAnswers];
     
-    // Initialize the array for current question if it doesn't exist
     if (!newSelectedAnswers[currentQuestion]) {
       newSelectedAnswers[currentQuestion] = [];
     }
     
-    // Toggle selection
     const currentSelections = newSelectedAnswers[currentQuestion];
     const selectionIndex = currentSelections.indexOf(answerIndex);
     
     if (selectionIndex === -1) {
-      // Add selection
       currentSelections.push(answerIndex);
     } else {
-      // Remove selection
       currentSelections.splice(selectionIndex, 1);
     }
     
     setSelectedMultipleAnswers(newSelectedAnswers);
   };
 
-  // Handle true/false answer selection
   const handleTrueFalseSelect = (answer: boolean) => {
     const newSelectedAnswers = [...selectedTrueFalseAnswers];
     newSelectedAnswers[currentQuestion] = answer;
     setSelectedTrueFalseAnswers(newSelectedAnswers);
   };
 
-  // Handle text answer input
   const handleTextAnswerChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newTextAnswers = [...textAnswers];
     newTextAnswers[currentQuestion] = e.target.value;
     setTextAnswers(newTextAnswers);
   };
 
-  // Submit quiz answers
   const submitQuizAnswers = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -293,7 +261,6 @@ const LessonQuiz = ({ onComplete, quizData, subjectId }: LessonQuizProps) => {
         };
       });
       
-      // ปรับปรุง URL ให้ตรงกับ API
       const submitEndpoint = `${apiURL}/api/courses/quizzes/${quizData.quiz_id}/submit`;
       console.log("Submitting quiz answers to:", submitEndpoint);
       console.log("Quiz data:", quizData);
@@ -303,7 +270,7 @@ const LessonQuiz = ({ onComplete, quizData, subjectId }: LessonQuizProps) => {
         submitEndpoint,
         { 
           answers,
-          subject_id: subjectId // เพิ่ม subject_id เพื่อให้ API รู้ว่าเป็นแบบทดสอบของรายวิชาใด
+          subject_id: subjectId
         },
         {
           headers: { Authorization: `Bearer ${token}` }
@@ -328,7 +295,6 @@ const LessonQuiz = ({ onComplete, quizData, subjectId }: LessonQuizProps) => {
     if (currentQuestion < questions.length - 1) {
       setCurrentQuestion(currentQuestion + 1);
     } else {
-      // Submit answers and show results
       const success = await submitQuizAnswers();
       
       if (success) {
@@ -350,14 +316,13 @@ const LessonQuiz = ({ onComplete, quizData, subjectId }: LessonQuizProps) => {
       const token = localStorage.getItem("token");
       if (!token || !quizData?.quiz_id) return;
       
-      // Mark quiz as completed
       const completeEndpoint = `${apiURL}/api/courses/quizzes/${quizData.quiz_id}/complete`;
       console.log("Marking quiz as completed:", completeEndpoint);
       
       const response = await axios.post(
         completeEndpoint,
         {
-          subject_id: subjectId // เพิ่ม subject_id เพื่อให้ API รู้ว่าเป็นแบบทดสอบของรายวิชาใด
+          subject_id: subjectId
         },
         {
           headers: { Authorization: `Bearer ${token}` }
@@ -366,13 +331,10 @@ const LessonQuiz = ({ onComplete, quizData, subjectId }: LessonQuizProps) => {
       
       console.log("Quiz completion response:", response.data);
       
-      // ตรวจสอบว่าคะแนนผ่านเกณฑ์หรือไม่
       const passed = response.data.passed !== undefined ? response.data.passed : true;
       
-      // Call the onComplete callback with score and passed status
       onComplete(score, passed);
       
-      // Reset quiz state
       setCurrentQuestion(0);
       setSelectedSingleAnswers([]);
       setSelectedMultipleAnswers([]);
@@ -384,8 +346,7 @@ const LessonQuiz = ({ onComplete, quizData, subjectId }: LessonQuizProps) => {
     }
   };
 
-   // Check if current question has been answered
-   const isCurrentQuestionAnswered = () => {
+  const isCurrentQuestionAnswered = () => {
     if (!questions[currentQuestion]) return false;
     
     switch (questions[currentQuestion].type) {
@@ -402,7 +363,6 @@ const LessonQuiz = ({ onComplete, quizData, subjectId }: LessonQuizProps) => {
     }
   };
 
-  // Calculate progress percentage
   const progressPercentage = Math.round(((currentQuestion + 1) / questions.length) * 100);
 
   if (isLoading) {
@@ -428,7 +388,6 @@ const LessonQuiz = ({ onComplete, quizData, subjectId }: LessonQuizProps) => {
   }
 
   if (showResult) {
-    // Calculate percentage score
     const percentage = questions.length > 0 ? Math.round((score / questions.length) * 100) : 0;
     
     return (
@@ -442,7 +401,6 @@ const LessonQuiz = ({ onComplete, quizData, subjectId }: LessonQuizProps) => {
             </div>
             <p>คุณได้คะแนน {score} จาก {questions.length} คะแนน</p>
           </div>
-          
           
           <button 
             className="btn btn-primary btn-lg mt-4"

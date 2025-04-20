@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import './LessonFaq.css';
 
 interface LessonItem {
@@ -29,16 +29,14 @@ interface LessonFaqProps {
 const LessonFaq = ({ lessonData, onSelectLesson, currentLessonId }: LessonFaqProps) => {
    const [activeAccordion, setActiveAccordion] = useState<number | null>(null);
 
-   // เมื่อโหลดครั้งแรก ให้เปิดบทที่กำลังเรียนอยู่
-   useState(() => {
+   useEffect(() => {
      if (currentLessonId) {
        const [sectionId] = currentLessonId.split('-').map(Number);
        setActiveAccordion(sectionId);
      } else if (lessonData.length > 0) {
-       // ถ้าไม่มีบทเรียนที่กำลังเรียน ให้เปิดบทแรก
        setActiveAccordion(lessonData[0].id);
      }
-   });
+   }, [currentLessonId, lessonData]);
 
    const handleItemClick = (sectionId: number, item: LessonItem) => {
       if (!item.lock) {
@@ -50,7 +48,6 @@ const LessonFaq = ({ lessonData, onSelectLesson, currentLessonId }: LessonFaqPro
       setActiveAccordion(activeAccordion === id ? null : id);
    };
 
-   // ในส่วนของการแสดงผลใน LessonFaq component
 return (
    <div className="accordion" id="accordionExample">
      {lessonData.map((section) => (
@@ -74,12 +71,15 @@ return (
                {section.items.map((item) => (
                  <li
                    key={item.id}
-                   className={`course-item ${item.completed ? 'completed' : ''} ${item.lock ? 'locked' : ''}`}
+                   className={`course-item ${item.completed ? 'completed' : ''} ${item.lock ? 'locked' : ''} ${
+                     currentLessonId === `${section.id}-${item.id}` ? 'active-lesson' : ''
+                   }`}
                    onClick={() => !item.lock && handleItemClick(section.id, item)}
                  >
                    <div className="course-item-link">
                      <span className="item-name">
                        {item.lock && <i className="fas fa-lock me-2"></i>}
+                       {item.completed && <i className="fas fa-check-circle me-2 text-success"></i>}
                        {item.title}
                      </span>
                      <span className="item-meta duration">{item.duration}</span>
@@ -101,7 +101,6 @@ return (
      ))}
    </div>
  );
- 
 };
 
 export default LessonFaq;
