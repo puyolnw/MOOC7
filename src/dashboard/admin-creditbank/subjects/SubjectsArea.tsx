@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
@@ -10,8 +11,8 @@ interface Subject {
   subject_id: number;
   subject_code: string;
   subject_name: string;
-  cover_image: string;
-  department_name: string;
+  cover_image: string | null; // Base64 string or null
+  department_name: string | null; // Allow null for consistency
   instructor_count: number;
   lesson_count: number;
   course_count: number;
@@ -39,18 +40,39 @@ const SubjectsArea = () => {
 
       try {
         const token = localStorage.getItem("token");
+        if (!token) {
+          setError("กรุณาเข้าสู่ระบบก่อนใช้งาน");
+          setIsLoading(false);
+          return;
+        }
+
         const response = await axios.get(`${apiUrl}/api/courses/subjects`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {}
+          headers: { Authorization: `Bearer ${token}` },
         });
 
         if (response.data.success) {
-          setSubjects(response.data.subjects);
+          // Map subjects to ensure cover_image is handled as base64
+          const formattedSubjects = response.data.subjects.map((subject: any) => ({
+            subject_id: subject.subject_id,
+            subject_code: subject.subject_code,
+            subject_name: subject.subject_name,
+            cover_image: subject.cover_image || null, // Base64 string or null
+            department_name: subject.department_name || null,
+            instructor_count: subject.instructor_count || 0,
+            lesson_count: subject.lesson_count || 0,
+            course_count: subject.course_count || 0,
+            status: subject.status,
+            created_at: subject.created_at,
+          }));
+          setSubjects(formattedSubjects);
         } else {
-          setError("ไม่สามารถโหลดข้อมูลรายวิชาได้");
+          setError(response.data.message || "ไม่สามารถโหลดข้อมูลรายวิชาได้");
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error("Error fetching subjects:", err);
-        setError("เกิดข้อผิดพลาดในการโหลดข้อมูลรายวิชา");
+        const errorMessage =
+          err.response?.data?.message || "เกิดข้อผิดพลาดในการโหลดข้อมูลรายวิชา";
+        setError(errorMessage);
       } finally {
         setIsLoading(false);
       }
@@ -60,10 +82,12 @@ const SubjectsArea = () => {
   }, [apiUrl]);
 
   // Filter subjects based on search term
-  const filteredSubjects = subjects.filter(subject =>
-    subject.subject_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    subject.subject_code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (subject.department_name && subject.department_name.toLowerCase().includes(searchTerm.toLowerCase()))
+  const filteredSubjects = subjects.filter(
+    (subject) =>
+      subject.subject_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      subject.subject_code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (subject.department_name &&
+        subject.department_name.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   // Calculate pagination
@@ -83,19 +107,20 @@ const SubjectsArea = () => {
         }
 
         const response = await axios.delete(`${apiUrl}/api/courses/subjects/${id}`, {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${token}` },
         });
 
         if (response.data.success) {
           toast.success("ลบรายวิชาสำเร็จ");
-          // อัปเดตรายการรายวิชาโดยลบรายวิชาที่เพิ่งลบออกไป
-          setSubjects(subjects.filter(subject => subject.subject_id !== id));
+          setSubjects(subjects.filter((subject) => subject.subject_id !== id));
         } else {
           toast.error(response.data.message || "ไม่สามารถลบรายวิชาได้");
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error("Error deleting subject:", err);
-        toast.error("เกิดข้อผิดพลาดในการลบรายวิชา");
+        const errorMessage =
+          err.response?.data?.message || "เกิดข้อผิดพลาดในการลบรายวิชา";
+        toast.error(errorMessage);
       }
     }
   };
@@ -126,9 +151,9 @@ const SubjectsArea = () => {
   // Statistics
   const totalSubjects = subjects.length;
   const countByStatus = {
-    active: subjects.filter(s => s.status === "active").length,
-    inactive: subjects.filter(s => s.status === "inactive").length,
-    draft: subjects.filter(s => s.status === "draft").length,
+    active: subjects.filter((s) => s.status === "active").length,
+    inactive: subjects.filter((s) => s.status === "inactive").length,
+    draft: subjects.filter((s) => s.status === "draft").length,
   };
 
   return (
@@ -234,13 +259,24 @@ const SubjectsArea = () => {
                                 <tr key={subject.subject_id}>
                                   <td>
                                     <img
-                                      src={subject.cover_image ? `${apiUrl}${subject.cover_image}` : "/assets/img/courses/default-course.jpg"}
+                                      src={
+                                        subject.cover_image
+                                          ? `data:image/jpeg;base64,${subject.cover_image}`
+                                          : "/assets/img/courses/default-course.jpg"
+                                      }
                                       alt={subject.subject_name}
                                       className="img-thumbnail"
                                       style={{ width: "70px", height: "50px", objectFit: "cover", cursor: "pointer" }}
-                                      onClick={() => setModalImage(subject.cover_image ? `${apiUrl}${subject.cover_image}` : "/assets/img/courses/default-course.jpg")}
+                                      onClick={() =>
+                                        setModalImage(
+                                          subject.cover_image
+                                            ? `data:image/jpeg;base64,${subject.cover_image}`
+                                            : "/assets/img/courses/default-course.jpg"
+                                        )
+                                      }
                                       onError={(e) => {
-                                        (e.target as HTMLImageElement).src = "/assets/img/courses/default-course.jpg";
+                                        (e.target as HTMLImageElement).src =
+                                          "/assets/img/courses/default-course.jpg";
                                       }}
                                     />
                                   </td>
@@ -257,7 +293,9 @@ const SubjectsArea = () => {
                                     </span>
                                   </td>
                                   <td>{subject.department_name || "ไม่ระบุ"}</td>
-                                  <td><StatusBadge status={subject.status} /></td>
+                                  <td>
+                                    <StatusBadge status={subject.status} />
+                                  </td>
                                   <td>
                                     <div className="d-flex justify-content-center gap-3">
                                       <Link
@@ -278,7 +316,9 @@ const SubjectsArea = () => {
                               ))
                             ) : (
                               <tr>
-                                <td colSpan={8} className="text-center py-4">ไม่พบข้อมูลรายวิชา</td>
+                                <td colSpan={8} className="text-center py-4">
+                                  ไม่พบข้อมูลรายวิชา
+                                </td>
                               </tr>
                             )}
                           </tbody>
@@ -289,7 +329,7 @@ const SubjectsArea = () => {
                       <div className="card-footer bg-light text-center">
                         <nav aria-label="Page navigation">
                           <ul className="pagination justify-content-center mb-0">
-                            <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+                            <li className={`page-item ${currentPage === 1 ? "disabled" : ""}`}>
                               <button
                                 className="page-link"
                                 onClick={() => setCurrentPage(currentPage - 1)}
@@ -299,16 +339,13 @@ const SubjectsArea = () => {
                               </button>
                             </li>
                             {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                              <li key={page} className={`page-item ${currentPage === page ? 'active' : ''}`}>
-                                <button
-                                  className="page-link"
-                                  onClick={() => setCurrentPage(page)}
-                                >
+                              <li key={page} className={`page-item ${currentPage === page ? "active" : ""}`}>
+                                <button className="page-link" onClick={() => setCurrentPage(page)}>
                                   {page}
                                 </button>
                               </li>
                             ))}
-                            <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
+                            <li className={`page-item ${currentPage === totalPages ? "disabled" : ""}`}>
                               <button
                                 className="page-link"
                                 onClick={() => setCurrentPage(currentPage + 1)}
@@ -331,7 +368,7 @@ const SubjectsArea = () => {
 
       {/* Image Preview Modal */}
       {modalImage && (
-        <div className="modal fade show" style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+        <div className="modal fade show" style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}>
           <div className="modal-dialog modal-dialog-centered">
             <div className="modal-content">
               <div className="modal-header">
@@ -339,7 +376,14 @@ const SubjectsArea = () => {
                 <button type="button" className="btn-close" onClick={closeModal}></button>
               </div>
               <div className="modal-body text-center">
-                <img src={modalImage} alt="Subject Cover" className="img-fluid" />
+                <img
+                  src={modalImage}
+                  alt="Subject Cover"
+                  className="img-fluid"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = "/assets/img/courses/default-course.jpg";
+                  }}
+                />
               </div>
             </div>
           </div>
@@ -350,4 +394,3 @@ const SubjectsArea = () => {
 };
 
 export default SubjectsArea;
-
