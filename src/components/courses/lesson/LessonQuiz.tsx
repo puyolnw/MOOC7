@@ -86,14 +86,9 @@ const LessonQuiz = ({ onComplete, quizData, subjectId }: LessonQuizProps) => {
           return;
         }
         
-        const apiEndpoint = `${apiURL}/api/courses/quizzes/${quizId}/questions`;
-        
-        const response = await axios.get(
-          apiEndpoint,
-          {
-            headers: { Authorization: `Bearer ${token}` }
-          }
-        );
+        const response = await axios.get(`${apiURL}/api/courses/quizzes/${quizId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
         
         if (response.data.questions && Array.isArray(response.data.questions)) {
           processQuizQuestions(response.data.questions);

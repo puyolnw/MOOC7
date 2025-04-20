@@ -27,9 +27,12 @@ const Sidebar = ({
     <>
       <div className="col-xl-3 col-lg-4">
         <div className="courses__details-sidebar">
-          <div className="courses__details-video">
-            <img src={cover_image || "/assets/img/courses/course_thumb02.jpg"} alt={subject_name} />
-          </div>
+        <div className="courses__details-video">
+  <img 
+    src={cover_image ? `data:image/jpeg;base64,${cover_image}` : "/assets/img/courses/course_thumb02.jpg"} 
+    alt={subject_name} 
+  />
+</div>
           <div className="courses__information-wrap">
             <h5 className="title">ข้อมูลรายวิชา:</h5>
             <ul className="list-wrap">
