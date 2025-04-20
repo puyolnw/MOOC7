@@ -91,17 +91,13 @@ const LessonArea = ({ isLoading = false, subjectData, error = null, subjectId, p
     console.log("Processing subject data:", subjectData);
     console.log("With progress info:", progressInfo);
     
-    const lessonProgress = progressInfo?.lessonProgress || [];
+
     const quizProgress = progressInfo?.quizProgress || [];
     
-    const lessonProgressMap = new Map();
+
     const quizProgressMap = new Map();
     
-    lessonProgress.forEach((item: any) => {
-      if (item.lesson_id) {
-        lessonProgressMap.set(String(item.lesson_id), item);
-      }
-    });
+
     
     quizProgress.forEach((item: any) => {
       if (item.quiz_id) {
@@ -374,6 +370,7 @@ const LessonArea = ({ isLoading = false, subjectData, error = null, subjectId, p
   }, [subjectData, subjectId, apiURL]);
 
   const findCurrentLesson = (lessonData: SectionData[], progressInfo: any) => {
+    console.log("Progress info:", progressInfo);
     if (!lessonData || lessonData.length === 0) return;
     
     for (const section of lessonData) {
@@ -699,7 +696,7 @@ const LessonArea = ({ isLoading = false, subjectData, error = null, subjectId, p
       
       let currentItem: LessonItem | undefined;
       let currentSection: SectionData | undefined;
-      
+
       lessonData.forEach(section => {
         if (section.id === sectionId) {
           currentSection = section;
