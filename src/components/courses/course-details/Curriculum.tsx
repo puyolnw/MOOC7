@@ -24,7 +24,6 @@ interface CurriculumProps {
 }
 
 const Curriculum: React.FC<CurriculumProps> = ({ subjects }) => {
-  // กำหนดสไตล์ด้วย CSSProperties
   const styles: Record<string, CSSProperties> = {
     row: {
       display: "flex",
@@ -149,29 +148,24 @@ const Curriculum: React.FC<CurriculumProps> = ({ subjects }) => {
       flexWrap: "wrap",
       margin: "0",
       padding: "0",
-    }
+    },
   };
 
-  // ฟังก์ชันสำหรับจัดการเอฟเฟกต์ hover
   const [hoveredCard, setHoveredCard] = useState<number | null>(null);
   const [hoveredButton, setHoveredButton] = useState<number | null>(null);
-  
-  // สร้าง state สำหรับเก็บขนาดหน้าจอ
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
-  
-  // ฟังก์ชันสำหรับอัปเดตขนาดหน้าจอ
+
   useEffect(() => {
     const handleResize = () => {
       setWindowWidth(window.innerWidth);
     };
-    
-    window.addEventListener('resize', handleResize);
+
+    window.addEventListener("resize", handleResize);
     return () => {
-      window.removeEventListener('resize', handleResize);
+      window.removeEventListener("resize", handleResize);
     };
   }, []);
-  
-  // คำนวณสไตล์ column ตามขนาดหน้าจอ
+
   const getColumnStyle = (): CSSProperties => {
     if (windowWidth <= 768) {
       return {
@@ -198,30 +192,35 @@ const Curriculum: React.FC<CurriculumProps> = ({ subjects }) => {
     <div className="courses__curriculum-wrap">
       <h3 className="title">รายวิชาในหลักสูตร</h3>
       <p>
-        หลักสูตรนี้ประกอบด้วยรายวิชาทั้งหมด {subjects.length} รายวิชา ซึ่งแต่ละรายวิชาจะมีบทเรียนและแบบทดสอบที่ออกแบบมาเพื่อให้ผู้เรียนได้รับความรู้และทักษะอย่างครบถ้วน
+        หลักสูตรนี้ประกอบด้วยรายวิชาทั้งหมด {subjects.length} รายวิชา
+        ซึ่งแต่ละรายวิชาจะมีบทเรียนและแบบทดสอบที่ออกแบบมาเพื่อให้ผู้เรียนได้รับความรู้และทักษะอย่างครบถ้วน
       </p>
-      
+
       {subjects.length > 0 ? (
         <div style={styles.row}>
           {subjects.map((subject) => (
-            <div 
-              key={subject.subject_id} 
-              style={getColumnStyle()}
-            >
-              <div 
+            <div key={subject.subject_id} style={getColumnStyle()}>
+              <div
                 style={{
                   ...styles.card,
-                  transform: hoveredCard === subject.subject_id ? 'translateY(-5px)' : 'none',
-                  boxShadow: hoveredCard === subject.subject_id ? '0 10px 20px rgba(0, 0, 0, 0.1)' : 'none',
+                  transform: hoveredCard === subject.subject_id ? "translateY(-5px)" : "none",
+                  boxShadow: hoveredCard === subject.subject_id ? "0 10px 20px rgba(0, 0, 0, 0.1)" : "none",
                 }}
                 onMouseEnter={() => setHoveredCard(subject.subject_id)}
                 onMouseLeave={() => setHoveredCard(null)}
               >
                 {subject.cover_image ? (
-                  <img 
-                    src={subject.cover_image} 
-                    alt={subject.subject_name} 
+                  <img
+                    src={
+                      subject.cover_image
+                        ? `data:image/jpeg;base64,${subject.cover_image}`
+                        : "/assets/img/courses/course_thumb01.jpg"
+                    }
+                    alt={subject.subject_name}
                     style={styles.cardImage}
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = "/assets/img/courses/course_thumb01.jpg";
+                    }}
                   />
                 ) : (
                   <div style={styles.placeholderImage}>
@@ -229,12 +228,12 @@ const Curriculum: React.FC<CurriculumProps> = ({ subjects }) => {
                     {subject.subject_code}
                   </div>
                 )}
-                
+
                 <div style={styles.cardHeader}>
                   <h4 style={styles.cardCode}>{subject.subject_code}</h4>
                   <h5 style={styles.cardTitle}>{subject.subject_name}</h5>
                 </div>
-                
+
                 <div style={styles.cardBody}>
                   <ul style={styles.infoList}>
                     <li style={styles.infoItem}>
@@ -250,8 +249,7 @@ const Curriculum: React.FC<CurriculumProps> = ({ subjects }) => {
                       <span>{subject.instructor_count} ผู้สอน</span>
                     </li>
                   </ul>
-                  
-                  {/* แสดงรายวิชาที่ต้องเรียนก่อน (ถ้ามี) */}
+
                   {subject.prerequisites && subject.prerequisites.length > 0 && (
                     <div style={styles.prerequisitesContainer}>
                       <h6 style={styles.prerequisitesTitle}>
@@ -259,9 +257,9 @@ const Curriculum: React.FC<CurriculumProps> = ({ subjects }) => {
                         วิชาที่ต้องเรียนก่อน:
                       </h6>
                       <div style={styles.prerequisitesList}>
-                        {subject.prerequisites.map(prereq => (
-                          <span 
-                            key={prereq.prerequisite_id} 
+                        {subject.prerequisites.map((prereq) => (
+                          <span
+                            key={prereq.prerequisite_id}
                             style={styles.prerequisitesBadge}
                             title={prereq.prerequisite_name}
                           >
@@ -272,13 +270,13 @@ const Curriculum: React.FC<CurriculumProps> = ({ subjects }) => {
                     </div>
                   )}
                 </div>
-                
+
                 <div style={styles.cardFooter}>
-                  <Link 
-                    to={`/subject-details/${subject.subject_id}`} 
+                  <Link
+                    to={`/subject-details/${subject.subject_id}`}
                     style={{
                       ...styles.button,
-                      backgroundColor: hoveredButton === subject.subject_id ? '#0b5ed7' : '#0d6efd',
+                      backgroundColor: hoveredButton === subject.subject_id ? "#0b5ed7" : "#0d6efd",
                     }}
                     onMouseEnter={() => setHoveredButton(subject.subject_id)}
                     onMouseLeave={() => setHoveredButton(null)}

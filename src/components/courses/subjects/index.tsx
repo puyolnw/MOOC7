@@ -8,78 +8,85 @@ import SubjectDetailsArea from "./SubjectDetailsArea";
 
 const SubjectDetails = () => {
   const { id } = useParams<{ id: string }>();
-  const apiURL = import.meta.env.VITE_API_URL || 'http://localhost:3301';
+  const apiURL = import.meta.env.VITE_API_URL || "http://localhost:3301";
   const [subjectDetails, setSubjectDetails] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // ฟังก์ชันสำหรับดึงข้อมูลรายวิชา
     const fetchSubjectDetails = async () => {
       try {
-        // เริ่มการโหลด
         setIsLoading(true);
         setError(null);
-        
-        // ตรวจสอบว่ามี id หรือไม่
-        if (!id) return;
-        
-        // URL ที่ถูกต้องตามที่กำหนดใน back_creditbank/index.js
+
+        if (!id) {
+          setError("ไม่พบรหัสรายวิชา");
+          setIsLoading(false);
+          return;
+        }
+
         const url = `${apiURL}/api/courses/subjects/${id}`;
         console.log(`Fetching subject data from: ${url}`);
-        
-        // เรียก API
-        const response = await axios.get(url);
+
+        const token = localStorage.getItem("token");
+        const response = await axios.get(url, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
         console.log("API Response:", response.data);
-        
-        // ตรวจสอบผลลัพธ์
+
         if (response.data && response.data.success && response.data.subject) {
           console.log("Subject data received successfully:", response.data.subject);
-          
-          // แปลงค่า file_count และ subject_count จาก string เป็น number
+
           const subjectData = {
             ...response.data.subject,
+            // ไม่แปลง cover_image ในขั้นตอนนี้ ส่ง base64 string ดิบไปยัง SubjectDetailsArea
+            cover_image: response.data.subject.cover_image || null,
             lessons: response.data.subject.lessons.map((lesson: any) => ({
               ...lesson,
-              file_count: parseInt(lesson.file_count, 10) || 0
+              file_count: parseInt(lesson.file_count, 10) || 0,
             })),
             courses: response.data.subject.courses.map((course: any) => ({
               ...course,
-              subject_count: parseInt(course.subject_count, 10) || 0
+              subject_count: parseInt(course.subject_count, 10) || 0,
             })),
-            quiz_count: response.data.subject.quiz_count || 0
+            quiz_count: response.data.subject.quiz_count || 0,
           };
-          
+
           console.log("Processed subject data:", subjectData);
           setSubjectDetails(subjectData);
         } else {
           console.error("API returned invalid data:", response.data);
           setError("ไม่สามารถดึงข้อมูลรายวิชาได้");
         }
-      } catch (error) {
-        // จัดการกับข้อผิดพลาด
+      } catch (error: any) {
         console.error("Error fetching subject details:", error);
-        setError("เกิดข้อผิดพลาดในการดึงข้อมูลรายวิชา");
+        if (error.response?.status === 401) {
+          localStorage.removeItem("token");
+          setError("เซสชันของคุณหมดอายุ กรุณาเข้าสู่ระบบใหม่");
+        } else {
+          setError("เกิดข้อผิดพลาดในการดึงข้อมูลรายวิชา");
+        }
       } finally {
-        // สิ้นสุดการโหลด
         setIsLoading(false);
       }
     };
-    
-    // เรียกใช้ฟังก์ชัน
-    fetchSubjectDetails();
-  }, [apiURL, id]); // เรียกใช้เมื่อ apiURL หรือ id เปลี่ยนแปลง
 
-  // ตรวจสอบข้อมูลก่อนส่งไปยัง SubjectDetailsArea
+    fetchSubjectDetails();
+  }, [apiURL, id]);
+
   console.log("Before rendering, subjectDetails:", subjectDetails);
 
   return (
     <>
       <HeaderOne />
       <main className="main-area fix">
-        <BreadcrumbTwo 
-          title={subjectDetails ? `${subjectDetails.subject_code} - ${subjectDetails.subject_name}` : "รายละเอียดรายวิชา"} 
-          sub_title="รายวิชา" 
+        <BreadcrumbTwo
+          title={
+            subjectDetails
+              ? `${subjectDetails.subject_code} - ${subjectDetails.subject_name}`
+              : "รายละเอียดรายวิชา"
+          }
+          sub_title="รายวิชา"
         />
         {isLoading ? (
           <div className="container py-5 text-center">
