@@ -208,7 +208,7 @@ const AddLessons: React.FC<AddLessonsProps> = ({ onSubmit, onCancel, lessonToEdi
           files: [],
           videoUrl: lesson.video_url || "",
           canPreview: lesson.can_preview || false,
-          hasQuiz: lesson.quiz_id ? true : false,
+          hasQuiz: lesson.has_quiz || false,  // ควรใช้ค่า has_quiz จาก API
           quizId: lesson.quiz_id || null,
           subjects: lesson.subjects ? lesson.subjects.map((s: any) => s.subject_id) : []
         });
