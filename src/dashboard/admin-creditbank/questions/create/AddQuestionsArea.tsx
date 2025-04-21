@@ -2,7 +2,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import DashboardSidebar from "../../../dashboard-common/AdminSidebar";
 import DashboardBanner from "../../../dashboard-common/AdminBanner";
-import AddQuestions from "../../../../forms/Course/AddQuestions";
+import AddQuestions from "../../../../forms/Course/Questions/AddQuestions";
 
 interface AddQuestionsAreaProps {
   isEmbedded?: boolean;

@@ -2,7 +2,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import DashboardSidebar from "../../dashboard-common/AdminSidebar";
 import DashboardBanner from "../../dashboard-common/AdminBanner";
-import AddCourses from "../../../forms/Course/AddCourses";
+import AddCourses from "../../../forms/Course/Courses/AddCourses";
 
 const AddCoursearea: React.FC = () => {
   const navigate = useNavigate();
