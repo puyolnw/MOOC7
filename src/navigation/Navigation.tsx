@@ -75,6 +75,11 @@ import NotFound from '../pages/NotFound';
 
 import StudentCertificate from '../pages/StudentCertificate';
 
+{/* ลองเพิ่ม */}
+// import AddQuestions from '../forms/Course/AddQuestions';
+
+
+
 const AppNavigation = () => {
   return (
     <Router>
@@ -133,6 +138,11 @@ const AppNavigation = () => {
         <Route path="/admin-account/students" element={<AdminStudentpage/>} />
 
         <Route path="/admin-account/instructors/create-new" element={< CreateAccountInstructorspage />} />
+
+
+        {/* ลองเพิ่ม */}
+        {/* <Route path="/test" element={<AddQuestions/>} /> */}
+        
 
         </Route>
 
