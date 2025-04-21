@@ -19,20 +19,27 @@ const Sidebar = ({
   credits,
   lesson_count,
   quiz_count,
-  cover_image
+  cover_image,
 }: SidebarProps) => {
   const [isVideoOpen, setIsVideoOpen] = useState(false);
+
+  console.log("Cover image received in Sidebar:", cover_image);
 
   return (
     <>
       <div className="col-xl-3 col-lg-4">
         <div className="courses__details-sidebar">
-        <div className="courses__details-video">
-  <img 
-    src={cover_image ? `data:image/jpeg;base64,${cover_image}` : "/assets/img/courses/course_thumb02.jpg"} 
-    alt={subject_name} 
-  />
-</div>
+          <div className="courses__details-video">
+            <img
+              src={cover_image || "/assets/img/courses/course_thumb02.jpg"}
+              alt={subject_name}
+              onError={(e) => {
+                console.log("Failed to load cover image in Sidebar, using default");
+                (e.target as HTMLImageElement).src = "/assets/img/courses/course_thumb02.jpg";
+              }}
+              loading="lazy"
+            />
+          </div>
           <div className="courses__information-wrap">
             <h5 className="title">ข้อมูลรายวิชา:</h5>
             <ul className="list-wrap">

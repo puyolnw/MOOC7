@@ -1,0 +1,31 @@
+.modal-body-scrollable {
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+
+  .modal-slide-down {
+    animation: slideDown 0.3s ease-out;
+  }
+
+  @keyframes slideDown {
+    from {
+      transform: translateY(-100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  .modal-dialog-centered {
+    display: flex;
+    align-items: center;
+    min-height: calc(100% - 1rem);
+  }
+
+  @media (min-width: 576px) {
+    .modal-dialog-centered {
+      min-height: calc(100% - 3.5rem);
+    }
+  }
