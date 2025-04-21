@@ -57,7 +57,7 @@ const Lesson = () => {
                   console.log("Progress Response:", progressResponse.data);
                   
                   if (progressResponse.data.success) {
-                     setProgressData(progressResponse.data.progress);
+                     setProgressData(progressResponse.data); // เซ็ตข้อมูลทั้งหมด ไม่ใช่แค่ progress
                   }
                } catch (progressError) {
                   console.error("Error fetching progress data:", progressError);
