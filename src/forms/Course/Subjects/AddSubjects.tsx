@@ -56,12 +56,7 @@ export interface Department {
   
 
 // ประกาศ interface สำหรับ props ของ QuizSection
-interface QuizSectionProps {
-  subjectData: SubjectData;
-  setSubjectData: React.Dispatch<React.SetStateAction<SubjectData>>;
-  findQuizById: (quizId: string | null) => Quiz | null;
-  handleOpenQuizModal: (type: "pre" | "post") => void;
-}
+
 
 interface AddSubjectsProps {
   onSubmit?: (subjectData: any) => void;

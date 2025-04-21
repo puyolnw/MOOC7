@@ -25,11 +25,7 @@ const QuizSelection: React.FC<QuizSelectionProps> = ({
   questionData,
   availableQuizzes,
   handleToggleQuiz,
-  showQuizModal,
   setShowQuizModal,
-  quizSearchTerm,
-  setQuizSearchTerm,
-  filteredQuizzes
 }) => (
   <div className="card shadow-sm border-0 mb-4">
     <div className="card-header bg-light">
