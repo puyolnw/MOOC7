@@ -207,25 +207,34 @@ const LessonVideo = ({ onComplete, currentLesson, youtubeId = 'BboMpayJomw', les
     }
   };
 
-  const handleVideoComplete = async () => {
-    if (isCompleted) return;
+ // แก้ไขฟังก์ชัน handleVideoComplete ประมาณบรรทัด 200-230
+const handleVideoComplete = async () => {
+  if (isCompleted) return;
+  
+  try {
+    const token = localStorage.getItem("token");
+    if (!token || !lessonData?.lesson_id) return;
     
-    try {
-      const token = localStorage.getItem("token");
-      if (!token || !lessonData?.lesson_id) return;
-      
-      await axios.post(
-        `${apiURL}/api/courses/lessons/${lessonData.lesson_id}/complete`,
-        { subject_id: subjectId },
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      );
-      
+    const response = await axios.post(
+      `${apiURL}/api/courses/lessons/${lessonData.lesson_id}/complete`,
+      { subject_id: subjectId },
+      {
+        headers: { Authorization: `Bearer ${token}` }
+      }
+    );
+    
+    if (response.data.success) {
       setIsCompleted(true);
       setProgress(100);
       
-      onComplete();
+      // ตรวจสอบว่ามี quiz หรือไม่ก่อนเรียกฟังก์ชัน onComplete
+      if (lessonData.quiz_id || lessonData.quiz) {
+        // ถ้ามี quiz ให้แสดงปุ่มทำแบบทดสอบแทนที่จะไปบทเรียนถัดไปทันที
+        // onComplete จะถูกเรียกเมื่อคลิกปุ่มทำแบบทดสอบในหน้า LessonArea
+      } else {
+        // ถ้าไม่มี quiz ให้ไปบทเรียนถัดไปทันที
+        onComplete();
+      }
       
       if (subjectId) {
         try {
@@ -236,10 +245,12 @@ const LessonVideo = ({ onComplete, currentLesson, youtubeId = 'BboMpayJomw', les
           console.error("Error updating subject progress:", error);
         }
       }
-    } catch (error) {
-      console.error("Error marking lesson as complete:", error);
     }
-  };
+  } catch (error) {
+    console.error("Error marking lesson as complete:", error);
+  }
+};
+
 
   return (
     <div className="video-lesson-container">
@@ -268,7 +279,7 @@ const LessonVideo = ({ onComplete, currentLesson, youtubeId = 'BboMpayJomw', les
           {isCompleted || (playerRef.current && playerRef.current.currentTime >= playerRef.current.duration) ? (
             <span>100% ของวิดีโอ</span>
           ) : (
-            <span>{progress.toFixed(0)}% ของวิดีโอ</span>
+            <span>{typeof progress === 'number' ? progress.toFixed(0) : Number(progress).toFixed(0)}% ของวิดีโอ</span>
           )}
           <span className="video-duration">
             {" "}({isCompleted ? videoDuration.toFixed(1) : (playerRef.current ? playerRef.current.currentTime.toFixed(1) : 0)}/

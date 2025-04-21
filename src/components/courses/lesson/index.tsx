@@ -13,59 +13,53 @@ const Lesson = () => {
    const [error, setError] = useState<string | null>(null);
    const apiURL = import.meta.env.VITE_API_URL;
 
+   // โหลดข้อมูลทันทีที่เข้าหน้านี้
    useEffect(() => {
-      const fetchSubjectData = async () => {
+      const fetchData = async () => {
+         console.log("Fetching data for subject:", subjectId);
+         
+         if (!subjectId) {
+            setError("ไม่พบรหัสรายวิชา");
+            setIsLoading(false);
+            return;
+         }
+         
+         setIsLoading(true);
+         setError(null);
+         
+         const token = localStorage.getItem("token");
+         const headers = token ? { Authorization: `Bearer ${token}` } : {};
+         
          try {
-            if (!subjectId) {
-               setError("ไม่พบรหัสรายวิชา");
-               setIsLoading(false);
-               return;
-            }
-            
-       
-            
-            setIsLoading(true);
-            setError(null);
-            
-            const token = localStorage.getItem("token");
-            const headers = token ? { Authorization: `Bearer ${token}` } : {};
-            
-            // ดึงข้อมูลรายวิชา
-            const response = await axios.get(`${apiURL}/api/courses/subjects/${subjectId}`, {
-               headers
-            });
-            
-   
-            
-            if (response.data.success) {
-               setSubjectData(response.data.subject);
+            // ดึงข้อมูลรายวิชาและความก้าวหน้าพร้อมกัน
+            const [subjectResponse, progressResponse] = await Promise.all([
+               // ดึงข้อมูลรายวิชา
+               axios.get(`${apiURL}/api/courses/subjects/${subjectId}`, { headers }),
                
-               if (!response.data.subject) {
+               // ดึงข้อมูลความก้าวหน้า (เฉพาะเมื่อมี token)
+               token ? axios.get(`${apiURL}/api/courses/subjects/${subjectId}/progress`, { headers }) 
+                     : Promise.resolve({ data: { success: false } })
+            ]);
+            
+            // จัดการข้อมูลรายวิชา
+            if (subjectResponse.data.success) {
+               console.log("Subject data loaded:", subjectResponse.data);
+               setSubjectData(subjectResponse.data.subject);
+               
+               if (!subjectResponse.data.subject) {
                   setError("ไม่พบข้อมูลรายวิชา");
                }
             } else {
-               setError(response.data.message || "ไม่สามารถโหลดข้อมูลรายวิชาได้");
+               setError(subjectResponse.data.message || "ไม่สามารถโหลดข้อมูลรายวิชาได้");
             }
-
-            // ดึงข้อมูลความก้าวหน้าของรายวิชา
-            if (token) {
-               try {
-                  const progressResponse = await axios.get(`${apiURL}/api/courses/subjects/${subjectId}/progress`, {
-                     headers
-                  });
-                  
-                  console.log("Progress Response:", progressResponse.data);
-                  
-                  if (progressResponse.data.success) {
-                     setProgressData(progressResponse.data); // เซ็ตข้อมูลทั้งหมด ไม่ใช่แค่ progress
-                  }
-               } catch (progressError) {
-                  console.error("Error fetching progress data:", progressError);
-                  // ไม่ต้อง set error เพราะไม่ใช่ข้อมูลหลัก
-               }
+            
+            // จัดการข้อมูลความก้าวหน้า
+            if (progressResponse.data.success) {
+               console.log("Progress data loaded:", progressResponse.data);
+               setProgressData(progressResponse.data);
             }
          } catch (error: any) {
-            console.error("Error fetching subject data:", error);
+            console.error("Error fetching data:", error);
             
             if (error.response) {
                console.error("Error response:", error.response.data);
@@ -85,10 +79,42 @@ const Lesson = () => {
          }
       };
       
-      fetchSubjectData();
+      fetchData();
+      
+      // ตั้งเวลาให้รีเฟรชข้อมูลทุก 30 วินาที
+      const intervalId = setInterval(() => {
+         console.log("Auto-refreshing data...");
+         fetchData();
+      }, 30000);
+      
+      return () => {
+         clearInterval(intervalId);
+      };
    }, [subjectId, apiURL]);
 
-   // เพิ่มฟังก์ชันสำหรับรีเฟรชข้อมูลความก้าวหน้า
+   // ฟังก์ชันสำหรับรีเฟรชข้อมูลความก้าวหน้า (ส่งให้ LessonArea ใช้)
+   const refreshProgress = async () => {
+      if (!subjectId) return null;
+      
+      const token = localStorage.getItem("token");
+      if (!token) return null;
+      
+      try {
+         console.log("Manually refreshing progress data...");
+         const response = await axios.get(`${apiURL}/api/courses/subjects/${subjectId}/progress`, {
+            headers: { Authorization: `Bearer ${token}` }
+         });
+         
+         if (response.data.success) {
+            console.log("New progress data:", response.data);
+            setProgressData(response.data);
+            return response.data;
+         }
+      } catch (error) {
+         console.error("Error refreshing progress:", error);
+      }
+      return null;
+   };
 
    return (
       <>
@@ -100,6 +126,7 @@ const Lesson = () => {
                progressData={progressData}
                error={error}
                subjectId={subjectId}
+               refreshProgress={refreshProgress}
             />
          </main>
          <FooterOne style={false} style_2={true} />

@@ -39,6 +39,14 @@ const LessonSidebar: React.FC<LessonSidebarProps> = ({
   progressData,
   progress
 }) => {
+  // ใช้ค่าจาก progressData ถ้ามี หรือใช้ค่า progress ที่ส่งมา
+  const progressPercentage = progressData?.progress?.progress_percentage !== undefined 
+    ? progressData.progress.progress_percentage 
+    : progress;
+  
+  // แปลงเป็นจำนวนเต็มและจำกัดค่าระหว่าง 0-100
+  const displayProgress = Math.min(100, Math.max(0, Math.round(progressPercentage || 0)));
+  
   return (
     <div className="col-xl-3 col-lg-4 lesson__sidebar">
       <div className="lesson__content">
@@ -53,14 +61,14 @@ const LessonSidebar: React.FC<LessonSidebarProps> = ({
           <h4>ความคืบหน้า</h4>
           <div className="progress-container">
             <div className="progress-bar-wrapper">
-              <div className="progress-bar" style={{ width: `${progressData?.progress?.progress_percentage || progress}%` }}></div>
+              <div className="progress-bar" style={{ width: `${displayProgress}%` }}></div>
             </div>
-            <div className="progress-percentage">{(progressData?.progress?.progress_percentage || progress).toFixed(0)}%</div>
+            <div className="progress-percentage">{displayProgress}%</div>
           </div>
           <div className="progress-status">
             <span className="status-text">สถานะ: </span>
             <span className="status-value">
-              {(progressData?.progress?.progress_percentage || progress) < 100 ? 'กำลังเรียน' : 'เรียนจบแล้ว'}
+              {displayProgress < 100 ? 'กำลังเรียน' : 'เรียนจบแล้ว'}
             </span>
           </div>
           {progressData?.progress && (
@@ -70,7 +78,7 @@ const LessonSidebar: React.FC<LessonSidebarProps> = ({
               </div>
               {progressData.progress.total_quizzes > 0 && (
                 <div className="small text-muted">
-                  แบบทดสอบที่ทำแล้ว: {progressData.progress.completed_quizzes || 0}/{progressData.progress.total_quizzes || 0}
+                                    แบบทดสอบที่ผ่านแล้ว: {progressData.progress.completed_quizzes || 0}/{progressData.progress.total_quizzes || 0}
                 </div>
               )}
             </div>

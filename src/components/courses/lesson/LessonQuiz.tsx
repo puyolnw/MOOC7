@@ -18,18 +18,19 @@ interface BaseQuestion {
 
 interface SingleChoiceQuestion extends BaseQuestion {
   type: 'single';
-  options: string[];
+  options: Array<{ text: string; choice_id: number }>;
   correctAnswer?: number;
 }
 
 interface MultipleChoiceQuestion extends BaseQuestion {
   type: 'multiple';
-  options: string[];
+  options: Array<{ text: string; choice_id: number }>;
   correctAnswers?: number[];
 }
 
 interface TrueFalseQuestion extends BaseQuestion {
   type: 'truefalse';
+  options: Array<{ text: string; choice_id: number }>;
   correctAnswer?: boolean;
 }
 
@@ -40,13 +41,17 @@ interface TextQuestion extends BaseQuestion {
 
 type Question = SingleChoiceQuestion | MultipleChoiceQuestion | TrueFalseQuestion | TextQuestion;
 
-const LessonQuiz = ({ onComplete, quizData, subjectId }: LessonQuizProps) => {
+const LessonQuiz = ({ onComplete, quizData, }: LessonQuizProps) => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [showResult, setShowResult] = useState(false);
   const [score, setScore] = useState(0);
+  const [totalScore, setTotalScore] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
+  const [isPreTest, setIsPreTest] = useState(false);
+  const [isPassed, setIsPassed] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   
   const apiURL = import.meta.env.VITE_API_URL;
   
@@ -66,6 +71,12 @@ const LessonQuiz = ({ onComplete, quizData, subjectId }: LessonQuizProps) => {
       try {
         setIsLoading(true);
         setError(null);
+        
+        // ตรวจสอบว่าเป็นแบบทดสอบก่อนเรียนหรือไม่
+        if (quizData.quiz_type === 'pre_test' || quizData.type === 'pre_test' || 
+            (quizData.title && quizData.title.toLowerCase().includes('ก่อนเรียน'))) {
+          setIsPreTest(true);
+        }
         
         if (quizData.questions && Array.isArray(quizData.questions)) {
           processQuizQuestions(quizData.questions);
@@ -89,6 +100,13 @@ const LessonQuiz = ({ onComplete, quizData, subjectId }: LessonQuizProps) => {
         const response = await axios.get(`${apiURL}/api/courses/quizzes/${quizId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
+        
+        // ตรวจสอบว่าเป็นแบบทดสอบก่อนเรียนหรือไม่จากข้อมูลที่ได้รับ
+        if (response.data.quiz?.type === 'pre_test' || response.data.type === 'pre_test' ||
+            (response.data.quiz?.title && response.data.quiz.title.toLowerCase().includes('ก่อนเรียน')) ||
+            (response.data.title && response.data.title.toLowerCase().includes('ก่อนเรียน'))) {
+          setIsPreTest(true);
+        }
         
         if (response.data.questions && Array.isArray(response.data.questions)) {
           processQuizQuestions(response.data.questions);
@@ -119,7 +137,7 @@ const LessonQuiz = ({ onComplete, quizData, subjectId }: LessonQuizProps) => {
       }
       
       const formattedQuestions: Question[] = apiQuestions.map(q => {
-        const questionText = q.question_text || q.title || q.question || "";
+        const questionText = q.question_text || q.title || q.description || q.question || "";
         const questionId = q.question_id || q.id || 0;
         
         let type: QuestionType = 'single';
@@ -134,16 +152,20 @@ const LessonQuiz = ({ onComplete, quizData, subjectId }: LessonQuizProps) => {
           type = 'text';
         }
         
-        let options: string[] = [];
+        let formattedOptions: Array<{ text: string; choice_id: number }> = [];
         
         if (q.options && Array.isArray(q.options)) {
-          options = q.options.map((opt: any) => 
-            typeof opt === 'string' ? opt : (opt.text || opt.title || "")
-          );
+          formattedOptions = q.options.map((opt: any, index: number) => {
+            return typeof opt === 'string' 
+              ? { text: opt, choice_id: q.choice_ids?.[index] || index + 1 }
+              : { text: opt.text || opt.title || "", choice_id: opt.choice_id || opt.id || index + 1 };
+          });
         } else if (q.choices && Array.isArray(q.choices)) {
-          options = q.choices.map((choice: any) => 
-            typeof choice === 'string' ? choice : (choice.text || choice.title || "")
-          );
+          formattedOptions = q.choices.map((choice: any, index: number) => {
+            return typeof choice === 'string' 
+              ? { text: choice, choice_id: q.choice_ids?.[index] || index + 1 }
+              : { text: choice.text || choice.title || "", choice_id: choice.choice_id || choice.id || index + 1 };
+          });
         }
         
         const baseQuestion = {
@@ -154,17 +176,25 @@ const LessonQuiz = ({ onComplete, quizData, subjectId }: LessonQuizProps) => {
         
         switch (type) {
           case 'single':
+            return {
+              ...baseQuestion,
+              options: formattedOptions
+            } as SingleChoiceQuestion;
+            
           case 'multiple':
             return {
               ...baseQuestion,
-              options
-            };
+              options: formattedOptions
+            } as MultipleChoiceQuestion;
             
           case 'truefalse':
             return {
               ...baseQuestion,
-              options: options.length > 0 ? options : ["ถูก (True)", "ผิด (False)"]
-            };
+              options: formattedOptions.length > 0 ? formattedOptions : [
+                { text: "ถูก (True)", choice_id: 1 }, 
+                { text: "ผิด (False)", choice_id: 2 }
+              ]
+            } as TrueFalseQuestion;
             
           case 'text':
             return {
@@ -175,12 +205,13 @@ const LessonQuiz = ({ onComplete, quizData, subjectId }: LessonQuizProps) => {
           default:
             return {
               ...baseQuestion,
-              options
-            };
+              options: formattedOptions
+            } as SingleChoiceQuestion;
         }
       });
-
+  
       setQuestions(formattedQuestions);
+      setTotalScore(formattedQuestions.length);
       setIsLoading(false);
     } catch (error) {
       console.error("Error processing quiz questions:", error);
@@ -189,24 +220,26 @@ const LessonQuiz = ({ onComplete, quizData, subjectId }: LessonQuizProps) => {
     }
   };
 
-  const handleSingleAnswerSelect = (answerIndex: number) => {
+  const handleSingleAnswerSelect = (answerIndex: number, choiceId: number) => {
     const newSelectedAnswers = [...selectedSingleAnswers];
-    newSelectedAnswers[currentQuestion] = answerIndex;
+    newSelectedAnswers[currentQuestion] = choiceId; // เก็บ choice_id แทน index
     setSelectedSingleAnswers(newSelectedAnswers);
+    console.log("selectedSingleAnswers:", answerIndex);
   };
-
-  const handleMultipleAnswerSelect = (answerIndex: number) => {
+ 
+  const handleMultipleAnswerSelect = (answerIndex: number, choiceId: number) => {
     const newSelectedAnswers = [...selectedMultipleAnswers];
+    console.log("selectedSingleAnswers:", answerIndex);
     
     if (!newSelectedAnswers[currentQuestion]) {
       newSelectedAnswers[currentQuestion] = [];
     }
     
     const currentSelections = newSelectedAnswers[currentQuestion];
-    const selectionIndex = currentSelections.indexOf(answerIndex);
+    const selectionIndex = currentSelections.indexOf(choiceId); // ใช้ choice_id แทน index
     
     if (selectionIndex === -1) {
-      currentSelections.push(answerIndex);
+      currentSelections.push(choiceId); // เพิ่ม choice_id
     } else {
       currentSelections.splice(selectionIndex, 1);
     }
@@ -228,24 +261,28 @@ const LessonQuiz = ({ onComplete, quizData, subjectId }: LessonQuizProps) => {
 
   const submitQuizAnswers = async () => {
     try {
+      setSubmitting(true);
       const token = localStorage.getItem("token");
       if (!token || !quizData?.quiz_id) return false;
       
+      // รวบรวมคำตอบทั้งหมด
       const answers = questions.map((question, index) => {
         let answer;
         
         switch (question.type) {
           case 'single':
-            answer = selectedSingleAnswers[index];
+            answer = selectedSingleAnswers[index]; // ส่ง choice_id
             break;
           case 'multiple':
-            answer = selectedMultipleAnswers[index] || [];
+            answer = selectedMultipleAnswers[index] || []; // ส่งอาร์เรย์ของ choice_id
             break;
           case 'truefalse':
-            answer = selectedTrueFalseAnswers[index];
+            // ส่งค่า boolean เป็นข้อความ "true" หรือ "false"
+            answer = selectedTrueFalseAnswers[index] !== undefined ? 
+              String(selectedTrueFalseAnswers[index]) : "";
             break;
           case 'text':
-            answer = textAnswers[index];
+            answer = textAnswers[index] || "";
             break;
         }
         
@@ -258,150 +295,172 @@ const LessonQuiz = ({ onComplete, quizData, subjectId }: LessonQuizProps) => {
       
       const submitEndpoint = `${apiURL}/api/courses/quizzes/${quizData.quiz_id}/submit`;
       console.log("Submitting quiz answers to:", submitEndpoint);
-      console.log("Quiz data:", quizData);
       console.log("Answers:", answers);
       
-      const response = await axios.post(
-        submitEndpoint,
-        { 
-          answers,
-          subject_id: subjectId
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
+      const response = await axios.post(submitEndpoint, 
+        { answers },
+        { headers: { Authorization: `Bearer ${token}` } }
       );
-      
-      console.log("Quiz submission response:", response.data);
       
       if (response.data.success) {
         setScore(response.data.score || 0);
+        setTotalScore(response.data.total || questions.length);
+        setIsPassed(response.data.passed || false);
+        setShowResult(true);
         return true;
+      } else {
+        setError("เกิดข้อผิดพลาดในการส่งคำตอบ: " + (response.data.message || "ไม่ทราบสาเหตุ"));
+        return false;
       }
-      
-      return false;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error submitting quiz answers:", error);
+      setError("เกิดข้อผิดพลาดในการส่งคำตอบ: " + (error.response?.data?.message || error.message || "ไม่ทราบสาเหตุ"));
       return false;
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  const handleNext = async () => {
+  const handleNextQuestion = () => {
+    // ตรวจสอบว่าได้ตอบคำถามปัจจุบันหรือไม่
+    const currentQuestionObj = questions[currentQuestion];
+    let hasAnswered = false;
+    
+    if (currentQuestionObj.type === 'single') {
+      hasAnswered = selectedSingleAnswers[currentQuestion] !== undefined;
+    } else if (currentQuestionObj.type === 'multiple') {
+      hasAnswered = selectedMultipleAnswers[currentQuestion]?.length > 0;
+    } else if (currentQuestionObj.type === 'truefalse') {
+      hasAnswered = selectedTrueFalseAnswers[currentQuestion] !== undefined;
+    } else if (currentQuestionObj.type === 'text') {
+      hasAnswered = textAnswers[currentQuestion]?.trim().length > 0;
+    }
+    
+    if (!hasAnswered) {
+      alert("กรุณาตอบคำถามก่อนไปข้อถัดไป");
+      return;
+    }
+    
     if (currentQuestion < questions.length - 1) {
       setCurrentQuestion(currentQuestion + 1);
     } else {
-      const success = await submitQuizAnswers();
-      
-      if (success) {
-        setShowResult(true);
-      } else {
-        alert("เกิดข้อผิดพลาดในการส่งคำตอบ กรุณาลองใหม่อีกครั้ง");
-      }
+      handleSubmitQuiz();
     }
   };
 
-  const handlePrevious = () => {
+  const handlePreviousQuestion = () => {
     if (currentQuestion > 0) {
       setCurrentQuestion(currentQuestion - 1);
     }
   };
 
-  const handleFinish = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      if (!token || !quizData?.quiz_id) return;
-      
-      const completeEndpoint = `${apiURL}/api/courses/quizzes/${quizData.quiz_id}/complete`;
-      console.log("Marking quiz as completed:", completeEndpoint);
-      
-      const response = await axios.post(
-        completeEndpoint,
-        {
-          subject_id: subjectId
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      );
-      
-      console.log("Quiz completion response:", response.data);
-      
-      const passed = response.data.passed !== undefined ? response.data.passed : true;
-      
-      onComplete(score, passed);
-      
-      setCurrentQuestion(0);
-      setSelectedSingleAnswers([]);
-      setSelectedMultipleAnswers([]);
-      setSelectedTrueFalseAnswers([]);
-      setTextAnswers([]);
-      setShowResult(false);
-    } catch (error) {
-      console.error("Error completing quiz:", error);
-    }
-  };
-
-  const isCurrentQuestionAnswered = () => {
-    if (!questions[currentQuestion]) return false;
+  const handleSubmitQuiz = async () => {
+    // ตรวจสอบว่าตอบครบทุกข้อหรือไม่
+    let allAnswered = true;
     
-    switch (questions[currentQuestion].type) {
-      case 'single':
-        return selectedSingleAnswers[currentQuestion] !== undefined;
-      case 'multiple':
-        return selectedMultipleAnswers[currentQuestion]?.length > 0;
-      case 'truefalse':
-        return selectedTrueFalseAnswers[currentQuestion] !== undefined;
-      case 'text':
-        return textAnswers[currentQuestion]?.trim().length > 0;
-      default:
-        return false;
+    for (let i = 0; i < questions.length; i++) {
+      const question = questions[i];
+      let hasAnswered = false;
+      
+      if (question.type === 'single') {
+        hasAnswered = selectedSingleAnswers[i] !== undefined;
+      } else if (question.type === 'multiple') {
+        hasAnswered = selectedMultipleAnswers[i]?.length > 0;
+      } else if (question.type === 'truefalse') {
+        hasAnswered = selectedTrueFalseAnswers[i] !== undefined;
+      } else if (question.type === 'text') {
+        hasAnswered = textAnswers[i]?.trim().length > 0;
+      }
+      
+      if (!hasAnswered) {
+        allAnswered = false;
+        break;
+      }
+    }
+    
+    if (!allAnswered) {
+      const confirmSubmit = window.confirm("คุณยังตอบคำถามไม่ครบทุกข้อ ต้องการส่งคำตอบหรือไม่?");
+      if (!confirmSubmit) return;
+    }
+    
+    const success = await submitQuizAnswers();
+    
+    if (success) {
+      // ถ้าเป็นแบบทดสอบก่อนเรียน ให้ผ่านไปได้เลย
+      if (isPreTest) {
+        setTimeout(() => {
+          onComplete(score, true);
+        }, 3000);
+      }
     }
   };
 
-  const progressPercentage = Math.round(((currentQuestion + 1) / questions.length) * 100);
+  const handleCompleteQuiz = () => {
+    onComplete(score, isPassed);
+  };
 
   if (isLoading) {
     return (
-      <div className="quiz-container loading">
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">กำลังโหลด...</span>
+      <div className="quiz-container">
+        <div className="quiz-loading">
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">กำลังโหลด...</span>
+          </div>
+          <p className="mt-3">กำลังโหลดแบบทดสอบ...</p>
         </div>
-        <p>กำลังโหลดแบบทดสอบ...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="quiz-container error">
-        <div className="alert alert-danger" role="alert">
-          <i className="fas fa-exclamation-triangle me-2"></i>
-          {error}
+      <div className="quiz-container">
+        <div className="quiz-error">
+          <div className="alert alert-danger" role="alert">
+            {error}
+          </div>
+          <button className="btn btn-primary" onClick={() => onComplete()}>
+            กลับไปที่บทเรียน
+          </button>
         </div>
       </div>
     );
   }
 
   if (showResult) {
-    const percentage = questions.length > 0 ? Math.round((score / questions.length) * 100) : 0;
+    const percentage = totalScore > 0 ? Math.round((score / totalScore) * 100) : 0;
+    const passThreshold = 70; // 70% ถือว่าผ่าน
+    const passed = percentage >= passThreshold;
     
     return (
-      <div className="quiz-container result">
+      <div className="quiz-container">
         <div className="quiz-result">
-          <h2>ผลการทดสอบ</h2>
+          <h2>ผลการทำแบบทดสอบ</h2>
           
           <div className="score-display">
             <div className="score-circle">
-              <span className="score-number">{percentage}%</span>
+              <div className="score-number">{percentage}%</div>
             </div>
-            <p>คุณได้คะแนน {score} จาก {questions.length} คะแนน</p>
+            <div className="score-text">
+              คะแนนของคุณ: {score}/{totalScore}
+            </div>
+          </div>
+          
+          <div className={`result-message ${passed ? 'passed' : 'failed'}`}>
+            {isPreTest ? (
+              <p>คุณได้ทำแบบทดสอบก่อนเรียนเสร็จสิ้นแล้ว</p>
+            ) : passed ? (
+              <p>ยินดีด้วย! คุณผ่านแบบทดสอบนี้</p>
+            ) : (
+              <p>คุณไม่ผ่านเกณฑ์ขั้นต่ำ {passThreshold}%</p>
+            )}
           </div>
           
           <button 
-            className="btn btn-primary btn-lg mt-4"
-            onClick={handleFinish}
+            className="btn btn-primary btn-lg mt-4" 
+            onClick={handleCompleteQuiz}
           >
-            เสร็จสิ้น
+            {isPreTest ? "ไปยังบทเรียน" : "เสร็จสิ้น"}
           </button>
         </div>
       </div>
@@ -410,148 +469,154 @@ const LessonQuiz = ({ onComplete, quizData, subjectId }: LessonQuizProps) => {
 
   if (questions.length === 0) {
     return (
-      <div className="quiz-container empty">
-        <div className="alert alert-warning" role="alert">
-          <i className="fas fa-exclamation-circle me-2"></i>
-          ไม่พบคำถามในแบบทดสอบนี้
+      <div className="quiz-container">
+        <div className="quiz-error">
+          <div className="alert alert-warning" role="alert">
+            ไม่พบคำถามในแบบทดสอบนี้
+          </div>
+          <button className="btn btn-primary" onClick={() => onComplete()}>
+            กลับไปที่บทเรียน
+          </button>
         </div>
       </div>
     );
   }
 
-  const currentQ = questions[currentQuestion];
+  const currentQuestionObj = questions[currentQuestion];
+  const questionNumber = currentQuestion + 1;
+  const totalQuestions = questions.length;
+  const progress = (questionNumber / totalQuestions) * 100;
 
   return (
     <div className="quiz-container">
       <div className="quiz-header">
-        <h3>{quizData?.title || "แบบทดสอบ"}</h3>
-        <div className="quiz-progress">
-          <div className="progress">
-            <div 
-              className="progress-bar" 
-              role="progressbar" 
-              style={{ width: `${progressPercentage}%` }} 
-              aria-valuenow={progressPercentage} 
-              aria-valuemin={0} 
-              aria-valuemax={100}
-            ></div>
+        <h2>{quizData?.title || "แบบทดสอบ"}</h2>
+        <div className="progress">
+          <div 
+            className="progress-bar" 
+            role="progressbar" 
+            style={{ width: `${progress}%` }} 
+            aria-valuenow={progress} 
+            aria-valuemin={0} 
+            aria-valuemax={100}
+          >
+            {questionNumber}/{totalQuestions}
           </div>
-          <span className="progress-text">
-            {currentQuestion + 1} / {questions.length}
-          </span>
         </div>
       </div>
       
-      <div className="quiz-content">
-        <div className="question-container">
-          <h4 className="question-text">
-            <span className="question-number">{currentQuestion + 1}.</span> {currentQ.question}
-          </h4>
+      <div className="quiz-body">
+        <div className="question">
+          <h3>ข้อที่ {questionNumber}: {currentQuestionObj.question}</h3>
           
-          <div className="answer-options">
-            {currentQ.type === 'single' && (
-              <div className="single-choice-options">
-                {(currentQ as SingleChoiceQuestion).options.map((option, index) => (
-                  <div 
-                    key={index} 
-                    className={`option-item ${selectedSingleAnswers[currentQuestion] === index ? 'selected' : ''}`}
-                    onClick={() => handleSingleAnswerSelect(index)}
-                  >
-                    <div className="option-marker">
-                      <div className="option-radio"></div>
-                    </div>
-                    <div className="option-text">{option}</div>
-                  </div>
-                ))}
-              </div>
-            )}
-            
-            {currentQ.type === 'multiple' && (
-              <div className="multiple-choice-options">
-                {(currentQ as MultipleChoiceQuestion).options.map((option, index) => (
-                  <div 
-                    key={index} 
-                    className={`option-item ${selectedMultipleAnswers[currentQuestion]?.includes(index) ? 'selected' : ''}`}
-                    onClick={() => handleMultipleAnswerSelect(index)}
-                  >
-                    <div className="option-marker checkbox">
-                      <div className="option-checkbox"></div>
-                    </div>
-                    <div className="option-text">{option}</div>
-                  </div>
-                ))}
-              </div>
-            )}
-            
-            {currentQ.type === 'truefalse' && (
-              <div className="truefalse-options">
-                <div 
-                  className={`option-item ${selectedTrueFalseAnswers[currentQuestion] === true ? 'selected' : ''}`}
-                  onClick={() => handleTrueFalseSelect(true)}
-                >
-                  <div className="option-marker">
-                    <div className="option-radio"></div>
-                  </div>
-                  <div className="option-text">ถูก (True)</div>
+          {currentQuestionObj.type === 'single' && (
+            <div className="options single-choice">
+              {(currentQuestionObj as SingleChoiceQuestion).options.map((option, index) => (
+                <div className="option" key={index}>
+                  <input 
+                    type="radio" 
+                    id={`option-${index}`} 
+                    name={`question-${currentQuestion}`} 
+                    checked={selectedSingleAnswers[currentQuestion] === option.choice_id}
+                    onChange={() => handleSingleAnswerSelect(index, option.choice_id)}
+                  />
+                  <label htmlFor={`option-${index}`}>{option.text}</label>
                 </div>
-                <div 
-                  className={`option-item ${selectedTrueFalseAnswers[currentQuestion] === false ? 'selected' : ''}`}
-                  onClick={() => handleTrueFalseSelect(false)}
-                >
-                  <div className="option-marker">
-                    <div className="option-radio"></div>
-                  </div>
-                  <div className="option-text">ผิด (False)</div>
+              ))}
+            </div>
+          )}
+          
+          {currentQuestionObj.type === 'multiple' && (
+            <div className="options multiple-choice">
+              {(currentQuestionObj as MultipleChoiceQuestion).options.map((option, index) => (
+                <div className="option" key={index}>
+                  <input 
+                    type="checkbox" 
+                    id={`option-${index}`} 
+                    name={`question-${currentQuestion}`} 
+                    checked={selectedMultipleAnswers[currentQuestion]?.includes(option.choice_id) || false}
+                    onChange={() => handleMultipleAnswerSelect(index, option.choice_id)}
+                  />
+                  <label htmlFor={`option-${index}`}>{option.text}</label>
                 </div>
+              ))}
+            </div>
+          )}
+          
+          {currentQuestionObj.type === 'truefalse' && (
+            <div className="options true-false">
+              <div className="option">
+                <input 
+                  type="radio" 
+                  id="option-true" 
+                  name={`question-${currentQuestion}`} 
+                  checked={selectedTrueFalseAnswers[currentQuestion] === true}
+                  onChange={() => handleTrueFalseSelect(true)}
+                />
+                <label htmlFor="option-true">ถูก (True)</label>
               </div>
-            )}
-            
-            {currentQ.type === 'text' && (
-              <div className="text-answer">
-                <textarea
-                  className="form-control"
-                  rows={4}
-                  placeholder="พิมพ์คำตอบของคุณที่นี่..."
-                  value={textAnswers[currentQuestion] || ''}
-                  onChange={handleTextAnswerChange}
-                ></textarea>
+              <div className="option">
+                <input 
+                  type="radio" 
+                  id="option-false" 
+                  name={`question-${currentQuestion}`} 
+                  checked={selectedTrueFalseAnswers[currentQuestion] === false}
+                  onChange={() => handleTrueFalseSelect(false)}
+                />
+                <label htmlFor="option-false">ผิด (False)</label>
               </div>
-            )}
-          </div>
+            </div>
+          )}
+          
+          {currentQuestionObj.type === 'text' && (
+            <div className="text-answer">
+              <textarea 
+                rows={5} 
+                placeholder="พิมพ์คำตอบของคุณที่นี่..." 
+                value={textAnswers[currentQuestion] || ''}
+                onChange={handleTextAnswerChange}
+              ></textarea>
+            </div>
+          )}
         </div>
       </div>
       
-      <div className="quiz-navigation">
+      <div className="quiz-footer">
         <button 
-          className="btn btn-outline-primary"
-          onClick={handlePrevious}
-          disabled={currentQuestion === 0}
+          className="btn btn-secondary" 
+          onClick={handlePreviousQuestion}
+          disabled={currentQuestion === 0 || submitting}
         >
-          <i className="fas fa-arrow-left me-2"></i>
           ข้อก่อนหน้า
         </button>
         
-        <button 
-          className="btn btn-primary"
-          onClick={handleNext}
-          disabled={!isCurrentQuestionAnswered()}
-        >
-          {currentQuestion < questions.length - 1 ? (
-            <>
-              ข้อถัดไป
-              <i className="fas fa-arrow-right ms-2"></i>
-            </>
-          ) : (
-            <>
-              ส่งคำตอบ
-              <i className="fas fa-check ms-2"></i>
-            </>
-          )}
-        </button>
+        {currentQuestion < questions.length - 1 ? (
+          <button 
+            className="btn btn-primary" 
+            onClick={handleNextQuestion}
+            disabled={submitting}
+          >
+            ข้อถัดไป
+          </button>
+        ) : (
+          <button 
+            className="btn btn-success" 
+            onClick={handleSubmitQuiz}
+            disabled={submitting}
+          >
+            {submitting ? (
+              <>
+                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                กำลังส่งคำตอบ...
+              </>
+            ) : (
+              "ส่งคำตอบ"
+            )}
+          </button>
+        )}
       </div>
     </div>
   );
 };
 
 export default LessonQuiz;
-
