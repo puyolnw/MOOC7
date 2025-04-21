@@ -49,7 +49,7 @@ const LessonArea = ({ isLoading = false, subjectData, error = null, subjectId, p
    
    const [lessonData, setLessonData] = useState<SectionData[]>([]);
    const [lessonProgressMap, setLessonProgressMap] = useState<Record<string, any>>({});
-
+   console.log("Progress info:", lessonProgressMap);
    const fetchUserProgress = async () => {
     try {
       if (!subjectId) return null;
@@ -94,7 +94,7 @@ const LessonArea = ({ isLoading = false, subjectData, error = null, subjectId, p
 
     const quizProgress = progressInfo?.quizProgress || [];
     
-
+    const lessonProgressMap = new Map();
     const quizProgressMap = new Map();
     
 
@@ -370,9 +370,8 @@ const LessonArea = ({ isLoading = false, subjectData, error = null, subjectId, p
   }, [subjectData, subjectId, apiURL]);
 
   const findCurrentLesson = (lessonData: SectionData[], progressInfo: any) => {
-    console.log("Progress info:", progressInfo);
     if (!lessonData || lessonData.length === 0) return;
-    
+    console.log("Progress info:", progressInfo);
     for (const section of lessonData) {
       for (const item of section.items) {
         if (!item.completed && !item.lock) {
@@ -696,7 +695,7 @@ const LessonArea = ({ isLoading = false, subjectData, error = null, subjectId, p
       
       let currentItem: LessonItem | undefined;
       let currentSection: SectionData | undefined;
-
+      console.log("Progress info:", currentSection);
       lessonData.forEach(section => {
         if (section.id === sectionId) {
           currentSection = section;
