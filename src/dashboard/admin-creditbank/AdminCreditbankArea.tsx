@@ -36,13 +36,15 @@ const AdminCreditbankArea = () => {
           // แปลงข้อมูลจาก API ให้ตรงกับ interface Course
           const formattedCourses = response.data.courses.map((course: any) => ({
             course_id: course.course_id,
-            cover_image: course.cover_image ? `${apiURL}/${course.cover_image.replace(/\\/g, '/')}` : "/assets/img/courses/course_thumb01.jpg",
+            cover_image: course.cover_image
+              ? `data:image/jpeg;base64,${course.cover_image}` // แปลง base64 เป็น URL สำหรับแสดงผล
+              : "/assets/img/courses/course_thumb01.jpg",
             title: course.title,
             subject_count: course.subject_count || 0,
             students: 0, // ค่าเริ่มต้น (อาจต้องดึงจาก API อื่น)
             category: course.category || "ไม่ระบุหมวดหมู่",
             status: course.status || "active",
-            branch: "ไม่ระบุสาขา" // ค่าเริ่มต้น
+            branch: "ไม่ระบุสาขา", // ค่าเริ่มต้น
           }));
 
           setCourses(formattedCourses);
@@ -65,7 +67,7 @@ const AdminCreditbankArea = () => {
     if (window.confirm("คุณต้องการลบหลักสูตรนี้ใช่หรือไม่?")) {
       try {
         const response = await axios.delete(`${apiURL}/api/courses/${id}`, {
-          withCredentials: true // ส่ง cookies สำหรับการยืนยันตัวตน
+          withCredentials: true, // ส่ง cookies สำหรับการยืนยันตัวตน
         });
 
         if (response.data.success) {
@@ -82,7 +84,7 @@ const AdminCreditbankArea = () => {
     }
   };
 
-  const filteredCourses = courses.filter(course =>
+  const filteredCourses = courses.filter((course) =>
     course.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -116,9 +118,9 @@ const AdminCreditbankArea = () => {
   // สถิติรวม
   const totalCourses = courses.length;
   const countByStatus = {
-    active: courses.filter(c => c.status === "active").length,
-    inactive: courses.filter(c => c.status === "inactive").length,
-    draft: courses.filter(c => c.status === "draft").length,
+    active: courses.filter((c) => c.status === "active").length,
+    inactive: courses.filter((c) => c.status === "inactive").length,
+    draft: courses.filter((c) => c.status === "draft").length,
   };
 
   return (
@@ -226,7 +228,8 @@ const AdminCreditbankArea = () => {
                                       style={{ width: "60px", height: "60px", objectFit: "cover" }}
                                       onError={(e) => {
                                         // ถ้าโหลดรูปไม่สำเร็จ ใช้รูปเริ่มต้น
-                                        (e.target as HTMLImageElement).src = "/assets/img/courses/course_thumb01.jpg";
+                                        (e.target as HTMLImageElement).src =
+                                          "/assets/img/courses/course_thumb01.jpg";
                                       }}
                                     />
                                   </td>
@@ -234,10 +237,14 @@ const AdminCreditbankArea = () => {
                                   <td>{course.subject_count} วิชา</td>
                                   <td>{course.students || 0} คน</td>
                                   <td>{course.branch || "ไม่ระบุสาขา"}</td>
-                                  <td><StatusBadge status={course.status} /></td>
+                                  <td>
+                                    <StatusBadge status={course.status} />
+                                  </td>
                                   <td>
                                     <div className="d-flex justify-content-center gap-3">
-                                      <Link to={`/admin-creditbank/edit-course/${course.course_id}`} className="text-primary"
+                                      <Link
+                                        to={`/admin-creditbank/edit-course/${course.course_id}`}
+                                        className="text-primary"
                                         style={{ display: "inline-flex", alignItems: "center" }}
                                       >
                                         <i className="fas fa-edit icon-action" style={{ lineHeight: 1 }}></i>
@@ -253,7 +260,9 @@ const AdminCreditbankArea = () => {
                               ))
                             ) : (
                               <tr>
-                                <td colSpan={7} className="text-center py-4">ไม่พบข้อมูลหลักสูตร</td>
+                                <td colSpan={7} className="text-center py-4">
+                                  ไม่พบข้อมูลหลักสูตร
+                                </td>
                               </tr>
                             )}
                           </tbody>
@@ -265,7 +274,7 @@ const AdminCreditbankArea = () => {
                       <div className="card-footer bg-light text-center">
                         <nav aria-label="Page navigation">
                           <ul className="pagination justify-content-center mb-0">
-                            <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+                            <li className={`page-item ${currentPage === 1 ? "disabled" : ""}`}>
                               <button
                                 className="page-link"
                                 onClick={() => setCurrentPage(currentPage - 1)}
@@ -275,13 +284,16 @@ const AdminCreditbankArea = () => {
                               </button>
                             </li>
                             {Array.from({ length: totalPages }).map((_, index) => (
-                              <li key={index} className={`page-item ${currentPage === index + 1 ? 'active' : ''}`}>
+                              <li
+                                key={index}
+                                className={`page-item ${currentPage === index + 1 ? "active" : ""}`}
+                              >
                                 <button className="page-link" onClick={() => setCurrentPage(index + 1)}>
                                   {index + 1}
                                 </button>
                               </li>
                             ))}
-                            <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
+                            <li className={`page-item ${currentPage === totalPages ? "disabled" : ""}`}>
                               <button
                                 className="page-link"
                                 onClick={() => setCurrentPage(currentPage + 1)}
@@ -292,7 +304,9 @@ const AdminCreditbankArea = () => {
                             </li>
                           </ul>
                           <p className="mt-2 mb-0 small text-muted">
-                            แสดง {indexOfFirstCourse + 1} ถึง {Math.min(indexOfLastCourse, filteredCourses.length)} จากทั้งหมด {filteredCourses.length} รายการ
+                            แสดง {indexOfFirstCourse + 1} ถึง{" "}
+                            {Math.min(indexOfLastCourse, filteredCourses.length)} จากทั้งหมด{" "}
+                            {filteredCourses.length} รายการ
                           </p>
                         </nav>
                       </div>
