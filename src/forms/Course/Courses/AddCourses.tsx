@@ -26,6 +26,7 @@ export interface Subject {
   export interface CourseData {
     title: string;
     description: string;
+    department_id: string; // Add this line
     coverImage: File | null;
     coverImagePreview: string;
     videoUrl: string;
@@ -34,14 +35,14 @@ export interface Subject {
     prerequisites: Prerequisite[];
   }
   
+  
 
 interface AddCoursesProps {
-  onSubmit?: (courseData: any) => void;
   onCancel?: () => void;
 }
 
 
-const AddCourses: React.FC<AddCoursesProps> = ({ onSubmit, onCancel }) => {
+const AddCourses: React.FC<AddCoursesProps> = ({ onCancel }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
   const apiURL = import.meta.env.VITE_API_URL ;
@@ -59,13 +60,15 @@ const AddCourses: React.FC<AddCoursesProps> = ({ onSubmit, onCancel }) => {
   const [courseData, setCourseData] = useState<CourseData>({
     title: "",
     description: "",
+    department_id: "", // Add this line
     coverImage: null,
     coverImagePreview: "",
     videoUrl: "",
-    hasCertificate: true, // Default is true
+    hasCertificate: true,
     subjects: [],
     prerequisites: []
   });
+  
   
   // State for search term
   const [searchTerm, setSearchTerm] = useState("");
@@ -82,7 +85,8 @@ const AddCourses: React.FC<AddCoursesProps> = ({ onSubmit, onCancel }) => {
     title: "",
     description: "",
     subjects: "",
-    videoUrl: ""
+    videoUrl: "",
+    department_id: '', // Add this line
   });
   
   // Fetch available subjects from API
@@ -131,6 +135,7 @@ const AddCourses: React.FC<AddCoursesProps> = ({ onSubmit, onCancel }) => {
     };
     
     fetchSubjects();
+    
   }, [apiURL]);
   
   // Get selected subjects details
@@ -139,27 +144,38 @@ const AddCourses: React.FC<AddCoursesProps> = ({ onSubmit, onCancel }) => {
   ).filter(subject => subject !== undefined) as Subject[];
   
   // Handle input changes
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setCourseData(prevState => ({
-      ...prevState,
-      [name]: value
-    }));
-    
-    // Clear error for this field
-    if (name in errors) {
-      setErrors(prevErrors => ({
-        ...prevErrors,
-        [name]: ""
-      }));
-    }
-    
-    // Validate YouTube URL
-    if (name === "videoUrl" && value) {
-      validateYoutubeUrl(value);
-    }
-  };
+ // Update the handleInputChange function to include HTMLSelectElement
+const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const { name, value } = e.target;
+  setCourseData(prevState => ({
+    ...prevState,
+    [name]: value
+  }));
   
+  // Clear error for this field
+  if (name in errors) {
+    setErrors(prevErrors => ({
+      ...prevErrors,
+      [name]: ""
+    }));
+  }
+  
+  // Validate YouTube URL
+  if (name === "videoUrl" && value) {
+    validateYoutubeUrl(value);
+  }
+};
+
+const handleSubmissionError = (error: any) => {
+  console.error('Error submitting course:', error);
+  if (error.response?.data?.message) {
+    setApiError(error.response.data.message);
+    toast.error(error.response.data.message);
+  } else {
+    setApiError('เกิดข้อผิดพลาดในการสร้างหลักสูตร');
+    toast.error('เกิดข้อผิดพลาดในการสร้างหลักสูตร');
+  }
+};
   // Handle checkbox changes
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, checked } = e.target;
@@ -352,102 +368,101 @@ const AddCourses: React.FC<AddCoursesProps> = ({ onSubmit, onCancel }) => {
   };
   
   // Validate form before submission
-  const validateForm = () => {
-    let isValid = true;
-    const newErrors = {
-      title: "",
-      description: "",
-      subjects: "",
-      videoUrl : ""
-    };
-
-    setErrors(newErrors);
-    return isValid;
+ // Update validation in handleSubmit
+const validateForm = () => {
+  let isValid = true;
+  const newErrors = {
+    title: "",
+    description: "",
+    subjects: "",
+    videoUrl: "",
+    department_id: ""
   };
+
+  if (!courseData.department_id) {
+    newErrors.department_id = "กรุณาเลือกสาขาวิชา";
+    isValid = false;
+  }
+
+  // Add department_id to FormData when submitting
+  const formData = new FormData();
+  formData.append('department_id', courseData.department_id);
+
+  setErrors(newErrors);
+  return isValid;
+};
+
 
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+  
     if (!validateForm()) {
       return;
     }
-
+  
     try {
       setIsSubmitting(true);
       setApiError(null);
       setApiSuccess(null);
-
+  
       const token = localStorage.getItem("token");
-
       if (!token) {
         setApiError("ไม่พบข้อมูลการเข้าสู่ระบบ กรุณาเข้าสู่ระบบใหม่");
-        setIsSubmitting(false);
         return;
       }
-
-      // สร้าง FormData สำหรับส่งข้อมูลและไฟล์
+  
+      console.log('Course Data before submission:', courseData);
+  
       const formData = new FormData();
       formData.append('title', courseData.title);
       formData.append('description', courseData.description);
-
+      formData.append('department_id', courseData.department_id);
+  
       if (courseData.coverImage) {
         formData.append('coverImage', courseData.coverImage);
       }
-
-      // แปลงข้อมูล subjects ให้เป็นรูปแบบที่ API ต้องการ
-      const subjectsData = courseData.subjects.map((subjectId, index) => ({
-        id: subjectId,
-        order: index + 1
+  
+      const subjectsData = courseData.subjects.map(subjectId => ({
+        id: parseInt(subjectId),
+        order: courseData.subjects.indexOf(subjectId) + 1
       }));
-
+  
+      console.log('Subjects Data:', subjectsData);
       formData.append('subjects', JSON.stringify(subjectsData));
-
-      // เพิ่มข้อมูลอื่นๆ ที่ต้องการส่งไปยัง API
+  
       if (courseData.videoUrl) {
-        formData.append('video_url', courseData.videoUrl)
+        formData.append('video_url', courseData.videoUrl);
       }
-
-      formData.append('hasCertificate', courseData.hasCertificate.toString());
-
-      // ส่งข้อมูล prerequisites ถ้ามี
-      if (courseData.prerequisites.length > 0) {
-        formData.append('prerequisites', JSON.stringify(courseData.prerequisites));
+  
+      // Log FormData entries
+      for (const pair of formData.entries()) {
+        console.log('FormData Entry:', pair[0], ':', pair[1]);
       }
-
-      // ส่งข้อมูลไปยัง API
+  
       const response = await axios.post(`${apiURL}/api/courses`, formData, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
-
+  
+      console.log('API Response:', response.data);
+  
       if (response.data.success) {
         setApiSuccess("สร้างหลักสูตรสำเร็จ");
         toast.success("สร้างหลักสูตรสำเร็จ");
-
-        // ถ้าสำเร็จและมี callback onSubmit ให้เรียกใช้
-        if (onSubmit) {
-          onSubmit(response.data);
-        } else {
-          // ถ้าไม่มี callback ให้ redirect ไปหน้าจัดการหลักสูตร หลังจากแสดง toast สักครู่
-          setTimeout(() => {
-            navigate('/admin-creditbank/courses');
-          }, 1500);
-        }
-      } else {
-        setApiError(response.data.message || 'เกิดข้อผิดพลาดในการสร้างหลักสูตร');
-        toast.error(response.data.message || 'เกิดข้อผิดพลาดในการสร้างหลักสูตร');
+        navigate('/admin-creditbank/');
       }
-    } catch (error: any) {
-      console.error('Error creating course:', error);
-      const errorMessage = error.response?.data?.message || 'เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์';
-      setApiError(errorMessage);
-      toast.error(errorMessage);
+    } catch (error) {
+      console.error('Submission Error:', error);
+      handleSubmissionError(error);
     } finally {
       setIsSubmitting(false);
     }
   };
+  
+  
+  
 
   // Handle cancel
   const handleCancelForm = () => {
@@ -455,7 +470,7 @@ const AddCourses: React.FC<AddCoursesProps> = ({ onSubmit, onCancel }) => {
       onCancel();
     } else {
       // ถ้าไม่มี callback ให้ redirect ไปหน้าจัดการหลักสูตร
-      navigate('/admin-creditbank/courses');
+      navigate('/admin-creditbank/');
     }
   };
 

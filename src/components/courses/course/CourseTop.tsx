@@ -62,12 +62,8 @@ const CourseTop = ({ startOffset, endOffset, totalItems, setCourses, handleTabCl
                });
             break;
 
-         case 'price':
-            sortedCourses = sortedCourses.sort((a, b) => a.price - b.price);
-            break;
-         case 'rating':
-            sortedCourses = sortedCourses.sort((a, b) => b.rating - a.rating);
-            break;
+         
+
          default:
             sortedCourses = allCourses;
             break;

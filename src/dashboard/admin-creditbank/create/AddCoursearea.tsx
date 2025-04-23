@@ -9,7 +9,7 @@ const AddCoursearea: React.FC = () => {
   
   // จัดการเมื่อมีการส่งฟอร์ม
   const handleSubmit = (courseData: any) => {
-    console.log("บันทึกข้อมูลหลักสูตร:", courseData);
+    console.log("บันทึกข้อมูลหลักสูตร:", courseData,handleSubmit);
     
     // ในแอปพลิเคชันจริง คุณจะส่งข้อมูลนี้ไปยัง backend
     
@@ -37,7 +37,6 @@ const AddCoursearea: React.FC = () => {
                 </div>
                 
                 <AddCourses 
-                  onSubmit={handleSubmit}
                   onCancel={handleCancel}
                 />
               </div>

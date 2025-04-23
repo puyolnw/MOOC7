@@ -8,7 +8,8 @@ import DashboardSidebar from "../../dashboard-common/AdminSidebar";
 import DashboardBanner from "../../dashboard-common/AdminBanner";
 
 interface Instructor {
-  id: number;
+  instructor_id: number; // Add this
+  user_id: number;
   username: string;
   first_name: string;
   last_name: string;
@@ -164,7 +165,7 @@ const AdminAccountInstructorsArea: React.FC = () => {
     setCurrentPage(pageNumber);
   };
 
-  const handleDeleteInstructor = async (id: number) => {
+  const handleDeleteInstructor = async (instructorId: number) => {
     if (window.confirm("คุณต้องการลบผู้สอนคนนี้ใช่หรือไม่?")) {
       try {
         const token = localStorage.getItem("token");
@@ -172,13 +173,17 @@ const AdminAccountInstructorsArea: React.FC = () => {
           toast.error("กรุณาเข้าสู่ระบบก่อนใช้งาน");
           return;
         }
-        const response = await axios.delete(`${apiURL}/api/accounts/instructors/${id}`, {
+  
+        const response = await axios.delete(`${apiURL}/api/accounts/instructors/${instructorId}`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
-        if (response.data.success) {
-          setInstructors((prev) => prev.filter((instructor) => instructor.id !== id));
+  
+        // Update this condition to match backend response
+        if (response.data.message === "Instructor deleted successfully") {
+          setInstructors(prev => prev.filter(instructor => instructor.instructor_id !== instructorId));
+          setFilteredInstructors(prev => prev.filter(instructor => instructor.instructor_id !== instructorId));
           toast.success("ลบผู้สอนสำเร็จ");
         } else {
           toast.error(response.data.message || "ไม่สามารถลบผู้สอนได้");
@@ -189,6 +194,7 @@ const AdminAccountInstructorsArea: React.FC = () => {
       }
     }
   };
+  
 
   const renderStatusBadge = (status: string) => {
     switch (status) {
@@ -284,7 +290,7 @@ const AdminAccountInstructorsArea: React.FC = () => {
                         </thead>
                         <tbody>
                           {currentItems.map((instructor, index) => (
-                            <tr key={`instructor-${instructor.id}-${index}`}>
+                            <tr key={`instructor-${instructor.instructor_id}-${index}`}>
                               <td>{indexOfFirstItem + index + 1}</td>
                               <td>{instructor.username}</td>
                               <td>{`${instructor.first_name} ${instructor.last_name}`}</td>
@@ -293,7 +299,7 @@ const AdminAccountInstructorsArea: React.FC = () => {
                               <td>
                                 <div className="d-flex justify-content-center gap-3">
                                   <Link
-                                    to={`/admin-account/instructors/edit/${instructor.id}`}
+                                    to={`/admin-account/instructors/edit/${instructor.instructor_id}`}
                                     className="text-primary"
                                     style={{ display: "inline-flex", alignItems: "center" }}
                                   >
@@ -303,8 +309,8 @@ const AdminAccountInstructorsArea: React.FC = () => {
                                     className="fas fa-trash-alt text-danger icon-action"
                                     style={{ cursor: "pointer", lineHeight: 1 }}
                                     onClick={() => {
-                                      console.log('Deleting instructor with id:', instructor.id);
-                                      handleDeleteInstructor(instructor.id);
+                                      console.log('Deleting instructor with id:', instructor.instructor_id);
+                                      handleDeleteInstructor(instructor.instructor_id);
                                     }}
                                   ></i>
                                 </div>

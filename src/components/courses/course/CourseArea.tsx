@@ -6,22 +6,21 @@ import UseCourses from "../../../hooks/UseCourses";
 import { Link } from "react-router-dom";
 import axios from "axios";
 
-// ประกาศ interface สำหรับข้อมูลหลักสูตรจาก API
 interface ApiCourse {
   course_id: number;
   title: string;
-  category: string;
   description: string;
   cover_image: string;
   cover_image_file_id: string;
   subject_count: number;
-  department_name?: string;
+  department_name: string;
+  faculty: string;
 }
 
-// ประกาศ interface สำหรับข้อมูลเพิ่มเติม
 interface CourseExtraInfo {
   description: string;
   departmentName: string;
+  faculty: string;
 }
 
 const CourseArea = () => {
@@ -29,49 +28,38 @@ const CourseArea = () => {
   const { courses, setCourses } = UseCourses();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // เก็บข้อมูลเพิ่มเติมแยกต่างหาก
   const [courseExtraInfo, setCourseExtraInfo] = useState<Record<number, CourseExtraInfo>>({});
-  // เพิ่ม state เก็บรายการหลักสูตรที่ผู้ใช้ลงทะเบียนแล้ว
-  const [enrolledCourses, setEnrolledCourses] = useState<number[]>([]);
 
-  // ดึงข้อมูลหลักสูตรจาก API
   useEffect(() => {
     const fetchCourses = async () => {
       try {
         setIsLoading(true);
         setError(null);
-
         const response = await axios.get(`${apiURL}/api/courses`);
-
+        
         if (response.data.success) {
-          // เก็บข้อมูลเพิ่มเติมแยกต่างหาก
           const extraInfo: Record<number, CourseExtraInfo> = {};
-
-          // แปลงข้อมูลให้ตรงกับรูปแบบที่ต้องการ
           const formattedCourses = response.data.courses.map((course: ApiCourse) => {
-            // เก็บข้อมูลเพิ่มเติมไว้ใน state แยกต่างหาก
             extraInfo[course.course_id] = {
               description: course.description || "",
-              departmentName: course.department_name || "หลักสูตรกลาง",
+              departmentName: course.department_name || "ไม่พบข้อมูลสาขา",
+              faculty: course.faculty || "ไม่พบข้อมูลคณะ"
             };
-
             return {
               id: course.course_id,
               title: course.title,
-              category: course.category || "ทั่วไป",
-              // แปลง base64 เป็น URL สำหรับแสดงผล
-              thumb: course.cover_image
+              department_name: course.department_name,
+              faculty: course.faculty,
+              thumb: course.cover_image_file_id 
                 ? `${apiURL}/api/courses/image/${course.cover_image_file_id}`
                 : "/assets/img/courses/course_thumb01.jpg",
-              // เพิ่ม properties อื่นๆ ตามที่ interface Course ต้องการ
-              // เช่น price, instructor, rating ฯลฯ
             };
           });
-
+          
           setCourseExtraInfo(extraInfo);
           setCourses(formattedCourses);
         } else {
-          setError("ไม่สามารถดึงข้อมูลหลักสูตรได้");
+          setError("ไม่พบข้อมูลหลักสูตร");
         }
       } catch (error) {
         console.error("Error fetching courses:", error);
@@ -80,45 +68,14 @@ const CourseArea = () => {
         setIsLoading(false);
       }
     };
-
     fetchCourses();
   }, [apiURL, setCourses]);
-
-  // เพิ่ม useEffect ใหม่เพื่อตรวจสอบหลักสูตรที่ผู้ใช้ลงทะเบียนแล้ว
-  useEffect(() => {
-    const checkEnrolledCourses = async () => {
-      try {
-        // ตรวจสอบว่ามี token หรือไม่ (user ล็อกอินหรือไม่)
-        const token = localStorage.getItem("token");
-        if (!token) return;
-
-        // เรียก API เพื่อดึงรายการหลักสูตรที่ลงทะเบียนแล้ว
-        const response = await axios.get(`${apiURL}/api/courses/user/enrolled`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (response.data.success && response.data.courses) {
-          // เก็บเฉพาะ ID ของหลักสูตรที่ลงทะเบียนแล้ว
-          const enrolledIds = response.data.courses.map((course: any) => course.course_id);
-          setEnrolledCourses(enrolledIds);
-        }
-      } catch (error) {
-        console.error("Error fetching enrolled courses:", error);
-        // ไม่ต้องแสดง error เพราะเป็นฟีเจอร์เสริม
-      }
-    };
-
-    checkEnrolledCourses();
-  }, [apiURL]);
 
   const itemsPerPage = 12;
   const [itemOffset, setItemOffset] = useState(0);
   const endOffset = itemOffset + itemsPerPage;
   const currentItems = courses.slice(itemOffset, endOffset);
   const pageCount = Math.ceil(courses.length / itemsPerPage);
-
   const startOffset = itemOffset + 1;
   const totalItems = courses.length;
 
@@ -133,14 +90,12 @@ const CourseArea = () => {
     setActiveTab(index);
   };
 
-  // ฟังก์ชันสำหรับดึงข้อมูลเพิ่มเติม
   const getExtraInfo = (courseId: number): CourseExtraInfo => {
-    return courseExtraInfo[courseId] || { description: "", departmentName: "หลักสูตรกลาง" };
-  };
-
-  // ฟังก์ชันตรวจสอบว่าหลักสูตรนี้ลงทะเบียนแล้วหรือไม่
-  const isEnrolled = (courseId: number): boolean => {
-    return enrolledCourses.includes(courseId);
+    return courseExtraInfo[courseId] || { 
+      description: "", 
+      departmentName: "ไม่พบข้อมูลสาขา",
+      faculty: "ไม่พบข้อมูลคณะ"
+    };
   };
 
   return (
@@ -170,6 +125,11 @@ const CourseArea = () => {
                 <i className="fas fa-exclamation-circle me-2"></i>
                 {error}
               </div>
+            ) : currentItems.length === 0 ? (
+              <div className="alert alert-info">
+                <i className="fas fa-info-circle me-2"></i>
+                ไม่พบหลักสูตรที่ค้นหา
+              </div>
             ) : (
               <div className="tab-content" id="myTabContent">
                 <div
@@ -179,8 +139,8 @@ const CourseArea = () => {
                   aria-labelledby="grid-tab"
                 >
                   <div className="row courses__grid-wrap row-cols-1 row-cols-xl-3 row-cols-lg-2 row-cols-md-2 row-cols-sm-1">
-                    {currentItems.map((item) => (
-                      <div key={`course-${item.id}`} className="col">
+                    {currentItems.map((item, index) => (
+                      <div key={`course-${item.id || index}`} className="col">
                         <div className="courses__item shine__animate-item">
                           <div className="courses__item-thumb">
                             <Link to={`/course-details/${item.id}`} className="shine__animate-link">
@@ -188,7 +148,6 @@ const CourseArea = () => {
                                 src={item.thumb}
                                 alt={item.title}
                                 onError={(e) => {
-                                  // ถ้าโหลดรูปไม่สำเร็จ ใช้รูปเริ่มต้น
                                   (e.target as HTMLImageElement).src =
                                     "/assets/img/courses/course_thumb01.jpg";
                                 }}
@@ -198,31 +157,19 @@ const CourseArea = () => {
                           <div className="courses__item-content">
                             <ul className="courses__item-meta list-wrap">
                               <li className="courses__item-tag">
-                                <Link to="/course">{item.category}</Link>
-                              </li>
-                              {/* ตัด reviews ออก แต่คงพื้นที่ไว้เพื่อรักษา layout */}
-                              <li className="avg-rating" style={{ visibility: "hidden" }}>
-                                <i className="fas fa-star"></i>
+                                <Link to="#">{getExtraInfo(item.id).departmentName}</Link>
                               </li>
                             </ul>
                             <h5 className="title">
                               <Link to={`/course-details/${item.id}`}>{item.title}</Link>
                             </h5>
-                            <p className="author">
-                              By <Link to="#">{getExtraInfo(item.id).departmentName}</Link>
+                            <p className="author text-truncate" style={{ maxWidth: '90%' }}>
+                              คณะ <Link to="#">{getExtraInfo(item.id).faculty}</Link>
                             </p>
-                            <div className="courses__item-bottom">
+                            <div className="courses__item-bottom" style={{ justifyContent: 'flex-end' }}>
                               <div className="button">
-                                <Link
-                                  to={
-                                    isEnrolled(item.id)
-                                      ? `/student-enrolled-courses/${item.id}`
-                                      : `/course-details/${item.id}`
-                                  }
-                                >
-                                  <span className="text">
-                                    {isEnrolled(item.id) ? "ตรวจสอบความคืบหน้า" : "ลงทะเบียนตอนนี้"}
-                                  </span>
+                                <Link to={`/course-details/${item.id}`}>
+                                  <span className="text">เข้าดูหลักสูตร</span>
                                   <i className="flaticon-arrow-right"></i>
                                 </Link>
                               </div>
@@ -251,8 +198,8 @@ const CourseArea = () => {
                   aria-labelledby="list-tab"
                 >
                   <div className="row courses__list-wrap row-cols-1">
-                    {currentItems.map((item) => (
-                      <div key={`course-list-${item.id}`} className="col">
+                    {currentItems.map((item, index) => (
+                      <div key={`course-list-${item.id || index}`} className="col">
                         <div className="courses__item courses__item-three shine__animate-item">
                           <div className="courses__item-thumb">
                             <Link to={`/course-details/${item.id}`} className="shine__animate-link">
@@ -260,7 +207,6 @@ const CourseArea = () => {
                                 src={item.thumb}
                                 alt={item.title}
                                 onError={(e) => {
-                                  // ถ้าโหลดรูปไม่สำเร็จ ใช้รูปเริ่มต้น
                                   (e.target as HTMLImageElement).src =
                                     "/assets/img/courses/course_thumb01.jpg";
                                 }}
@@ -270,32 +216,20 @@ const CourseArea = () => {
                           <div className="courses__item-content">
                             <ul className="courses__item-meta list-wrap">
                               <li className="courses__item-tag">
-                                <Link to="/course">{item.category}</Link>
-                                {/* ตัด reviews ออก แต่คงพื้นที่ไว้เพื่อรักษา layout */}
-                                <div className="avg-rating" style={{ visibility: "hidden" }}>
-                                  <i className="fas fa-star"></i>
-                                </div>
+                                <Link to="#">{getExtraInfo(item.id).departmentName}</Link>
                               </li>
                             </ul>
                             <h5 className="title">
                               <Link to={`/course-details/${item.id}`}>{item.title}</Link>
                             </h5>
-                            <p className="author">
-                              By <Link to="#">{getExtraInfo(item.id).departmentName}</Link>
+                            <p className="author text-truncate" style={{ maxWidth: '90%' }}>
+                              คณะ <Link to="#">{getExtraInfo(item.id).faculty}</Link>
                             </p>
                             <p className="info">{getExtraInfo(item.id).description}</p>
-                            <div className="courses__item-bottom">
+                            <div className="courses__item-bottom" style={{ justifyContent: 'flex-end' }}>
                               <div className="button">
-                                <Link
-                                  to={
-                                    isEnrolled(item.id)
-                                      ? `/student-enrolled-courses/${item.id}`
-                                      : `/course-details/${item.id}`
-                                  }
-                                >
-                                  <span className="text">
-                                    {isEnrolled(item.id) ? "ตรวจสอบความคืบหน้า" : "ลงทะเบียนตอนนี้"}
-                                  </span>
+                                <Link to={`/course-details/${item.id}`}>
+                                  <span className="text">เข้าดูหลักสูตร</span>
                                   <i className="flaticon-arrow-right"></i>
                                 </Link>
                               </div>
@@ -306,16 +240,14 @@ const CourseArea = () => {
                     ))}
                   </div>
                   <nav className="pagination__wrap mt-30">
-                    <ul className="list-wrap">
-                      <ReactPaginate
-                        breakLabel="..."
-                        onPageChange={handlePageClick}
-                        pageRangeDisplayed={3}
-                        pageCount={pageCount}
-                        renderOnZeroPageCount={null}
-                        className="list-wrap"
-                      />
-                    </ul>
+                    <ReactPaginate
+                      breakLabel="..."
+                      onPageChange={handlePageClick}
+                      pageRangeDisplayed={3}
+                      pageCount={pageCount}
+                      renderOnZeroPageCount={null}
+                      className="list-wrap"
+                    />
                   </nav>
                 </div>
               </div>
@@ -326,4 +258,5 @@ const CourseArea = () => {
     </section>
   );
 };
+
 export default CourseArea;

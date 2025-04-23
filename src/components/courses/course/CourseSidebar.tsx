@@ -1,209 +1,170 @@
-import { useState } from "react";
-import { useSelector } from "react-redux";
-import { Rating } from 'react-simple-star-rating';
-import { selectCourses } from "../../../redux/features/courseSlice";
+import { useState, useEffect } from "react";
+import axios from 'axios';
 
-interface FilterCriteria {
-   category: string;
-   language: string;
-   price: string;
-   rating: number | null;
-   skill: string;
-   instructor: string;
+interface ApiCourse {
+  course_id: number;
+  title: string;
+  department_name: string;
+  faculty_name: string;
+  cover_image_file_id: string;
 }
 
+interface DepartmentResponse {
+   success: boolean;
+   departments: Department[];
+ }
+
+ interface Department {
+   department_name: string;
+   faculty: string;
+ }
+ 
+
 const CourseSidebar = ({ setCourses }: any) => {
-   const [showMoreCategory, setShowMoreCategory] = useState(false);
-   const [showMoreInstructor, setShowMoreInstructor] = useState(false);
+  const apiURL = import.meta.env.VITE_API_URL;
+  const [showMoreFaculty, setShowMoreFaculty] = useState(false);
+  const [showMoreDepartment, setShowMoreDepartment] = useState(false);
+  const [filterType, setFilterType] = useState<'faculty' | 'department'>('faculty');
+  const [faculties, setFaculties] = useState<string[]>(['ทั้งหมด']);
+  const [departments, setDepartments] = useState<string[]>(['ทั้งหมด']);
+  const [facultySelected, setFacultySelected] = useState('');
+  const [departmentSelected, setDepartmentSelected] = useState('');
 
-   const [categorySelected, setCategorySelected] = useState('');
-   const [languageSelected] = useState('');
-   const [priceSelected] = useState('');
-   const [skillSelected] = useState('');
-   const [instructorSelected, setInstructorSelected] = useState('');
-   const [ratingSelected, setRatingSelected] = useState<number | null>(null);
+  useEffect(() => {
+   const fetchDepartments = async () => {
+      try {
+        const response = await axios.get<DepartmentResponse>(`${apiURL}/api/courses/subjects/departments/list`);
+        if (response.data.success) {
+          const departmentNames: string[] = response.data.departments.map(
+            (dept: Department) => dept.department_name
+          );
+          const facultyNames: string[] = Array.from(new Set(
+            response.data.departments.map((dept: Department) => dept.faculty)
+          ));
+          setDepartments(['ทั้งหมด', ...departmentNames]);
+          setFaculties(['ทั้งหมด', ...facultyNames]);
+        }
+      } catch (error) {
+        console.error('Error fetching departments:', error);
+      }
+    };
+    fetchDepartments();
+  }, [apiURL]);
 
-   const categoryFilter = useSelector(selectCourses).map(course => course.category);
-   const instructorFilter = useSelector(selectCourses).map(course => course.instructors);
+  const handleFilterTypeChange = (type: 'faculty' | 'department') => {
+    setFilterType(type);
+    setFacultySelected('');
+    setDepartmentSelected('');
+    filterCourses({ faculty: '', department: '' });
+  };
 
-   const allCategory = ['หลักสูตรทั้งหมด', ...new Set(categoryFilter)];
-   const allInstructor = ['ผู้สอนทั้งหมด', ...new Set(instructorFilter)];
+  const handleSelection = (value: string) => {
+    if (filterType === 'faculty') {
+      const newValue = value === facultySelected ? '' : value;
+      setFacultySelected(newValue);
+      filterCourses({ faculty: newValue === 'ทั้งหมด' ? '' : newValue });
+    } else {
+      const newValue = value === departmentSelected ? '' : value;
+      setDepartmentSelected(newValue);
+      filterCourses({ department: newValue === 'ทั้งหมด' ? '' : newValue });
+    }
+  };
 
-   const allCourses = useSelector(selectCourses);
-
-   // Handle category selection
-   const handleCategory = (category: string) => {
-      const newCategory = category === categorySelected ? '' : category;
-      setCategorySelected(newCategory);
-      filterCourses({
-         category: newCategory === 'หลักสูตรทั้งหมด' ? '' : newCategory,
-         language: languageSelected,
-         price: priceSelected,
-         rating: ratingSelected,
-         skill: skillSelected,
-         instructor: instructorSelected
-      });
-   };
-
-   // Handle Instructor selection
-   const handleInstructor = (instructor: string) => {
-      const newInstructor = instructor === instructorSelected ? '' : instructor;
-      setInstructorSelected(newInstructor);
-      filterCourses({
-         category: categorySelected,
-         language: languageSelected,
-         price: priceSelected,
-         rating: ratingSelected,
-         skill: skillSelected,
-         instructor: newInstructor === 'ผู้สอนทั้งหมด' ? '' : newInstructor // ถ้าเลือก "ผู้สอนทั้งหมด" ส่งค่าว่าง
-      });
-   };
-
-   // Handle rating selection
-   const handleRating = (rating: number) => {
-      setRatingSelected(prevRating => prevRating === rating ? null : rating);
-      filterCourses({
-         category: categorySelected,
-         language: languageSelected,
-         price: priceSelected,
-         rating: rating === ratingSelected ? null : rating,
-         skill: skillSelected,
-         instructor: instructorSelected
-      });
-   };
-
-   // Filter courses based on selected criteria
-   const filterCourses = ({ category, language, price, rating, skill, instructor }: FilterCriteria) => {
-      let filteredCourses = allCourses;
-
-      if (category && category !== 'หลักสูตรทั้งหมด') {
-         filteredCourses = filteredCourses.filter(course => course.category === category);
+  const filterCourses = async ({ faculty, department }: { faculty?: string, department?: string }) => {
+    try {
+      const params = new URLSearchParams();
+      if (faculty) {
+        params.append('faculty', faculty);
+      }
+      if (department) {
+        params.append('department', department);
       }
 
-      if (language && language !== 'All Language') {
-         filteredCourses = filteredCourses.filter(course => course.language === language);
+      const response = await axios.get(`${apiURL}/api/courses?${params}`);
+      if (response.data.success) {
+        const formattedCourses = response.data.courses.map((course: ApiCourse) => ({
+          id: course.course_id,
+          title: course.title,
+          department_name: course.department_name,
+          faculty_name: course.faculty_name,
+          thumb: course.cover_image_file_id 
+            ? `${apiURL}/api/courses/image/${course.cover_image_file_id}`
+            : "/assets/img/courses/course_thumb01.jpg",
+        }));
+        setCourses(formattedCourses);
       }
+    } catch (error) {
+      console.error('Error filtering courses:', error);
+    }
+  };
 
-      if (price && price !== 'All Price') {
-         filteredCourses = filteredCourses.filter(course => course.price_type === price);
-      }
+  const itemsToShow = filterType === 'faculty' 
+    ? (showMoreFaculty ? faculties : faculties.slice(0, 8))
+    : (showMoreDepartment ? departments : departments.slice(0, 8));
 
-      if (skill && skill !== 'All Skill') {
-         filteredCourses = filteredCourses.filter(course => course.skill_level === skill);
-      }
+  return (
+    <div className="col-xl-3 col-lg-4">
+      <aside className="courses__sidebar">
+        <div className="courses-widget">
+          <div className="filter-type-selector mb-4">
+            <div className="btn-group w-100" role="group">
+              <button 
+                className={`btn ${filterType === 'faculty' ? 'btn-primary' : 'btn-outline-primary'}`}
+                onClick={() => handleFilterTypeChange('faculty')}
+              >
+                คณะ
+              </button>
+              <button 
+                className={`btn ${filterType === 'department' ? 'btn-primary' : 'btn-outline-primary'}`}
+                onClick={() => handleFilterTypeChange('department')}
+              >
+                สาขา
+              </button>
+            </div>
+          </div>
 
-      if (instructor && instructor !== 'ผู้สอนทั้งหมด') {
-         filteredCourses = filteredCourses.filter(course => course.instructors === instructor);
-      }
-
-      if (rating) {
-         filteredCourses = filteredCourses.filter(course => course.rating >= rating);
-      }
-
-      setCourses(filteredCourses);
-   };
-
-   const categoriesToShow = showMoreCategory ? allCategory : allCategory.slice(0, 8);
-   const instructorToShow = showMoreInstructor ? allInstructor : allInstructor.slice(0, 4);
-
-   return (
-      <div className="col-xl-3 col-lg-4">
-         <aside className="courses__sidebar">
-            <div className="courses-widget">
-               <h4 className="widget-title">หลักสูตร</h4>
-               <div className="courses-cat-list">
-                  <ul className="list-wrap">
-                     {categoriesToShow.map((category, i) => (
-                        <li key={i}>
-                           <div onClick={() => handleCategory(category)} className="form-check">
-                              <input
-                                 className="form-check-input"
-                                 type="checkbox"
-                                 checked={category === categorySelected || (category === 'หลักสูตรทั้งหมด' && !categorySelected)}
-                                 readOnly
-                                 id={`cat_${i}`}
-                              />
-                              <label className="form-check-label" htmlFor={`cat_${i}`} onClick={() => handleCategory(category)}>
-                                 {category}
-                              </label>
-                           </div>
-                        </li>
-                     ))}
-                  </ul>
-                  <div className="show-more">
-                     <a
-                        className={`show-more-btn ${showMoreCategory ? 'active' : ''}`}
-                        style={{ cursor: "pointer" }}
-                        onClick={() => setShowMoreCategory(!showMoreCategory)}
-                     >
-                        {showMoreCategory ? "แสดงน้อยลง -" : "แสดงเพิ่มเติม +"}
-                     </a>
+          <h4 className="widget-title">
+            {filterType === 'faculty' ? 'คณะ' : 'สาขา'}
+          </h4>
+          
+          <div className="courses-cat-list">
+            <ul className="list-wrap">
+              {itemsToShow.map((item, i) => (
+                <li key={i}>
+                  <div onClick={() => handleSelection(item)} className="form-check">
+                    <input
+                      className="form-check-input"
+                      type="checkbox"
+                      checked={item === (filterType === 'faculty' ? facultySelected : departmentSelected) || 
+                              (item === 'ทั้งหมด' && !(filterType === 'faculty' ? facultySelected : departmentSelected))}
+                      readOnly
+                      id={`filter_${i}`}
+                    />
+                    <label className="form-check-label" htmlFor={`filter_${i}`}>
+                      {item}
+                    </label>
                   </div>
-               </div>
+                </li>
+              ))}
+            </ul>
+            <div className="show-more">
+              <a
+                className={`show-more-btn ${filterType === 'faculty' ? showMoreFaculty : showMoreDepartment ? 'active' : ''}`}
+                style={{ cursor: "pointer" }}
+                onClick={() => filterType === 'faculty' 
+                  ? setShowMoreFaculty(!showMoreFaculty)
+                  : setShowMoreDepartment(!showMoreDepartment)}
+              >
+                {(filterType === 'faculty' ? showMoreFaculty : showMoreDepartment) 
+                  ? "แสดงน้อยลง -" 
+                  : "แสดงเพิ่มเติม +"}
+              </a>
             </div>
-            {/* Instructors Filter */}
-            <div className="courses-widget">
-               <h4 className="widget-title">ผู้สอน</h4>
-               <div className="courses-cat-list">
-                  <ul className="list-wrap">
-                     {instructorToShow.map((instructor, i) => (
-                        <li key={i}>
-                           <div onClick={() => handleInstructor(instructor)} className="form-check">
-                              <input
-                                 className="form-check-input"
-                                 type="checkbox"
-                                 checked={instructor === instructorSelected || (instructor === 'ผู้สอนทั้งหมด' && !instructorSelected)}
-                                 readOnly
-                                 id={`instructor_${i}`}
-                              />
-                              <label className="form-check-label" htmlFor={`instructor_${i}`} onClick={() => handleInstructor(instructor)}>
-                                 {instructor}
-                              </label>
-                           </div>
-                        </li>
-                     ))}
-                  </ul>
-                  <div className="show-more">
-                     <a
-                        className={`show-more-btn ${showMoreInstructor ? 'active' : ''}`}
-                        style={{ cursor: "pointer" }}
-                        onClick={() => setShowMoreInstructor(!showMoreInstructor)}
-                     >
-                        {showMoreInstructor ? "แสดงน้อยลง -" : "แสดงเพิ่มเติม +"}
-                     </a>
-                  </div>
-               </div>
-            </div>
-
-            {/* Rating Filter */}
-            <div className="courses-widget">
-               <h4 className="widget-title">รีวิว</h4>
-               <div className="courses-rating-list">
-                  <ul className="list-wrap">
-                     {[5, 4, 3, 2, 1].map((rating, i) => (
-                        <li key={i}>
-                           <div onClick={() => handleRating(rating)} className="form-check">
-                              <input
-                                 className="form-check-input"
-                                 type="checkbox"
-                                 checked={rating === ratingSelected}
-                                 readOnly
-                                 id={`rating_${i}`}
-                              />
-                              <label className="form-check-label" htmlFor={`rating_${i}`} onClick={() => handleRating(rating)}>
-                                 <div className="rating">
-                                    <Rating initialValue={rating} size={20} readonly />
-                                 </div>
-                              </label>
-                           </div>
-                        </li>
-                     ))}
-                  </ul>
-               </div>
-            </div>
-         </aside>
-      </div>
-   );
+          </div>
+        </div>
+      </aside>
+    </div>
+  );
 }
 
 export default CourseSidebar;

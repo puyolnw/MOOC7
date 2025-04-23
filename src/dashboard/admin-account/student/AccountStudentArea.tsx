@@ -6,14 +6,16 @@ import DashboardSidebar from "../../dashboard-common/AdminSidebar";
 import DashboardBanner from "../../dashboard-common/AdminBanner";
 
 interface Student {
-  id: number;
+  student_id: number;
+  user_id: number;
   username: string;
   first_name: string;
   last_name: string;
   email: string;
-  courseCount: number;
   status: 'active' | 'inactive' | 'pending';
-  createdAt: string;
+  student_code: string;
+  department_id: number;
+  education_level: string;
 }
 
 interface PaginationProps {
@@ -174,7 +176,7 @@ const AccountStudentArea: React.FC = () => {
     setCurrentPage(pageNumber);
   };
 
-  const handleDeleteStudent = async (id: number) => {
+  const handleDeleteStudent = async (userId: number) => {
     if (window.confirm("คุณต้องการลบนักศึกษาคนนี้ใช่หรือไม่?")) {
       try {
         const token = localStorage.getItem("token");
@@ -182,18 +184,18 @@ const AccountStudentArea: React.FC = () => {
           toast.error("กรุณาเข้าสู่ระบบก่อนใช้งาน");
           return;
         }
-
-        const response = await axios.delete(`${apiURL}/api/accounts/students/${id}`, {
+  
+        const response = await axios.delete(`${apiURL}/api/accounts/students/${userId}`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
-
-        if (response.data.success) {
-          setStudents((prev) => prev.filter((student) => student.id !== id));
+  
+        // Update this condition to match backend response
+        if (response.status === 200) {
+          setStudents(prev => prev.filter(student => student.user_id !== userId));
+          setFilteredStudents(prev => prev.filter(student => student.user_id !== userId));
           toast.success("ลบนักศึกษาสำเร็จ");
-        } else {
-          toast.error(response.data.message || "ไม่สามารถลบนักศึกษาได้");
         }
       } catch (error) {
         console.error("Error deleting student:", error);
@@ -201,6 +203,7 @@ const AccountStudentArea: React.FC = () => {
       }
     }
   };
+  
 
   const renderStatusBadge = (status: string) => {
     switch (status) {
@@ -292,35 +295,37 @@ const AccountStudentArea: React.FC = () => {
                             <th scope="col">ชื่อผู้ใช้</th>
                             <th scope="col">ชื่อ-นามสกุล</th>
                             <th scope="col">อีเมล</th>
-                            <th scope="col" className="text-center">จำนวนรายวิชา</th>
                             <th scope="col" className="text-center">สถานะ</th>
                             <th scope="col" className="text-center">จัดการ</th>
                           </tr>
                         </thead>
                         <tbody>
                           {currentItems.map((student, index) => (
-                            <tr key={`student-${student.id}-${index}`}>
-                              <td>{indexOfFirstItem + index + 1}</td>
-                              <td>{student.username}</td>
-                              <td>{`${student.first_name} ${student.last_name}`}</td>
-                              <td>{student.email}</td>
-                              <td className="text-center">{student.courseCount}</td>
-                              <td className="text-center">
-                                {renderStatusBadge(student.status)}
-                              </td>
-                              <td>
-                                <div className="d-flex justify-content-center gap-3">
-                                  <Link to={`/admin-account/students/edit/${student.id}`} className="text-primary" style={{ display: "inline-flex", alignItems: "center" }}>
-                                    <i className="fas fa-edit icon-action" style={{ cursor: "pointer", lineHeight: 1 }}></i>
-                                  </Link>
-                                  <i
-                                    className="fas fa-trash-alt text-danger icon-action"
-                                    style={{ cursor: "pointer", lineHeight: 1 }}
-                                    onClick={() => handleDeleteStudent(student.id)}
-                                  ></i>
-                                </div>
-                              </td>
-                            </tr>
+                            <tr key={`student-${student.student_id}-${index}`}>
+                            <td>{indexOfFirstItem + index + 1}</td>
+                            <td>{student.username}</td>
+                            <td>{`${student.first_name} ${student.last_name}`}</td>
+                            <td>{student.email}</td>
+                            <td className="text-center">{renderStatusBadge(student.status)}</td>
+                            <td>
+                              <div className="d-flex justify-content-center gap-3">
+                                <Link
+                                  to={`/admin-account/students/edit/${student.student_id}`}
+                                  className="text-primary"
+                                  style={{ display: "inline-flex", alignItems: "center" }}
+                                >
+                                  <i className="fas fa-edit icon-action" style={{ cursor: "pointer", lineHeight: 1 }}></i>
+                                </Link>
+                                <button
+  className="btn btn-link text-danger p-0 border-0"
+  onClick={() => handleDeleteStudent(student.user_id)}
+  style={{ cursor: "pointer", lineHeight: 1 }}
+>
+  <i className="fas fa-trash-alt icon-action"></i>
+</button>
+                              </div>
+                            </td>
+                          </tr>
                           ))}
                         </tbody>
                       </table>

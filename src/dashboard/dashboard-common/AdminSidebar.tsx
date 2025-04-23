@@ -24,6 +24,7 @@ interface DataType {
   sidebar_details: SidebarDetailType[];
 }
 
+// Update the sidebar_data array with better icons
 const sidebar_data: DataType[] = [
    {
       id: 1,
@@ -32,7 +33,7 @@ const sidebar_data: DataType[] = [
          {
             id: 1,
             link: "/admin-dashboard",
-            icon: "fas fa-home",
+            icon: "fas fa-chart-line", // Changed to analytics icon
             title: "แดชบอร์ด",
          },
       ],
@@ -45,7 +46,7 @@ const sidebar_data: DataType[] = [
          {
             id: 1,
             link: "/admin-creditbank",
-            icon: "fas fa-list-ul",    
+            icon: "fas fa-graduation-cap", // Changed to education icon    
             title: "คลังหลักสูตร",
             hasSubmenu: true,
             submenu: [
@@ -79,7 +80,7 @@ const sidebar_data: DataType[] = [
          {
             id: 2,
             link: "/admin-account/instructors",
-            icon: "fas fa-list-ul",    
+            icon: "fas fa-users-cog", // Changed to user management icon    
             title: "บัญชีผู้ใช้",
             hasSubmenu: true,
             submenu: [
@@ -97,26 +98,8 @@ const sidebar_data: DataType[] = [
          },
       ],
    },
-   {
-      id: 3,
-      title: "แอดมิน",
-      class_name: "mt-30",
-      sidebar_details: [
-         {
-            id: 1,
-            link: "/admin-setting",
-            icon: "skillgro-settings",
-            title: "ตั่งค่า",
-         },
-         {
-            id: 2,
-            link: "/",
-            icon: "skillgro-logout",
-            title: "ออกจากระบบ",
-         },
-      ],
-   },
 ];
+
 
 const AdminSidebar = () => {
    const [openSubmenu, setOpenSubmenu] = useState<number | null>(null);

@@ -1,17 +1,22 @@
 import { Link } from "react-router-dom";
-import menu_data from "../../../data/home-data/MenuData";
 import { useEffect, useState } from "react";
+import useMenuData from '../../../data/home-data/MenuData';
 
 const NavMenu = () => {
    const [navClick, setNavClick] = useState<boolean>(false);
+   const menuData = useMenuData();
 
    useEffect(() => {
       window.scrollTo(0, 0);
    }, [navClick]);
 
+   if (!menuData || menuData.length === 0) {
+      return null;
+   }
+
    return (
       <ul className="navigation d-flex justify-content-end">
-         {menu_data.map((menu) => (
+         {menuData.map((menu) => (
             <li 
                key={menu.id} 
                className={menu.sub_menus && menu.sub_menus.length > 0 ? "menu-item-has-children" : ""}
