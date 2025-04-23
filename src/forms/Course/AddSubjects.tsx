@@ -91,6 +91,7 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel, subjectTo
   // สถานะสำหรับการแสดงตัวอย่างรูปภาพ
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [existingImageUrl, setExistingImageUrl] = useState<string | null>(null);
+  const [imageLoadError, setImageLoadError] = useState(false);
 
   // สถานะสำหรับ Modal
   const [showLessonModal, setShowLessonModal] = useState(false);
@@ -114,6 +115,15 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel, subjectTo
   const [availableInstructors, setAvailableInstructors] = useState<Instructor[]>([]);
   const [availableDepartments, setAvailableDepartments] = useState<Department[]>([]);
 
+  // ฟังก์ชันแปลง webViewLink เป็น URL สำหรับแสดงรูปภาพ
+  const getImageUrl = (webViewLink: string | null) => {
+    if (!webViewLink) return null;
+    const fileIdMatch = webViewLink.match(/\/d\/(.+?)\//);
+    if (!fileIdMatch) return null;
+    const fileId = fileIdMatch[1];
+    return `https://drive.google.com/uc?export=view&id=${fileId}`;
+  };
+
   // โหลดข้อมูลจาก API
   useEffect(() => {
     const fetchData = async () => {
@@ -136,23 +146,29 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel, subjectTo
             title: lesson.title || "",
           }));
           setAvailableLessons(formattedLessons);
+        } else {
+          throw new Error("ไม่สามารถดึงข้อมูลบทเรียนได้");
         }
 
+        // โหลดข้อมูลแบบทดสอบ
+        // โหลดข้อมูลแบบทดสอบ
         // โหลดข้อมูลแบบทดสอบ
         const quizzesResponse = await axios.get(`${apiUrl}/api/courses/quizzes`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        if (quizzesResponse.data.message === "ดึงข้อมูลแบบทดสอบสำเร็จ") {
-          const formattedQuizzes = quizzesResponse.data.quizzes.map((quiz: any) => ({
+        if (quizzesResponse.data.success || quizzesResponse.data.message === "ดึงข้อมูลแบบทดสอบสำเร็จ") {
+          const formattedQuizzes = quizzesResponse.data.quizzes?.map((quiz: any) => ({
             id: quiz.quiz_id ? quiz.quiz_id.toString() : "",
             title: quiz.title || "",
             question_count: quiz.question_count || 0,
-          }));
+          })) || [];
           setAvailableQuizzes(formattedQuizzes);
+        } else {
+          throw new Error(quizzesResponse.data.message || "ไม่สามารถดึงข้อมูลแบบทดสอบได้");
         }
 
         // โหลดข้อมูลหลักสูตร
-        const coursesResponse = await axios.get(`${apiUrl}/api/courses/`, {
+        const coursesResponse = await axios.get(`${apiUrl}/api/courses`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (coursesResponse.data.success) {
@@ -163,6 +179,8 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel, subjectTo
             subjects: course.subject_count || 0,
           }));
           setAvailableCourses(formattedCourses);
+        } else {
+          throw new Error("ไม่สามารถดึงข้อมูลหลักสูตรได้");
         }
 
         // โหลดข้อมูลอาจารย์
@@ -171,6 +189,8 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel, subjectTo
         });
         if (instructorsResponse.data.success) {
           setAvailableInstructors(instructorsResponse.data.instructors);
+        } else {
+          throw new Error("ไม่สามารถดึงข้อมูลอาจารย์ได้");
         }
 
         // โหลดข้อมูลสาขาวิชา
@@ -179,6 +199,8 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel, subjectTo
         });
         if (departmentsResponse.data.success) {
           setAvailableDepartments(departmentsResponse.data.departments);
+        } else {
+          throw new Error("ไม่สามารถดึงข้อมูลสาขาวิชาได้");
         }
 
         // ถ้ามีการแก้ไขรายวิชา ให้โหลดข้อมูลรายวิชานั้น
@@ -223,15 +245,17 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel, subjectTo
               courses: formattedCourses,
             });
 
-            // ตั้งค่ารูปภาพที่มีอยู่ (base64)
+            // ตั้งค่ารูปภาพที่มีอยู่ (ใช้ URL จาก Google Drive)
             if (subject.cover_image) {
-              setExistingImageUrl(`data:image/jpeg;base64,${subject.cover_image}`);
+              setExistingImageUrl(subject.cover_image);
             }
+          } else {
+            throw new Error("ไม่สามารถดึงข้อมูลรายวิชาได้");
           }
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error fetching data:", error);
-        setApiError("เกิดข้อผิดพลาดในการโหลดข้อมูล");
+        setApiError(error.message || "เกิดข้อผิดพลาดในการโหลดข้อมูล");
       } finally {
         setIsLoading(false);
       }
@@ -324,6 +348,7 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel, subjectTo
     reader.onload = () => {
       setImagePreview(reader.result as string);
       setExistingImageUrl(null);
+      setImageLoadError(false);
     };
     reader.readAsDataURL(file);
 
@@ -341,6 +366,7 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel, subjectTo
     });
     setImagePreview(null);
     setExistingImageUrl(null);
+    setImageLoadError(false);
 
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
@@ -488,11 +514,11 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel, subjectTo
   // บันทึกข้อมูล
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-  
+
     if (!validateForm()) return;
-  
+
     setIsSubmitting(true);
-  
+
     try {
       const token = localStorage.getItem("token");
       if (!token) {
@@ -500,23 +526,23 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel, subjectTo
         setIsSubmitting(false);
         return;
       }
-  
+
       const formData = new FormData();
       formData.append("title", subjectData.title);
       formData.append("code", subjectData.code);
       formData.append("description", subjectData.description);
       formData.append("credits", subjectData.credits.toString());
-  
+
       if (subjectData.department) {
         formData.append("department", subjectData.department);
       }
-  
+
       formData.append("allowAllLessons", subjectData.allowAllLessons.toString());
-  
+
       if (subjectData.coverImage) {
         formData.append("coverImage", subjectData.coverImage);
       }
-  
+
       formData.append(
         "lessons",
         JSON.stringify(
@@ -526,25 +552,25 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel, subjectTo
           }))
         )
       );
-  
+
       if (subjectData.preTestId) {
         formData.append("preTestId", subjectData.preTestId);
       }
-  
+
       if (subjectData.postTestId) {
         formData.append("postTestId", subjectData.postTestId);
       }
-  
+
       if (subjectData.instructors.length > 0) {
         formData.append("instructors", JSON.stringify(subjectData.instructors));
       }
-  
+
       if (subjectData.courses.length > 0) {
         formData.append("courses", JSON.stringify(subjectData.courses));
       }
-  
+
       let response;
-  
+
       if (subjectToEdit) {
         response = await axios.put(`${apiUrl}/api/courses/subjects/${subjectToEdit}`, formData, {
           headers: {
@@ -560,14 +586,14 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel, subjectTo
           },
         });
       }
-  
+
       if (response.data.success) {
         toast.success(subjectToEdit ? "แก้ไขรายวิชาสำเร็จ" : "สร้างรายวิชาสำเร็จ");
-  
+
         if (onSubmit) {
-          onSubmit(response.data.subject);
+          onSubmit(response.data);
         }
-  
+
         if (!subjectToEdit) {
           setSubjectData({
             title: "",
@@ -585,22 +611,24 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel, subjectTo
           });
           setImagePreview(null);
           setExistingImageUrl(null);
-  
+          setImageLoadError(false);
+
           if (fileInputRef.current) {
             fileInputRef.current.value = "";
           }
         }
+      } else {
+        throw new Error(response.data.message || "เกิดข้อผิดพลาดในการบันทึกข้อมูล");
       }
     } catch (error: any) {
       console.error("Error submitting subject:", error);
       const errorMessage =
-        error.response?.data?.message || "เกิดข้อผิดพลาดในการบันทึกข้อมูล";
+        error.response?.data?.message || error.message || "เกิดข้อผิดพลาดในการบันทึกข้อมูล";
       toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
   };
-  
 
   // ยกเลิก
   const handleCancel = () => {
@@ -802,13 +830,14 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel, subjectTo
                   <div className="mb-3">
                     <label className="form-label">รูปภาพปก</label>
                     <div className="cover-image-container">
-                      {imagePreview || existingImageUrl ? (
+                      {imagePreview || (existingImageUrl && !imageLoadError) ? (
                         <div className="position-relative">
                           <img
-                            src={imagePreview || existingImageUrl || ""}
+                            src={imagePreview || getImageUrl(existingImageUrl) || ""}
                             alt="รูปภาพปก"
                             className="img-fluid rounded"
                             style={{ maxHeight: "200px", width: "100%", objectFit: "cover" }}
+                            onError={() => setImageLoadError(true)}
                           />
                           <button
                             type="button"
@@ -817,6 +846,16 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel, subjectTo
                           >
                             <i className="fas fa-times"></i>
                           </button>
+                        </div>
+                      ) : imageLoadError ? (
+                        <div
+                          className="border rounded p-3 text-center bg-light"
+                          style={{ cursor: "pointer" }}
+                          onClick={() => fileInputRef.current?.click()}
+                        >
+                          <i className="fas fa-exclamation-triangle fa-3x text-danger mb-2"></i>
+                          <p className="mb-0 text-danger">ไม่สามารถโหลดรูปภาพได้</p>
+                          <small className="text-muted">คลิกเพื่ออัปโหลดรูปภาพใหม่</small>
                         </div>
                       ) : (
                         <div
@@ -1189,9 +1228,8 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel, subjectTo
                             return (
                               <div
                                 key={lesson.id}
-                                className={`list-group-item list-group-item-action d-flex justify-content-between align-items-center ${
-                                  isSelected ? "bg-light" : ""
-                                }`}
+                                className={`list-group-item list-group-item-action d-flex justify-content-between align-items-center ${isSelected ? "bg-light" : ""
+                                  }`}
                               >
                                 <div>
                                   <h6 className="mb-0">{lesson.title}</h6>

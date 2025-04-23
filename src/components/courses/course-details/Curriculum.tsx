@@ -16,6 +16,7 @@ interface Subject {
   instructor_count: number;
   lesson_count: number;
   cover_image?: string;
+  cover_image_file_id?: number;
   prerequisites?: Prerequisite[];
 }
 
@@ -154,7 +155,7 @@ const Curriculum: React.FC<CurriculumProps> = ({ subjects }) => {
   const [hoveredCard, setHoveredCard] = useState<number | null>(null);
   const [hoveredButton, setHoveredButton] = useState<number | null>(null);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
-
+  const apiURL = import.meta.env.VITE_API_URL;
   useEffect(() => {
     const handleResize = () => {
       setWindowWidth(window.innerWidth);
@@ -213,7 +214,7 @@ const Curriculum: React.FC<CurriculumProps> = ({ subjects }) => {
                   <img
                     src={
                       subject.cover_image
-                        ? `data:image/jpeg;base64,${subject.cover_image}`
+                        ? `${apiURL}/api/courses/subjects/image/${subject.cover_image_file_id}`
                         : "/assets/img/courses/course_thumb01.jpg"
                     }
                     alt={subject.subject_name}

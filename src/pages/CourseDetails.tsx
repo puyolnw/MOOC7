@@ -122,7 +122,7 @@ const CourseDetails = () => {
     department: courseDetails?.department_name || "หลักสูตรกลาง",
     description: courseDetails?.description || "",
     thumb: courseDetails?.cover_image
-      ? `data:image/jpeg;base64,${courseDetails.cover_image}` // แปลง base64 เป็น URL สำหรับแสดงผล
+      ? `${apiURL}/api/courses/image/${courseDetails.cover_image_file_id}` 
       : "/assets/img/courses/course_thumb01.jpg",
     videoUrl: courseDetails?.video_url || "", // ตรวจสอบว่ามีการส่ง video_url จาก API
     subjects: courseDetails?.subjects || [],

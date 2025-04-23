@@ -3,13 +3,14 @@ import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
 
-// Interface for subject/course data
+// Interface for subject data
 interface Subject {
   id: string;
   title: string;
   instructor: string;
   description: string;
-  coverImage: string; // coverImage จะเป็น base64 string
+  coverImage: string;
+  coverImageFileId?: string;
 }
 
 // Interface for prerequisite relationship
@@ -21,13 +22,13 @@ interface Prerequisite {
 // Interface for course data
 interface CourseData {
   title: string;
+  category: string;
   description: string;
   coverImage: File | null;
   coverImagePreview: string;
   videoUrl: string;
-  hasCertificate: boolean;
-  subjects: string[]; // IDs of selected subjects
-  prerequisites: Prerequisite[]; // Prerequisite relationships
+  subjects: string[];
+  prerequisites: Prerequisite[];
 }
 
 interface AddCoursesProps {
@@ -46,17 +47,17 @@ const AddCourses: React.FC<AddCoursesProps> = ({ onSubmit, onCancel }) => {
   const [apiError, setApiError] = useState<string | null>(null);
   const [apiSuccess, setApiSuccess] = useState<string | null>(null);
 
-  // State for available subjects (will be fetched from API)
+  // State for available subjects
   const [availableSubjects, setAvailableSubjects] = useState<Subject[]>([]);
 
   // State for course data
   const [courseData, setCourseData] = useState<CourseData>({
     title: "",
+    category: "",
     description: "",
     coverImage: null,
     coverImagePreview: "",
     videoUrl: "",
-    hasCertificate: true, // Default is true
     subjects: [],
     prerequisites: [],
   });
@@ -64,16 +65,15 @@ const AddCourses: React.FC<AddCoursesProps> = ({ onSubmit, onCancel }) => {
   // State for search term
   const [searchTerm, setSearchTerm] = useState("");
 
-  // State for showing subject selection modal
+  // State for modals
   const [showSubjectModal, setShowSubjectModal] = useState(false);
-
-  // State for showing prerequisite modal
   const [showPrerequisiteModal, setShowPrerequisiteModal] = useState(false);
   const [selectedSubjectForPrereq, setSelectedSubjectForPrereq] = useState<string | null>(null);
 
   // State for validation errors
   const [errors, setErrors] = useState({
     title: "",
+    category: "",
     description: "",
     subjects: "",
     videoUrl: "",
@@ -90,18 +90,15 @@ const AddCourses: React.FC<AddCoursesProps> = ({ onSubmit, onCancel }) => {
 
         if (!token) {
           setApiError("ไม่พบข้อมูลการเข้าสู่ระบบ กรุณาเข้าสู่ระบบใหม่");
-          setIsLoading(false);
           return;
         }
 
-        const response = await axios.get(`${apiURL}/api/courses/subjects`, {
+        const response = await axios.get(`${apiURL}/api/courses/subjects/available`, {
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`,
+            Authorization: `Bearer ${token}`,
           },
         });
-
-
 
         if (response.data.success) {
           const formattedSubjects = response.data.subjects.map((subject: any) => ({
@@ -109,18 +106,19 @@ const AddCourses: React.FC<AddCoursesProps> = ({ onSubmit, onCancel }) => {
             title: subject.subject_name,
             instructor: subject.instructor_count > 0 ? `${subject.instructor_count} อาจารย์` : "ไม่มีอาจารย์",
             description: subject.description || "ไม่มีคำอธิบาย",
-            coverImage: subject.cover_image
-              ? `data:image/jpeg;base64,${subject.cover_image}` // แปลง base64 เป็น URL สำหรับแสดงผล
+            coverImage: subject.cover_image_file_id
+              ? `${apiURL}/api/courses/image/${subject.cover_image_file_id}`
               : "/assets/img/courses/course_thumb01.jpg",
+            coverImageFileId: subject.cover_image_file_id,
           }));
 
           setAvailableSubjects(formattedSubjects);
         } else {
-          setApiError("ไม่สามารถดึงข้อมูลรายวิชาได้");
+          setApiError(response.data.message || "ไม่สามารถดึงข้อมูลรายวิชาได้");
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error fetching subjects:", error);
-        setApiError("เกิดข้อผิดพลาดในการดึงข้อมูลรายวิชา");
+        setApiError(error.response?.data?.message || "เกิดข้อผิดพลาดในการดึงข้อมูลรายวิชา");
       } finally {
         setIsLoading(false);
       }
@@ -132,10 +130,10 @@ const AddCourses: React.FC<AddCoursesProps> = ({ onSubmit, onCancel }) => {
   // Get selected subjects details
   const selectedSubjectsDetails = courseData.subjects
     .map((id) => availableSubjects.find((subject) => subject.id === id))
-    .filter((subject) => subject !== undefined) as Subject[];
+    .filter((subject): subject is Subject => subject !== undefined);
 
   // Handle input changes
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setCourseData((prevState) => ({
       ...prevState,
@@ -154,15 +152,6 @@ const AddCourses: React.FC<AddCoursesProps> = ({ onSubmit, onCancel }) => {
     if (name === "videoUrl" && value) {
       validateYoutubeUrl(value);
     }
-  };
-
-  // Handle checkbox changes
-  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, checked } = e.target;
-    setCourseData((prevState) => ({
-      ...prevState,
-      [name]: checked,
-    }));
   };
 
   // Validate YouTube URL
@@ -197,16 +186,16 @@ const AddCourses: React.FC<AddCoursesProps> = ({ onSubmit, onCancel }) => {
 
     const file = files[0];
 
-    // Validate file size (max 2MB)
-    if (file.size > 2 * 1024 * 1024) {
-      alert("ขนาดไฟล์ต้องไม่เกิน 2MB");
+    // Validate file size (max 5MB to match backend)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("ขนาดไฟล์ต้องไม่เกิน 5MB");
       return;
     }
 
     // Validate file type
     const fileType = file.type;
-    if (!fileType.match(/^image\/(jpeg|jpg|png|gif)$/)) {
-      alert("รองรับเฉพาะไฟล์รูปภาพ (JPEG, PNG, GIF)");
+    if (!fileType.match(/^image\/(jpeg|jpg|png|gif|webp)$/)) {
+      toast.error("รองรับเฉพาะไฟล์รูปภาพ (JPEG, PNG, GIF, WEBP)");
       return;
     }
 
@@ -252,7 +241,7 @@ const AddCourses: React.FC<AddCoursesProps> = ({ onSubmit, onCancel }) => {
       subjects: [...prevState.subjects, subjectId],
     }));
 
-    // Clear subjects error if any
+    // Clear subjects error
     if (errors.subjects) {
       setErrors((prevErrors) => ({
         ...prevErrors,
@@ -263,37 +252,27 @@ const AddCourses: React.FC<AddCoursesProps> = ({ onSubmit, onCancel }) => {
 
   // Remove subject from course
   const handleRemoveSubject = (subjectId: string) => {
-    // Remove the subject
     setCourseData((prevState) => ({
       ...prevState,
       subjects: prevState.subjects.filter((id) => id !== subjectId),
-      // Also remove any prerequisites involving this subject
       prerequisites: prevState.prerequisites.filter(
         (p) => p.subjectId !== subjectId && p.prerequisiteId !== subjectId
       ),
     }));
   };
 
-  // Handle reordering of subjects with up/down buttons
+  // Handle reordering of subjects
   const handleReorderSubject = (subjectId: string, newIndex: number) => {
-    // Find the current index of the subject
     const currentIndex = courseData.subjects.findIndex((id) => id === subjectId);
 
-    // Check if the new index is valid
     if (newIndex < 0 || newIndex >= courseData.subjects.length) {
       return;
     }
 
-    // Create a copy of the subjects array
     const newSubjects = [...courseData.subjects];
-
-    // Remove the subject from its current position
     newSubjects.splice(currentIndex, 1);
-
-    // Insert the subject at the new position
     newSubjects.splice(newIndex, 0, subjectId);
 
-    // Update the state
     setCourseData((prevState) => ({
       ...prevState,
       subjects: newSubjects,
@@ -304,7 +283,6 @@ const AddCourses: React.FC<AddCoursesProps> = ({ onSubmit, onCancel }) => {
   const handleAddPrerequisite = (prerequisiteId: string) => {
     if (!selectedSubjectForPrereq) return;
 
-    // Check if this prerequisite already exists
     const exists = courseData.prerequisites.some(
       (p) => p.subjectId === selectedSubjectForPrereq && p.prerequisiteId === prerequisiteId
     );
@@ -314,7 +292,6 @@ const AddCourses: React.FC<AddCoursesProps> = ({ onSubmit, onCancel }) => {
       return;
     }
 
-    // Check if this would create a circular dependency
     if (selectedSubjectForPrereq === prerequisiteId) {
       toast.error("รายวิชาไม่สามารถเป็นวิชาก่อนหน้าของตัวเองได้");
       return;
@@ -354,30 +331,32 @@ const AddCourses: React.FC<AddCoursesProps> = ({ onSubmit, onCancel }) => {
     let isValid = true;
     const newErrors = {
       title: "",
+      category: "",
       description: "",
       subjects: "",
       videoUrl: "",
     };
 
-    // Validate title
     if (!courseData.title.trim()) {
       newErrors.title = "กรุณาระบุชื่อหลักสูตร";
       isValid = false;
     }
 
-    // Validate description
+    if (!courseData.category.trim()) {
+      newErrors.category = "กรุณาเลือกหมวดหมู่หลักสูตร";
+      isValid = false;
+    }
+
     if (!courseData.description.trim()) {
       newErrors.description = "กรุณาระบุคำอธิบายหลักสูตร";
       isValid = false;
     }
 
-    // Validate subjects
     if (courseData.subjects.length === 0) {
       newErrors.subjects = "กรุณาเพิ่มอย่างน้อย 1 รายวิชาในหลักสูตร";
       isValid = false;
     }
 
-    // Validate video URL if provided
     if (courseData.videoUrl) {
       const youtubeRegex =
         /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})(?!.*&list=.*)(?!.*&index=.*)/;
@@ -396,6 +375,7 @@ const AddCourses: React.FC<AddCoursesProps> = ({ onSubmit, onCancel }) => {
     e.preventDefault();
 
     if (!validateForm()) {
+      toast.error("กรุณากรอกข้อมูลให้ครบถ้วนและถูกต้อง");
       return;
     }
 
@@ -408,68 +388,57 @@ const AddCourses: React.FC<AddCoursesProps> = ({ onSubmit, onCancel }) => {
 
       if (!token) {
         setApiError("ไม่พบข้อมูลการเข้าสู่ระบบ กรุณาเข้าสู่ระบบใหม่");
-        setIsSubmitting(false);
+        toast.error("ไม่พบข้อมูลการเข้าสู่ระบบ กรุณาเข้าสู่ระบบใหม่");
         return;
       }
 
-      // สร้าง FormData สำหรับส่งข้อมูลและไฟล์
       const formData = new FormData();
       formData.append("title", courseData.title);
+      formData.append("category", courseData.category);
       formData.append("description", courseData.description);
 
       if (courseData.coverImage) {
         formData.append("coverImage", courseData.coverImage);
       }
 
-      // แปลงข้อมูล subjects ให้เป็นรูปแบบที่ API ต้องการ
       const subjectsData = courseData.subjects.map((subjectId, index) => ({
         id: subjectId,
         order: index + 1,
       }));
-
       formData.append("subjects", JSON.stringify(subjectsData));
 
-      // เพิ่มข้อมูลอื่นๆ ที่ต้องการส่งไปยัง API
       if (courseData.videoUrl) {
-        formData.append("videoUrl", courseData.videoUrl); // ปรับชื่อฟิลด์ให้ตรงกับ backend
+        formData.append("videoUrl", courseData.videoUrl);
       }
 
-      formData.append("hasCertificate", courseData.hasCertificate.toString());
-
-      // ส่งข้อมูล prerequisites ถ้ามี
       if (courseData.prerequisites.length > 0) {
         formData.append("prerequisites", JSON.stringify(courseData.prerequisites));
       }
 
-      // ส่งข้อมูลไปยัง API
       const response = await axios.post(`${apiURL}/api/courses`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
-          // ไม่ต้องระบุ Content-Type เพราะ FormData จะจัดการเอง
         },
       });
 
       if (response.data.success) {
-        setApiSuccess("สร้างหลักสูตรสำเร็จ");
-        toast.success("สร้างหลักสูตรสำเร็จ");
+        setApiSuccess(response.data.message);
+        toast.success(response.data.message);
 
-        // ถ้าสำเร็จและมี callback onSubmit ให้เรียกใช้
         if (onSubmit) {
           onSubmit(response.data);
         } else {
-          // ถ้าไม่มี callback ให้ redirect ไปหน้าจัดการหลักสูตร หลังจากแสดง toast สักครู่
           setTimeout(() => {
             navigate("/admin-creditbank/courses");
           }, 1500);
         }
       } else {
-        setApiError(response.data.message || "เกิดข้อผิดพลาดในการสร้างหลักสูตร");
-        toast.error(response.data.message || "เกิดข้อผิดพลาดในการสร้างหลักสูตร");
+        setApiError(response.data.message);
+        toast.error(response.data.message);
       }
     } catch (error: any) {
       console.error("Error creating course:", error);
-      const errorMessage =
-        error.response?.data?.message || "เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์";
+      const errorMessage = error.response?.data?.message || "เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์";
       setApiError(errorMessage);
       toast.error(errorMessage);
     } finally {
@@ -482,12 +451,11 @@ const AddCourses: React.FC<AddCoursesProps> = ({ onSubmit, onCancel }) => {
     if (onCancel) {
       onCancel();
     } else {
-      // ถ้าไม่มี callback ให้ redirect ไปหน้าจัดการหลักสูตร
       navigate("/admin-creditbank/courses");
     }
   };
 
-  // Clean up object URLs when component unmounts
+  // Clean up object URLs
   useEffect(() => {
     return () => {
       if (courseData.coverImagePreview) {
@@ -498,7 +466,6 @@ const AddCourses: React.FC<AddCoursesProps> = ({ onSubmit, onCancel }) => {
 
   return (
     <form onSubmit={handleSubmit}>
-      {/* แสดงข้อผิดพลาดจาก API ถ้ามี */}
       {apiError && (
         <div className="alert alert-danger mb-4">
           <i className="fas fa-exclamation-circle me-2"></i>
@@ -506,7 +473,6 @@ const AddCourses: React.FC<AddCoursesProps> = ({ onSubmit, onCancel }) => {
         </div>
       )}
 
-      {/* แสดงข้อความสำเร็จถ้ามี */}
       {apiSuccess && (
         <div className="alert alert-success mb-4">
           <i className="fas fa-check-circle me-2"></i>
@@ -514,7 +480,7 @@ const AddCourses: React.FC<AddCoursesProps> = ({ onSubmit, onCancel }) => {
         </div>
       )}
 
-      {/* ส่วนที่ 1: ข้อมูลหลักสูตร */}
+      {/* Section 1: Course Information */}
       <div className="card shadow-sm border-0 mb-4">
         <div className="card-body">
           <h5 className="card-title mb-3">1. ข้อมูลหลักสูตร</h5>
@@ -536,6 +502,27 @@ const AddCourses: React.FC<AddCoursesProps> = ({ onSubmit, onCancel }) => {
           </div>
 
           <div className="mb-3">
+            <label htmlFor="category" className="form-label">
+              หมวดหมู่หลักสูตร <span className="text-danger">*</span>
+            </label>
+            <select
+              className={`form-control ${errors.category ? "is-invalid" : ""}`}
+              id="category"
+              name="category"
+              value={courseData.category}
+              onChange={handleInputChange}
+            >
+              <option value="">เลือกหมวดหมู่</option>
+              <option value="technology">เทคโนโลยี</option>
+              <option value="business">ธุรกิจ</option>
+              <option value="science">วิทยาศาสตร์</option>
+              <option value="arts">ศิลปะ</option>
+              <option value="others">อื่นๆ</option>
+            </select>
+            {errors.category && <div className="invalid-feedback">{errors.category}</div>}
+          </div>
+
+          <div className="mb-3">
             <label htmlFor="description" className="form-label">
               คำอธิบายหลักสูตร <span className="text-danger">*</span>
             </label>
@@ -553,7 +540,7 @@ const AddCourses: React.FC<AddCoursesProps> = ({ onSubmit, onCancel }) => {
         </div>
       </div>
 
-      {/* ส่วนที่ 2: จัดการเนื้อหาหลักสูตร */}
+      {/* Section 2: Course Content */}
       <div className="card shadow-sm border-0 mb-4">
         <div className="card-body">
           <h5 className="card-title mb-3">2. จัดการเนื้อหาหลักสูตร</h5>
@@ -570,7 +557,7 @@ const AddCourses: React.FC<AddCoursesProps> = ({ onSubmit, onCancel }) => {
               >
                 <i className="fas fa-plus-circle me-2"></i>เพิ่มรายวิชาที่มีอยู่
               </button>
-              <Link to="/admin-creditbank/lessons/add" className="btn btn-outline-success">
+              <Link to="/admin-creditbank/subjects/add" className="btn btn-outline-success">
                 <i className="fas fa-file-medical me-2"></i>สร้างรายวิชาใหม่
               </Link>
             </div>
@@ -595,7 +582,7 @@ const AddCourses: React.FC<AddCoursesProps> = ({ onSubmit, onCancel }) => {
                   const prerequisites = getPrerequisitesForSubject(subject.id);
                   const prerequisiteSubjects = prerequisites
                     .map((id) => availableSubjects.find((s) => s.id === id))
-                    .filter(Boolean) as Subject[];
+                    .filter((s): s is Subject => s !== undefined);
 
                   return (
                     <div key={subject.id} className="card mb-3 border">
@@ -650,7 +637,6 @@ const AddCourses: React.FC<AddCoursesProps> = ({ onSubmit, onCancel }) => {
                             className="img-thumbnail me-3"
                             style={{ width: "60px", height: "60px", objectFit: "cover" }}
                             onError={(e) => {
-                              // ถ้าโหลดรูปไม่สำเร็จ ใช้รูปเริ่มต้น
                               (e.target as HTMLImageElement).src = "/assets/img/courses/course_thumb01.jpg";
                             }}
                           />
@@ -698,15 +684,15 @@ const AddCourses: React.FC<AddCoursesProps> = ({ onSubmit, onCancel }) => {
         </div>
       </div>
 
-      {/* ส่วนที่ 3: ตั้งค่าหลักสูตร */}
+      {/* Section 3: Course Settings */}
       <div className="card shadow-sm border-0 mb-4">
         <div className="card-body">
           <h5 className="card-title mb-3">3. ตั้งค่าหลักสูตร</h5>
 
-          {/* ภาพหน้าปก */}
+          {/* Cover Image */}
           <div className="mb-4">
             <label className="form-label">ภาพหน้าปกหลักสูตร</label>
-            <p className="text-muted small mb-2">แนะนำขนาด 1200 x 800 พิกเซล (ไม่เกิน 2MB)</p>
+            <p className="text-muted small mb-2">แนะนำขนาด 1200 x 800 พิกเซล (ไม่เกิน 5MB)</p>
 
             <div className="d-flex align-items-center gap-3">
               <div
@@ -733,7 +719,7 @@ const AddCourses: React.FC<AddCoursesProps> = ({ onSubmit, onCancel }) => {
                   id="coverImage"
                   ref={fileInputRef}
                   onChange={handleCoverImageUpload}
-                  accept="image/jpeg,image/png,image/gif"
+                  accept="image/jpeg,image/png,image/gif,image/webp"
                   style={{ display: "none" }}
                 />
 
@@ -758,12 +744,12 @@ const AddCourses: React.FC<AddCoursesProps> = ({ onSubmit, onCancel }) => {
                   )}
                 </div>
 
-                <small className="text-muted">รองรับไฟล์ JPEG, PNG, GIF</small>
+                <small className="text-muted">รองรับไฟล์ JPEG, PNG, GIF, WEBP</small>
               </div>
             </div>
           </div>
 
-          {/* วิดีโอแนะนำหลักสูตร */}
+          {/* Video URL */}
           <div className="mb-4">
             <label htmlFor="videoUrl" className="form-label">
               วิดีโอแนะนำหลักสูตร (YouTube)
@@ -779,21 +765,18 @@ const AddCourses: React.FC<AddCoursesProps> = ({ onSubmit, onCancel }) => {
             />
             {errors.videoUrl && <div className="invalid-feedback">{errors.videoUrl}</div>}
             <small className="form-text text-muted">
-              ตัวอย่างลิงก์ที่ถูกต้อง: https://www.youtube.com/watch?v=abcdefghijk หรือ
-              https://youtu.be/abcdefghijk
+              ตัวอย่างลิงก์ที่ถูกต้อง: https://www.youtube.com/watch?v=abcdefghijk หรือ https://youtu.be/abcdefghijk
             </small>
           </div>
 
-          {/* แสดงตัวอย่างวิดีโอ */}
+          {/* Video Preview */}
           {courseData.videoUrl && !errors.videoUrl && (
             <div className="video-preview mb-4">
               <h6>ตัวอย่างวิดีโอ:</h6>
               <div className="ratio ratio-16x9">
                 <iframe
                   src={`https://www.youtube.com/embed/${
-                    courseData.videoUrl.match(
-                      /(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/
-                    )?.[1]
+                    courseData.videoUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/)?.[1]
                   }`}
                   title="YouTube video player"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -802,30 +785,10 @@ const AddCourses: React.FC<AddCoursesProps> = ({ onSubmit, onCancel }) => {
               </div>
             </div>
           )}
-
-          {/* เกียรติบัตร */}
-          <div className="form-check form-switch mb-3">
-            <input
-              className="form-check-input"
-              type="checkbox"
-              id="hasCertificate"
-              name="hasCertificate"
-              checked={courseData.hasCertificate}
-              onChange={handleCheckboxChange}
-            />
-            <label className="form-check-label" htmlFor="hasCertificate">
-              มีเกียรติบัตรเมื่อเรียนจบหลักสูตร
-            </label>
-          </div>
-
-          <div className="alert alert-info">
-            <i className="fas fa-info-circle me-2"></i>
-            เกียรติบัตรจะออกให้ผู้เรียนโดยอัตโนมัติเมื่อเรียนจบทุกรายวิชาในหลักสูตรและผ่านเกณฑ์การประเมิน
-          </div>
         </div>
       </div>
 
-      {/* ปุ่มบันทึกและยกเลิก */}
+      {/* Submit and Cancel Buttons */}
       <div className="d-flex justify-content-end gap-2 mt-4">
         <button
           type="button"
@@ -849,18 +812,14 @@ const AddCourses: React.FC<AddCoursesProps> = ({ onSubmit, onCancel }) => {
         </button>
       </div>
 
-      {/* Modal เลือกรายวิชา */}
+      {/* Subject Selection Modal */}
       {showSubjectModal && (
         <div className="modal fade show" style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}>
           <div className="modal-dialog modal-lg">
             <div className="modal-content">
               <div className="modal-header">
                 <h5 className="modal-title">เลือกรายวิชา</h5>
-                <button
-                  type="button"
-                  className="btn-close"
-                  onClick={() => setShowSubjectModal(false)}
-                ></button>
+                <button type="button" className="btn-close" onClick={() => setShowSubjectModal(false)}></button>
               </div>
               <div className="modal-body">
                 <div className="mb-3">
@@ -894,9 +853,7 @@ const AddCourses: React.FC<AddCoursesProps> = ({ onSubmit, onCancel }) => {
                                   className="img-fluid rounded-start"
                                   style={{ height: "100%", objectFit: "cover" }}
                                   onError={(e) => {
-                                    // ถ้าโหลดรูปไม่สำเร็จ ใช้รูปเริ่มต้น
-                                    (e.target as HTMLImageElement).src =
-                                      "/assets/img/courses/course_thumb01.jpg";
+                                    (e.target as HTMLImageElement).src = "/assets/img/courses/course_thumb01.jpg";
                                   }}
                                 />
                               </div>
@@ -906,9 +863,7 @@ const AddCourses: React.FC<AddCoursesProps> = ({ onSubmit, onCancel }) => {
                                   <p className="card-text small text-muted mb-1">
                                     ผู้สอน: {subject.instructor}
                                   </p>
-                                  <p className="card-text small mb-2">
-                                    {subject.description.substring(0, 60)}...
-                                  </p>
+                                  <p className="card-text small mb-2">{subject.description.substring(0, 60)}...</p>
                                   <button
                                     type="button"
                                     className={`btn btn-sm ${
@@ -944,11 +899,7 @@ const AddCourses: React.FC<AddCoursesProps> = ({ onSubmit, onCancel }) => {
                 </div>
               </div>
               <div className="modal-footer">
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => setShowSubjectModal(false)}
-                >
+                <button type="button" className="btn btn-secondary" onClick={() => setShowSubjectModal(false)}>
                   ปิด
                 </button>
               </div>
@@ -957,7 +908,7 @@ const AddCourses: React.FC<AddCoursesProps> = ({ onSubmit, onCancel }) => {
         </div>
       )}
 
-      {/* Modal กำหนดวิชาก่อนหน้า */}
+      {/* Prerequisite Modal */}
       {showPrerequisiteModal && selectedSubjectForPrereq && (
         <div className="modal fade show" style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}>
           <div className="modal-dialog modal-lg">
@@ -967,11 +918,7 @@ const AddCourses: React.FC<AddCoursesProps> = ({ onSubmit, onCancel }) => {
                   กำหนดวิชาก่อนหน้าสำหรับ:{" "}
                   {availableSubjects.find((s) => s.id === selectedSubjectForPrereq)?.title}
                 </h5>
-                <button
-                  type="button"
-                  className="btn-close"
-                  onClick={() => setShowPrerequisiteModal(false)}
-                ></button>
+                <button type="button" className="btn-close" onClick={() => setShowPrerequisiteModal(false)}></button>
               </div>
               <div className="modal-body">
                 <div className="alert alert-info">
@@ -984,8 +931,7 @@ const AddCourses: React.FC<AddCoursesProps> = ({ onSubmit, onCancel }) => {
                     .filter((subject) => subject.id !== selectedSubjectForPrereq)
                     .map((subject) => {
                       const isPrerequisite = courseData.prerequisites.some(
-                        (p) =>
-                          p.subjectId === selectedSubjectForPrereq && p.prerequisiteId === subject.id
+                        (p) => p.subjectId === selectedSubjectForPrereq && p.prerequisiteId === subject.id
                       );
 
                       return (
@@ -998,9 +944,7 @@ const AddCourses: React.FC<AddCoursesProps> = ({ onSubmit, onCancel }) => {
                                 className="img-thumbnail me-3"
                                 style={{ width: "50px", height: "50px", objectFit: "cover" }}
                                 onError={(e) => {
-                                  // ถ้าโหลดรูปไม่สำเร็จ ใช้รูปเริ่มต้น
-                                  (e.target as HTMLImageElement).src =
-                                    "/assets/img/courses/course_thumb01.jpg";
+                                  (e.target as HTMLImageElement).src = "/assets/img/courses/course_thumb01.jpg";
                                 }}
                               />
                               <div>
@@ -1010,9 +954,7 @@ const AddCourses: React.FC<AddCoursesProps> = ({ onSubmit, onCancel }) => {
                             </div>
                             <button
                               type="button"
-                              className={`btn btn-sm ${
-                                isPrerequisite ? "btn-success" : "btn-outline-primary"
-                              }`}
+                              className={`btn btn-sm ${isPrerequisite ? "btn-success" : "btn-outline-primary"}`}
                               onClick={() => {
                                 if (isPrerequisite) {
                                   handleRemovePrerequisite(selectedSubjectForPrereq, subject.id);
@@ -1036,22 +978,16 @@ const AddCourses: React.FC<AddCoursesProps> = ({ onSubmit, onCancel }) => {
                       );
                     })}
 
-                  {selectedSubjectsDetails.filter((subject) => subject.id !== selectedSubjectForPrereq)
-                    .length === 0 && (
+                  {selectedSubjectsDetails.filter((subject) => subject.id !== selectedSubjectForPrereq).length ===
+                    0 && (
                     <div className="text-center py-4">
-                      <p className="text-muted">
-                        ไม่มีรายวิชาอื่นในหลักสูตรที่สามารถกำหนดเป็นวิชาก่อนหน้าได้
-                      </p>
+                      <p className="text-muted">ไม่มีรายวิชาอื่นในหลักสูตรที่สามารถกำหนดเป็นวิชาก่อนหน้าได้</p>
                     </div>
                   )}
                 </div>
               </div>
               <div className="modal-footer">
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  onClick={() => setShowPrerequisiteModal(false)}
-                >
+                <button type="button" className="btn btn-primary" onClick={() => setShowPrerequisiteModal(false)}>
                   เสร็จสิ้น
                 </button>
               </div>

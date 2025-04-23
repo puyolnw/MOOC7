@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import FooterOne from "../../../layouts/footers/FooterOne";
 import HeaderOne from "../../../layouts/headers/HeaderOne";
 import BreadcrumbTwo from "../../common/breadcrumb/BreadcrumbTwo";
 import SubjectDetailsArea from "./SubjectDetailsArea";
+import { toast } from "react-toastify";
 
 const SubjectDetails = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const apiURL = import.meta.env.VITE_API_URL || "http://localhost:3301";
   const [subjectDetails, setSubjectDetails] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -19,28 +21,28 @@ const SubjectDetails = () => {
         setIsLoading(true);
         setError(null);
 
-        if (!id) {
-          setError("ไม่พบรหัสรายวิชา");
+        if (!id || isNaN(parseInt(id, 10)) || parseInt(id, 10) <= 0) {
+          console.error("Invalid subject ID:", id);
+          setError("รหัสรายวิชาไม่ถูกต้อง");
           setIsLoading(false);
+          navigate("/courses");
+          toast.error("รหัสรายวิชาไม่ถูกต้อง");
           return;
         }
 
-        const url = `${apiURL}/api/courses/subjects/${id}`;
-        console.log(`Fetching subject data from: ${url}`);
+        const subjectId = parseInt(id, 10);
+        const url = `${apiURL}/api/courses/subjects/${subjectId}`;
 
         const token = localStorage.getItem("token");
         const response = await axios.get(url, {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
-        console.log("API Response:", response.data);
+
 
         if (response.data && response.data.success && response.data.subject) {
-          console.log("Subject data received successfully:", response.data.subject);
 
           const subjectData = {
             ...response.data.subject,
-            // ไม่แปลง cover_image ในขั้นตอนนี้ ส่ง base64 string ดิบไปยัง SubjectDetailsArea
-            cover_image: response.data.subject.cover_image || null,
             lessons: response.data.subject.lessons.map((lesson: any) => ({
               ...lesson,
               file_count: parseInt(lesson.file_count, 10) || 0,
@@ -49,32 +51,36 @@ const SubjectDetails = () => {
               ...course,
               subject_count: parseInt(course.subject_count, 10) || 0,
             })),
-            quiz_count: response.data.subject.quiz_count || 0,
+            quiz_count: parseInt(response.data.subject.quiz_count, 10) || 0,
           };
 
-          console.log("Processed subject data:", subjectData);
           setSubjectDetails(subjectData);
         } else {
           console.error("API returned invalid data:", response.data);
           setError("ไม่สามารถดึงข้อมูลรายวิชาได้");
+          toast.error("ไม่สามารถดึงข้อมูลรายวิชาได้");
         }
       } catch (error: any) {
         console.error("Error fetching subject details:", error);
+        let errorMessage = "เกิดข้อผิดพลาดในการดึงข้อมูลรายวิชา";
         if (error.response?.status === 401) {
           localStorage.removeItem("token");
-          setError("เซสชันของคุณหมดอายุ กรุณาเข้าสู่ระบบใหม่");
-        } else {
-          setError("เกิดข้อผิดพลาดในการดึงข้อมูลรายวิชา");
+          errorMessage = "เซสชันของคุณหมดอายุ กรุณาเข้าสู่ระบบใหม่";
+          navigate("/login");
+        } else if (error.response?.status === 404) {
+          errorMessage = "ไม่พบรายวิชาที่ระบุ";
+        } else if (error.response?.status === 400) {
+          errorMessage = error.response.data.message || "รหัสรายวิชาไม่ถูกต้อง";
         }
+        setError(errorMessage);
+        toast.error(errorMessage);
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchSubjectDetails();
-  }, [apiURL, id]);
-
-  console.log("Before rendering, subjectDetails:", subjectDetails);
+  }, [apiURL, id, navigate]);
 
   return (
     <>
