@@ -114,7 +114,11 @@ const AppNavigation = () => {
         <Route path="/contact" element={<Contact />} />
         <Route path="/subject-details/:id" element={<SubjectDetailsPage />} />
 
-        <Route element={<PrivateRoute allowedRoles={["admin"]} />}>
+
+
+
+
+        <Route element={<PrivateRoute allowedRoles={["admin,instructor"]} />}>
         <Route path="/admin-dashboard" element={<AdminDashboard />} />
         <Route path="/admin-creditbank" element={<AdminCreditbankpage/>} />
         <Route path="/admin-subjects" element={<AdminSubjectspage/>} />
