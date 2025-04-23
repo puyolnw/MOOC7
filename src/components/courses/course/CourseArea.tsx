@@ -13,6 +13,7 @@ interface ApiCourse {
   category: string;
   description: string;
   cover_image: string;
+  cover_image_file_id: string;
   subject_count: number;
   department_name?: string;
 }
@@ -60,7 +61,7 @@ const CourseArea = () => {
               category: course.category || "ทั่วไป",
               // แปลง base64 เป็น URL สำหรับแสดงผล
               thumb: course.cover_image
-                ? `data:image/jpeg;base64,${course.cover_image}`
+                ? `${apiURL}/api/courses/image/${course.cover_image_file_id}`
                 : "/assets/img/courses/course_thumb01.jpg",
               // เพิ่ม properties อื่นๆ ตามที่ interface Course ต้องการ
               // เช่น price, instructor, rating ฯลฯ

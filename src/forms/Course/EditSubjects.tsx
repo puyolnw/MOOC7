@@ -4,52 +4,53 @@ import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 
 interface SubjectData {
-  subjectId: string;
+  subjectId: number;
   title: string;
   code: string;
   description: string;
   credits: number;
-  departmentId: string;
+  departmentId: number | null;
   departmentName: string;
   coverImage: File | null;
   coverImagePreview: string;
+  coverImageFileId: string | null;
   lessons: SelectedLesson[];
-  preTestId: string | null;
-  postTestId: string | null;
-  instructors: string[];
+  preTestId: number | null;
+  postTestId: number | null;
+  instructors: number[];
   allowAllLessons: boolean;
-  courses: string[];
+  courses: number[];
   status: string;
 }
 
 interface SelectedLesson {
-  id: string;
+  id: number;
   title: string;
   order: number;
 }
 
 interface Quiz {
-  quiz_id: string;
+  quiz_id: number;
   title: string;
   question_count: number;
 }
 
 interface Instructor {
-  instructor_id: string;
+  instructor_id: number;
   name: string;
   position: string;
   department_name?: string;
 }
 
 interface Course {
-  course_id: string;
+  course_id: number;
   title: string;
   category: string;
   subjects: number;
 }
 
 interface Department {
-  department_id: string;
+  department_id: number;
   department_name: string;
 }
 
@@ -60,15 +61,16 @@ const EditSubject: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [subjectData, setSubjectData] = useState<SubjectData>({
-    subjectId: "",
+    subjectId: 0,
     title: "",
     code: "",
     description: "",
     credits: 0,
-    departmentId: "",
+    departmentId: null,
     departmentName: "",
     coverImage: null,
     coverImagePreview: "",
+    coverImageFileId: null,
     lessons: [],
     preTestId: null,
     postTestId: null,
@@ -101,7 +103,7 @@ const EditSubject: React.FC = () => {
   const [courseSearchTerm, setCourseSearchTerm] = useState("");
 
   const [availableLessons, setAvailableLessons] = useState<
-    { id: string; title: string }[]
+    { id: number; title: string }[]
   >([]);
   const [availableQuizzes, setAvailableQuizzes] = useState<Quiz[]>([]);
   const [availableInstructors, setAvailableInstructors] = useState<
@@ -112,23 +114,42 @@ const EditSubject: React.FC = () => {
     Department[]
   >([]);
 
+  // Extract Google Drive file ID from webViewLink
+  const extractFileId = (url: unknown): string | null => {
+    // Check if url is a non-empty string
+    if (typeof url !== "string" || url.trim() === "") {
+      console.warn("Invalid cover_image URL:", url);
+      return null;
+    }
+
+    // More specific regex for Google Drive file IDs (25-44 characters, alphanumeric and hyphens)
+    const regex = /[a-zA-Z0-9_-]{25,44}/;
+    const match = url.match(regex);
+    if (!match) {
+      console.warn("No file ID found in URL:", url);
+      return null;
+    }
+
+    return match[0];
+  };
+
   useEffect(() => {
     const fetchData = async () => {
-      if (!subjectId) {
+      if (!subjectId || isNaN(parseInt(subjectId))) {
         toast.error("ไม่พบรหัสวิชา");
         navigate("/admin-subjects");
         return;
       }
-  
+
       try {
         setIsLoading(true);
         setApiError(null);
-  
+
         const token = localStorage.getItem("token");
         if (!token) {
           throw new Error("ไม่พบข้อมูลการเข้าสู่ระบบ กรุณาเข้าสู่ระบบใหม่");
         }
-  
+
         // Fetch subject data
         const subjectResponse = await axios.get(
           `${apiUrl}/api/courses/subjects/${subjectId}`,
@@ -136,57 +157,46 @@ const EditSubject: React.FC = () => {
             headers: { Authorization: `Bearer ${token}` },
           }
         );
-  
+
         if (!subjectResponse.data.success) {
           throw new Error(subjectResponse.data.message || "ไม่พบข้อมูลวิชา");
         }
-  
+
         const subject = subjectResponse.data.subject;
-        console.log("Subject data:", subject);
+        // Log cover_image for debugging
+        console.log("cover_image from backend:", subject.cover_image);
+
+        const coverImageFileId = subject.cover_image
+          ? extractFileId(subject.cover_image)
+          : null;
         const newSubjectData: SubjectData = {
-          subjectId: String(subject.subject_id) || "",
+          subjectId: subject.subject_id,
           title: subject.subject_name || "",
           code: subject.subject_code || "",
           description: subject.description || "",
           credits: subject.credits || 0,
-          departmentId: subject.department ? String(subject.department) : "",
+          departmentId: subject.department || null,
           departmentName: subject.department_name || "",
           coverImage: null,
-          coverImagePreview: subject.cover_image
-            ? subject.cover_image.startsWith("http")
-              ? subject.cover_image
-              : `${apiUrl}/uploads/subjects/covers/${subject.cover_image
-                  .split("\\")
-                  .pop()}`
+          coverImagePreview: coverImageFileId
+            ? `${apiUrl}/api/courses/subjects/image/${coverImageFileId}`
             : "",
+          coverImageFileId,
           lessons:
             subject.lessons?.map((l: any) => ({
-              id: String(l.lesson_id),
+              id: l.lesson_id,
               title: l.title,
               order: l.order_number,
             })) || [],
-          preTestId: subject.preTest ? String(subject.preTest.quiz_id) : null,
-          postTestId: subject.postTest ? String(subject.postTest.quiz_id) : null,
-          instructors: [
-            ...new Set(
-              (subject.instructors?.map((i: { instructor_id: any }) =>
-                String(i.instructor_id)
-              ) || []) as string[]
-            ),
-          ], // เพิ่ม type assertion เป็น string[]
+          preTestId: subject.pre_test_id || null,
+          postTestId: subject.post_test_id || null,
+          instructors: subject.instructors?.map((i: any) => i.instructor_id) || [],
           allowAllLessons: subject.allow_all_lessons || false,
-          courses: [
-            ...new Set(
-              (subject.courses?.map((c: { course_id: any }) =>
-                String(c.course_id)
-              ) || []) as string[]
-            ),
-          ], // เพิ่ม type assertion เป็น string[]
+          courses: subject.courses?.map((c: any) => c.course_id) || [],
           status: subject.status || "active",
         };
-        console.log("Mapped instructors:", newSubjectData.instructors);
         setSubjectData(newSubjectData);
-  
+
         // Fetch available lessons
         const lessonsResponse = await axios.get(
           `${apiUrl}/api/courses/subjects/lessons/available`,
@@ -197,12 +207,12 @@ const EditSubject: React.FC = () => {
         if (lessonsResponse.data.success) {
           setAvailableLessons(
             lessonsResponse.data.lessons.map((lesson: any) => ({
-              id: String(lesson.lesson_id),
+              id: lesson.lesson_id,
               title: lesson.title || "",
             }))
           );
         }
-  
+
         // Fetch available quizzes
         const quizzesResponse = await axios.get(
           `${apiUrl}/api/courses/quizzes`,
@@ -213,13 +223,13 @@ const EditSubject: React.FC = () => {
         if (quizzesResponse.data.message === "ดึงข้อมูลแบบทดสอบสำเร็จ") {
           setAvailableQuizzes(
             quizzesResponse.data.quizzes.map((quiz: any) => ({
-              quiz_id: String(quiz.quiz_id),
+              quiz_id: quiz.quiz_id,
               title: quiz.title || "",
               question_count: quiz.question_count || 0,
             }))
           );
         }
-  
+
         // Fetch available instructors
         const instructorsResponse = await axios.get(
           `${apiUrl}/api/courses/subjects/instructors/available`,
@@ -229,13 +239,14 @@ const EditSubject: React.FC = () => {
         );
         let instructorsList: Instructor[] = [];
         if (instructorsResponse.data.success) {
-          console.log("Available instructors:", instructorsResponse.data.instructors);
-          instructorsList = instructorsResponse.data.instructors.map((instructor: any) => ({
-            ...instructor,
-            instructor_id: String(instructor.instructor_id), // Ensure instructor_id is a string
-          }));
+          instructorsList = instructorsResponse.data.instructors.map(
+            (instructor: any) => ({
+              ...instructor,
+              instructor_id: instructor.instructor_id,
+            })
+          );
         }
-  
+
         // Fetch selected instructors for this subject
         const selectedInstructorsResponse = await axios.get(
           `${apiUrl}/api/courses/subjects/instructor/${subjectId}`,
@@ -244,12 +255,7 @@ const EditSubject: React.FC = () => {
           }
         );
         if (selectedInstructorsResponse.data.success) {
-          console.log("Selected instructors:", selectedInstructorsResponse.data.instructors);
-          const selectedInstructors = selectedInstructorsResponse.data.instructors.map((instructor: any) => ({
-            ...instructor,
-            instructor_id: String(instructor.instructor_id), // Ensure instructor_id is a string
-          }));
-          // Merge selected instructors with available instructors, avoiding duplicates
+          const selectedInstructors = selectedInstructorsResponse.data.instructors;
           const mergedInstructors = [
             ...instructorsList,
             ...selectedInstructors.filter(
@@ -264,7 +270,7 @@ const EditSubject: React.FC = () => {
         } else {
           setAvailableInstructors(instructorsList);
         }
-  
+
         // Fetch available courses
         const coursesResponse = await axios.get(`${apiUrl}/api/courses/`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -272,14 +278,14 @@ const EditSubject: React.FC = () => {
         if (coursesResponse.data.success) {
           setAvailableCourses(
             coursesResponse.data.courses.map((course: any) => ({
-              course_id: String(course.course_id),
+              course_id: course.course_id,
               title: course.title || "",
               category: course.category || "ไม่ระบุ",
               subjects: course.subject_count || 0,
             }))
           );
         }
-  
+
         // Fetch available departments
         const departmentsResponse = await axios.get(
           `${apiUrl}/api/courses/subjects/departments/list`,
@@ -290,20 +296,27 @@ const EditSubject: React.FC = () => {
         if (departmentsResponse.data.success) {
           setAvailableDepartments(
             departmentsResponse.data.departments.map((dept: any) => ({
-              department_id: String(dept.department_id),
+              department_id: dept.department_id,
               department_name: dept.department_name || "",
             }))
           );
         }
       } catch (error: any) {
         console.error("Error fetching data:", error);
-        setApiError(error.message || "ไม่สามารถโหลดข้อมูลได้");
-        toast.error(error.message || "เกิดข้อผิดพลาดในการโหลดข้อมูล");
+        if (error.response?.status === 401 || error.response?.status === 403) {
+          setApiError("คุณไม่มีสิทธิ์เข้าถึงข้อมูลนี้ กรุณาเข้าสู่ระบบใหม่");
+          toast.error("คุณไม่มีสิทธิ์เข้าถึงข้อมูลนี้ กรุณาเข้าสู่ระบบใหม่");
+          localStorage.removeItem("token");
+          navigate("/login");
+        } else {
+          setApiError(error.message || "ไม่สามารถโหลดข้อมูลได้");
+          toast.error(error.message || "เกิดข้อผิดพลาดในการโหลดข้อมูล");
+        }
       } finally {
         setIsLoading(false);
       }
     };
-  
+
     fetchData();
   }, [subjectId, apiUrl, navigate]);
 
@@ -318,8 +331,12 @@ const EditSubject: React.FC = () => {
 
   const filteredInstructors = availableInstructors.filter(
     (instructor) =>
-      instructor.name.toLowerCase().includes(instructorSearchTerm.toLowerCase()) ||
-      instructor.position.toLowerCase().includes(instructorSearchTerm.toLowerCase())
+      instructor.name
+        .toLowerCase()
+        .includes(instructorSearchTerm.toLowerCase()) ||
+      instructor.position
+        .toLowerCase()
+        .includes(instructorSearchTerm.toLowerCase())
   );
 
   const filteredCourses = availableCourses.filter(
@@ -329,12 +346,21 @@ const EditSubject: React.FC = () => {
   );
 
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ) => {
     const { name, value } = e.target;
     setSubjectData((prev) => ({
       ...prev,
-      [name]: name === "credits" ? Number(value) : name === "departmentId" ? value : value,
+      [name]:
+        name === "credits"
+          ? Number(value)
+          : name === "departmentId"
+          ? value === ""
+            ? null
+            : Number(value)
+          : value,
     }));
 
     if (name in errors) {
@@ -357,8 +383,8 @@ const EditSubject: React.FC = () => {
     }
 
     const fileType = file.type;
-    if (!fileType.match(/^image\/(jpeg|jpg|png|gif)$/)) {
-      toast.error("รองรับเฉพาะไฟล์รูปภาพ (JPEG, PNG, GIF)");
+    if (!fileType.match(/^image\/(jpeg|jpg|png|webp)$/)) {
+      toast.error("รองรับเฉพาะไฟล์รูปภาพ (JPEG, PNG, WEBP)");
       return;
     }
 
@@ -368,6 +394,7 @@ const EditSubject: React.FC = () => {
       ...prev,
       coverImage: file,
       coverImagePreview: previewUrl,
+      coverImageFileId: null,
     }));
   };
 
@@ -376,6 +403,7 @@ const EditSubject: React.FC = () => {
       ...prev,
       coverImage: null,
       coverImagePreview: "",
+      coverImageFileId: null,
     }));
 
     if (fileInputRef.current) {
@@ -383,7 +411,7 @@ const EditSubject: React.FC = () => {
     }
   };
 
-  const handleAddLesson = (lessonId: string) => {
+  const handleAddLesson = (lessonId: number) => {
     const lesson = availableLessons.find((l) => l.id === lessonId);
     if (!lesson) return;
 
@@ -411,7 +439,7 @@ const EditSubject: React.FC = () => {
     }));
   };
 
-  const handleRemoveLesson = (lessonId: string) => {
+  const handleRemoveLesson = (lessonId: number) => {
     const updatedLessons = subjectData.lessons.filter(
       (lesson) => lesson.id !== lessonId
     );
@@ -431,7 +459,7 @@ const EditSubject: React.FC = () => {
     setShowQuizModal(true);
   };
 
-  const handleSelectQuiz = (quizId: string) => {
+  const handleSelectQuiz = (quizId: number) => {
     setSubjectData((prev) => ({
       ...prev,
       [quizType === "pre" ? "preTestId" : "postTestId"]: quizId,
@@ -439,30 +467,16 @@ const EditSubject: React.FC = () => {
     setShowQuizModal(false);
   };
 
-  const handleToggleInstructor = (instructorId: string) => {
-    setSubjectData((prev) => {
-      // ตรวจสอบว่ามี instructorId อยู่ใน array หรือไม่
-      const isAlreadySelected = prev.instructors.includes(instructorId);
-  
-      // ถ้ามีอยู่แล้ว ให้ลบออก
-      if (isAlreadySelected) {
-        return {
-          ...prev,
-          instructors: prev.instructors.filter((id) => id !== instructorId),
-        };
-      }
-  
-      // ถ้ายังไม่มี ให้เพิ่มเข้าไป และใช้ Set เพื่อป้องกันการซ้ำ (เผื่อมีกรณีที่ไม่ได้คาดคิด)
-      const updatedInstructors = [...new Set([...prev.instructors, instructorId])];
-  
-      return {
-        ...prev,
-        instructors: updatedInstructors,
-      };
-    });
+  const handleToggleInstructor = (instructorId: number) => {
+    setSubjectData((prev) => ({
+      ...prev,
+      instructors: prev.instructors.includes(instructorId)
+        ? prev.instructors.filter((id) => id !== instructorId)
+        : [...prev.instructors, instructorId],
+    }));
   };
 
-  const handleToggleCourse = (courseId: string) => {
+  const handleToggleCourse = (courseId: number) => {
     setSubjectData((prev) => ({
       ...prev,
       courses: prev.courses.includes(courseId)
@@ -519,16 +533,16 @@ const EditSubject: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-  
+
     if (!validateForm()) {
       return;
     }
-  
+
     try {
       setIsSubmitting(true);
       setApiError(null);
       setApiSuccess(null);
-  
+
       const token = localStorage.getItem("token");
       if (!token) {
         setApiError("ไม่พบข้อมูลการเข้าสู่ระบบ กรุณาเข้าสู่ระบบใหม่");
@@ -536,42 +550,43 @@ const EditSubject: React.FC = () => {
         setIsSubmitting(false);
         return;
       }
-  
-      // Clean arrays to remove duplicates
-      const uniqueInstructors = [...new Set(subjectData.instructors)];
-      const uniqueCourses = [...new Set(subjectData.courses)];
-      const uniqueLessons = subjectData.lessons.filter(
-        (lesson, index, self) =>
-          index === self.findIndex((l) => l.id === lesson.id)
-      );
-  
+
       const formData = new FormData();
       formData.append("title", subjectData.title);
       formData.append("code", subjectData.code);
       formData.append("description", subjectData.description);
       formData.append("credits", String(subjectData.credits));
-      formData.append("department", subjectData.departmentId || "");
+      formData.append(
+        "department",
+        subjectData.departmentId ? String(subjectData.departmentId) : ""
+      );
       formData.append(
         "lessons",
         JSON.stringify(
-          uniqueLessons.map((lesson) => ({
+          subjectData.lessons.map((lesson) => ({
             id: lesson.id,
             order: lesson.order,
           }))
         )
       );
-      formData.append("preTestId", subjectData.preTestId || "");
-      formData.append("postTestId", subjectData.postTestId || "");
-      formData.append("instructors", JSON.stringify(uniqueInstructors));
+      formData.append(
+        "preTestId",
+        subjectData.preTestId ? String(subjectData.preTestId) : ""
+      );
+      formData.append(
+        "postTestId",
+        subjectData.postTestId ? String(subjectData.postTestId) : ""
+      );
+      formData.append("instructors", JSON.stringify(subjectData.instructors));
       formData.append("allowAllLessons", String(subjectData.allowAllLessons));
-      formData.append("courses", JSON.stringify(uniqueCourses));
+      formData.append("courses", JSON.stringify(subjectData.courses));
       formData.append("status", subjectData.status);
       if (subjectData.coverImage) {
         formData.append("coverImage", subjectData.coverImage);
       }
-  
+
       const response = await axios.put(
-        `${apiUrl}/api/courses/subjects/${subjectId}`,
+        `${apiUrl}/api/courses/subjects/${subjectData.subjectId}`,
         formData,
         {
           headers: {
@@ -580,10 +595,10 @@ const EditSubject: React.FC = () => {
           },
         }
       );
-  
+
       if (response.data.success) {
         setApiSuccess("แก้ไขวิชาสำเร็จ");
-        toast.success("แก้ไขวิชาสสำเร็จ");
+        toast.success("แก้ไขวิชาสำเร็จ");
         setTimeout(() => {
           navigate("/admin-subjects");
         }, 1500);
@@ -593,8 +608,16 @@ const EditSubject: React.FC = () => {
       }
     } catch (error: any) {
       console.error("Error updating subject:", error);
-      const errorMessage =
-        error.response?.data?.message || "เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์";
+      let errorMessage = "เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์";
+      if (error.response) {
+        if (error.response.status === 401 || error.response.status === 403) {
+          errorMessage = "คุณไม่มีสิทธิ์แก้ไขวิชานี้ กรุณาเข้าสู่ระบบใหม่";
+          localStorage.removeItem("token");
+          navigate("/login");
+        } else if (error.response.data.message) {
+          errorMessage = error.response.data.message;
+        }
+      }
       setApiError(errorMessage);
       toast.error(errorMessage);
     } finally {
@@ -606,22 +629,27 @@ const EditSubject: React.FC = () => {
     navigate("/admin-subjects");
   };
 
-  const findQuizById = (quizId: string | null) => {
+  const findQuizById = (quizId: number | null) => {
     if (!quizId) return null;
     return availableQuizzes.find((quiz) => quiz.quiz_id === quizId);
   };
 
-  const findCourseById = (courseId: string) => {
+  const findCourseById = (courseId: number) => {
     return availableCourses.find((course) => course.course_id === courseId);
   };
 
-  const findInstructorById = (instructorId: string) => {
+  const findInstructorById = (instructorId: number) => {
     const instructor = availableInstructors.find(
-      (instructor) => String(instructor.instructor_id) === String(instructorId)
+      (instructor) => instructor.instructor_id === instructorId
     );
     if (!instructor) {
-      console.warn(`Instructor with ID ${instructorId} not found in availableInstructors`);
-      return { instructor_id: instructorId, name: "ไม่พบข้อมูลอาจารย์", position: "N/A", department_name: "N/A" };
+      console.warn(`Instructor with ID ${instructorId} not found`);
+      return {
+        instructor_id: instructorId,
+        name: "ไม่พบข้อมูลอาจารย์",
+        position: "N/A",
+        department_name: "N/A",
+      };
     }
     return instructor;
   };
@@ -648,7 +676,6 @@ const EditSubject: React.FC = () => {
 
   return (
     <form onSubmit={handleSubmit} className="max-w-3xl mx-auto p-4">
-      
       {apiSuccess && (
         <div className="alert alert-success mb-4">
           <i className="fas fa-check-circle me-2"></i>
@@ -758,7 +785,7 @@ const EditSubject: React.FC = () => {
               className="form-control"
               id="departmentId"
               name="departmentId"
-              value={subjectData.departmentId}
+              value={subjectData.departmentId || ""}
               onChange={handleInputChange}
             >
               <option value="">เลือกภาควิชา (ถ้ามี)</option>
@@ -809,7 +836,7 @@ const EditSubject: React.FC = () => {
                   id="coverImage"
                   ref={fileInputRef}
                   onChange={handleCoverImageUpload}
-                  accept="image/jpeg,image/png,image/gif"
+                  accept="image/jpeg,image/png,image/webp"
                   style={{ display: "none" }}
                 />
                 <div className="d-flex gap-2">
@@ -831,7 +858,9 @@ const EditSubject: React.FC = () => {
                     </button>
                   )}
                 </div>
-                <small className="text-muted">รองรับไฟล์ JPEG, PNG, GIF</small>
+                <small className="text-muted">
+                  รองรับไฟล์ JPEG, PNG, WEBP
+                </small>
               </div>
             </div>
           </div>
@@ -1024,7 +1053,8 @@ const EditSubject: React.FC = () => {
                               <div>
                                 <h6 className="mb-1">{instructor.name}</h6>
                                 <p className="mb-0 small text-muted">
-                                  ตำแหน่ง: {instructor.position} | ภาควิชา: {instructor.department_name || "ไม่ระบุ"}
+                                  ตำแหน่ง: {instructor.position} | ภาควิชา:{" "}
+                                  {instructor.department_name || "ไม่ระบุ"}
                                 </p>
                               </div>
                               <button
@@ -1083,7 +1113,8 @@ const EditSubject: React.FC = () => {
                               <div>
                                 <h6 className="mb-1">{course.title}</h6>
                                 <p className="mb-0 small text-muted">
-                                  หมวดหมู่: {course.category} | รายวิชา: {course.subjects} วิชา
+                                  หมวดหมู่: {course.category} | รายวิชา:{" "}
+                                  {course.subjects} วิชา
                                 </p>
                               </div>
                               <button
@@ -1170,12 +1201,19 @@ const EditSubject: React.FC = () => {
       </div>
 
       {showLessonModal && (
-        <div className="modal fade show" style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}>
+        <div
+          className="modal fade show"
+          style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}
+        >
           <div className="modal-dialog modal-lg modal-dialog-centered modal-slide-down">
             <div className="modal-content">
               <div className="modal-header">
                 <h5 className="modal-title">เลือกบทเรียน</h5>
-                <button type="button" className="btn-close" onClick={() => setShowLessonModal(false)}></button>
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={() => setShowLessonModal(false)}
+                ></button>
               </div>
               <div className="modal-body modal-body-scrollable">
                 <div className="mb-3">
@@ -1248,14 +1286,21 @@ const EditSubject: React.FC = () => {
       )}
 
       {showQuizModal && (
-        <div className="modal fade show" style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}>
+        <div
+          className="modal fade show"
+          style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}
+        >
           <div className="modal-dialog modal-lg modal-dialog-centered modal-slide-down">
             <div className="modal-content">
               <div className="modal-header">
                 <h5 className="modal-title">
                   เลือกแบบทดสอบ{quizType === "pre" ? "ก่อนเรียน" : "หลังเรียน"}
                 </h5>
-                <button type="button" className="btn-close" onClick={() => setShowQuizModal(false)}></button>
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={() => setShowQuizModal(false)}
+                ></button>
               </div>
               <div className="modal-body modal-body-scrollable">
                 <div className="mb-3">
@@ -1293,7 +1338,9 @@ const EditSubject: React.FC = () => {
                     </div>
                   ) : (
                     <div className="text-center py-4">
-                      <p className="text-muted">ไม่พบแบบทดสอบที่ตรงกับคำค้นหา</p>
+                      <p className="text-muted">
+                        ไม่พบแบบทดสอบที่ตรงกับคำค้นหา
+                      </p>
                     </div>
                   )}
                 </div>
@@ -1313,12 +1360,19 @@ const EditSubject: React.FC = () => {
       )}
 
       {showInstructorModal && (
-        <div className="modal fade show" style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}>
+        <div
+          className="modal fade show"
+          style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}
+        >
           <div className="modal-dialog modal-lg modal-dialog-centered modal-slide-down">
             <div className="modal-content">
               <div className="modal-header">
                 <h5 className="modal-title">เลือกอาจารย์</h5>
-                <button type="button" className="btn-close" onClick={() => setShowInstructorModal(false)}></button>
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={() => setShowInstructorModal(false)}
+                ></button>
               </div>
               <div className="modal-body modal-body-scrollable">
                 <div className="mb-3">
@@ -1341,7 +1395,8 @@ const EditSubject: React.FC = () => {
                           <div>
                             <h6 className="mb-1">{instructor.name}</h6>
                             <p className="mb-0 small text-muted">
-                              ตำแหน่ง: {instructor.position} | ภาควิชา: {instructor.department_name || "ไม่ระบุ"}
+                              ตำแหน่ง: {instructor.position} | ภาควิชา:{" "}
+                              {instructor.department_name || "ไม่ระบุ"}
                             </p>
                           </div>
                           <div className="form-check">
@@ -1382,12 +1437,19 @@ const EditSubject: React.FC = () => {
       )}
 
       {showCourseModal && (
-        <div className="modal fade show" style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}>
+        <div
+          className="modal fade show"
+          style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}
+        >
           <div className="modal-dialog modal-lg modal-dialog-centered modal-slide-down">
             <div className="modal-content">
               <div className="modal-header">
                 <h5 className="modal-title">เลือกหลักสูตร</h5>
-                <button type="button" className="btn-close" onClick={() => setShowCourseModal(false)}></button>
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={() => setShowCourseModal(false)}
+                ></button>
               </div>
               <div className="modal-body modal-body-scrollable">
                 <div className="mb-3">
@@ -1410,7 +1472,8 @@ const EditSubject: React.FC = () => {
                           <div>
                             <h6 className="mb-1">{course.title}</h6>
                             <p className="mb-0 small text-muted">
-                              หมวดหมู่: {course.category} | รายวิชา: {course.subjects} วิชา
+                              หมวดหมู่: {course.category} | รายวิชา:{" "}
+                              {course.subjects} วิชา
                             </p>
                           </div>
                           <div className="form-check">
@@ -1418,7 +1481,9 @@ const EditSubject: React.FC = () => {
                               className="form-check-input"
                               type="checkbox"
                               id={`select-course-${course.course_id}`}
-                              checked={subjectData.courses.includes(course.course_id)}
+                              checked={subjectData.courses.includes(
+                                course.course_id
+                              )}
                               onChange={() => handleToggleCourse(course.course_id)}
                             />
                           </div>

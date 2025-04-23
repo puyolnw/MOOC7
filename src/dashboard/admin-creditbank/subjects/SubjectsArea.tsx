@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
@@ -11,7 +10,7 @@ interface Subject {
   subject_id: number;
   subject_code: string;
   subject_name: string;
-  cover_image: string | null; // Base64 string or null
+  cover_image: string | null; // URL (webViewLink) from Google Drive or null
   department_name: string | null; // Allow null for consistency
   instructor_count: number;
   lesson_count: number;
@@ -32,6 +31,15 @@ const SubjectsArea = () => {
   const closeModal = () => setModalImage(null);
   const subjectsPerPage = 10;
 
+  // ฟังก์ชันแปลง webViewLink เป็น URL สำหรับเรียก endpoint ใน backend
+  const getImageUrl = (webViewLink: string | null) => {
+    if (!webViewLink) return "/assets/img/courses/default-course.jpg";
+    const fileIdMatch = webViewLink.match(/\/d\/(.+?)\//);
+    if (!fileIdMatch) return "/assets/img/courses/default-course.jpg";
+    const fileId = fileIdMatch[1];
+    return `${apiUrl}/api/courses/subjects/image/${fileId}`; // เรียก endpoint ใน backend
+  };
+
   // Fetch subjects from API
   useEffect(() => {
     const fetchSubjects = async () => {
@@ -51,12 +59,11 @@ const SubjectsArea = () => {
         });
 
         if (response.data.success) {
-          // Map subjects to ensure cover_image is handled as base64
           const formattedSubjects = response.data.subjects.map((subject: any) => ({
             subject_id: subject.subject_id,
             subject_code: subject.subject_code,
             subject_name: subject.subject_name,
-            cover_image: subject.cover_image || null, // Base64 string or null
+            cover_image: subject.cover_image || null,
             department_name: subject.department_name || null,
             instructor_count: subject.instructor_count || 0,
             lesson_count: subject.lesson_count || 0,
@@ -259,21 +266,11 @@ const SubjectsArea = () => {
                                 <tr key={subject.subject_id}>
                                   <td>
                                     <img
-                                      src={
-                                        subject.cover_image
-                                          ? `data:image/jpeg;base64,${subject.cover_image}`
-                                          : "/assets/img/courses/default-course.jpg"
-                                      }
+                                      src={getImageUrl(subject.cover_image)}
                                       alt={subject.subject_name}
                                       className="img-thumbnail"
                                       style={{ width: "70px", height: "50px", objectFit: "cover", cursor: "pointer" }}
-                                      onClick={() =>
-                                        setModalImage(
-                                          subject.cover_image
-                                            ? `data:image/jpeg;base64,${subject.cover_image}`
-                                            : "/assets/img/courses/default-course.jpg"
-                                        )
-                                      }
+                                      onClick={() => setModalImage(getImageUrl(subject.cover_image))}
                                       onError={(e) => {
                                         (e.target as HTMLImageElement).src =
                                           "/assets/img/courses/default-course.jpg";

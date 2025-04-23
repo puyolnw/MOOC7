@@ -3,16 +3,18 @@ import { Link } from "react-router-dom";
 import DashboardSidebar from "../dashboard-common/AdminSidebar";
 import DashboardBanner from "../dashboard-common/AdminBanner";
 import axios from "axios";
+import { toast } from "react-toastify";
 
 interface Course {
   course_id: number;
   cover_image: string;
+  cover_image_file_id?: string;
   title: string;
   subject_count: number;
-  students?: number; // จำนวนผู้ลงทะเบียน (อาจต้องคำนวณจาก API อื่น)
+  students?: number;
   category: string;
   status: "active" | "inactive" | "draft";
-  branch?: string; // อาจไม่มีในข้อมูลจาก API
+  branch?: string;
 }
 
 const AdminCreditbankArea = () => {
@@ -25,35 +27,52 @@ const AdminCreditbankArea = () => {
   const apiURL = import.meta.env.VITE_API_URL;
   const coursesPerPage = 10;
 
-  // ดึงข้อมูลหลักสูตรทั้งหมด
+  // Fetch all courses
   useEffect(() => {
     const fetchCourses = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`${apiURL}/api/courses`);
+        setError(null);
+
+        const token = localStorage.getItem("token");
+        if (!token) {
+          setError("ไม่พบข้อมูลการเข้าสู่ระบบ กรุณาเข้าสู่ระบบใหม่");
+          toast.error("ไม่พบข้อมูลการเข้าสู่ระบบ กรุณาเข้าสู่ระบบใหม่");
+          return;
+        }
+
+        const response = await axios.get(`${apiURL}/api/courses`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
         if (response.data.success) {
-          // แปลงข้อมูลจาก API ให้ตรงกับ interface Course
           const formattedCourses = response.data.courses.map((course: any) => ({
             course_id: course.course_id,
-            cover_image: course.cover_image
-              ? `data:image/jpeg;base64,${course.cover_image}` // แปลง base64 เป็น URL สำหรับแสดงผล
+            cover_image: course.cover_image_file_id
+              ? `${apiURL}/api/courses/image/${course.cover_image_file_id}`
               : "/assets/img/courses/course_thumb01.jpg",
+            cover_image_file_id: course.cover_image_file_id,
             title: course.title,
             subject_count: course.subject_count || 0,
-            students: 0, // ค่าเริ่มต้น (อาจต้องดึงจาก API อื่น)
+            students: 0, // Placeholder (fetch from another API if needed)
             category: course.category || "ไม่ระบุหมวดหมู่",
             status: course.status || "active",
-            branch: "ไม่ระบุสาขา", // ค่าเริ่มต้น
+            branch: "ไม่ระบุสาขา", // Placeholder
           }));
 
           setCourses(formattedCourses);
         } else {
-          setError("ไม่สามารถดึงข้อมูลหลักสูตรได้");
+          setError(response.data.message || "ไม่สามารถดึงข้อมูลหลักสูตรได้");
+          toast.error(response.data.message || "ไม่สามารถดึงข้อมูลหลักสูตรได้");
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error("Error fetching courses:", err);
-        setError("เกิดข้อผิดพลาดในการดึงข้อมูลหลักสูตร");
+        const errorMessage =
+          err.response?.data?.message || "เกิดข้อผิดพลาดในการดึงข้อมูลหลักสูตร";
+        setError(errorMessage);
+        toast.error(errorMessage);
       } finally {
         setLoading(false);
       }
@@ -62,37 +81,49 @@ const AdminCreditbankArea = () => {
     fetchCourses();
   }, [apiURL]);
 
-  // ลบหลักสูตร
+  // Delete a course
   const handleDeleteCourse = async (id: number) => {
     if (window.confirm("คุณต้องการลบหลักสูตรนี้ใช่หรือไม่?")) {
       try {
+        const token = localStorage.getItem("token");
+        if (!token) {
+          toast.error("ไม่พบข้อมูลการเข้าสู่ระบบ กรุณาเข้าสู่ระบบใหม่");
+          return;
+        }
+
         const response = await axios.delete(`${apiURL}/api/courses/${id}`, {
-          withCredentials: true, // ส่ง cookies สำหรับการยืนยันตัวตน
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         });
 
         if (response.data.success) {
-          // อัปเดตรายการหลักสูตรหลังจากลบสำเร็จ
           setCourses(courses.filter((course) => course.course_id !== id));
-          alert("ลบหลักสูตรสำเร็จ");
+          toast.success(response.data.message || "ลบหลักสูตรสำเร็จ");
         } else {
-          alert(response.data.message || "ไม่สามารถลบหลักสูตรได้");
+          toast.error(response.data.message || "ไม่สามารถลบหลักสูตรได้");
         }
       } catch (err: any) {
         console.error("Error deleting course:", err);
-        alert(err.response?.data?.message || "เกิดข้อผิดพลาดในการลบหลักสูตร");
+        const errorMessage =
+          err.response?.data?.message || "เกิดข้อผิดพลาดในการลบหลักสูตร";
+        toast.error(errorMessage);
       }
     }
   };
 
+  // Filter courses by search term
   const filteredCourses = courses.filter((course) =>
     course.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Pagination
   const indexOfLastCourse = currentPage * coursesPerPage;
   const indexOfFirstCourse = indexOfLastCourse - coursesPerPage;
   const currentCourses = filteredCourses.slice(indexOfFirstCourse, indexOfLastCourse);
   const totalPages = Math.ceil(filteredCourses.length / coursesPerPage);
 
+  // Status Badge Component
   const StatusBadge = ({ status }: { status: Course["status"] }) => {
     let badgeClass = "";
     let statusText = "";
@@ -115,7 +146,21 @@ const AdminCreditbankArea = () => {
     return <span className={badgeClass}>{statusText}</span>;
   };
 
-  // สถิติรวม
+  // Category Display
+  const CategoryDisplay = ({ category }: { category: string }) => {
+    const categoryMap: { [key: string]: string } = {
+      technology: "เทคโนโลยี",
+      business: "ธุรกิจ",
+      science: "วิทยาศาสตร์",
+      arts: "ศิลปะ",
+      others: "อื่นๆ",
+      "ไม่ระบุหมวดหมู่": "ไม่ระบุหมวดหมู่",
+    };
+
+    return <span>{categoryMap[category] || category}</span>;
+  };
+
+  // Statistics
   const totalCourses = courses.length;
   const countByStatus = {
     active: courses.filter((c) => c.status === "active").length,
@@ -137,7 +182,7 @@ const AdminCreditbankArea = () => {
                   <p className="desc">จัดการหลักสูตรทั้งหมดในระบบ</p>
                 </div>
 
-                {/* สถิติหลักสูตร */}
+                {/* Statistics */}
                 <div className="mb-3">
                   <div className="row g-3">
                     <div className="col-md-3">
@@ -167,7 +212,7 @@ const AdminCreditbankArea = () => {
                   </div>
                 </div>
 
-                {/* Search + เพิ่มหลักสูตร */}
+                {/* Search + Add Course */}
                 <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
                   <div className="input-group w-50">
                     <input
@@ -209,9 +254,9 @@ const AdminCreditbankArea = () => {
                             <tr>
                               <th style={{ width: "80px" }}>ภาพปก</th>
                               <th>ชื่อคอร์ส</th>
+                              <th>หมวดหมู่</th>
                               <th>จำนวนรายวิชา</th>
                               <th>ผู้ลงทะเบียน</th>
-                              <th>สาขา</th>
                               <th>สถานะ</th>
                               <th style={{ width: "100px" }}>จัดการ</th>
                             </tr>
@@ -227,16 +272,17 @@ const AdminCreditbankArea = () => {
                                       className="img-thumbnail"
                                       style={{ width: "60px", height: "60px", objectFit: "cover" }}
                                       onError={(e) => {
-                                        // ถ้าโหลดรูปไม่สำเร็จ ใช้รูปเริ่มต้น
                                         (e.target as HTMLImageElement).src =
                                           "/assets/img/courses/course_thumb01.jpg";
                                       }}
                                     />
                                   </td>
                                   <td>{course.title}</td>
+                                  <td>
+                                    <CategoryDisplay category={course.category} />
+                                  </td>
                                   <td>{course.subject_count} วิชา</td>
                                   <td>{course.students || 0} คน</td>
-                                  <td>{course.branch || "ไม่ระบุสาขา"}</td>
                                   <td>
                                     <StatusBadge status={course.status} />
                                   </td>

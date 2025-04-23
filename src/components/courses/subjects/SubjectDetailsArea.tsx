@@ -1,5 +1,4 @@
-import { useState, useEffect } from "react";
-import axios from "axios";
+import { useState } from "react";
 import Overview from "./Subject_Overview";
 import Sidebar from "./Subject_Sidebar";
 import Curriculum from "./Subject_Curriculum";
@@ -14,92 +13,14 @@ interface SubjectDetailsAreaProps {
 
 const SubjectDetailsArea = ({ subject_details }: SubjectDetailsAreaProps) => {
   const [activeTab, setActiveTab] = useState(0);
-  const [coverImageUrl, setCoverImageUrl] = useState<string>("/assets/img/courses/courses_details.jpg");
-  const [isLoadingImage, setIsLoadingImage] = useState(true);
-  const [imageError, setImageError] = useState<string | null>(null);
-
   const apiURL = import.meta.env.VITE_API_URL || "http://localhost:3301";
 
   const handleTabClick = (index: number) => {
     setActiveTab(index);
   };
 
-  // ฟังก์ชันสำหรับดึง cover_image
-  const fetchCoverImage = async () => {
-    try {
-      setIsLoadingImage(true);
-      setImageError(null);
-
-      const url = `${apiURL}/api/courses/subjects/${subject_id}`;
-      console.log(`Fetching cover image from: ${url}`);
-
-      const token = localStorage.getItem("token");
-      const response = await axios.get(url, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-
-      console.log("API Response for cover image:", response.data);
-
-      if (response.data && response.data.success && response.data.subject) {
-        const coverImage = response.data.subject.cover_image;
-        console.log("Cover image from API (raw):", coverImage);
-        console.log("Cover image length:", coverImage?.length);
-
-        // ตรวจสอบว่า cover_image เป็น base64 string หรือ path
-        const detectImageType = (str: string) => {
-          if (str.startsWith("iVBORw0KGgo")) {
-            return "image/png";
-          } else if (str.startsWith("/9j/")) {
-            return "image/jpeg";
-          } else {
-            return null;
-          }
-        };
-
-        const isBase64 = (str: string) => {
-          return str.startsWith("iVBORw0KGgo") || str.startsWith("/9j/");
-        };
-
-        if (coverImage && typeof coverImage === "string") {
-          if (isBase64(coverImage)) {
-            const mimeType = detectImageType(coverImage) || "image/jpeg";
-            const imageUrl = `data:${mimeType};base64,${coverImage}`;
-            console.log("Processed cover image URL (base64):", imageUrl);
-            setCoverImageUrl(imageUrl);
-          } else if (coverImage.startsWith("/")) {
-            const imageUrl = `${apiURL}${coverImage}`;
-            console.log("Processed cover image URL (path):", imageUrl);
-            setCoverImageUrl(imageUrl);
-          } else {
-            console.warn("Cover image format is not recognized:", coverImage);
-            setCoverImageUrl("/assets/img/courses/courses_details.jpg");
-            setImageError("รูปภาพมีรูปแบบไม่ถูกต้อง");
-          }
-        } else if (coverImage === null || coverImage === undefined) {
-          console.warn("Cover image is missing:", coverImage);
-          setCoverImageUrl("/assets/img/courses/courses_details.jpg");
-          setImageError("ไม่พบรูปภาพสำหรับรายวิชานี้");
-        } else {
-          console.warn("Cover image is invalid:", coverImage);
-          setCoverImageUrl("/assets/img/courses/courses_details.jpg");
-          setImageError("รูปภาพไม่ถูกต้อง");
-        }
-      } else {
-        console.warn("No cover image found in API response:", response.data);
-        setCoverImageUrl("/assets/img/courses/courses_details.jpg");
-        setImageError("ไม่สามารถโหลดรูปภาพได้");
-      }
-    } catch (err: any) {
-      console.error("Error fetching cover image:", err);
-      setImageError("ไม่สามารถโหลดรูปภาพได้");
-      setCoverImageUrl("/assets/img/courses/courses_details.jpg");
-    } finally {
-      setIsLoadingImage(false);
-    }
-  };
-
   // ตรวจสอบว่า subject_details มีค่าหรือไม่
-  if (!subject_details) {
+  if (!subject_details || !subject_details.subject_id) {
     return (
       <section className="courses__details-area section-py-120">
         <div className="container">
@@ -125,27 +46,25 @@ const SubjectDetailsArea = ({ subject_details }: SubjectDetailsAreaProps) => {
     preTest,
     postTest,
     quiz_count = 0,
+    cover_image_file_id,
+    cover_image,
   } = subject_details;
 
-  console.log("Extracted data:", {
-    subject_id,
-    subject_code,
-    subject_name,
-    credits,
-    department_name,
-    instructors_length: instructors.length,
-    lessons_length: lessons.length,
-    has_preTest: !!preTest,
-    has_postTest: !!postTest,
-    quiz_count,
-  });
+  // Helper function: extract fileId from Google Drive URL
+  const extractGoogleDriveFileId = (url: string): string | null => {
+    const match = url.match(/\/d\/([a-zA-Z0-9_-]+)\//);
+    return match ? match[1] : null;
+  };
 
-  // ดึง cover_image จาก API โดยใช้ subject_id
-  useEffect(() => {
-    fetchCoverImage();
-  }, [apiURL, subject_id]);
+  const finalCoverImage = cover_image_file_id
+    ? `${apiURL}/api/courses/image/${cover_image_file_id}`
+    : cover_image && extractGoogleDriveFileId(cover_image)
+      ? `${apiURL}/api/courses/image/${extractGoogleDriveFileId(cover_image)}`
+      : "/assets/img/courses/courses_details.jpg";
 
-  // คำนวณจำนวนแบบทดสอบทั้งหมด (รวมแบบทดสอบก่อนเรียน หลังเรียน และในบทเรียน)
+
+
+  // คำนวณจำนวนแบบทดสอบทั้งหมด
   const totalQuizCount = (preTest ? 1 : 0) + (postTest ? 1 : 0) + (quiz_count || 0);
 
   // ปรับการจัดการ avatar ของ instructor
@@ -161,31 +80,15 @@ const SubjectDetailsArea = ({ subject_details }: SubjectDetailsAreaProps) => {
         <div className="row">
           <div className="col-xl-9 col-lg-8">
             <div className="courses__details-thumb">
-              {isLoadingImage ? (
-                <div className="text-center">
-                  <div className="spinner-border text-primary" role="status">
-                    <span className="visually-hidden">กำลังโหลดรูปภาพ...</span>
-                  </div>
-                </div>
-              ) : imageError ? (
-                <div className="alert alert-warning">
-                  <i className="fas fa-exclamation-triangle me-2"></i>
-                  {imageError}
-                  <button className="btn btn-link ms-2" onClick={fetchCoverImage}>
-                    ลองใหม่
-                  </button>
-                </div>
-              ) : (
-                <img
-                  src={coverImageUrl}
-                  alt={subject_name}
-                  onError={(e) => {
-                    console.log("Failed to load cover image in SubjectDetailsArea, using default");
-                    (e.target as HTMLImageElement).src = "/assets/img/courses/courses_details.jpg";
-                  }}
-                  loading="lazy"
-                />
-              )}
+              <img
+                src={finalCoverImage}
+                alt={subject_name}
+                onError={(e) => {
+                  console.warn(`Failed to load cover image: ${finalCoverImage}`);
+                  (e.target as HTMLImageElement).src = "/assets/img/courses/courses_details.jpg";
+                }}
+                loading="lazy"
+              />
             </div>
             <div className="courses__details-content">
               <ul className="courses__item-meta list-wrap">
@@ -208,7 +111,7 @@ const SubjectDetailsArea = ({ subject_details }: SubjectDetailsAreaProps) => {
                         src={instructorAvatar}
                         alt={instructors[0].name}
                         onError={(e) => {
-                          console.log("Failed to load instructor avatar, using default");
+                          console.warn(`Failed to load instructor avatar: ${instructorAvatar}`);
                           (e.target as HTMLImageElement).src =
                             "/assets/img/courses/course_author001.png";
                         }}
@@ -277,7 +180,7 @@ const SubjectDetailsArea = ({ subject_details }: SubjectDetailsAreaProps) => {
             credits={credits}
             lesson_count={lessons.length}
             quiz_count={totalQuizCount}
-            cover_image={coverImageUrl}
+            cover_image={finalCoverImage}
           />
         </div>
       </div>
