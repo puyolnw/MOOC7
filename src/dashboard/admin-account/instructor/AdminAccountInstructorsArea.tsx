@@ -1,3 +1,5 @@
+// $TSX:MOOC7/src/dashboard/admin-account/instructor/AdminAccountInstructorsArea.tsx
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
@@ -24,7 +26,6 @@ interface PaginationProps {
 
 const SimplePagination: React.FC<PaginationProps> = ({ currentPage, totalPages, onPageChange }) => {
   const pageNumbers = [];
-
   for (let i = 1; i <= totalPages; i++) {
     if (
       i === 1 ||
@@ -39,7 +40,6 @@ const SimplePagination: React.FC<PaginationProps> = ({ currentPage, totalPages, 
       pageNumbers.push(-1);
     }
   }
-
   const filteredPageNumbers = pageNumbers.filter(
     (number, index, array) => number !== -1 || (number === -1 && array[index - 1] !== -1)
   );
@@ -56,7 +56,6 @@ const SimplePagination: React.FC<PaginationProps> = ({ currentPage, totalPages, 
             <i className="fas fa-chevron-left"></i>
           </button>
         </li>
-
         {filteredPageNumbers.map((number, index) => {
           if (number === -1) {
             return (
@@ -65,7 +64,6 @@ const SimplePagination: React.FC<PaginationProps> = ({ currentPage, totalPages, 
               </li>
             );
           }
-
           return (
             <li key={`page-${number}-${index}`} className={`page-item ${currentPage === number ? 'active' : ''}`}>
               <button
@@ -77,7 +75,6 @@ const SimplePagination: React.FC<PaginationProps> = ({ currentPage, totalPages, 
             </li>
           );
         })}
-
         <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
           <button
             className="page-link"
@@ -109,20 +106,17 @@ const AdminAccountInstructorsArea: React.FC = () => {
       try {
         setIsLoading(true);
         setError(null);
-
         const token = localStorage.getItem('token');
         if (!token) {
           setError('ไม่พบข้อมูลการเข้าสู่ระบบ กรุณาเข้าสู่ระบบใหม่');
           setIsLoading(false);
           return;
         }
-
         const response = await axios.get(`${apiURL}/api/accounts/instructors`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
         });
-
         if (response.data.success) {
           setInstructors(response.data.instructors);
           setFilteredInstructors(response.data.instructors);
@@ -137,13 +131,11 @@ const AdminAccountInstructorsArea: React.FC = () => {
         setIsLoading(false);
       }
     };
-
     fetchInstructors();
   }, [apiURL, itemsPerPage]);
 
   useEffect(() => {
     let results = instructors;
-
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase();
       results = results.filter(
@@ -154,11 +146,9 @@ const AdminAccountInstructorsArea: React.FC = () => {
           instructor.email.toLowerCase().includes(searchLower)
       );
     }
-
     if (statusFilter !== 'all') {
       results = results.filter(instructor => instructor.status === statusFilter);
     }
-
     setFilteredInstructors(results);
     setTotalPages(Math.ceil(results.length / itemsPerPage));
     if (currentPage !== 1) {
@@ -182,13 +172,11 @@ const AdminAccountInstructorsArea: React.FC = () => {
           toast.error("กรุณาเข้าสู่ระบบก่อนใช้งาน");
           return;
         }
-
         const response = await axios.delete(`${apiURL}/api/accounts/instructors/${id}`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
-
         if (response.data.success) {
           setInstructors((prev) => prev.filter((instructor) => instructor.id !== id));
           toast.success("ลบผู้สอนสำเร็จ");
@@ -230,7 +218,6 @@ const AdminAccountInstructorsArea: React.FC = () => {
                     <i className="fas fa-plus-circle me-2"></i>เพิ่มผู้สอนใหม่
                   </Link>
                 </div>
-
                 <div className="row mb-4">
                   <div className="col-md-6 mb-3 mb-md-0">
                     <div className="input-group">
@@ -259,7 +246,6 @@ const AdminAccountInstructorsArea: React.FC = () => {
                     </select>
                   </div>
                 </div>
-
                 {isLoading ? (
                   <div className="text-center py-5">
                     <div className="spinner-border text-primary" role="status">
@@ -292,7 +278,6 @@ const AdminAccountInstructorsArea: React.FC = () => {
                             <th scope="col">ชื่อผู้ใช้</th>
                             <th scope="col">ชื่อ-นามสกุล</th>
                             <th scope="col">อีเมล</th>
-                            <th scope="col" className="text-center">จำนวนรายวิชา</th>
                             <th scope="col" className="text-center">สถานะ</th>
                             <th scope="col" className="text-center">จัดการ</th>
                           </tr>
@@ -304,19 +289,23 @@ const AdminAccountInstructorsArea: React.FC = () => {
                               <td>{instructor.username}</td>
                               <td>{`${instructor.first_name} ${instructor.last_name}`}</td>
                               <td>{instructor.email}</td>
-                              <td className="text-center">{instructor.courseCount}</td>
-                              <td className="text-center">
-                                {renderStatusBadge(instructor.status)}
-                              </td>
+                              <td className="text-center">{renderStatusBadge(instructor.status)}</td>
                               <td>
                                 <div className="d-flex justify-content-center gap-3">
-                                  <Link to={`/admin-account/instructors/edit/${instructor.id}`} className="text-primary" style={{ display: "inline-flex", alignItems: "center" }}>
+                                  <Link
+                                    to={`/admin-account/instructors/edit/${instructor.id}`}
+                                    className="text-primary"
+                                    style={{ display: "inline-flex", alignItems: "center" }}
+                                  >
                                     <i className="fas fa-edit icon-action" style={{ cursor: "pointer", lineHeight: 1 }}></i>
                                   </Link>
                                   <i
                                     className="fas fa-trash-alt text-danger icon-action"
                                     style={{ cursor: "pointer", lineHeight: 1 }}
-                                    onClick={() => handleDeleteInstructor(instructor.id)}
+                                    onClick={() => {
+                                      console.log('Deleting instructor with id:', instructor.id);
+                                      handleDeleteInstructor(instructor.id);
+                                    }}
                                   ></i>
                                 </div>
                               </td>
@@ -325,7 +314,6 @@ const AdminAccountInstructorsArea: React.FC = () => {
                         </tbody>
                       </table>
                     </div>
-
                     <div className="d-flex justify-content-between align-items-center mt-4">
                       <div className="text-muted small">
                         แสดง {indexOfFirstItem + 1} ถึง {Math.min(indexOfLastItem, filteredInstructors.length)} จากทั้งหมด {filteredInstructors.length} รายการ

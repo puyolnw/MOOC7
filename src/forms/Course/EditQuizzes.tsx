@@ -359,66 +359,67 @@ const EditQuiz: React.FC<EditQuizProps> = ({ onCancel }) => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-
+      
         if (!validateForm()) {
-            return;
+          return;
         }
-
+      
         try {
-            setIsSubmitting(true);
-            setApiError(null);
-            setApiSuccess(null);
-
-            const token = localStorage.getItem("token");
-            if (!token) {
-                setApiError("ไม่พบข้อมูลการเข้าสู่ระบบ กรุณาเข้าสู่ระบบใหม่");
-                toast.error("ไม่พบข้อมูลการเข้าสู่ระบบ กรุณาเข้าสู่ระบบใหม่");
-                setIsSubmitting(false);
-                return;
-            }
-
-            const payload = {
-                title: quiz.title,
-                description: quiz.description,
-                questions: quiz.questions,
-                timeLimit: quiz.timeLimit,
-                passingScore: quiz.passingScore,
-                attempts: quiz.attempts,
-                lessons: quiz.lessons,
-                status: quiz.status,
-            };
-
-            const response = await axios.put(
-                `${apiUrl}/api/courses/quizzes/${quiz.id}`,
-                payload,
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        "Content-Type": "application/json",
-                    },
-                }
-            );
-
-            if (response.status === 200) {
-                setApiSuccess("แก้ไขแบบทดสอบสำเร็จ");
-                toast.success("แก้ไขแบบทดสอบสำเร็จ");
-                setTimeout(() => {
-                    navigate("/admin-quizzes");
-                }, 1500);
-            } else {
-                setApiError(response.data.message || "เกิดข้อผิดพลาดในการแก้ไขแบบทดสอบ");
-                toast.error(response.data.message || "เกิดข้อผิดพลาดในการแก้ไขแบบทดสอบ");
-            }
-        } catch (error: any) {
-            console.error("Error updating quiz:", error);
-            const errorMessage =
-                error.response?.data?.message || "เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์";
-            setApiError(errorMessage);
-            toast.error(errorMessage);
-        } finally {
+          setIsSubmitting(true);
+          setApiError(null);
+          setApiSuccess(null);
+      
+          const token = localStorage.getItem("token");
+          if (!token) {
+            setApiError("ไม่พบข้อมูลการเข้าสู่ระบบ กรุณาเข้าสู่ระบบใหม่");
+            toast.error("ไม่พบข้อมูลการเข้าสู่ระบบ กรุณาเข้าสู่ระบบใหม่");
             setIsSubmitting(false);
+            return;
+          }
+      
+          // Instead of FormData, use a regular JSON object
+          const payload = {
+            title: quiz.title,
+            description: quiz.description,
+            questions: quiz.questions,
+            timeLimit: quiz.timeLimit,
+            passingScore: quiz.passingScore,
+            attempts: quiz.attempts,
+            lessons: quiz.lessons,
+            status: quiz.status,
+          };
+      
+          const response = await axios.put(
+            `${apiUrl}/api/courses/quizzes/${quiz.id}`,
+            payload,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json", // Ensure this is set to JSON
+              },
+            }
+          );
+      
+          if (response.status === 200) {
+            setApiSuccess("แก้ไขแบบทดสอบสำเร็จ");
+            toast.success("แก้ไขแบบทดสอบสำเร็จ");
+            setTimeout(() => {
+              navigate("/admin-quizzes");
+            }, 1500);
+          } else {
+            setApiError(response.data.message || "เกิดข้อผิดพลาดในการแก้ไขแบบทดสอบ");
+            toast.error(response.data.message || "เกิดข้อผิดพลาดในการแก้ไขแบบทดสอบ");
+          }
+        } catch (error: any) {
+          console.error("Error updating quiz:", error);
+          const errorMessage =
+            error.response?.data?.message || "เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์";
+          setApiError(errorMessage);
+          toast.error(errorMessage);
+        } finally {
+          setIsSubmitting(false);
         }
-    };
+      };
 
     const handleCancel = () => {
         if (onCancel) {

@@ -25,12 +25,12 @@ const AddLessonsArea: React.FC<AddLessonsAreaProps> = ({ isEmbedded = false, onS
     alert("บันทึกข้อมูลสำเร็จ");
     
     // กลับไปยังหน้ารายการบทเรียน
-    navigate("/admin-subjects");
+    navigate("/admin-lessons");
   };
   
   // จัดการเมื่อมีการยกเลิก
   const handleCancel = () => {
-    navigate("/admin-subjects");
+    navigate("/admin-lessons");
   };
   
   // ถ้าเป็นแบบ embedded ให้แสดงเฉพาะฟอร์ม

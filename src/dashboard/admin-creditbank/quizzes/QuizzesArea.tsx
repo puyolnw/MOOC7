@@ -18,6 +18,9 @@ interface Quiz {
   type: QuizType;
   status: "active" | "inactive" | "draft";
   creator: string;
+  totalScore: number;
+  isUsed: boolean;
+  usedInLesson?: string;
 }
 
 const QuizzesArea = () => {
@@ -61,7 +64,10 @@ const QuizzesArea = () => {
             questionCount: quiz.question_count || 0,
             type: quiz.type || "MIX",
             status: quiz.status || "draft",
-            creator: quiz.creator || "ไม่ระบุ"
+            creator: quiz.creator || "ไม่ระบุ",
+            totalScore: quiz.total_score || quiz.questionCount * 1 || 0,
+            isUsed: !!quiz.used_in_lesson,
+            usedInLesson: quiz.used_in_lesson || ""
           }));
           
           setQuizzes(transformedQuizzes);
@@ -144,6 +150,13 @@ const QuizzesArea = () => {
     }
 
     return <span className={badgeClass}>{statusText}</span>;
+  };
+
+  const UsageBadge = ({ isUsed, lesson }: { isUsed: boolean, lesson?: string }) => {
+    if (!isUsed) {
+      return <small className="text-muted">ไม่ถูกเรียกใช้งาน</small>;
+    }
+    return <small className="text-success">กำลังใช้งานใน: {lesson}</small>;
   };
 
   const totalQuizzes = quizzes.length;
@@ -239,11 +252,11 @@ const QuizzesArea = () => {
                         <table className="table table-hover table-sm mb-0 align-middle table-striped">
                           <thead className="table-light">
                             <tr>
-                              <th>ชื่อแบบทดสอบ</th>
-                              <th>รหัสบทเรียน</th>
-                              <th className="text-center">จำนวนคำถาม</th>
-                              <th>สถานะ</th>
-                              <th style={{ width: "100px" }}>จัดการ</th>
+                              <th style={{ width: "35%" }}>ชื่อแบบทดสอบ</th>
+                              <th className="text-center" style={{ width: "15%" }}>จำนวนคำถาม</th>
+                              <th className="text-center" style={{ width: "15%" }}>คะแนนรวม</th>
+                              <th style={{ width: "15%" }}>สถานะ</th>
+                              <th style={{ width: "20%" }}>จัดการ</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -253,16 +266,20 @@ const QuizzesArea = () => {
                                   <td>
                                     <div className="d-flex flex-column">
                                       <span className="fw-medium">{quiz.title}</span>
-                                      <small className="text-muted">{quiz.lessonTitle}</small>
+                                      <UsageBadge isUsed={quiz.isUsed} lesson={quiz.usedInLesson} />
                                     </div>
                                   </td>
-                                  <td>{quiz.lessonCode}</td>
+    
                                   <td className="text-center">
                                     {quiz.questionCount > 0 ? (
                                       <span className="fw-medium">{quiz.questionCount} ข้อ</span>
                                     ) : (
                                       <span className="text-muted">ไม่มีคำถาม</span>
                                     )}
+                                  </td>
+
+                                  <td className="text-center">
+                                    <span className="fw-medium">{quiz.totalScore} คะแนน</span>
                                   </td>
 
                                   <td><StatusBadge status={quiz.status} /></td>
@@ -282,7 +299,7 @@ const QuizzesArea = () => {
                               ))
                             ) : (
                               <tr>
-                                <td colSpan={6} className="text-center py-4">ไม่พบข้อมูลแบบทดสอบ</td>
+                                <td colSpan={5} className="text-center py-4">ไม่พบข้อมูลแบบทดสอบ</td>
                               </tr>
                             )}
                           </tbody>
@@ -308,32 +325,31 @@ const QuizzesArea = () => {
                                   {index + 1}
                                 </button>
                               </li>
-                            ))}
-                            <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
-                              <button
-                                className="page-link"
-                                onClick={() => setCurrentPage(currentPage + 1)}
-                                disabled={currentPage === totalPages}
-                              >
-                                <i className="fas fa-chevron-right"></i>
-                              </button>
-                            </li>
-                          </ul>
-                          <p className="mt-2 mb-0 small text-muted">
-                            แสดง {indexOfFirstQuiz + 1} ถึง {Math.min(indexOfLastQuiz, filteredQuizzes.length)} จากทั้งหมด {filteredQuizzes.length} รายการ
-                          </p>
-                        </nav>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
+                            ))}                            <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
+                            <button
+                              className="page-link"
+                              onClick={() => setCurrentPage(currentPage + 1)}
+                              disabled={currentPage === totalPages}
+                            >
+                              <i className="fas fa-chevron-right"></i>
+                            </button>
+                          </li>
+                        </ul>
+                        <p className="mt-2 mb-0 small text-muted">
+                          แสดง {indexOfFirstQuiz + 1} ถึง {Math.min(indexOfLastQuiz, filteredQuizzes.length)} จากทั้งหมด {filteredQuizzes.length} รายการ
+                        </p>
+                      </nav>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
       </div>
-    </section>
-  );
+    </div>
+  </section>
+);
 };
 
 export default QuizzesArea;

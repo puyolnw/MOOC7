@@ -2,8 +2,6 @@ import React from "react";
 import { SubjectData } from './AddSubjects';
 import { Instructor } from './AddSubjects';
 
-
-
 interface InstructorSectionProps {
   subjectData: SubjectData;
   findInstructorById: (instructorId: string) => Instructor | undefined;
@@ -51,10 +49,10 @@ const InstructorSection: React.FC<InstructorSectionProps> = ({
         <div className="selected-instructors">
           <h6 className="mb-2">อาจารย์ที่เลือก:</h6>
           <div className="row g-2">
-            {subjectData.instructors.map((instructorId) => {
-              const instructor = findInstructorById(instructorId);
-              return instructor ? (
-                <div key={instructor.id} className="col-md-6">
+          {subjectData.instructors.map((instructorId) => {
+  const instructor = findInstructorById(String(instructorId));
+  return instructor ? (
+    <div key={instructorId} className="col-md-6">
                   <div className="card border h-100">
                     <div className="card-body py-2 px-3">
                       <div className="d-flex justify-content-between align-items-center">
@@ -65,7 +63,7 @@ const InstructorSection: React.FC<InstructorSectionProps> = ({
                         <button
                           type="button"
                           className="btn btn-sm text-danger"
-                          onClick={() => handleToggleInstructor(instructor.id)}
+                          onClick={() => handleToggleInstructor(instructorId)}
                         >
                           <i className="fas fa-times-circle"></i>
                         </button>

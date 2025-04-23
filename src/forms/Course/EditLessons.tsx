@@ -50,7 +50,7 @@ const EditLesson: React.FC<AddLessonsProps> = ({ onCancel }) => {
   const navigate = useNavigate();
   const apiUrl = import.meta.env.VITE_API_URL;
   const fileInputRef = useRef<HTMLInputElement>(null);
-
+  console.log("handleRemoveFile called with index:", fileInputRef);
   const [lessonData, setLessonData] = useState<LessonData>({
     lesson_id: 0,
     title: "",
@@ -122,16 +122,20 @@ const EditLesson: React.FC<AddLessonsProps> = ({ onCancel }) => {
         }
 
         const lesson = lessonResponse.data.lesson;
+        
+        // แปลงข้อมูลให้ตรงกับโครงสร้างที่ต้องการ
         setLessonData({
-          lesson_id: Number(lesson.id || lesson.lesson_id || lessonId),
+          lesson_id: Number(lesson.lesson_id),
           title: lesson.title || "",
           description: lesson.description || "",
-          files: [],
+          files: [], // ไม่โหลดไฟล์เดิม
           videoUrl: lesson.video_url || "",
-          canPreview: lesson.can_preview || false,
-          hasQuiz: lesson.has_quiz || false,
+          canPreview: Boolean(lesson.can_preview),
+          hasQuiz: Boolean(lesson.quiz_id),
           quizId: lesson.quiz_id ? Number(lesson.quiz_id) : null,
-          subjects: lesson.subjects?.map((s: Subject) => Number(s.subject_id || s.id)) || [],
+          subjects: Array.isArray(lesson.subjects) 
+            ? lesson.subjects.map((s: any) => Number(s.subject_id)) 
+            : [],
           testType: lesson.quiz_type || null,
         });
 
@@ -174,7 +178,8 @@ const EditLesson: React.FC<AddLessonsProps> = ({ onCancel }) => {
         }
       } catch (error: any) {
         console.error("Error fetching data:", error);
-        const errorMessage = error.message || "ไม่สามารถโหลดข้อมูลได้";
+        console.error("Error response:", error.response?.data);
+        const errorMessage = error.response?.data?.message || error.message || "ไม่สามารถโหลดข้อมูลได้";
         setApiError(errorMessage);
         toast.error(errorMessage);
       } finally {
@@ -203,6 +208,7 @@ const EditLesson: React.FC<AddLessonsProps> = ({ onCancel }) => {
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log("handleRemoveFile called with index:", handleFileUpload);
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
@@ -220,13 +226,13 @@ const EditLesson: React.FC<AddLessonsProps> = ({ onCancel }) => {
     }));
   };
 
-  const handleRemoveFile = (index: number) => {
+  const handleRemoveFile = (index: number) => { console.log("handleRemoveFile called with index:", handleRemoveFile);
     setLessonData((prev) => ({
       ...prev,
       files: prev.files.filter((_, i) => i !== index),
     }));
   };
-
+  
   const handleSubjectsChange = (
     selected: MultiValue<{ value: number; label: string }>
   ) => {
@@ -294,29 +300,32 @@ const EditLesson: React.FC<AddLessonsProps> = ({ onCancel }) => {
         return;
       }
 
-      const formData = new FormData();
-      formData.append("lessonId", String(lessonData.lesson_id));
-      formData.append("title", lessonData.title);
-      formData.append("description", lessonData.description);
-      lessonData.files.forEach((file) => {
-        formData.append("files", file);
-      });
-      formData.append("videoUrl", lessonData.videoUrl);
-      formData.append("canPreview", String(lessonData.canPreview));
-      formData.append("hasQuiz", String(lessonData.hasQuiz));
-      formData.append("quizId", lessonData.quizId ? String(lessonData.quizId) : "");
-      formData.append("subjects", JSON.stringify(lessonData.subjects));
+      // สร้างข้อมูลที่จะส่งไป API โดยไม่รวมไฟล์
+      const requestData = {
+        lessonId: lessonData.lesson_id,
+        title: lessonData.title,
+        description: lessonData.description,
+        videoUrl: lessonData.videoUrl,
+        canPreview: lessonData.canPreview,
+        hasQuiz: lessonData.hasQuiz,
+        quizId: lessonData.quizId || null,
+        subjects: lessonData.subjects
+      };
+
+      console.log("Sending update request with data:", requestData);
 
       const response = await axios.put(
         `${apiUrl}/api/courses/lessons/${lessonId}`,
-        formData,
+        requestData,
         {
           headers: {
             Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
+            "Content-Type": "application/json",
           },
         }
       );
+
+      console.log("Update response:", response.data);
 
       if (response.data.success) {
         setApiSuccess("แก้ไขบทเรียนสำเร็จ");
@@ -330,6 +339,7 @@ const EditLesson: React.FC<AddLessonsProps> = ({ onCancel }) => {
       }
     } catch (error: any) {
       console.error("Error updating lesson:", error);
+      console.error("Error response:", error.response?.data);
       const errorMessage =
         error.response?.data?.message || "เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์";
       setApiError(errorMessage);
@@ -391,23 +401,9 @@ const EditLesson: React.FC<AddLessonsProps> = ({ onCancel }) => {
         </div>
       )}
 
-      <div className="card shadow-sm border-0 mb-4">
+<div className="card shadow-sm border-0 mb-4">
         <div className="card-body">
           <h5 className="card-title mb-3">1. ข้อมูลบทเรียน</h5>
-
-          <div className="mb-3">
-            <label htmlFor="lessonId" className="form-label">
-              รหัสบทเรียน
-            </label>
-            <input
-              type="text"
-              className="form-control"
-              id="lessonId"
-              value={lessonData.lesson_id}
-              readOnly
-              disabled
-            />
-          </div>
 
           <div className="mb-3">
             <label htmlFor="title" className="form-label">
@@ -420,77 +416,34 @@ const EditLesson: React.FC<AddLessonsProps> = ({ onCancel }) => {
               name="title"
               value={lessonData.title}
               onChange={handleInputChange}
-              placeholder="ระบุชื่อบทเรียน"
+              required
             />
-            {errors.title && <div className="invalid-feedback">{errors.title}</div>}
+            {errors.title && (
+              <div className="invalid-feedback">{errors.title}</div>
+            )}
           </div>
 
           <div className="mb-3">
             <label htmlFor="description" className="form-label">
-              คำอธิบาย <span className="text-danger">*</span>
+              คำอธิบายบทเรียน <span className="text-danger">*</span>
             </label>
             <textarea
               className={`form-control ${errors.description ? "is-invalid" : ""}`}
               id="description"
               name="description"
+              rows={3}
               value={lessonData.description}
               onChange={handleInputChange}
-              rows={4}
-              placeholder="ระบุคำอธิบายเกี่ยวกับบทเรียน"
-            />
+              required
+            ></textarea>
             {errors.description && (
               <div className="invalid-feedback">{errors.description}</div>
             )}
           </div>
 
           <div className="mb-3">
-            <label className="form-label">ไฟล์ประกอบบทเรียน</label>
-            <div className="d-flex flex-column gap-2">
-              <input
-                type="file"
-                className="form-control"
-                id="files"
-                ref={fileInputRef}
-                onChange={handleFileUpload}
-                multiple
-                accept=".pdf,.doc,.docx,.ppt,.pptx"
-                style={{ display: "none" }}
-              />
-              <button
-                type="button"
-                className="btn btn-outline-primary"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <i className="fas fa-upload me-2"></i>อัปโหลดไฟล์
-              </button>
-              <small className="text-muted">
-                รองรับไฟล์ PDF, DOC, DOCX, PPT, PPTX (สูงสุด 10MB ต่อไฟล์)
-              </small>
-              {lessonData.files.length > 0 && (
-                <ul className="list-group mt-2">
-                  {lessonData.files.map((file, index) => (
-                    <li
-                      key={`${file.name}-${index}`}
-                      className="list-group-item d-flex justify-content-between align-items-center"
-                    >
-                      {file.name}
-                      <button
-                        type="button"
-                        className="btn btn-outline-danger btn-sm"
-                        onClick={() => handleRemoveFile(index)}
-                      >
-                        <i className="fas fa-trash-alt"></i>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </div>
-
-          <div className="mb-3">
             <label htmlFor="videoUrl" className="form-label">
-              URL วิดีโอบทเรียน
+              URL วิดีโอ (YouTube)
             </label>
             <input
               type="text"
@@ -499,100 +452,104 @@ const EditLesson: React.FC<AddLessonsProps> = ({ onCancel }) => {
               name="videoUrl"
               value={lessonData.videoUrl}
               onChange={handleInputChange}
-              placeholder="ระบุ URL วิดีโอบทเรียน (ถ้ามี)"
+              placeholder="https://www.youtube.com/watch?v=..."
             />
+            <small className="form-text text-muted">
+              ใส่ URL ของวิดีโอ YouTube ที่ต้องการแสดงในบทเรียน
+            </small>
+          </div>
+
+          <div className="form-check mb-3">
+            <input
+              className="form-check-input"
+              type="checkbox"
+              id="canPreview"
+              checked={lessonData.canPreview}
+              onChange={() => handleToggleChange("canPreview")}
+            />
+            <label className="form-check-label" htmlFor="canPreview">
+              อนุญาตให้ดูตัวอย่างบทเรียนได้โดยไม่ต้องลงทะเบียน
+            </label>
           </div>
         </div>
       </div>
 
       <div className="card shadow-sm border-0 mb-4">
         <div className="card-body">
-          <h5 className="card-title mb-3">2. ตั้งค่าบทเรียน</h5>
-
+          <h5 className="card-title mb-3">2. วิชาที่เกี่ยวข้อง</h5>
           <div className="mb-3">
-            <label className="form-label">วิชาที่เกี่ยวข้อง</label>
+            <label htmlFor="subjects" className="form-label">
+              เลือกวิชาที่เกี่ยวข้อง
+            </label>
             <Select
               isMulti
+              name="subjects"
               options={subjectsOptions}
-              value={subjectsOptions.filter((option) =>
+              className="basic-multi-select"
+              classNamePrefix="select"
+              placeholder="เลือกวิชาที่เกี่ยวข้อง..."
+              value={subjectsOptions.filter(option => 
                 lessonData.subjects.includes(option.value)
               )}
               onChange={handleSubjectsChange}
-              placeholder="เลือกวิชาที่เกี่ยวข้อง"
             />
+            <small className="form-text text-muted">
+              เลือกวิชาที่เกี่ยวข้องกับบทเรียนนี้ (สามารถเลือกได้หลายวิชา)
+            </small>
           </div>
+        </div>
+      </div>
 
-          <div className="mb-3">
-            <label className="form-label">อนุญาตให้ดูตัวอย่าง</label>
-            <div>
-              <button
-                type="button"
-                className={`btn ${
-                  lessonData.canPreview ? "btn-success" : "btn-outline-secondary"
-                }`}
-                onClick={() => handleToggleChange("canPreview")}
-              >
-                {lessonData.canPreview ? (
-                  <>
-                    <i className="fas fa-check me-2"></i>เปิดใช้งาน
-                  </>
-                ) : (
-                  <>
-                    <i className="fas fa-times me-2"></i>ปิดใช้งาน
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-
-          <div className="mb-3">
-            <label className="form-label">มีแบบทดสอบ</label>
-            <div>
-              <button
-                type="button"
-                className={`btn ${
-                  lessonData.hasQuiz ? "btn-success" : "btn-outline-secondary"
-                }`}
-                onClick={() => handleToggleChange("hasQuiz")}
-              >
-                {lessonData.hasQuiz ? (
-                  <>
-                    <i className="fas fa-check me-2"></i>เปิดใช้งาน
-                  </>
-                ) : (
-                  <>
-                    <i className="fas fa-times me-2"></i>ปิดใช้งาน
-                  </>
-                )}
-              </button>
-            </div>
+      <div className="card shadow-sm border-0 mb-4">
+        <div className="card-body">
+          <h5 className="card-title mb-3">3. แบบทดสอบ</h5>
+          <div className="form-check mb-3">
+            <input
+              className="form-check-input"
+              type="checkbox"
+              id="hasQuiz"
+              checked={lessonData.hasQuiz}
+              onChange={() => handleToggleChange("hasQuiz")}
+            />
+            <label className="form-check-label" htmlFor="hasQuiz">
+              มีแบบทดสอบท้ายบทเรียน
+            </label>
           </div>
 
           {lessonData.hasQuiz && (
             <div className="mb-3">
-              <label className="form-label">เลือกแบบทดสอบ</label>
+              <label htmlFor="quizId" className="form-label">
+                เลือกแบบทดสอบ
+              </label>
               <Select
+                name="quizId"
                 options={quizzesOptions}
+                className="basic-select"
+                classNamePrefix="select"
+                placeholder="เลือกแบบทดสอบ..."
                 value={quizzesOptions.find(
-                  (option) => option.value === lessonData.quizId
-                )}
+                  option => option.value === lessonData.quizId
+                ) || null}
                 onChange={handleQuizChange}
                 isClearable
-                placeholder="เลือกแบบทดสอบ"
               />
+              <small className="form-text text-muted">
+                เลือกแบบทดสอบที่ต้องการใช้สำหรับบทเรียนนี้
+              </small>
             </div>
           )}
         </div>
       </div>
 
-      <div className="d-flex justify-content-end gap-2 mt-4">
+      <div className="d-flex justify-content-between mt-4">
         <button
           type="button"
           className="btn btn-outline-secondary"
           onClick={handleCancel}
           disabled={isSubmitting}
         >
-          <i className="fas fa-times me-2"></i>ยกเลิก
+          <i className="fas fa-arrow-left me-2"></i>
+          ยกเลิก
         </button>
         <button
           type="submit"
@@ -601,16 +558,13 @@ const EditLesson: React.FC<AddLessonsProps> = ({ onCancel }) => {
         >
           {isSubmitting ? (
             <>
-              <span
-                className="spinner-border spinner-border-sm me-2"
-                role="status"
-                aria-hidden="true"
-              ></span>
+              <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
               กำลังบันทึก...
             </>
           ) : (
             <>
-              <i className="fas fa-save me-2"></i>บันทึกบทเรียน
+              <i className="fas fa-save me-2"></i>
+              บันทึกการแก้ไข
             </>
           )}
         </button>

@@ -1,5 +1,6 @@
 import React from "react";
 import { SubjectData } from './AddSubjects';
+import { Droppable, Draggable } from 'react-beautiful-dnd';
 
 interface LessonSectionProps {
   subjectData: SubjectData;
@@ -62,37 +63,63 @@ const LessonSection: React.FC<LessonSectionProps> = ({
       </div>
 
       {subjectData.lessons.length > 0 ? (
-        <div className="table-responsive">
-          <table className="table table-hover align-middle">
-            <thead className="table-light">
-              <tr>
-                <th style={{ width: "60px" }}>ลำดับ</th>
-                <th>ชื่อบทเรียน</th>
-                <th style={{ width: "80px" }}>จัดการ</th>
-              </tr>
-            </thead>
-            <tbody>
-              {subjectData.lessons.map((lesson, index) => (
-                <tr key={lesson.id}>
-                  <td className="text-center">{index + 1}</td>
-                  <td>{lesson.title}</td>
-                  <td>
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-outline-danger"
-                      onClick={() => handleRemoveLesson(lesson.id)}
+        <Droppable droppableId="lessons">
+          {(provided) => (
+            <div 
+              className="table-responsive"
+              ref={provided.innerRef}
+              {...provided.droppableProps}
+            >
+              <table className="table table-hover align-middle">
+                <thead className="table-light">
+                  <tr>
+                    <th style={{ width: "60px" }}>ลำดับ</th>
+                    <th>ชื่อบทเรียน</th>
+                    <th style={{ width: "80px" }}>จัดการ</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {subjectData.lessons.map((lesson, index) => (
+                    <Draggable 
+                      key={lesson.id} 
+                      draggableId={lesson.id} 
+                      index={index}
                     >
-                      <i className="fas fa-trash-alt"></i>
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                      {(provided) => (
+                        <tr
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          {...provided.dragHandleProps}
+                        >
+                          <td className="text-center">
+                            <div className="d-flex align-items-center justify-content-center">
+                              <i className="fas fa-grip-vertical text-muted me-2" style={{ cursor: 'grab' }}></i>
+                              {index + 1}
+                            </div>
+                          </td>
+                          <td>{lesson.title}</td>
+                          <td>
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-outline-danger"
+                              onClick={() => handleRemoveLesson(lesson.id)}
+                            >
+                              <i className="fas fa-trash-alt"></i>
+                            </button>
+                          </td>
+                        </tr>
+                      )}
+                    </Draggable>
+                  ))}
+                  {provided.placeholder}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Droppable>
       ) : (
         <div className="alert alert-info" role="alert">
-          ยังไม่มีบทเรียนในรายวิชานี้ กรุณาเพิ่มบทเรียนอย่างน้อย 1 บทเรียน
+          ยังไม่มีบทเรียนในรายวิชานี้ กรุณาเพิ่มบทเรียนอย่างน้อย 1 บทเรียนนะ
         </div>
       )}
     </div>

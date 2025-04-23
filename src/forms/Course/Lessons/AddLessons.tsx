@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { toast } from "react-toastify";
 import axios from "axios";
-import AddQuizzes from "../AddQuizzes";
+import AddQuizzes from "../Quizzes/AddQuizzes";
 import LessonInfoSection from "./LessonInfoSection";
 import LessonContentSection from "./LessonContentSection";
 import SubjectSelectionSection from "./SubjectSelectionSection";
@@ -17,6 +17,7 @@ interface LessonData {
     hasQuiz: boolean;
     quizId: string | null;
     subjects: string[]; // หรือ number[] ถ้า subjectId เป็นตัวเลข
+    status?: string; // เพิ่มฟิลด์ status
   }
   
 
@@ -67,7 +68,8 @@ const AddLessons: React.FC<AddLessonsProps> = ({ onSubmit, onCancel, lessonToEdi
     canPreview: false,
     hasQuiz: false,
     quizId: null,
-    subjects: []
+    subjects: [],
+    status: "active" // เพิ่มค่าเริ่มต้นเป็น active
   });
   
   const [errors, setErrors] = useState({
@@ -84,9 +86,9 @@ const AddLessons: React.FC<AddLessonsProps> = ({ onSubmit, onCancel, lessonToEdi
   
   const [showQuizModal, setShowQuizModal] = useState(false);
   const [showCreateQuizModal, setShowCreateQuizModal] = useState(false);
-  const [showSubjectModal, setShowSubjectModal] = useState(false);
+
   
-  const [subjectSearchTerm, setSubjectSearchTerm] = useState("");
+  const [subjectSearchTerm] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   
   const [selectedQuiz, setSelectedQuiz] = useState<Quiz | null>(null);
@@ -101,41 +103,96 @@ const AddLessons: React.FC<AddLessonsProps> = ({ onSubmit, onCancel, lessonToEdi
           return;
         }
         
-        const subjectsResponse = await axios.get(`${apiUrl}/api/courses/lessons/subjects/all`, {
-          headers: {
-            Authorization: `Bearer ${token}`
+        // เรียกใช้ endpoint ที่มีอยู่จริงในระบบ
+        try {
+          const subjectsResponse = await axios.get(`${apiUrl}/api/courses/lessons/subjects/all`, {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          });
+          
+          if (subjectsResponse.data.success) {
+            const subjects = subjectsResponse.data.subjects.map((subject: any) => ({
+              id: subject.subject_id,
+              title: subject.subject_name,
+              category: subject.department || "ไม่ระบุ",
+              credits: subject.credits || 0,
+              subject_id: subject.subject_id,
+              subject_name: subject.subject_name,
+              subject_code: subject.subject_code,
+              department: subject.department
+            }));
+            setAvailableSubjects(subjects);
           }
-        });
-        
-        if (subjectsResponse.data.success) {
-          const subjects = subjectsResponse.data.subjects.map((subject: any) => ({
-            id: subject.subject_id,
-            title: subject.subject_name,
-            category: subject.department || "ไม่ระบุ",
-            credits: subject.credits || 0,
-            subject_id: subject.subject_id,
-            subject_name: subject.subject_name,
-            subject_code: subject.subject_code,
-            department: subject.department
-          }));
-          setAvailableSubjects(subjects);
+        } catch (error) {
+          console.error("Error fetching subjects:", error);
+          // ถ้า endpoint แรกไม่ทำงาน ให้ลองใช้ endpoint สำรอง
+          try {
+            const fallbackResponse = await axios.get(`${apiUrl}/api/courses/subjects/available`, {
+              headers: {
+                Authorization: `Bearer ${token}`
+              }
+            });
+            
+            if (fallbackResponse.data.success) {
+              const subjects = fallbackResponse.data.subjects.map((subject: any) => ({
+                id: subject.subject_id,
+                title: subject.subject_name || subject.title,
+                category: subject.department || "ไม่ระบุ",
+                credits: subject.credits || 0,
+                subject_id: subject.subject_id,
+                subject_name: subject.subject_name || subject.title,
+                subject_code: subject.subject_code,
+                department: subject.department
+              }));
+              setAvailableSubjects(subjects);
+            }
+          } catch (fallbackError) {
+            console.error("Error fetching subjects from fallback endpoint:", fallbackError);
+          }
         }
         
-        const quizzesResponse = await axios.get(`${apiUrl}/api/courses/lessons/quizzes/all`, {
-          headers: {
-            Authorization: `Bearer ${token}`
+        // ทำแบบเดียวกันกับ quizzes
+        try {
+          const quizzesResponse = await axios.get(`${apiUrl}/api/courses/lessons/quizzes/all`, {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          });
+          
+          if (quizzesResponse.data.success) {
+            const quizzes = quizzesResponse.data.quizzes.map((quiz: any) => ({
+              id: quiz.quiz_id,
+              title: quiz.title,
+              description: quiz.description,
+              questions: quiz.question_count,
+              type: quiz.type
+            }));
+            setAvailableQuizzes(quizzes);
           }
-        });
-        
-        if (quizzesResponse.data.success) {
-          const quizzes = quizzesResponse.data.quizzes.map((quiz: any) => ({
-            id: quiz.quiz_id,
-            title: quiz.title,
-            description: quiz.description,
-            questions: quiz.question_count,
-            type: quiz.type
-          }));
-          setAvailableQuizzes(quizzes);
+        } catch (error) {
+          console.error("Error fetching quizzes:", error);
+          // ถ้า endpoint แรกไม่ทำงาน ให้ลองใช้ endpoint สำรอง
+          try {
+            const fallbackResponse = await axios.get(`${apiUrl}/api/courses/quizzes`, {
+              headers: {
+                Authorization: `Bearer ${token}`
+              }
+            });
+            
+            if (fallbackResponse.data.success) {
+              const quizzes = fallbackResponse.data.quizzes.map((quiz: any) => ({
+                id: quiz.quiz_id,
+                title: quiz.title,
+                description: quiz.description,
+                questions: quiz.question_count || 0,
+                type: quiz.type || "general"
+              }));
+              setAvailableQuizzes(quizzes);
+            }
+          } catch (fallbackError) {
+            console.error("Error fetching quizzes from fallback endpoint:", fallbackError);
+          }
         }
         
         if (lessonToEdit) {
@@ -191,7 +248,8 @@ const AddLessons: React.FC<AddLessonsProps> = ({ onSubmit, onCancel, lessonToEdi
           canPreview: lesson.can_preview || false,
           hasQuiz: lesson.has_quiz || false,
           quizId: lesson.quiz_id || null,
-          subjects: lesson.subjects ? lesson.subjects.map((s: any) => s.subject_id) : []
+          subjects: lesson.subjects ? lesson.subjects.map((s: any) => s.subject_id) : [],
+          status: lesson.status || "active" // เพิ่มการโหลดค่า status
         });
       }
     } catch (error) {
@@ -200,7 +258,7 @@ const AddLessons: React.FC<AddLessonsProps> = ({ onSubmit, onCancel, lessonToEdi
     }
   };
   
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setLessonData({
       ...lessonData,
@@ -335,18 +393,23 @@ const AddLessons: React.FC<AddLessonsProps> = ({ onSubmit, onCancel, lessonToEdi
     setExistingFiles(existingFiles.filter(file => file.file_id !== fileId));
   };
   
-  const handleSelectQuiz = (quiz: Quiz) => {
-    setSelectedQuiz(quiz);
-    setLessonData({
-      ...lessonData,
-      quizId: quiz.id
-    });
-    setShowQuizModal(false);
+  const handleSelectQuiz = (quizId: string) => {
+    // Find the quiz object using the quizId
+    const quiz = availableQuizzes.find(q => q.id === quizId);
     
-    setErrors({
-      ...errors,
-      quiz: ""
-    });
+    if (quiz) {
+      setSelectedQuiz(quiz);
+      setLessonData({
+        ...lessonData,
+        quizId: quiz.id
+      });
+      setShowQuizModal(false);
+      
+      setErrors({
+        ...errors,
+        quiz: ""
+      });
+    }
   };
   
   const handleToggleSubject = (subjectId: string) => {
@@ -364,10 +427,12 @@ const AddLessons: React.FC<AddLessonsProps> = ({ onSubmit, onCancel, lessonToEdi
   };
   
   const filteredSubjects = availableSubjects.filter(subject => 
-    subject.title.toLowerCase().includes(subjectSearchTerm.toLowerCase()) ||
-    subject.category.toLowerCase().includes(subjectSearchTerm.toLowerCase()) ||
+    subject.title?.toLowerCase().includes(subjectSearchTerm.toLowerCase()) || 
+    (subject.category && typeof subject.category === 'string' && subject.category.toLowerCase().includes(subjectSearchTerm.toLowerCase())) ||
     (subject.subject_code && subject.subject_code.toLowerCase().includes(subjectSearchTerm.toLowerCase()))
+    
   );
+  console.log(filteredSubjects);
   
   const filteredQuizzes = availableQuizzes.filter(quiz => 
     quiz.title.toLowerCase().includes(searchTerm.toLowerCase())
@@ -430,21 +495,25 @@ const AddLessons: React.FC<AddLessonsProps> = ({ onSubmit, onCancel, lessonToEdi
         formData.append("title", lessonData.title);
         formData.append("description", lessonData.description);
         formData.append("videoUrl", lessonData.videoUrl);
-        formData.append("canPreview", lessonData.canPreview.toString());
-        formData.append("hasQuiz", lessonData.hasQuiz.toString());
+        formData.append("status", lessonData.status || "active"); // เพิ่ม status
         
         if (lessonData.hasQuiz && lessonData.quizId) {
           formData.append("quizId", lessonData.quizId);
         }
         
-        lessonData.subjects.forEach(subjectId => {
-          formData.append("subjects[]", subjectId);
-        });
+        // แปลงรูปแบบการส่ง subjects ให้ตรงกับที่ backend ต้องการ
+        if (lessonData.subjects && lessonData.subjects.length > 0) {
+          lessonData.subjects.forEach(subjectId => {
+            formData.append("subjects[]", subjectId);
+          });
+        }
         
-        uploadedFiles.forEach(file => {
-          formData.append("files", file);
-        });
+        // ไม่ส่งไฟล์ไปยัง backend
+        // uploadedFiles.forEach(file => {
+        //   formData.append("files", file);
+        // });
         
+        // ถ้ามีไฟล์ที่ต้องการลบ ให้ส่งเฉพาะ ID ไป
         if (filesToRemove.length > 0) {
           filesToRemove.forEach(fileId => {
             formData.append("filesToRemove[]", fileId);
@@ -486,7 +555,8 @@ const AddLessons: React.FC<AddLessonsProps> = ({ onSubmit, onCancel, lessonToEdi
             canPreview: false,
             hasQuiz: false,
             quizId: null,
-            subjects: []
+            subjects: [],
+            status: "active"
           });
           setUploadedFiles([]);
           setExistingFiles([]);
@@ -508,6 +578,7 @@ const AddLessons: React.FC<AddLessonsProps> = ({ onSubmit, onCancel, lessonToEdi
       }
     }
   };
+  
   
   const handleCancel = () => {
     if (onCancel) {
@@ -582,6 +653,9 @@ const AddLessons: React.FC<AddLessonsProps> = ({ onSubmit, onCancel, lessonToEdi
             handleCheckboxChange={handleCheckboxChange}
           />
           
+          {/* เพิ่มส่วนเลือกสถานะ */}
+          
+          
           <LessonContentSection
             lessonData={lessonData}
             errors={errors}
@@ -596,15 +670,10 @@ const AddLessons: React.FC<AddLessonsProps> = ({ onSubmit, onCancel, lessonToEdi
           />
           
           <SubjectSelectionSection
-            lessonData={lessonData}
-            availableSubjects={availableSubjects}
-            handleToggleSubject={handleToggleSubject}
-            subjectSearchTerm={subjectSearchTerm}
-            setSubjectSearchTerm={setSubjectSearchTerm}
-            filteredSubjects={filteredSubjects}
-            setShowSubjectModal={setShowSubjectModal}
-            showSubjectModal={showSubjectModal}
-          />
+  lessonData={lessonData}
+  availableSubjects={availableSubjects}
+  handleToggleSubject={handleToggleSubject}
+/>
           
           <QuizSection
             lessonData={lessonData}
@@ -676,3 +745,4 @@ const AddLessons: React.FC<AddLessonsProps> = ({ onSubmit, onCancel, lessonToEdi
 };
 
 export default AddLessons;
+

@@ -374,12 +374,7 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel, subjectTo
   };
 
   // เปลี่ยนแปลงการตั้งค่าการเข้าถึงบทเรียน
-  const handleLessonAccessChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSubjectData({
-      ...subjectData,
-      allowAllLessons: e.target.checked,
-    });
-  };
+
 
   // เพิ่มบทเรียน
   const handleAddLesson = (lessonId: string) => {
@@ -901,18 +896,7 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel, subjectTo
               )}
 
               <div className="d-flex justify-content-between align-items-center mb-3">
-                <div className="form-check">
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    id="allowAllLessons"
-                    checked={subjectData.allowAllLessons}
-                    onChange={handleLessonAccessChange}
-                  />
-                  <label className="form-check-label" htmlFor="allowAllLessons">
-                    อนุญาตให้เข้าถึงบทเรียนทั้งหมดได้ทันที (ไม่ต้องเรียนตามลำดับ)
-                  </label>
-                </div>
+                
                 <button
                   type="button"
                   className="btn btn-primary btn-sm"
@@ -954,7 +938,7 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel, subjectTo
                 </div>
               ) : (
                 <div className="alert alert-info" role="alert">
-                  ยังไม่มีบทเรียนในรายวิชานี้ กรุณาเพิ่มบทเรียนอย่างน้อย 1 บทเรียน
+                  ยังไม่มีบทเรียนในรายวิชานี้ กรุณาเพิ่มบทเรียนอย่างน้อย 1 บทเรียนนะ
                 </div>
               )}
             </div>

@@ -17,6 +17,8 @@ interface Lesson {
   status: "active" | "inactive" | "draft";
   testType: TestType;
   subject?: string;
+  quizTitle?: string;
+  quiz_id?: number | null;
 }
 
 const LessonsArea = () => {
@@ -52,13 +54,16 @@ const LessonsArea = () => {
             lesson_id: lesson.lesson_id ?? lesson.id ?? null,
             title: lesson.title,
             hasVideo: !!lesson.video_url,
-            creator: lesson.creator_name || "ไม่ระบุ",
-            courseCode: lesson.course_code || "ไม่ระบุ",
-            courseName: lesson.course_name || "ไม่ระบุ",
+            creator: lesson.creator_name || "ไม่ระบุ", // เปลี่ยนจาก lesson.creator?.name เป็น lesson.creator_name
+            courseCode: lesson.coursecode || "ไม่ระบุ",
+            courseName: lesson.coursename || "ไม่ระบุ",
             status: lesson.status || "inactive",
-            testType: lesson.quiz_type || null,
-            subject: lesson.subjects && lesson.subjects.length > 0 ? lesson.subjects[0].subject_name : "ไม่มี"
+            testType: lesson.testtype || null,
+            subject: lesson.subjects || "ไม่มี",
+            quizTitle: lesson.quiz_title || (lesson.quiz_id ? `แบบทดสอบ ID: ${lesson.quiz_id}` : "ไม่มีแบบทดสอบ"),
+            quiz_id: lesson.quiz_id || null
           }));
+          
 
           setLessons(formattedLessons);
         } else {
@@ -151,42 +156,9 @@ const LessonsArea = () => {
     );
   };
 
-  const TestBadge = ({ testType }: { testType: TestType }) => {
-    if (!testType) {
-      return <span className="badge bg-secondary-subtle text-secondary rounded-pill px-3 py-1 small">ไม่มี</span>;
-    }
-
-    let badgeClass = "";
-    let testText = "";
-    let tooltipText = "";
-
-    switch (testType) {
-      case "MC":
-        badgeClass = "badge bg-primary-subtle text-primary rounded-pill px-3 py-1 small";
-        testText = "MC";
-        tooltipText = "Multiple Choice";
-        break;
-      case "TF":
-        badgeClass = "badge bg-success-subtle text-success rounded-pill px-3 py-1 small";
-        testText = "TF";
-        tooltipText = "True or False";
-        break;
-      case "SC":
-        badgeClass = "badge bg-info-subtle text-info rounded-pill px-3 py-1 small";
-        testText = "SC";
-        tooltipText = "Single Choice";
-        break;
-      case "FB":
-        badgeClass = "badge bg-warning-subtle text-warning rounded-pill px-3 py-1 small";
-        testText = "FB";
-        tooltipText = "Fill in the Blank";
-        break;
-    }
-
+  const FileBadge = () => {
     return (
-      <span className={badgeClass} title={tooltipText}>
-        {testText}
-      </span>
+      <span className="badge bg-secondary-subtle text-secondary rounded-pill px-3 py-1 small">ไม่มี</span>
     );
   };
 
@@ -278,9 +250,8 @@ const LessonsArea = () => {
                             <tr>
                               <th>ชื่อบทเรียน</th>
                               <th className="text-center">วิดีโอการสอน</th>
-                              <th className="text-center">แบบทดสอบ</th>
+                              <th className="text-center">ไฟล์การสอน</th>
                               <th>ผู้สร้าง</th>
-                              <th>รหัสวิชา</th>
                               <th>สถานะ</th>
                               <th style={{ width: "100px" }}>จัดการ</th>
                             </tr>
@@ -292,17 +263,16 @@ const LessonsArea = () => {
                                   <td>
                                     <div className="d-flex flex-column">
                                       <span className="fw-medium">{lesson.title}</span>
-                                      <small className="text-muted">{lesson.subject || "ไม่มี"}</small>
+                                      <small className="text-muted">{lesson.quizTitle}</small>
                                     </div>
                                   </td>
                                   <td className="text-center">
                                     <VideoBadge hasVideo={lesson.hasVideo} />
                                   </td>
                                   <td className="text-center">
-                                    <TestBadge testType={lesson.testType} />
+                                    <FileBadge />
                                   </td>
                                   <td>{lesson.creator}</td>
-                                  <td>{lesson.courseCode}</td>
                                   <td><StatusBadge status={lesson.status} /></td>
                                   <td>
                                     <div className="d-flex justify-content-center gap-3">
@@ -327,7 +297,7 @@ const LessonsArea = () => {
                               ))
                             ) : (
                               <tr>
-                                <td colSpan={7} className="text-center py-4">ไม่พบข้อมูลบทเรียน</td>
+                                <td colSpan={6} className="text-center py-4">ไม่พบข้อมูลบทเรียน</td>
                               </tr>
                             )}
                           </tbody>
@@ -350,7 +320,7 @@ const LessonsArea = () => {
                                 </button>
                               </li>
                             ))}
-                            <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
+                                                        <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
                               <button className="page-link" onClick={() => setCurrentPage(currentPage + 1)} disabled={currentPage === totalPages}>
                                 <i className="fas fa-chevron-right"></i>
                               </button>
@@ -374,3 +344,4 @@ const LessonsArea = () => {
 };
 
 export default LessonsArea;
+

@@ -7,7 +7,7 @@ import QuizSection from "./QuizSection";
 import InstructorSection from "./InstructorSection";
 import CourseSection from "./CourseSection";
 import Modals from "./Modals";
-
+import { DragDropContext } from 'react-beautiful-dnd';
 // ข้อมูลรายวิชา
 export interface SubjectData {
   title: string;
@@ -40,13 +40,13 @@ export interface Quiz {
 
 // อาจารย์
 export interface Instructor {
-  id: string;  // เปลี่ยนจาก instructor_id เป็น id
+  instructor_id: string | number;  // Changed from id to instructor_id
   name: string;
   position: string;
   avatar: string;
+  bio?: string;
 }
 
-// สาขาวิชา
 // สาขาวิชา
 export interface Department {
     department_id: string;
@@ -124,6 +124,32 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel, subjectTo
   >([]);
   const [availableInstructors, setAvailableInstructors] = useState<Instructor[]>([]);
   const [availableDepartments, setAvailableDepartments] = useState<Department[]>([]);
+// เพิ่มฟังก์ชันนี้ในส่วนของฟังก์ชันอื่นๆ ในคอมโพเนนต์ AddSubjects
+const handleDragEnd = (result: any) => {
+  // ถ้าไม่มีปลายทาง หรือลากไปยังตำแหน่งเดิม ไม่ต้องทำอะไร
+  if (!result.destination || result.destination.index === result.source.index) {
+    return;
+  }
+
+  // สร้างอาร์เรย์ใหม่จากอาร์เรย์เดิม
+  const items = Array.from(subjectData.lessons);
+  // ตัดรายการที่ลากออกจากตำแหน่งเดิม
+  const [reorderedItem] = items.splice(result.source.index, 1);
+  // แทรกรายการที่ลากไปยังตำแหน่งใหม่
+  items.splice(result.destination.index, 0, reorderedItem);
+
+  // อัพเดตลำดับ order ของทุกบทเรียน
+  const updatedLessons = items.map((lesson, index) => ({
+    ...lesson,
+    order: index + 1
+  }));
+
+  // อัพเดต state
+  setSubjectData({
+    ...subjectData,
+    lessons: updatedLessons
+  });
+};
 
   // โหลดข้อมูลจาก API
   useEffect(() => {
@@ -306,37 +332,36 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel, subjectTo
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
-
     const file = files[0];
 
-    const validTypes = ["image/jpeg", "image/png", "image/jpg", "image/webp"];
-    if (!validTypes.includes(file.type)) {
+    // ตรวจสอบขนาดไฟล์ (ไม่เกิน 2MB)
+    if (file.size > 2 * 1024 * 1024) {
       setErrors({
         ...errors,
-        coverImage: "รองรับเฉพาะไฟล์รูปภาพประเภท JPEG, PNG, และ WEBP เท่านั้น",
+        coverImage: "ขนาดไฟล์ต้องไม่เกิน 2MB",
       });
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
+    // ตรวจสอบประเภทไฟล์
+    const fileType = file.type.toLowerCase();
+    if (!fileType.startsWith("image/")) {
       setErrors({
         ...errors,
-        coverImage: "ขนาดไฟล์ต้องไม่เกิน 5MB",
+        coverImage: "กรุณาอัปโหลดไฟล์รูปภาพเท่านั้น",
       });
       return;
     }
+
+    // สร้าง URL สำหรับแสดงตัวอย่างรูปภาพ
+    const imageUrl = URL.createObjectURL(file);
+    setImagePreview(imageUrl);
+    setExistingImageUrl(null);
 
     setSubjectData({
       ...subjectData,
       coverImage: file,
     });
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      setImagePreview(reader.result as string);
-      setExistingImageUrl(null);
-    };
-    reader.readAsDataURL(file);
 
     setErrors({
       ...errors,
@@ -344,21 +369,7 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel, subjectTo
     });
   };
 
-  // ลบรูปภาพปก
-  const handleRemoveImage = () => {
-    setSubjectData({
-      ...subjectData,
-      coverImage: null,
-    });
-    setImagePreview(null);
-    setExistingImageUrl(null);
-
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-  };
-
-  // เปลี่ยนแปลงการตั้งค่าการเข้าถึงบทเรียน
+  // เปลี่ยนแปลงการอนุญาตให้เข้าถึงบทเรียนทั้งหมด
   const handleLessonAccessChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSubjectData({
       ...subjectData,
@@ -371,15 +382,13 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel, subjectTo
     const lesson = availableLessons.find((l) => l.id === lessonId);
     if (!lesson) return;
 
-    if (subjectData.lessons.some((l) => l.id === lessonId)) return;
-
-    if (subjectData.lessons.length >= 20) {
-      toast.warning("สามารถเพิ่มบทเรียนได้สูงสุด 20 บทเรียนเท่านั้น");
+    // ตรวจสอบว่าบทเรียนนี้มีอยู่แล้วหรือไม่
+    if (subjectData.lessons.some((l) => l.id === lessonId)) {
       return;
     }
 
     const newLesson: SelectedLesson = {
-      id: lessonId,
+      id: lesson.id,
       title: lesson.title,
       order: subjectData.lessons.length + 1,
     };
@@ -398,6 +407,8 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel, subjectTo
   // ลบบทเรียน
   const handleRemoveLesson = (lessonId: string) => {
     const updatedLessons = subjectData.lessons.filter((lesson) => lesson.id !== lessonId);
+    
+    // อัพเดตลำดับของบทเรียนที่เหลือ
     const reorderedLessons = updatedLessons.map((lesson, index) => ({
       ...lesson,
       order: index + 1,
@@ -407,12 +418,6 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel, subjectTo
       ...subjectData,
       lessons: reorderedLessons,
     });
-  };
-
-  // เปิด Modal เลือกแบบทดสอบ
-  const handleOpenQuizModal = (type: "pre" | "post") => {
-    setQuizType(type);
-    setShowQuizModal(true);
   };
 
   // เลือกแบบทดสอบ
@@ -431,22 +436,54 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel, subjectTo
     setShowQuizModal(false);
   };
 
-  // เลือกหรือยกเลิกการเลือกอาจารย์
-  const handleToggleInstructor = (instructorId: string) => {
-    if (subjectData.instructors.includes(instructorId)) {
+  // ลบแบบทดสอบ
+  const handleRemoveQuiz = (type: "pre" | "post") => {
+    if (type === "pre") {
       setSubjectData({
         ...subjectData,
-        instructors: subjectData.instructors.filter((id) => id !== instructorId),
+        preTestId: null,
       });
     } else {
       setSubjectData({
         ...subjectData,
-        instructors: [...subjectData.instructors, instructorId],
+        postTestId: null,
       });
     }
   };
 
-  // เลือกหรือยกเลิกการเลือกหลักสูตร
+  // เพิ่ม/ลบอาจารย์
+
+  const handleToggleInstructor = (instructorId: string) => {
+    // Validate the instructorId
+    if (!instructorId) {
+      console.error("Invalid instructor ID provided:", instructorId);
+      return;
+    }
+    
+    console.log("Toggle instructor called with ID:", instructorId);
+    console.log("Current instructors before toggle:", subjectData.instructors);
+    
+    // Create a new array to avoid direct state mutation
+    let newInstructors;
+    
+    if (subjectData.instructors.includes(instructorId)) {
+      // Remove the instructor if already selected
+      newInstructors = subjectData.instructors.filter(id => id !== instructorId);
+    } else {
+      // Add the instructor if not selected
+      newInstructors = [...subjectData.instructors, instructorId];
+    }
+    
+    console.log("Updated instructors after toggle:", newInstructors);
+    
+    // Update the state with the new instructors array
+    setSubjectData({
+      ...subjectData,
+      instructors: newInstructors
+    });
+  };
+
+  // เพิ่ม/ลบหลักสูตร
   const handleToggleCourse = (courseId: string) => {
     if (subjectData.courses.includes(courseId)) {
       setSubjectData({
@@ -472,18 +509,18 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel, subjectTo
       lessons: "",
     };
 
-    if (subjectData.title.trim() === "") {
+    if (!subjectData.title.trim()) {
       newErrors.title = "กรุณาระบุชื่อรายวิชา";
       isValid = false;
     }
 
-    if (subjectData.code.trim() === "") {
+    if (!subjectData.code.trim()) {
       newErrors.code = "กรุณาระบุรหัสรายวิชา";
       isValid = false;
     }
 
     if (subjectData.credits <= 0) {
-      newErrors.credits = "หน่วยกิตต้องมากกว่า 0";
+      newErrors.credits = "จำนวนหน่วยกิตต้องมากกว่า 0";
       isValid = false;
     }
 
@@ -496,212 +533,154 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel, subjectTo
     return isValid;
   };
 
-  // บันทึกข้อมูล
+  // ส่งข้อมูลรายวิชา
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-  
-    if (!validateForm()) return;
-  
+
+    if (!validateForm()) {
+      return;
+    }
+
     setIsSubmitting(true);
-  
+    setApiError("");
+    setApiSuccess("");
+
     try {
       const token = localStorage.getItem("token");
       if (!token) {
-        toast.error("กรุณาเข้าสู่ระบบก่อนใช้งาน");
+        setApiError("กรุณาเข้าสู่ระบบก่อนใช้งาน");
         setIsSubmitting(false);
         return;
       }
-  
+
       const formData = new FormData();
       formData.append("title", subjectData.title);
       formData.append("code", subjectData.code);
       formData.append("description", subjectData.description);
       formData.append("credits", subjectData.credits.toString());
-  
-      if (subjectData.department) {
-        formData.append("department", subjectData.department);
-      }
-  
+      formData.append("department", subjectData.department);
       formData.append("allowAllLessons", subjectData.allowAllLessons.toString());
-  
+
       if (subjectData.coverImage) {
         formData.append("coverImage", subjectData.coverImage);
       }
-  
-      formData.append(
-        "lessons",
-        JSON.stringify(
-          subjectData.lessons.map((lesson) => ({
-            id: lesson.id,
-            order: lesson.order,
-          }))
-        )
-      );
-  
+
+      // เพิ่มข้อมูลบทเรียน
+      formData.append("lessons", JSON.stringify(subjectData.lessons));
+
+      // เพิ่มข้อมูลแบบทดสอบ
       if (subjectData.preTestId) {
         formData.append("preTestId", subjectData.preTestId);
       }
-  
       if (subjectData.postTestId) {
         formData.append("postTestId", subjectData.postTestId);
       }
-  
-      if (subjectData.instructors.length > 0) {
-        formData.append("instructors", JSON.stringify(subjectData.instructors));
-      }
-  
-      if (subjectData.courses.length > 0) {
-        formData.append("courses", JSON.stringify(subjectData.courses));
-      }
-  
+
+      // เพิ่มข้อมูลอาจารย์
+      formData.append("instructors", JSON.stringify(subjectData.instructors));
+
+      // เพิ่มข้อมูลหลักสูตร
+      formData.append("courses", JSON.stringify(subjectData.courses));
+
       let response;
-  
       if (subjectToEdit) {
+        // แก้ไขรายวิชา
         response = await axios.put(`${apiUrl}/api/courses/subjects/${subjectToEdit}`, formData, {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "multipart/form-data",
           },
         });
+        setApiSuccess("แก้ไขรายวิชาสำเร็จ");
       } else {
+        // สร้างรายวิชาใหม่
         response = await axios.post(`${apiUrl}/api/courses/subjects`, formData, {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "multipart/form-data",
           },
         });
+        setApiSuccess("สร้างรายวิชาสำเร็จ");
       }
-  
+
       if (response.data.success) {
-        toast.success(subjectToEdit ? "แก้ไขรายวิชาสำเร็จ" : "สร้างรายวิชาสำเร็จ");
-  
         if (onSubmit) {
           onSubmit(response.data.subject);
         }
-  
-        if (!subjectToEdit) {
-          setSubjectData({
-            title: "",
-            code: "",
-            description: "",
-            credits: 3,
-            department: "",
-            coverImage: null,
-            lessons: [],
-            preTestId: null,
-            postTestId: null,
-            instructors: [],
-            allowAllLessons: true,
-            courses: [],
-          });
-          setImagePreview(null);
-          setExistingImageUrl(null);
-  
-          if (fileInputRef.current) {
-            fileInputRef.current.value = "";
-          }
-        }
+        toast.success(subjectToEdit ? "แก้ไขรายวิชาสำเร็จ" : "สร้างรายวิชาสำเร็จ");
+      } else {
+        setApiError(response.data.message || "เกิดข้อผิดพลาดในการบันทึกข้อมูล");
       }
     } catch (error: any) {
       console.error("Error submitting subject:", error);
-      const errorMessage =
-        error.response?.data?.message || "เกิดข้อผิดพลาดในการบันทึกข้อมูล";
-      toast.error(errorMessage);
+      setApiError(error.response?.data?.message || "เกิดข้อผิดพลาดในการบันทึกข้อมูล");
+      toast.error(error.response?.data?.message || "เกิดข้อผิดพลาดในการบันทึกข้อมูล");
     } finally {
       setIsSubmitting(false);
     }
   };
-  
-
-  // ยกเลิก
+  const handleRemoveImage = () => {
+    setImagePreview(null);
+    setExistingImageUrl(null);
+    setSubjectData({
+      ...subjectData,
+      coverImage: null
+    });
+  };
+  // ยกเลิกการสร้าง/แก้ไขรายวิชา
   const handleCancel = () => {
     if (onCancel) {
       onCancel();
     }
   };
 
-  // หาข้อมูลแบบทดสอบจาก ID
-// หาข้อมูลแบบทดสอบจาก ID
-const findQuizById = (quizId: string | null): Quiz | null => {
-    if (!quizId) return null; // ถ้า quizId เป็น null ให้คืนค่า null ทันที
-  
-    // ตรวจสอบว่า availableQuizzes มีข้อมูลหรือไม่
-    if (!availableQuizzes || availableQuizzes.length === 0) {
-      console.warn("ไม่มีข้อมูลแบบทดสอบที่สามารถใช้ได้");
-      return null;
-    }
-  
-    // ค้นหาแบบทดสอบจาก availableQuizzes
-    const quiz = availableQuizzes.find((quiz) => quiz.id === quizId);
-    if (!quiz) {
-      console.warn(`ไม่พบแบบทดสอบที่มี ID: ${quizId}`);
-      return null;
-    }
-  
-    return quiz;
-  };
-  
+  // ค้นหาอาจารย์ตาม ID
+  // Update the findInstructorById function in AddSubjects.tsx
+const findInstructorById = (instructorId: string) => {
+  return availableInstructors.find(instructor => 
+    instructor.instructor_id && instructor.instructor_id.toString() === instructorId
+  );
+};
 
-  // หาข้อมูลหลักสูตรจาก ID
+// Then in InstructorSection.tsx, update the rendering of instructors:
+{subjectData.instructors.map((instructorId) => {
+  const instructor = findInstructorById(instructorId);
+  return instructor ? (
+    <div key={instructorId} className="col-md-6">
+      <div className="card border h-100">
+        <div className="card-body py-2 px-3">
+          <div className="d-flex justify-content-between align-items-center">
+            <div>
+              <h6 className="mb-1">{instructor.name}</h6>
+              <p className="mb-0 small text-muted">{instructor.position}</p>
+            </div>
+            <button
+              type="button"
+              className="btn btn-sm text-danger"
+              onClick={() => handleToggleInstructor(instructorId)}
+            >
+              <i className="fas fa-times-circle"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  ) : null;
+})}
+
+
+  // ค้นหาหลักสูตรตาม ID
   const findCourseById = (courseId: string) => {
-    return availableCourses.find((course) => course.id === courseId);
-  };
-
-  // หาข้อมูลอาจารย์จาก ID
-  const findInstructorById = (instructorId: string) => {
-    return availableInstructors.find((instructor) => instructor.id === instructorId);
+    return availableCourses.find(course => course.id === courseId);
   };
 
   return (
     <form onSubmit={handleSubmit}>
-      {/* Inline CSS for modal animation and scrollable body */}
-      <style>
-        {`
-          .modal-body-scrollable {
-            max-height: 60vh;
-            overflow-y: auto;
-          }
-
-          .modal-slide-down {
-            animation: slideDown 0.3s ease-out;
-          }
-
-          @keyframes slideDown {
-            from {
-              transform: translateY(-100%);
-              opacity: 0;
-            }
-            to {
-              transform: translateY(0);
-              opacity: 1;
-            }
-          }
-
-          .modal-dialog-centered {
-            display: flex;
-            align-items: center;
-            min-height: calc(100% - 1rem);
-          }
-
-          @media (min-width: 576px) {
-            .modal-dialog-centered {
-              min-height: calc(100% - 3.5rem);
-            }
-          }
-        `}
-      </style>
-
-      {/* API Status Messages */}
       {apiSuccess && (
         <div className="alert alert-success alert-dismissible fade show" role="alert">
           <i className="fas fa-check-circle me-2"></i>
           {apiSuccess}
-          <button
-            type="button"
-            className="btn-close"
-            onClick={() => setApiSuccess("")}
-            aria-label="Close"
-          ></button>
+          <button type="button" className="btn-close" onClick={() => setApiSuccess("")} aria-label="Close"></button>
         </div>
       )}
 
@@ -709,12 +688,7 @@ const findQuizById = (quizId: string | null): Quiz | null => {
         <div className="alert alert-danger alert-dismissible fade show" role="alert">
           <i className="fas fa-exclamation-circle me-2"></i>
           {apiError}
-          <button
-            type="button"
-            className="btn-close"
-            onClick={() => setApiError("")}
-            aria-label="Close"
-          ></button>
+          <button type="button" className="btn-close" onClick={() => setApiError("")} aria-label="Close"></button>
         </div>
       )}
 
@@ -726,18 +700,18 @@ const findQuizById = (quizId: string | null): Quiz | null => {
           <p className="mt-3">กำลังโหลดข้อมูล...</p>
         </div>
       ) : (
-        <>
+        <DragDropContext onDragEnd={handleDragEnd}>
           <SubjectInfoSection
-            subjectData={subjectData}
-            errors={errors}
-            availableDepartments={availableDepartments}
-            handleInputChange={handleInputChange}
-            handleImageUpload={handleImageUpload}
-            handleRemoveImage={handleRemoveImage}
-            fileInputRef={fileInputRef}
-            imagePreview={imagePreview}
-            existingImageUrl={existingImageUrl}
-          />
+  subjectData={subjectData}
+  errors={errors}
+  handleInputChange={handleInputChange}
+  handleImageUpload={handleImageUpload}
+  handleRemoveImage={handleRemoveImage} // เพิ่มบรรทัดนี้
+  imagePreview={imagePreview}
+  existingImageUrl={existingImageUrl}
+  fileInputRef={fileInputRef}
+  availableDepartments={availableDepartments}
+/>
 
           <LessonSection
             subjectData={subjectData}
@@ -749,9 +723,11 @@ const findQuizById = (quizId: string | null): Quiz | null => {
 
           <QuizSection
             subjectData={subjectData}
-            setSubjectData={setSubjectData}
-            findQuizById={findQuizById}
-            handleOpenQuizModal={handleOpenQuizModal}
+            availableQuizzes={availableQuizzes}
+            handleSelectQuiz={handleSelectQuiz}
+            handleRemoveQuiz={handleRemoveQuiz}
+            setShowQuizModal={setShowQuizModal}
+            setQuizType={setQuizType}
           />
 
           <InstructorSection
@@ -768,9 +744,8 @@ const findQuizById = (quizId: string | null): Quiz | null => {
             setShowCourseModal={setShowCourseModal}
           />
 
-          {/* ปุ่มบันทึกและยกเลิก */}
           <div className="d-flex justify-content-end gap-2 mt-4">
-            <button type="button" className="btn btn-outline-secondary" onClick={handleCancel}>
+            <button type="button" className="btn btn-outline-secondary" onClick={handleCancel} disabled={isSubmitting}>
               ยกเลิก
             </button>
             <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
@@ -781,7 +756,7 @@ const findQuizById = (quizId: string | null): Quiz | null => {
                 </>
               ) : (
                 <>
-                  <i className="fas fa-save me-2"></i>{subjectToEdit ? "บันทึกการแก้ไข" : "บันทึกรายวิชา"}
+                  <i className="fas fa-save me-2"></i>บันทึกรายวิชา
                 </>
               )}
             </button>
@@ -789,33 +764,33 @@ const findQuizById = (quizId: string | null): Quiz | null => {
 
           <Modals
             showLessonModal={showLessonModal}
-            showQuizModal={showQuizModal}
-            showInstructorModal={showInstructorModal}
-            showCourseModal={showCourseModal}
             setShowLessonModal={setShowLessonModal}
+            showQuizModal={showQuizModal}
             setShowQuizModal={setShowQuizModal}
-            setShowInstructorModal={setShowInstructorModal}
+            showCourseModal={showCourseModal}
             setShowCourseModal={setShowCourseModal}
+            showInstructorModal={showInstructorModal}
+            setShowInstructorModal={setShowInstructorModal}
+            quizType={quizType}
             lessonSearchTerm={lessonSearchTerm}
-            quizSearchTerm={quizSearchTerm}
-            instructorSearchTerm={instructorSearchTerm}
-            courseSearchTerm={courseSearchTerm}
             setLessonSearchTerm={setLessonSearchTerm}
-            setQuizSearchTerm={setQuizSearchTerm}
-            setInstructorSearchTerm={setInstructorSearchTerm}
+            quizSearchTerm={quizSearchTerm}
+            setQuizSearchTerm={setQuizSearchTerm            }
+            courseSearchTerm={courseSearchTerm}
             setCourseSearchTerm={setCourseSearchTerm}
+            instructorSearchTerm={instructorSearchTerm}
+            setInstructorSearchTerm={setInstructorSearchTerm}
             filteredLessons={filteredLessons}
             filteredQuizzes={filteredQuizzes}
-            filteredInstructors={filteredInstructors}
             filteredCourses={filteredCourses}
+            filteredInstructors={filteredInstructors}
             handleAddLesson={handleAddLesson}
             handleSelectQuiz={handleSelectQuiz}
-            handleToggleInstructor={handleToggleInstructor}
             handleToggleCourse={handleToggleCourse}
+            handleToggleInstructor={handleToggleInstructor}
             subjectData={subjectData}
-            quizType={quizType}
           />
-        </>
+        </DragDropContext>
       )}
     </form>
   );
