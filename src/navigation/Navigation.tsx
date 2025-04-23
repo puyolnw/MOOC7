@@ -118,7 +118,7 @@ const AppNavigation = () => {
 
 
 
-        <Route element={<PrivateRoute allowedRoles={["admin,instructor"]} />}>
+        <Route element={<PrivateRoute allowedRoles={["admin","instructor"]} />}>
         <Route path="/admin-dashboard" element={<AdminDashboard />} />
         <Route path="/admin-creditbank" element={<AdminCreditbankpage/>} />
         <Route path="/admin-subjects" element={<AdminSubjectspage/>} />
