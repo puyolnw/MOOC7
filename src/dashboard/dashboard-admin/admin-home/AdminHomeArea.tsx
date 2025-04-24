@@ -34,7 +34,7 @@ const DashboardHomeArea = () => {
                            </div>
                         </div>
                         <div className="load-more-btn text-center mt-20">
-                           <Link to="/admin-creditbank" className="link-btn">Browse All Course <BtnArrow /></Link>
+                           <Link to="/admin-creditbank" className="link-btn">ดูหลักสูตรทั้งหมด <BtnArrow /></Link>
                         </div>
                      </div>
                   </div>
