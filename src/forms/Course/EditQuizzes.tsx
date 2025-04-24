@@ -78,9 +78,9 @@ const EditQuiz: React.FC<EditQuizProps> = ({ onCancel }) => {
         id: "",
         title: "",
         description: "",
-        timeLimit: { enabled: false, value: 0, unit: "minutes" },
-        passingScore: { enabled: false, value: 0 },
-        attempts: { limited: false, unlimited: true, value: 0 },
+        timeLimit: { enabled: false, value: 60, unit: "minutes" }, // Default ตามตาราง
+        passingScore: { enabled: false, value: 0 }, // Default ตามตาราง
+        attempts: { limited: false, unlimited: true, value: 1 }, // Default ตามตาราง
         status: "draft",
         questions: [],
         lessons: [],
@@ -190,25 +190,36 @@ const EditQuiz: React.FC<EditQuizProps> = ({ onCancel }) => {
                     );
                 }
 
-                // ตั้งค่า quiz state
+                // ตั้งค่า quiz state ให้สอดคล้องกับตาราง
                 setQuiz({
                     id: String(quizData.quiz_id || quizId),
                     title: quizData.title || "",
                     description: quizData.description || "",
-                    timeLimit: quizData.timeLimit || { enabled: false, value: 0, unit: "minutes" },
-                    passingScore: quizData.passingScore || { enabled: false, value: 0 },
-                    attempts: quizData.attempts || { limited: false, unlimited: true, value: 0 },
+                    timeLimit: {
+                        enabled: quizData.time_limit_enabled ?? false,
+                        value: quizData.time_limit_value ?? 60,
+                        unit: quizData.time_limit_unit ?? "minutes",
+                    },
+                    passingScore: {
+                        enabled: quizData.passing_score_enabled ?? false,
+                        value: quizData.passing_score_value ?? 0,
+                    },
+                    attempts: {
+                        limited: quizData.attempts_limited ?? false,
+                        unlimited: quizData.attempts_unlimited ?? true,
+                        value: quizData.attempts_value ?? 1,
+                    },
                     status: quizData.status || "draft",
                     questions: quizData.questions
                         ? quizData.questions.map((q: any) => ({
-                            id: String(q.question_id),
-                            isExisting: true,
-                        }))
+                              id: String(q.question_id),
+                              isExisting: true,
+                          }))
                         : [],
                     lessons: quizData.lessons
                         ? quizData.lessons.map((l: any) => String(l.lesson_id))
                         : [],
-                    questionCount: quizData.questionCount || 0,
+                    questionCount: quizData.questions ? quizData.questions.length : 0,
                 });
 
                 // ตั้งค่า allQuestions สำหรับ dropdown
@@ -358,68 +369,120 @@ const EditQuiz: React.FC<EditQuizProps> = ({ onCancel }) => {
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-      
-        if (!validateForm()) {
+      e.preventDefault();
+  
+      if (!validateForm()) {
           return;
-        }
-      
-        try {
+      }
+  
+      try {
           setIsSubmitting(true);
           setApiError(null);
           setApiSuccess(null);
-      
+  
           const token = localStorage.getItem("token");
           if (!token) {
-            setApiError("ไม่พบข้อมูลการเข้าสู่ระบบ กรุณาเข้าสู่ระบบใหม่");
-            toast.error("ไม่พบข้อมูลการเข้าสู่ระบบ กรุณาเข้าสู่ระบบใหม่");
-            setIsSubmitting(false);
-            return;
+              setApiError("ไม่พบข้อมูลการเข้าสู่ระบบ กรุณาเข้าสู่ระบบใหม่");
+              toast.error("ไม่พบข้อมูลการเข้าสู่ระบบ กรุณาเข้าสู่ระบบใหม่");
+              setIsSubmitting(false);
+              return;
           }
-      
-          // Instead of FormData, use a regular JSON object
+  
+          // สร้าง payload ให้ตรงกับสคีมาในตาราง และปรับตามที่เซิร์ฟเวอร์อาจคาดหวัง
           const payload = {
-            title: quiz.title,
-            description: quiz.description,
-            questions: quiz.questions,
-            timeLimit: quiz.timeLimit,
-            passingScore: quiz.passingScore,
-            attempts: quiz.attempts,
-            lessons: quiz.lessons,
-            status: quiz.status,
+              title: quiz.title,
+              description: quiz.description,
+              time_limit_enabled: quiz.timeLimit.enabled,
+              time_limit_value: quiz.timeLimit.enabled ? quiz.timeLimit.value : 60, // Default ตามตาราง
+              time_limit_unit: quiz.timeLimit.enabled ? quiz.timeLimit.unit.toLowerCase() : "minutes", // ใช้ตัวพิมพ์เล็ก
+              passing_score_enabled: quiz.passingScore.enabled,
+              passing_score_value: quiz.passingScore.enabled ? Math.min(quiz.passingScore.value, 100) : 0, // จำกัดค่าสูงสุด
+              attempts_limited: quiz.attempts.limited,
+              attempts_unlimited: quiz.attempts.unlimited,
+              attempts_value: quiz.attempts.limited ? quiz.attempts.value : 0, // ถ้าไม่จำกัด ให้ส่ง 0
+              status: quiz.status.toLowerCase(),
+              created_by: localStorage.getItem("user_id") || "Admin", // ใช้ user_id ถ้ามี
           };
-      
+  
+          console.log("Submitting payload:", payload);
+  
+          // อัปเดตข้อมูลแบบทดสอบ
           const response = await axios.put(
-            `${apiUrl}/api/courses/quizzes/${quiz.id}`,
-            payload,
-            {
-              headers: {
-                Authorization: `Bearer ${token}`,
-                "Content-Type": "application/json", // Ensure this is set to JSON
-              },
-            }
+              `${apiUrl}/api/courses/quizzes/${quiz.id}`,
+              payload,
+              {
+                  headers: {
+                      Authorization: `Bearer ${token}`,
+                      "Content-Type": "application/json",
+                  },
+              }
           );
-      
-          if (response.status === 200) {
-            setApiSuccess("แก้ไขแบบทดสอบสำเร็จ");
-            toast.success("แก้ไขแบบทดสอบสำเร็จ");
-            setTimeout(() => {
-              navigate("/admin-quizzes");
-            }, 1500);
+  
+          // อัปเดต questions และ lessons ผ่าน API แยก
+          if (quiz.questions.length > 0) {
+              await axios.put(
+                  `${apiUrl}/api/courses/quizzes/${quiz.id}/questions`,
+                  { question_ids: quiz.questions.map(q => q.id) },
+                  {
+                      headers: {
+                          Authorization: `Bearer ${token}`,
+                          "Content-Type": "application/json",
+                      },
+                  }
+              );
           } else {
-            setApiError(response.data.message || "เกิดข้อผิดพลาดในการแก้ไขแบบทดสอบ");
-            toast.error(response.data.message || "เกิดข้อผิดพลาดในการแก้ไขแบบทดสอบ");
+              await axios.delete(
+                  `${apiUrl}/api/courses/quizzes/${quiz.id}/questions`,
+                  {
+                      headers: {
+                          Authorization: `Bearer ${token}`,
+                      },
+                  }
+              );
           }
-        } catch (error: any) {
-          console.error("Error updating quiz:", error);
+  
+          if (quiz.lessons.length > 0) {
+              await axios.put(
+                  `${apiUrl}/api/courses/quizzes/${quiz.id}/lessons`,
+                  { lesson_ids: quiz.lessons },
+                  {
+                      headers: {
+                          Authorization: `Bearer ${token}`,
+                          "Content-Type": "application/json",
+                      },
+                  }
+              );
+          } else {
+              await axios.delete(
+                  `${apiUrl}/api/courses/quizzes/${quiz.id}/lessons`,
+                  {
+                      headers: {
+                          Authorization: `Bearer ${token}`,
+                      },
+                  }
+              );
+          }
+  
+          if (response.status === 200) {
+              setApiSuccess("แก้ไขแบบทดสอบสำเร็จ");
+              toast.success("แก้ไขแบบทดสอบสำเร็จ");
+              setTimeout(() => {
+                  navigate("/admin-quizzes");
+              }, 1500);
+          } else {
+              setApiError(response.data.message || "เกิดข้อผิดพลาดในการแก้ไขแบบทดสอบ");
+              toast.error(response.data.message || "เกิดข้อผิดพลาดในการแก้ไขแบบทดสอบ");
+          }
+      } catch (error: any) {
+          console.error("Error updating quiz:", error.response?.data);
           const errorMessage =
-            error.response?.data?.message || "เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์";
+              error.response?.data?.message || "เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์";
           setApiError(errorMessage);
           toast.error(errorMessage);
-        } finally {
+      } finally {
           setIsSubmitting(false);
-        }
-      };
+      }
+  };
 
     const handleCancel = () => {
         if (onCancel) {
@@ -521,7 +584,6 @@ const EditQuiz: React.FC<EditQuizProps> = ({ onCancel }) => {
                             placeholder="ระบุคำอธิบายแบบทดสอบ"
                         />
                     </div>
-
                     <div className="mb-3">
                         <label className="form-label">สถานะ</label>
                         <select
@@ -743,7 +805,6 @@ const EditQuiz: React.FC<EditQuizProps> = ({ onCancel }) => {
                             onChange={handleLessonsChange}
                             placeholder="เลือกบทเรียนที่เกี่ยวข้อง"
                         />
-
                     </div>
                 </div>
             </div>
