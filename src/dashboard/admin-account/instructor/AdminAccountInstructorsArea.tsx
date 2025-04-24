@@ -196,17 +196,29 @@ const AdminAccountInstructorsArea: React.FC = () => {
   };
   
 
-  const renderStatusBadge = (status: string) => {
+  const StatusBadge = ({ status }: { status: Instructor["status"] }) => {
+    let badgeClass = "";
+    let statusText = "";
+
     switch (status) {
-      case 'active':
-        return <span className="badge bg-success">เปิดใช้งาน</span>;
-      case 'inactive':
-        return <span className="badge bg-danger">ปิดใช้งาน</span>;
-      case 'pending':
-        return <span className="badge bg-warning">รอการยืนยัน</span>;
+      case "active":
+        badgeClass = "badge bg-success-subtle text-success rounded-pill px-3 py-1 small";
+        statusText = "เปิดใช้งาน";
+        break;
+      case "inactive":
+        badgeClass = "badge bg-danger-subtle text-danger rounded-pill px-3 py-1 small";
+        statusText = "ปิดใช้งาน";
+        break;
+      case "pending":
+        badgeClass = "badge bg-danger-subtle text-danger rounded-pill px-3 py-1 small";
+        statusText = "รอการยืนยัน";
+        break;
       default:
-        return <span className="badge bg-secondary">ไม่ระบุ</span>;
+        badgeClass = "badge bg-secondary-subtle text-secondary rounded-pill px-3 py-1 small";
+        statusText = "ไม่ระบุ";
+        break;
     }
+    return <span className={badgeClass}>{statusText}</span>;
   };
 
   return (
@@ -277,7 +289,7 @@ const AdminAccountInstructorsArea: React.FC = () => {
                 ) : (
                   <>
                     <div className="table-responsive">
-                      <table className="table table-hover border">
+                      <table className="table table-hover table-sm mb-0 align-middle table-striped">
                         <thead className="table-light">
                           <tr>
                             <th scope="col" style={{ width: '50px' }}>#</th>
@@ -285,7 +297,7 @@ const AdminAccountInstructorsArea: React.FC = () => {
                             <th scope="col">ชื่อ-นามสกุล</th>
                             <th scope="col">อีเมล</th>
                             <th scope="col" className="text-center">สถานะ</th>
-                            <th scope="col" className="text-center">จัดการ</th>
+                            <th scope="col" className="text-center" style={{ width: '100px' }}>จัดการ</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -295,7 +307,7 @@ const AdminAccountInstructorsArea: React.FC = () => {
                               <td>{instructor.username}</td>
                               <td>{`${instructor.first_name} ${instructor.last_name}`}</td>
                               <td>{instructor.email}</td>
-                              <td className="text-center">{renderStatusBadge(instructor.status)}</td>
+                              <td className="text-center"><StatusBadge status={instructor.status}/></td>
                               <td>
                                 <div className="d-flex justify-content-center gap-3">
                                   <Link

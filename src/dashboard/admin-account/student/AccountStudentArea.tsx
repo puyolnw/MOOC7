@@ -247,17 +247,29 @@ const AccountStudentArea: React.FC = () => {
     }
   };
 
-  const renderStatusBadge = (status: string) => {
+  const StatusBadge = ({ status }: { status: Student["status"] }) => {
+    let badgeClass = "";
+    let statusText = "";
+
     switch (status) {
-      case 'active':
-        return <span className="badge bg-success">เปิดใช้งาน</span>;
-      case 'inactive':
-        return <span className="badge bg-danger">ปิดใช้งาน</span>;
-      case 'pending':
-        return <span className="badge bg-warning">รอการยืนยัน</span>;
+      case "active":
+        badgeClass = "badge bg-success-subtle text-success rounded-pill px-3 py-1 small";
+        statusText = "เปิดใช้งาน";
+        break;
+      case "inactive":
+        badgeClass = "badge bg-danger-subtle text-danger rounded-pill px-3 py-1 small";
+        statusText = "ปิดใช้งาน";
+        break;
+      case "pending":
+        badgeClass = "badge bg-danger-subtle text-danger rounded-pill px-3 py-1 small";
+        statusText = "รอการยืนยัน";
+        break;
       default:
-        return <span className="badge bg-secondary">ไม่ระบุ</span>;
+        badgeClass = "badge bg-secondary-subtle text-secondary rounded-pill px-3 py-1 small";
+        statusText = "ไม่ระบุ";
+        break;
     }
+    return <span className={badgeClass}>{statusText}</span>;
   };
 
   return (
@@ -420,7 +432,7 @@ const AccountStudentArea: React.FC = () => {
                 ) : (
                   <>
                     <div className="table-responsive">
-                      <table className="table table-hover border responsive-table">
+                      <table className="table table-hover table-sm mb-0 align-middle table-striped">
                         <thead className="table-light">
                           <tr>
                             <th scope="col" style={{ width: '50px' }}>#</th>
@@ -429,9 +441,9 @@ const AccountStudentArea: React.FC = () => {
                             <th scope="col">ชื่อ-นามสกุล</th>
                             <th scope="col">อีเมล</th>
                             <th scope="col">สาขาวิชา</th>
-                            <th scope="col">ระดับการศึกษา</th>
+                            <th scope="col" style={{ width: '120px' }} >ระดับการศึกษา</th>
                             <th scope="col" className="text-center">สถานะ</th>
-                            <th scope="col" className="text-center">จัดการ</th>
+                            <th scope="col" style={{ width: '100px' }} className="text-center">จัดการ</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -444,7 +456,7 @@ const AccountStudentArea: React.FC = () => {
                               <td data-label="อีเมล">{student.email}</td>
                               <td data-label="สาขาวิชา">{student.department_name || 'ไม่ระบุ'}</td>
                               <td data-label="ระดับการศึกษา">{student.education_level || 'ไม่ระบุ'}</td>
-                              <td data-label="สถานะ">{renderStatusBadge(student.status)}</td>
+                              <td data-label="สถานะ"><StatusBadge status={student.status }/></td>
                               <td data-label="จัดการ">
                                 <div className="d-flex justify-content-center gap-3 action-icons">
                                   <Link

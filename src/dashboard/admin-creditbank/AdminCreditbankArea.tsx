@@ -200,17 +200,26 @@ const AdminCreditbankArea: React.FC = () => {
     }
   };
 
-  const renderStatusBadge = (status: string) => {
+  const StatusBadge = ({ status }: { status: Course["status"] }) => {
+    let badgeClass = "";
+    let statusText = "";
+
     switch (status) {
-      case 'active':
-        return <span className="badge bg-success">เปิดใช้งาน</span>;
-      case 'inactive':
-        return <span className="badge bg-danger">ปิดใช้งาน</span>;
-      case 'draft':
-        return <span className="badge bg-warning">แบบร่าง</span>;
-      default:
-        return <span className="badge bg-secondary">ไม่ระบุ</span>;
+      case "active":
+        badgeClass = "badge bg-success-subtle text-success rounded-pill px-3 py-1 small";
+        statusText = "เปิดใช้งาน";
+        break;
+      case "inactive":
+        badgeClass = "badge bg-danger-subtle text-danger rounded-pill px-3 py-1 small";
+        statusText = "ปิดใช้งาน";
+        break;
+      case "draft":
+        badgeClass = "badge bg-secondary-subtle text-secondary rounded-pill px-3 py-1 small";
+        statusText = "ฉบับร่าง";
+        break;
     }
+
+    return <span className={badgeClass}>{statusText}</span>;
   };
 
   return (
@@ -283,15 +292,15 @@ const AdminCreditbankArea: React.FC = () => {
                 ) : (
                   <>
                     <div className="table-responsive">
-                      <table className="table table-hover border">
+                      <table className="table table-hover table-sm mb-0 align-middle table-striped">
                         <thead className="table-light">
                           <tr>
-                            <th scope="col" style={{ width: '50px' }}>#</th>
+                            <th scope="col" style={{ width: '30px' }}>#</th>
                             <th scope="col">ชื่อหลักสูตร</th>
                             <th scope="col">สาขาวิชา</th>
-                            <th scope="col">จำนวนรายวิชา</th>
-                            <th scope="col" className="text-center">สถานะ</th>
-                            <th scope="col" className="text-center">จัดการ</th>
+                            <th scope="col"style={{ width: '130px' }}>จำนวนรายวิชา</th>
+                            <th scope='col' className='text-center'>สถานะ</th>
+                            <th scope='col'style={{ width: '100px' }} className='text-center'>จัดการ</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -301,11 +310,11 @@ const AdminCreditbankArea: React.FC = () => {
                               <td>{course.title}</td>
                               <td>{course.department_name}</td>
                               <td>{course.subject_count} วิชา</td>
-                              <td className="text-center">
-                                {renderStatusBadge(course.status)}
+                              <td className='text-center'>
+                                <StatusBadge status={course.status}/>
                               </td>
                               <td>
-                                <div className="d-flex justify-content-center gap-3">
+                                <div className="d-flex justify-content-center text-center gap-3">
                                   <Link
                                     to={`/admin-creditbank/edit-course/${course.course_id}`}
                                     className="text-primary"

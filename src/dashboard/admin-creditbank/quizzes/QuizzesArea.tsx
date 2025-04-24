@@ -349,7 +349,12 @@ const QuestionsArea = () => {
                           <table className="table table-hover table-sm mb-0 align-middle table-striped responsive-table">
                             <thead className="table-light">
                               <tr>
-                                <th>คำถาม</th><th>รหัสแบบทดสอบ</th><th className="text-center">ประเภท</th><th className="text-center">คะแนน</th><th>สถานะ</th><th style={{ width: "100px" }}>จัดการ</th>
+                                <th>คำถาม</th>
+                                <th>รหัสแบบทดสอบ</th>
+                                <th className="text-center">ประเภท</th>
+                                <th className="text-center">คะแนน</th>
+                                <th className="text-center">สถานะ</th>
+                                <th style={{ width: "100px" }} className="text-center">จัดการ</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -369,7 +374,7 @@ const QuestionsArea = () => {
                                     <td data-label="รหัสแบบทดสอบ:">{question.quizzes.length > 0 ? question.quizzes[0].quiz_id : "N/A"}</td>
                                     <td data-label="ประเภท:" className="text-center"><QuestionTypeBadge type={question.type} /></td>
                                     <td data-label="คะแนน:" className="text-center"><span className="fw-medium">{question.score} คะแนน</span></td>
-                                    <td data-label="สถานะ:"><StatusBadge status={question.status} /></td>
+                                    <td data-label="สถานะ:" className="text-center"><StatusBadge status={question.status} /></td>
                                     <td data-label="จัดการ:">
                                       <div className="d-flex justify-content-center gap-3 action-icons">
                                         <Link to={`/admin-questions/edit-question/${question.id}`} className="text-primary" style={{ display: "inline-flex", alignItems: "center" }}>
