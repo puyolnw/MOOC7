@@ -250,14 +250,14 @@ const SubjectsArea = () => {
                         <table className="table table-hover table-sm mb-0 align-middle table-striped">
                           <thead className="table-light">
                             <tr>
-                              <th style={{ width: "80px" }}>รูปปก</th>
+                              <th style={{ width: "80px" }} className="text-center">รูปปก</th>
                               <th style={{ width: "100px" }}>รหัสวิชา</th>
                               <th>ชื่อวิชา</th>
                               <th>ผู้สอน</th>
                               <th>บทเรียน</th>
                               <th>หมวดหมู่</th>
-                              <th>สถานะ</th>
-                              <th style={{ width: "100px" }}>จัดการ</th>
+                              <th className="text-center">สถานะ</th>
+                              <th style={{ width: "100px" }} className="text-center">จัดการ</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -290,7 +290,7 @@ const SubjectsArea = () => {
                                     </span>
                                   </td>
                                   <td>{subject.department_name || "ไม่ระบุ"}</td>
-                                  <td>
+                                  <td className="text-center">
                                     <StatusBadge status={subject.status} />
                                   </td>
                                   <td>

@@ -252,8 +252,8 @@ const LessonsArea = () => {
                               <th className="text-center">วิดีโอการสอน</th>
                               <th className="text-center">ไฟล์การสอน</th>
                               <th>ผู้สร้าง</th>
-                              <th>สถานะ</th>
-                              <th style={{ width: "100px" }}>จัดการ</th>
+                              <th className="text-center" >สถานะ</th>
+                              <th style={{ width: "100px" }} className="text-center">จัดการ</th>
                             </tr>
                           </thead>
                           <tbody>

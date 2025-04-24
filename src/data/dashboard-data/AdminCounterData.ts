@@ -12,7 +12,7 @@ const admin_count_data: DataType[] = [
       icon: "fas fa-book-open", // หลักสูตรทั้งหมด
       count: 0,
       title: "หลักสูตรทั้งหมด",
-      path: "/admin-dashboard/course",
+      path: "/admin-creditbank",
    },
    {
       id: 2,

@@ -271,8 +271,8 @@ const QuestionsArea = () => {
                                 <th>รหัสแบบทดสอบ</th>
                                 <th className="text-center">ประเภท</th>
                                 <th className="text-center">คะแนน</th>
-                                <th>สถานะ</th>
-                                <th style={{ width: "100px" }}>จัดการ</th>
+                                <th className="text-center">สถานะ</th>
+                                <th style={{ width: "100px" }} className="text-center">จัดการ</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -296,7 +296,7 @@ const QuestionsArea = () => {
                                     <td className="text-center">
                                       <span className="fw-medium">{question.score} คะแนน</span>
                                     </td>
-                                    <td><StatusBadge status={question.status} /></td>
+                                    <td className="text-center"><StatusBadge status={question.status} /></td>
                                     <td>
                                       <div className="d-flex justify-content-center gap-3">
                                         <Link to={`/admin-questions/edit-question/${question.id}`} className="text-primary" style={{ display: "inline-flex", alignItems: "center" }}>
