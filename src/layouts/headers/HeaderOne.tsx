@@ -1,15 +1,15 @@
 import NavMenu from "./menu/NavMenu";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import MobileSidebar from "./menu/MobileSidebar";
 import UseSticky from "../../hooks/UseSticky";
 import { Link, useNavigate } from "react-router-dom";
 import InjectableSvg from "../../hooks/InjectableSvg";
-import CustomSelect from "../../ui/CustomSelect";
+
 import "../../../public/assets/css/header.css";
 import axios from "axios";
 
 const HeaderOne = () => {
-  const [selectedOption, setSelectedOption] = useState(null);
+
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isActive, setIsActive] = useState(false);
   const [role, setRole] = useState<string | null>(null);
@@ -25,9 +25,6 @@ const HeaderOne = () => {
     }
   }, []);
 
-  const handleSelectChange = (option: React.SetStateAction<null>) => {
-    setSelectedOption(option);
-  };
 
   const handleLogout = async () => {
     try {
@@ -71,9 +68,7 @@ const HeaderOne = () => {
                       <div className="tgmenu__navbar-wrap tgmenu__main-menu d-none d-xl-flex">
                         <NavMenu />
                       </div>
-                      <div className="tgmenu__search d-none d-md-block ms-3">
-                        <CustomSelect value={selectedOption} onChange={handleSelectChange} />
-                      </div>
+
 
                       <div className="tgmenu__action ms-3">
                         <ul className="list-wrap">

@@ -5,7 +5,7 @@ import Cta from "./Cta"
 import Choose from "./Choose"
 import Categories from "./Categories"
 import Instructor from "../home-one/Instructor"
-import Blog from "../home-six/Blog"
+
 import Testimonial from "./Testimonial"
 import Newsletter from "./Newsletter"
 import HeaderSeven from "../../../layouts/headers/HeaderSeven"
@@ -26,7 +26,7 @@ const HomeSeven = () => {
             <Instructor />
             <Testimonial />
             <BrandTwo />
-            <Blog />
+
             <Newsletter />
          </main>
          <FooterTwo style={true} />

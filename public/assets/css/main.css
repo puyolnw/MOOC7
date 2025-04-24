@@ -49,8 +49,8 @@
   --tg-heading-line-height: 1.3;
   --tg-body-color: #6D6C80;
   --tg-heading-color: #161439;
-  --tg-theme-primary: #5751E1;
-  --tg-theme-secondary: #FFC224;
+  --tg-theme-primary: #4CAF50;
+  --tg-theme-secondary: #f41141;
   --tg-common-color-blue: #050071;
   --tg-common-color-blue-2: #282568;
   --tg-common-color-indigo: #9B51E0;
@@ -117,7 +117,7 @@ img,
 
 a,
 button {
-  color: var(--tg-theme-primary);
+  color: #4CAF50;
   outline: none;
   text-decoration: none;
   -webkit-transition: all 0.3s ease-out 0s;
@@ -4923,13 +4923,15 @@ textarea {
   }
 }
 .banner__author-item {
-  display: -webkit-box;
-  display: -moz-box;
-  display: -ms-flexbox;
-  display: -webkit-flex;
   display: flex;
   align-items: center;
-  gap: 8px;
+  padding: 8px 12px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  width: fit-content; /* 👈 ตัวนี้สำคัญ */
+  max-width: 100%; /* ป้องกันล้นหน้าจอ */
+  white-space: nowrap; /* ป้องกันขึ้นบรรทัดใหม่ถ้าไม่ต้องการ */
 }
 .banner__author-item .image {
   flex: 0 0 auto;
@@ -4943,9 +4945,9 @@ textarea {
   border-radius: 50%;
 }
 .banner__author-item .name {
-  flex-grow: 1;
-  margin-bottom: 0;
   font-size: 14px;
+  margin-left: 10px;
+  white-space: nowrap; /* หรือเอาออกถ้าอยากให้ขึ้นบรรทัดใหม่ */
 }
 .banner__author .arrow-shape {
   position: absolute;

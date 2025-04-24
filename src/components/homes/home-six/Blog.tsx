@@ -1,5 +1,5 @@
-import { Link } from "react-router-dom"
-import blog_data from "../../../data/home-data/BlogData"
+
+
 
 const Blog = () => {
    return (
@@ -15,27 +15,7 @@ const Blog = () => {
                </div>
             </div>
             
-            <div className="row justify-content-center">
-               {blog_data.filter((items) => items.page === "home_6").map((item) => (
-                  <div key={item.id} className="col-lg-4 col-md-6">
-                     <div className="blog__post-item-four shine__animate-item">
-                        <div className="blog__post-thumb-four">
-                           <Link to="/blog-details" className="shine__animate-link"><img src={item.thumb} alt="img" /></Link>
-                        </div>
-                        <div className="blog__post-content-four">
-                           <Link to="/blog" className="post-tag-three">{item.tag}</Link>
-                           <h2 className="title"><Link to="/blog-details">{item.title}</Link></h2>
-                           <div className="blog__post-meta">
-                              <ul className="list-wrap">
-                                 <li><i className="flaticon-user-1"></i>by <Link to="/blog-details">Admin</Link></li>
-                                 <li><i className="flaticon-calendar"></i>{item.date}</li>
-                              </ul>
-                           </div>
-                        </div>
-                     </div>
-                  </div>
-               ))}
-            </div>
+
          </div>
       </section>
    )

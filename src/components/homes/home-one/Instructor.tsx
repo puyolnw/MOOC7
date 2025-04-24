@@ -1,12 +1,12 @@
 import { Link } from "react-router-dom";
-import BtnArrow from "../../../svg/BtnArrow";
+
 
 interface DataType {
    id: number;
    thumb: string
    title: string;
    designation: string;
-   rating: string;
+
 };
 
 const instructor_data: DataType[] = [
@@ -15,28 +15,28 @@ const instructor_data: DataType[] = [
       thumb: "/assets/img/instructor/instructor01.png",
       title: "อาจารย์ ดร.วีระพน ภานุรักษ์",
       designation: "นำร่อง หลักสูตรแบบชุดวิชา",
-      rating: "(4.8 รีวิว)"
+
    },
    {
       id: 2,
       thumb: "/assets/img/instructor/instructor02.png",
-      title: "อาจารย์วินัย โกหลำ",
-      designation: "ปราชญ์ชาวบ้านและภูมิปัญญาท้องถิ่น",
-      rating: "(4.8 รีวิว)"
+      title: "ผศ.ดร. ยุวเรศ หลุดพา",
+      designation: "รัฐประศาสนศาสตร์",
+
    },
    {
       id: 3,
       thumb: "/assets/img/instructor/instructor03.png",
-      title: "อาจารย์ทรงพล นามคุณ",
+      title: "อาจารย์ ทรงพล นามคุณ",
       designation: "เทคโนโลยีไฟฟ้า",
-      rating: "(4.8 รีวิว)"
+
    },
    {
       id: 4,
       thumb: "/assets/img/instructor/instructor04.png",
-      title: "อาจารย์วีระเดช โขนสันทียะ",
-      designation: "เทคนิคสัตวแพทย์และการพยาบาลสัตว์",
-      rating: "(4.8 รีวิว)"
+      title: "อาจารย์ ณฐภศา เดชานุเบกษา" ,
+      designation: "ธุรกิจดิจิทัล",
+   
    },
 ];
 
@@ -49,12 +49,9 @@ const Instructor = () => {
                   <div className="instructor__content-wrap">
                      <div className="section__title mb-15">
                         <span className="sub-title">แนะนำผู้มีทักษะ</span>
-                        <h2 className="title">อาจารย์ระดับชั้นนำและผู้เชี่ยวชาญของเราอยู่ในที่เดียว</h2>
+                        <h2 className="title">อาจารย์ระดับชั้นนำและผู้เชี่ยวชาญของเรา</h2>
                      </div>
                      {/* <p>when an unknown printer took a galley of type and scrambled makespecimen book has survived not only five centuries</p> */}
-                     <div className="tg-button-wrap">
-                        <Link to="/instructors" className="btn arrow-btn">ดูผู้สอนทั้งหมด<BtnArrow /></Link>
-                     </div>
                   </div>
                </div>
 
@@ -65,14 +62,13 @@ const Instructor = () => {
                            <div key={item.id} className="col-sm-6">
                               <div className="instructor__item">
                                  <div className="instructor__thumb">
-                                    <Link to="/instructor-datails"><img src={item.thumb} alt="img" /></Link>
+                                    <Link to="#"><img src={item.thumb} alt="img" /></Link>
                                  </div>
                                  <div className="instructor__content">
-                                    <h2 className="title"><Link to="/instructor-datails">{item.title}</Link></h2>
+                                    <h2 className="title"><Link to="
+                                    #">{item.title}</Link></h2>
                                     <span className="designation">{item.designation}</span>
-                                    <p className="avg-rating">
-                                       <i className="fas fa-star"></i>{item.rating}
-                                    </p>
+
                                     <div className="instructor__social">
                                        <ul className="list-wrap">
                                           <li><Link to="#"><i className="fab fa-facebook-f"></i></Link></li>
