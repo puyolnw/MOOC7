@@ -1,6 +1,3 @@
-import { Link } from "react-router-dom"
-import blog_data from "../../../data/home-data/BlogData"
-import BtnArrow from "../../../svg/BtnArrow"
 
 const Blog = () => {
    return (
@@ -17,26 +14,6 @@ const Blog = () => {
             </div>
             
             <div className="row justify-content-center">
-               {blog_data.filter((items) => items.page === "home_8").map((item) => (
-                  <div key={item.id} className="col-lg-4 col-md-6">
-                     <div className="blog__post-item-six shine__animate-item">
-                        <div className="blog__post-thumb-six">
-                           <Link to="/blog-details" className="shine__animate-link"><img src={item.thumb} alt="img" /></Link>
-                           <Link to="/blog" className="post-tag-four">{item.tag}</Link>
-                        </div>
-                        <div className="blog__post-content-six">
-                           <div className="blog__post-meta">
-                              <ul className="list-wrap">
-                                 <li><i className="flaticon-calendar"></i>{item.date}</li>
-                                 <li><i className="flaticon-user-1"></i>by <Link to="/blog-details">Admin</Link></li>
-                              </ul>
-                           </div>
-                           <h2 className="title"><Link to="/blog-details">{item.title}</Link></h2>
-                           <Link to="/blog-details" className="btn arrow-btn">Read More <BtnArrow /></Link>
-                        </div>
-                     </div>
-                  </div>
-               ))}
             </div>
          </div>
          <div className="blog__shape-wrap-three">

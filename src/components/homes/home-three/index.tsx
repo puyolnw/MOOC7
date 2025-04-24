@@ -7,7 +7,6 @@ import Event from "./Event"
 import Counter from "./Counter"
 import Cta from "./Cta"
 import Testimonial from "./Testimonial"
-import Blog from "./Blog"
 import HeaderThree from "../../../layouts/headers/HeaderThree"
 import FooterTwo from "../../../layouts/footers/FooterTwo"
 
@@ -25,7 +24,6 @@ const HomeThree = () => {
             <Counter />
             <Cta />
             <Testimonial />
-            <Blog />
          </main>
          <FooterTwo style={false} />
       </>

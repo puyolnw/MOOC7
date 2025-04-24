@@ -1,8 +1,6 @@
-import BlogAuthor from "./BlogAuthor"
-import BlogPostComment from "./BlogPostComment"
-import BlogSidebar from "../blog-common/BlogSidebar"
+
 import { Link } from "react-router-dom"
-import BlogForm from "../../../forms/BlogForm"
+
 
 const BlogDetailsArea = () => {
    return (
@@ -79,13 +77,12 @@ const BlogDetailsArea = () => {
                         </div>
                      </div>
                   </div>
-                  <BlogAuthor />
+          
                   <div className="blog-post-comment">
-                     <BlogPostComment />
-                     <BlogForm />
+                    
                   </div>
                </div>
-               <BlogSidebar style_1={false} />
+              
             </div>
          </div>
       </section>

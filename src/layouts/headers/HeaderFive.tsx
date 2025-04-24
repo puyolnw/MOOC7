@@ -47,14 +47,7 @@ const HeaderFive = () => {
                               <div className="tgmenu__action tgmenu__action-five">
                                  <ul className="list-wrap">
                                     <li>
-                                       <div className="tgmenu__search tgmenu__search-two  d-none d-md-block">
-                                          <form onSubmit={(e) => e.preventDefault()} className="tgmenu__search-form tgmenu__search-form-two">
-                                             <div className="input-grp">
-                                                <input type="text" placeholder="Search . . ." />
-                                                <button type="submit"><i className="flaticon-search"></i></button>
-                                             </div>
-                                          </form>
-                                       </div>
+
                                     </li>
                                     <li className="header-user">
                                        <Link to="/instructor-dashboard"><InjectableSvg src="/assets/img/icons/user.svg" alt="" className="injectable" /></Link>

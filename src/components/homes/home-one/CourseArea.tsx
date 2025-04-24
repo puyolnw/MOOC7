@@ -1,10 +1,28 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, Navigation } from 'swiper/modules';
-import course_data from "../../../data/home-data/CourseData";
 import { Link } from "react-router-dom";
+import axios from "axios";
 
-const tab_title: string[] = ["หลักสูตรทั้งหมด", "เทคโนโลยีคอมพิวเตอร์และดิจิทัล ", "ภาษาไทยเพื่อการสื่อสาร"];
+interface ApiCourse {
+  course_id: number;
+  title: string;
+  description: string;
+  cover_image: string;
+  cover_image_file_id: string;
+  subject_count: number;
+  department_name: string;
+  faculty: string;
+}
+
+interface FacultyCount {
+  faculty: string;
+  count: number;
+}
+
+interface CourseProps {
+  style: boolean;
+}
 
 // slider setting
 const setting = {
@@ -43,16 +61,79 @@ const setting = {
   },
 };
 
-interface CourseProps {
-  style: boolean;
-}
-
 const CourseArea = ({ style }: CourseProps) => {
-
+  const apiURL = import.meta.env.VITE_API_URL;
   const [activeTab, setActiveTab] = useState(0);
+  const [courses, setCourses] = useState<ApiCourse[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [tabTitles, setTabTitles] = useState<string[]>(["หลักสูตรทั้งหมด"]);
+  const [topFaculties, setTopFaculties] = useState<string[]>([]);
+  const [facultyCourses, setFacultyCourses] = useState<Record<string, ApiCourse[]>>({});
+
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const response = await axios.get(`${apiURL}/api/courses`);
+        
+        if (response.data.success) {
+          const allCourses = response.data.courses;
+          setCourses(allCourses);
+          
+          // Count courses by faculty
+          const facultyCount: Record<string, number> = {};
+          allCourses.forEach((course: ApiCourse) => {
+            if (course.faculty) {
+              facultyCount[course.faculty] = (facultyCount[course.faculty] || 0) + 1;
+            }
+          });
+          
+          // Sort faculties by course count
+          const sortedFaculties: FacultyCount[] = Object.entries(facultyCount)
+            .map(([faculty, count]) => ({ faculty, count }))
+            .sort((a, b) => b.count - a.count);
+          
+          // Get top 2 faculties
+          const top2Faculties = sortedFaculties.slice(0, 2).map(item => item.faculty);
+          setTopFaculties(top2Faculties);
+          
+          // Set tab titles
+          setTabTitles(["หลักสูตรทั้งหมด", ...top2Faculties]);
+          
+          // Group courses by faculty
+          const coursesByFaculty: Record<string, ApiCourse[]> = {};
+          top2Faculties.forEach(faculty => {
+            coursesByFaculty[faculty] = allCourses.filter((course: ApiCourse) => course.faculty === faculty);
+          });
+          setFacultyCourses(coursesByFaculty);
+        } else {
+          setError("ไม่พบข้อมูลหลักสูตร");
+        }
+      } catch (error) {
+        console.error("Error fetching courses:", error);
+        setError("เกิดข้อผิดพลาดในการดึงข้อมูลหลักสูตร");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchCourses();
+  }, [apiURL]);
 
   const handleTabClick = (index: number) => {
     setActiveTab(index);
+  };
+
+  const getCoursesForTab = (tabIndex: number): ApiCourse[] => {
+    if (tabIndex === 0) {
+      return courses;
+    } else if (tabIndex > 0 && tabIndex <= topFaculties.length) {
+      const faculty = topFaculties[tabIndex - 1];
+      return facultyCourses[faculty] || [];
+    }
+    return [];
   };
 
   return (
@@ -64,11 +145,10 @@ const CourseArea = ({ style }: CourseProps) => {
               <div className="section__title text-center mb-40">
                 <span className="sub-title">หลักสูตรชั้นยอด</span>
                 <h2 className="title">สำรวจหลักสูตรที่ดีที่สุด</h2>
-                {/* <p className="desc">When known printer took a galley of type scrambl edmake</p> */}
               </div>
               <div className="courses__nav">
                 <ul className="nav nav-tabs" id="courseTab" role="tablist">
-                  {tab_title.map((tab, index) => (
+                  {tabTitles.map((tab, index) => (
                     <li key={index} onClick={() => handleTabClick(index)} className="nav-item" role="presentation">
                       <button className={`nav-link ${activeTab === index ? "active" : ""}`}>{tab}</button>
                     </li>
@@ -79,52 +159,85 @@ const CourseArea = ({ style }: CourseProps) => {
           </div>
         </div>
 
-        <div className="tab-content" id="courseTabContent">
-          {course_data.filter((items) => items.page === "home_1").map((course_item, index) => (
-            <div key={course_item.id} className={`tab-pane fade ${activeTab === index ? 'show active' : ''}`} id="all-tab-pane" role="tabpanel" aria-labelledby="all-tab">
-              <Swiper {...setting} modules={[Autoplay, Navigation]} className="swiper courses-swiper-active">
-                {course_item.course_details.map((item) => (
-                  <SwiperSlide key={item.id} className="swiper-slide">
-                    <div className="courses__item shine__animate-item">
-                      <div className="courses__item-thumb">
-                        <Link to="/course-details" className="shine__animate-link">
-                          <img src={item.thumb} alt="img" />
-                        </Link>
-                      </div>
-                      <div className="courses__item-content">
-                        <ul className="courses__item-meta list-wrap">
-                          <li className="courses__item-tag">
-                            <Link to="/course">{item.tag}</Link>
-                          </li>
-                          <li className="avg-rating"><i className="fas fa-star"></i> {item.review}</li>
-                        </ul>
-                        <h5 className="title"><Link to="/course-details">{item.title}</Link></h5>
-                        <p className="author">By <Link to="#">{item.author}</Link></p>
-                        <div className="courses__item-bottom">
-                          <div className="button">
-                            <Link to="/course-details">
-                              <span className="text">ลงทะเบียนตอนนี้</span>
-                              <i className="flaticon-arrow-right"></i>
-                            </Link>
+        {isLoading ? (
+          <div className="text-center py-5">
+            <div className="spinner-border text-primary" role="status">
+              <span className="visually-hidden">กำลังโหลด...</span>
+            </div>
+            <p className="mt-3">กำลังโหลดข้อมูลหลักสูตร...</p>
+          </div>
+        ) : error ? (
+          <div className="alert alert-danger">
+            <i className="fas fa-exclamation-circle me-2"></i>
+            {error}
+          </div>
+        ) : (
+          <div className="tab-content" id="courseTabContent">
+            {tabTitles.map((_, tabIndex) => (
+              <div 
+                key={`tab-${tabIndex}`} 
+                className={`tab-pane fade ${activeTab === tabIndex ? 'show active' : ''}`} 
+                role="tabpanel"
+              >
+                <Swiper {...setting} modules={[Autoplay, Navigation]} className="swiper courses-swiper-active">
+                  {getCoursesForTab(tabIndex).map((course) => (
+                    <SwiperSlide key={`course-${course.course_id}`} className="swiper-slide">
+                      <div className="courses__item shine__animate-item">
+                        <div className="courses__item-thumb">
+                          <Link to={`/course-details/${course.course_id}`} className="shine__animate-link">
+                            <img 
+                              src={course.cover_image_file_id 
+                                ? `${apiURL}/api/courses/image/${course.cover_image_file_id}`
+                                : "/assets/img/courses/course_thumb01.jpg"
+                              } 
+                              alt={course.title}
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = "/assets/img/courses/course_thumb01.jpg";
+                              }}
+                            />
+                          </Link>
+                        </div>
+                        <div className="courses__item-content">
+                          <ul className="courses__item-meta list-wrap">
+                            <li className="courses__item-tag">
+                              <Link to="#">{course.department_name || "ไม่ระบุสาขา"}</Link>
+                            </li>
+                            <li className="avg-rating">
+                              <i className="fas fa-graduation-cap"></i> {course.subject_count || 0} วิชา
+                            </li>
+                          </ul>
+                          <h5 className="title">
+                            <Link to={`/course-details/${course.course_id}`}>{course.title}</Link>
+                          </h5>
+                          <p className="author">
+                            คณะ <Link to="#">{course.faculty || "ไม่ระบุคณะ"}</Link>
+                          </p>
+                          <div className="courses__item-bottom">
+                            <div className="button">
+                              <Link to={`/course-details/${course.course_id}`}>
+                                <span className="text">เข้าดูหลักสูตร</span>
+                                <i className="flaticon-arrow-right"></i>
+                              </Link>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  </SwiperSlide>
-                ))}
-              </Swiper>
-              {!style &&
-                <div className="courses__nav">
-                  <div className="courses-button-prev"><i className="flaticon-arrow-right"></i></div>
-                  <div className="courses-button-next"><i className="flaticon-arrow-right"></i></div>
-                </div>
-              }
-            </div>
-          ))}
-        </div>
+                    </SwiperSlide>
+                  ))}
+                </Swiper>
+                {!style && (
+                  <div className="courses__nav">
+                    <div className="courses-button-prev"><i className="flaticon-arrow-right"></i></div>
+                    <div className="courses-button-next"><i className="flaticon-arrow-right"></i></div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </section>
-  )
-}
+  );
+};
 
-export default CourseArea
+export default CourseArea;

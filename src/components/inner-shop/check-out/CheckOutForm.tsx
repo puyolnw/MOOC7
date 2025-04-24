@@ -21,16 +21,7 @@ const CheckOutForm = () => {
                <label htmlFor="company-name">Company name (optional)</label>
                <input type="text" id="company-name" />
             </div>
-            <div className="form-grp select-grp">
-               <label htmlFor="country-name">Country / Region *</label>
-               <select id="country-name" name="country-name" className="country-name">
-                  <option value="United Kingdom (UK)">United Kingdom (UK)</option>
-                  <option value="United States (US)">United States (US)</option>
-                  <option value="Turkey">Turkey</option>
-                  <option value="Saudi Arabia">Saudi Arabia</option>
-                  <option value="Portugal">Portugal</option>
-               </select>
-            </div>
+
             <div className="form-grp">
                <label htmlFor="street-address">Street address *</label>
                <input type="text" id="street-address" placeholder="House number and street name" />

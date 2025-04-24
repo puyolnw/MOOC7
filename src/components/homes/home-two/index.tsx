@@ -1,4 +1,4 @@
-import Blog from "../home-one/Blog"
+
 import CourseArea from "../home-one/CourseArea"
 import InstructorTwo from "../home-one/InstructorTwo"
 import About from "./About"
@@ -28,7 +28,6 @@ const HomeTwo = () => {
             <Instructor />
             <Newsletter />
             <EventArea />
-            <Blog style={true} />
             <InstructorTwo style={true} />
          </main>
          <FooterOne style={false} style_2={false} />

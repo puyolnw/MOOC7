@@ -1321,9 +1321,9 @@
     &__author {
         position: absolute;
         top: 30px;
-        left: 23px;
-        width: 175px;
-        padding: 11px 30px 11px 14px;
+        left: 50px;
+        width: fit-content;
+        padding: 11px 15px 11px 14px;
         border-radius: 6px;
         background: var(--tg-common-color-white);
         box-shadow: 9px 10px 0px 0px rgba(0, 0, 0, 0.20);

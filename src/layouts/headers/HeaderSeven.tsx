@@ -32,21 +32,7 @@ const HeaderSeven = () => {
                               <div className="tgmenu__action tgmenu__action-seven">
                                  <ul className="list-wrap">
                                     <li className="header-select">
-                                       <div className="tgmenu__categories select-grp-two d-none d-md-block">
-                                          <div className="dropdown">
-                                             <button className="dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                                <i className="skillgro-list"></i>
-                                                Categories
-                                             </button>
-                                             <ul className="dropdown-menu">
-                                                <li><Link className="dropdown-item" to="/courses">Business</Link></li>
-                                                <li><Link className="dropdown-item" to="/courses">Data Science</Link></li>
-                                                <li><Link className="dropdown-item" to="/courses">Art & Design</Link></li>
-                                                <li><Link className="dropdown-item" to="/courses">Marketing</Link></li>
-                                                <li><Link className="dropdown-item" to="/courses">Finance</Link></li>
-                                             </ul>
-                                          </div>
-                                       </div>
+
                                     </li>
                                     <li className="header-search">
                                        <a onClick={() => setIsSearch(true)} style={{ cursor: "pointer" }} className="search-open-btn">

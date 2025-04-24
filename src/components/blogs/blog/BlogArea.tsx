@@ -1,6 +1,6 @@
 import { useState } from "react";
 import ReactPaginate from "react-paginate";
-import BlogSidebar from "../blog-common/BlogSidebar";
+
 import inner_blog_data from "../../../data/inner-data/BlogData";
 import { Link } from "react-router-dom";
 
@@ -60,7 +60,7 @@ const BlogArea = ({ style_1 }: BlogPropd) => {
                      />
                   </nav>
                </div>
-               <BlogSidebar style_1={style_1} />
+   
             </div>
          </div>
       </section>
