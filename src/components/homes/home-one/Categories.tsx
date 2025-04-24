@@ -12,14 +12,33 @@ interface Department {
 }
 
 const departmentIcons: { [key: string]: string } = {
-  'คณะวิทยาศาสตร์': 'skillgro-calculator',
-  'คณะเทคโนโลยีสารสนเทศ': 'skillgro-computer',
-  'คณะวิทยาการจัดการ': 'skillgro-taxes',
-  'คณะรัฐประศาสนศาสตร์และรัฐศาสตร์': 'skillgro-mortarboard',
-  'คณะศิลปกรรมศาสตร์และภาษา': 'skillgro-book',
-  'คณะเทคโนโลยีการเกษตรและสัตวแพทยศาสตร์': 'skillgro-plant',
-  'คณะสาธารณสุขศาสตร์และเทคโนโลยีสุขภาพ': 'skillgro-heart',
-  'ศูนย์การศึกษาสำหรับผู้ใหญ่': 'skillgro-audio-book',
+  'วิทยาการคอมพิวเตอร์': 'skillgro-browser',
+  'คณิตศาสตร์': 'skillgro-calculator',
+  'เทคโนโลยีสารสนเทศ': 'skillgro-computer',
+  'ธุรกิจดิจิทัล': 'skillgro-financial-profit',
+  'เศรษฐศาสตร์': 'skillgro-taxes',
+  'การบริหารจัดการท้องถิ่น': 'skillgro-development-plan',
+  'รัฐประศาสนศาสตร์': 'skillgro-notepad',
+  'รัฐศาสตร์': 'skillgro-mortarboard',
+  'นิติศาสตร์': 'skillgro-text-file',
+  'ศิลปกรรมศาสตร์': 'skillgro-vector',
+  'ภาษาไทยเพื่อการสื่อสาร': 'skillgro-book',
+  'เทคนิคสัตวแพทย์': 'skillgro-microscope',
+  'เทคโนโลยีการเกษตร': 'skillgro-plant',
+  'เทคโนโลยีไฟฟ้า': 'skillgro-smart-watch',
+  'วิศวกรรมคอมพิวเตอร์': 'skillgro-coding',
+  'เทคโนโลยีคอมพิวเตอร์': 'skillgro-web-programming',
+  'เทคโนโลยีชีวภาพ': 'skillgro-dna',
+  'สาธารณสุขชุมชน': 'skillgro-happy-face',
+  'สถิติประยุกต์': 'skillgro-presentation',
+  'ชีววิทยา': 'skillgro-research',
+  'ปราชญ์ชาวบ้าน': 'skillgro-lotus',
+  'หลักสูตรแบบชุดวิชา': 'skillgro-audio-book',
+  'การบริหารการพัฒนา': 'skillgro-strategy',
+  'เทคโนโลยีคอมพิวเตอร์และดิจิทัล': 'skillgro-innovation',
+  'เทคโนโลยีสารสนเทศการเกษตร': 'skillgro-agriculture',
+  'เทคนิคสัตวแพทย์และการพยาบาลสัตว์': 'skillgro-heart',
+  'ปราชญ์ชาวบ้านและภูมิปัญญาท้องถิ่น': 'skillgro-culture'
 };
 
 const setting = {
