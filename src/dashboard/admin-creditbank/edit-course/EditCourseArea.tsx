@@ -1,7 +1,7 @@
 import React from "react";
 import DashboardSidebar from "../../dashboard-common/AdminSidebar";
 import DashboardBanner from "../../dashboard-common/AdminBanner";
-import EditCourse from "../../../forms/Course/EditCourses";
+import EditCourse from "../../../forms/Course/Edit/Courses/EditCourses";
 
 const EditCourseArea: React.FC = () => {
 

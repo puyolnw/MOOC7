@@ -1,54 +1,50 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
-// Interface for subject data
 interface Subject {
   id: string;
   title: string;
   instructor: string;
   description: string;
-  coverImage?: string; // ปรับให้สอดคล้องกับ AddCourses.tsx
+  coverImage?: string;
   coverImageFileId?: string;
 }
 
-interface CourseContentSectionProps {
-  isLoading: boolean;
-  courseData: {
-    subjects: string[];
-    prerequisites: { subjectId: string; prerequisiteId: string }[];
-  };
-  availableSubjects: Subject[];
-  errors: { subjects: string };
-  selectedSubjectsDetails: Subject[];
-  handleReorderSubject: (subjectId: string, newIndex: number) => void;
-  handleRemoveSubject: (subjectId: string) => void;
-  getPrerequisitesForSubject: (subjectId: string) => string[];
-  handleRemovePrerequisite: (subjectId: string, prerequisiteId: string) => void;
-  setShowSubjectModal: (value: boolean) => void;
-  setShowPrerequisiteModal: (value: boolean) => void;
-  setSelectedSubjectForPrereq: (value: string | null) => void;
+interface Prerequisite {
+  subjectId: string;
+  prerequisiteId: string;
 }
 
-const apiURL = import.meta.env.VITE_API_URL;
-
+interface CourseContentSectionProps {
+  courseData: {
+    subjects: string[];
+    prerequisites: Prerequisite[];
+  };
+  errors: { subjects: string };
+  availableSubjects: Subject[];
+  selectedSubjectsDetails: Subject[];
+  setShowSubjectModal: (value: boolean) => void;
+  setSelectedSubjectForPrereq: (value: string | null) => void;
+  setShowPrerequisiteModal: (value: boolean) => void;
+  handleRemoveSubject: (subjectId: string) => void;
+  handleReorderSubject: (subjectId: string, newIndex: number) => void;
+  getPrerequisitesForSubject: (subjectId: string) => string[];
+  handleRemovePrerequisite: (subjectId: string, prerequisiteId: string) => void;
+}
+const apiUrl = import.meta.env.VITE_API_URL;
 const CourseContentSection: React.FC<CourseContentSectionProps> = ({
-  isLoading,
   courseData,
-  availableSubjects,
   errors,
+  availableSubjects,
   selectedSubjectsDetails,
-  handleReorderSubject,
+  setShowSubjectModal,
+  setSelectedSubjectForPrereq,
+  setShowPrerequisiteModal,
   handleRemoveSubject,
+  handleReorderSubject,
   getPrerequisitesForSubject,
   handleRemovePrerequisite,
-  setShowSubjectModal,
-  setShowPrerequisiteModal,
-  setSelectedSubjectForPrereq,
 }) => {
-  // Debug ข้อมูล selectedSubjectsDetails และ prerequisites
-  console.log("Selected Subjects Details:", selectedSubjectsDetails);
-  console.log("Prerequisites:", courseData.prerequisites);
-
   return (
     <div className="card shadow-sm border-0 mb-4">
       <div className="card-body">
@@ -56,9 +52,9 @@ const CourseContentSection: React.FC<CourseContentSectionProps> = ({
 
         {errors.subjects && <div className="alert alert-danger">{errors.subjects}</div>}
 
-        <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <div className="d-flex justify-content-between align-items-center mb-3">
           <p className="mb-0">เลือกรายวิชาที่ต้องการเพิ่มในหลักสูตร</p>
-          <div className="d-flex gap-2 flex-wrap">
+          <div className="d-flex gap-2">
             <button
               type="button"
               className="btn btn-outline-primary"
@@ -66,20 +62,13 @@ const CourseContentSection: React.FC<CourseContentSectionProps> = ({
             >
               <i className="fas fa-plus-circle me-2"></i>เพิ่มรายวิชาที่มีอยู่
             </button>
-            <Link to="/admin-subjects/create-new" className="btn btn-outline-success">
+            <Link to="/admin-creditbank/subjects/add" className="btn btn-outline-success">
               <i className="fas fa-file-medical me-2"></i>สร้างรายวิชาใหม่
             </Link>
           </div>
         </div>
 
-        {isLoading && availableSubjects.length === 0 ? (
-          <div className="text-center py-4">
-            <div className="spinner-border text-primary" role="status">
-              <span className="visually-hidden">Loading...</span>
-            </div>
-            <p className="mt-2">กำลังโหลดข้อมูลรายวิชา...</p>
-          </div>
-        ) : courseData.subjects.length > 0 ? (
+        {courseData.subjects.length > 0 ? (
           <div className="selected-subjects mt-3">
             <div className="alert alert-info mb-3">
               <i className="fas fa-info-circle me-2"></i>
@@ -96,9 +85,8 @@ const CourseContentSection: React.FC<CourseContentSectionProps> = ({
                 return (
                   <div key={subject.id} className="card mb-3 border">
                     <div className="card-body">
-                      <div className="d-flex align-items-center flex-wrap gap-2 mb-2 justify-content-between">
-                        <div className="d-flex align-items-center flex-wrap gap-2">
-                          <div className="d-flex align-items-center flex-wrap gap-2">
+                      <div className="d-flex align-items-center mb-2">
+                      <div className="d-flex align-items-center flex-wrap gap-2">
                             <h5 className="mb-0 fw-semibold d-flex align-items-center">{index + 1}</h5>
                             <h5 className="mb-0 fw-semibold d-flex align-items-center">{subject.title}</h5>
                             <button
@@ -120,8 +108,8 @@ const CourseContentSection: React.FC<CourseContentSectionProps> = ({
                               <i className="fas fa-arrow-down"></i>
                             </button>
                           </div>
-                        </div>
-                        <div className="d-flex gap-2 flex-wrap">
+                        <h6 className="mb-0 flex-grow-1"></h6>
+                        <div className="d-flex gap-2">
                           <button
                             type="button"
                             className="btn btn-sm btn-outline-primary"
@@ -143,28 +131,28 @@ const CourseContentSection: React.FC<CourseContentSectionProps> = ({
                         </div>
                       </div>
 
-                      <div className="d-flex align-items-center flex-column flex-md-row text-center text-md-start">
+                      <div className="d-flex align-items-center">
                         <img
                           src={
                             subject.coverImageFileId
-                              ? `${apiURL}/api/courses/subjects/image/${subject.coverImageFileId}`
+                              ? `${apiUrl}/api/courses/subjects/image/${subject.coverImageFileId}`
                               : subject.coverImage || "/assets/img/courses/course_thumb01.jpg"
                           }
                           alt={subject.title}
-                          className="img-thumbnail me-0 me-md-3 mb-2 mb-md-0"
-                          style={{ width: "120px", height: "80px", objectFit: "cover" }}
+                          className="img-thumbnail me-3"
+                          style={{ width: "60px", height: "60px", objectFit: "cover" }}
                           onError={(e) => {
                             (e.target as HTMLImageElement).src = "/assets/img/courses/course_thumb01.jpg";
                           }}
                         />
-
                         <div>
                           <p className="mb-1 small text-muted">ผู้สอน: {subject.instructor}</p>
                           <p className="mb-0 small">{subject.description}</p>
                         </div>
                       </div>
 
-                      {prerequisiteSubjects.length > 0 && (
+                      {prerequisiteSubjects.length > 0 && 
+                      (
                         <div className="mt-3 pt-2 border-top">
                           <h6 className="small">วิชาที่ต้องเรียนก่อน:</h6>
                           <div className="d-flex flex-wrap gap-2 mt-2">
@@ -172,22 +160,14 @@ const CourseContentSection: React.FC<CourseContentSectionProps> = ({
                               <div
                                 key={prereq.id}
                                 className="badge bg-light text-dark p-2 d-flex align-items-center"
-                                style={{
-                                  fontSize: '1.0em',
-                                  padding: '0.5em 1.0em',
-                                }}
                               >
-                                <span style={{ fontSize: '1.2em' }}>{prereq.title}</span>
+                                <span>{prereq.title}</span>
                                 <button
                                   type="button"
-                                  className="btn btn-sm text-danger ms-2 p-0 rounded-pill"
+                                  className="btn btn-sm text-danger ms-2 p-0"
                                   onClick={() => handleRemovePrerequisite(subject.id, prereq.id)}
-                                  style={{
-                                    fontSize: '1.5em',
-                                    marginLeft: '0.5em',
-                                  }}
                                 >
-                                  <i className="fas fa-times-circle" style={{ fontSize: '1.2em' }}></i>
+                                  <i className="fas fa-times-circle"></i>
                                 </button>
                               </div>
                             ))}

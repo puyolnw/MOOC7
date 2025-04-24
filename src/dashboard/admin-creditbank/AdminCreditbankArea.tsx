@@ -224,7 +224,7 @@ const AdminCreditbankArea: React.FC = () => {
               <div className="dashboard__content-main">
                 <div className="d-flex justify-content-between align-items-center mb-4">
                   <h5 className="card-title mb-0">จัดการหลักสูตร</h5>
-                  <Link to="/admin-creditbank/create-course" className="btn btn-primary">
+                  <Link to="/admin-creditbank/create-new" className="btn btn-primary">
                     <i className="fas fa-plus-circle me-2"></i>สร้างหลักสูตรใหม่
                   </Link>
                 </div>

@@ -4,13 +4,14 @@ interface CourseSettingsSectionProps {
   courseData: {
     coverImage: File | null;
     coverImagePreview: string;
-    video_url: string; // เปลี่ยนจาก videoUrl เป็น video_url เพื่อให้สอดคล้องกับ backend
+    video_url: string;
+    status: "active" | "inactive" | "draft";
   };
-  errors: { videoUrl: string };
-  handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+  errors: { video_url: string };
+  handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
   handleCoverImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleRemoveCoverImage: () => void;
-  fileInputRef: RefObject<HTMLInputElement>; // เพิ่ม fileInputRef
+  fileInputRef: RefObject<HTMLInputElement>;
 }
 
 const CourseSettingsSection: React.FC<CourseSettingsSectionProps> = ({
@@ -21,12 +22,6 @@ const CourseSettingsSection: React.FC<CourseSettingsSectionProps> = ({
   handleRemoveCoverImage,
   fileInputRef,
 }) => {
-  // Debug ข้อมูล coverImage, coverImagePreview, และ video_url
-  console.log("Cover Image:", courseData.coverImage);
-  console.log("Cover Image Preview:", courseData.coverImagePreview);
-  console.log("Video URL:", courseData.video_url);
-
-  // ฟังก์ชันสำหรับดึง YouTube video ID จาก URL
   const extractYouTubeId = (url: string): string | null => {
     const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
     return match ? match[1] : null;
@@ -69,7 +64,7 @@ const CourseSettingsSection: React.FC<CourseSettingsSectionProps> = ({
                 ref={fileInputRef}
                 onChange={(e) => {
                   handleCoverImageUpload(e);
-                  console.log("File selected:", e.target.files?.[0]); // Debug
+                  console.log("File selected:", e.target.files?.[0]);
                 }}
                 accept="image/jpeg,image/png,image/gif,image/webp"
                 style={{ display: "none" }}
@@ -82,16 +77,16 @@ const CourseSettingsSection: React.FC<CourseSettingsSectionProps> = ({
                   onClick={() => fileInputRef.current?.click()}
                 >
                   <i className="fas fa-upload me-2"></i>
-                  {courseData.coverImage ? "เปลี่ยนภาพ" : "อัปโหลดภาพ"}
+                  {courseData.coverImagePreview ? "เปลี่ยนภาพ" : "อัปโหลดภาพ"}
                 </button>
 
-                {courseData.coverImage && (
+                {courseData.coverImagePreview && (
                   <button
                     type="button"
                     className="btn btn-outline-danger"
                     onClick={() => {
                       handleRemoveCoverImage();
-                      console.log("Cover image removed"); // Debug
+                      console.log("Cover image removed");
                     }}
                   >
                     <i className="fas fa-trash-alt me-2"></i>ลบภาพ
@@ -110,23 +105,23 @@ const CourseSettingsSection: React.FC<CourseSettingsSectionProps> = ({
           </label>
           <input
             type="text"
-            className={`form-control ${errors.videoUrl ? "is-invalid" : ""}`}
+            className={`form-control ${errors.video_url ? "is-invalid" : ""}`}
             id="video_url"
-            name="video_url" // เปลี่ยนจาก videoUrl เป็น video_url
+            name="video_url"
             value={courseData.video_url}
             onChange={(e) => {
               handleInputChange(e);
-              console.log("Video URL updated:", e.target.value); // Debug
+              console.log("Video URL updated:", e.target.value);
             }}
             placeholder="เช่น https://www.youtube.com/watch?v=abcdefghijk"
           />
-          {errors.videoUrl && <div className="invalid-feedback">{errors.videoUrl}</div>}
+          {errors.video_url && <div className="invalid-feedback">{errors.video_url}</div>}
           <small className="form-text text-muted">
             ตัวอย่างลิงก์ที่ถูกต้อง: https://www.youtube.com/watch?v=abcdefghijk หรือ https://youtu.be/abcdefghijk
           </small>
         </div>
 
-        {courseData.video_url && !errors.videoUrl && videoId ? (
+        {courseData.video_url && !errors.video_url && videoId ? (
           <div className="video-preview mb-4">
             <h6>ตัวอย่างวิดีโอ:</h6>
             <div className="ratio ratio-16x9">
@@ -138,12 +133,29 @@ const CourseSettingsSection: React.FC<CourseSettingsSectionProps> = ({
               ></iframe>
             </div>
           </div>
-        ) : courseData.video_url && !errors.videoUrl ? (
+        ) : courseData.video_url && !errors.video_url ? (
           <div className="alert alert-warning mb-4">
             <i className="fas fa-exclamation-circle me-2"></i>
             ไม่สามารถแสดงตัวอย่างวิดีโอได้ กรุณาตรวจสอบ URL
           </div>
         ) : null}
+
+        <div className="mb-3">
+          <label htmlFor="status" className="form-label">
+            สถานะ
+          </label>
+          <select
+            className="form-control"
+            id="status"
+            name="status"
+            value={courseData.status}
+            onChange={(e) => handleInputChange(e as React.ChangeEvent<HTMLSelectElement>)}
+          >
+            <option value="active">เปิดใช้งาน</option>
+            <option value="inactive">ปิดใช้งาน</option>
+            <option value="draft">ฉบับร่าง</option>
+          </select>
+        </div>
       </div>
     </div>
   );
