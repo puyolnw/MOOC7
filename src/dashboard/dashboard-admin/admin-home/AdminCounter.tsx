@@ -18,7 +18,7 @@ const AdminCounter = () => {
                  axios.get(`${apiURL}/api/courses/total/all`, {
                      headers: { Authorization: `Bearer ${token}` }
                  }),
-                 axios.get(`${apiURL}/api/courses/users/total`, {
+                 axios.get(`${apiURL}/api/accounts/students/count/total`, {
                      headers: { Authorization: `Bearer ${token}` }
                  }),
                  axios.get(`${apiURL}/api/courses/enrollments/completed`, {

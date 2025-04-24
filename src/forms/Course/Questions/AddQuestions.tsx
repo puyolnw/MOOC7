@@ -421,23 +421,30 @@ const AddQuestions: React.FC<AddQuestionsProps> = ({ onSubmit, onCancel }) => {
       </div>
       
       {showQuizModal && (
-        <div className="modal fade show" style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog modal-lg">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">เลือกแบบทดสอบ</h5>
-                <button type="button" className="btn-close" onClick={() => setShowQuizModal(false)}></button>
-              </div>
-              <div className="modal-body">
-                <div className="mb-3">
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder="ค้นหาแบบทดสอบ..."
-                    value={quizSearchTerm}
-                    onChange={(e) => setQuizSearchTerm(e.target.value)}
-                  />
-                </div>
+  <div
+    className="modal fade show"
+    style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}
+  >
+    <div className="modal-dialog modal-lg modal-dialog-centered">
+      <div className="modal-content">
+        <div className="modal-header">
+          <h5 className="modal-title">เลือกแบบทดสอบ</h5>
+          <button
+            type="button"
+            className="btn-close"
+            onClick={() => setShowQuizModal(false)}
+          ></button>
+        </div>
+        <div className="modal-body">
+          <div className="mb-3">
+            <input
+              type="text"
+              className="form-control"
+              placeholder="ค้นหาแบบทดสอบ..."
+              value={quizSearchTerm}
+              onChange={(e) => setQuizSearchTerm(e.target.value)}
+            />
+          </div>
                 
                 <div className="quiz-list">
                   {filteredQuizzes.length > 0 ? (

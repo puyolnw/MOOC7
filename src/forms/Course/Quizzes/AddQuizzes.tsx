@@ -16,7 +16,7 @@ interface Question {
   title: string;
   type: QuestionType;
   score: number;
-  isExisting?: boolean; // คำถามที่มีอยู่แล้วในระบบ
+  isExisting?: boolean;
 }
 
 // ข้อมูลบทเรียน
@@ -71,24 +71,24 @@ const AddQuizzes: React.FC<AddQuizzesProps> = ({ onSubmit, onCancel }) => {
     timeLimit: {
       enabled: false,
       value: 60,
-      unit: "minutes"
+      unit: "minutes",
     },
     passingScore: {
       enabled: false,
-      value: 0
+      value: 0,
     },
     attempts: {
       limited: true,
       unlimited: false,
-      value: 1
+      value: 1,
     },
     lessons: [],
-    status: "draft"
+    status: "draft",
   });
 
   const [errors, setErrors] = useState({
     title: "",
-    questions: ""
+    questions: "",
   });
 
   const [showAddQuestionForm, setShowAddQuestionForm] = useState(false);
@@ -115,16 +115,16 @@ const AddQuizzes: React.FC<AddQuizzesProps> = ({ onSubmit, onCancel }) => {
         const lessonsResponse = await axios.get(`${apiUrl}/api/courses/lessons`, {
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`
-          }
+            "Authorization": `Bearer ${token}`,
+          },
         });
 
         if (lessonsResponse.data && lessonsResponse.data.lessons) {
           const formattedLessons = lessonsResponse.data.lessons.map((lesson: any) => ({
-            id: lesson.lesson_id,
+            id: lesson.lesson_id.toString(),
             title: lesson.title,
-            subject: lesson.subjects || "ไม่ระบุวิชา",
-            duration: lesson.duration ? `${lesson.duration} นาที` : "ไม่ระบุระยะเวลา"
+            subject: lesson.subjects?.length > 0 ? lesson.subjects[0].subject_name : "ไม่ระบุวิชา", // ใช้ subject_name
+            duration: lesson.duration ? `${lesson.duration} นาที` : "ไม่ระบุระยะเวลา",
           }));
           setAvailableLessons(formattedLessons);
         }
@@ -132,8 +132,8 @@ const AddQuizzes: React.FC<AddQuizzesProps> = ({ onSubmit, onCancel }) => {
         const questionsResponse = await axios.get(`${apiUrl}/api/courses/questions`, {
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`
-          }
+            "Authorization": `Bearer ${token}`,
+          },
         });
 
         if (questionsResponse.data && questionsResponse.data.questions) {
@@ -142,7 +142,7 @@ const AddQuizzes: React.FC<AddQuizzesProps> = ({ onSubmit, onCancel }) => {
             title: question.title,
             type: question.type as QuestionType,
             score: question.score || 1,
-            isExisting: true
+            isExisting: true,
           }));
           setExistingQuestions(formattedQuestions);
         }
@@ -157,31 +157,36 @@ const AddQuizzes: React.FC<AddQuizzesProps> = ({ onSubmit, onCancel }) => {
     fetchData();
   }, []);
 
-  const filteredExistingQuestions = existingQuestions.filter(question =>
+  const filteredExistingQuestions = existingQuestions.filter((question) =>
     question.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const filteredLessons = availableLessons.filter(lesson =>
-    lesson.title.toLowerCase().includes(lessonSearchTerm.toLowerCase()) ||
-    lesson.subject.toLowerCase().includes(lessonSearchTerm.toLowerCase())
+  const filteredLessons = availableLessons.filter(
+    (lesson) =>
+      lesson.title.toLowerCase().includes(lessonSearchTerm.toLowerCase()) ||
+      lesson.subject.toLowerCase().includes(lessonSearchTerm.toLowerCase())
   );
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
     setQuizData({
       ...quizData,
-      [name]: value
+      [name]: value,
     });
 
     if (name === "title") {
       setErrors({
         ...errors,
-        title: ""
+        title: "",
       });
     }
   };
 
-  const handleTimeLimitChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleTimeLimitChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const { name, value, type } = e.target as HTMLInputElement;
 
     if (type === "checkbox") {
@@ -189,24 +194,24 @@ const AddQuizzes: React.FC<AddQuizzesProps> = ({ onSubmit, onCancel }) => {
         ...quizData,
         timeLimit: {
           ...quizData.timeLimit,
-          enabled: (e.target as HTMLInputElement).checked
-        }
+          enabled: (e.target as HTMLInputElement).checked,
+        },
       });
     } else if (name === "timeLimitValue") {
       setQuizData({
         ...quizData,
         timeLimit: {
           ...quizData.timeLimit,
-          value: parseInt(value) || 0
-        }
+          value: parseInt(value) || 0,
+        },
       });
     } else if (name === "timeLimitUnit") {
       setQuizData({
         ...quizData,
         timeLimit: {
           ...quizData.timeLimit,
-          unit: value as "minutes" | "hours" | "days" | "weeks"
-        }
+          unit: value as "minutes" | "hours" | "days" | "weeks",
+        },
       });
     }
   };
@@ -219,16 +224,16 @@ const AddQuizzes: React.FC<AddQuizzesProps> = ({ onSubmit, onCancel }) => {
         ...quizData,
         passingScore: {
           ...quizData.passingScore,
-          enabled: e.target.checked
-        }
+          enabled: e.target.checked,
+        },
       });
     } else if (name === "passingScoreValue") {
       setQuizData({
         ...quizData,
         passingScore: {
           ...quizData.passingScore,
-          value: parseInt(value) || 0
-        }
+          value: parseInt(value) || 0,
+        },
       });
     }
   };
@@ -242,8 +247,8 @@ const AddQuizzes: React.FC<AddQuizzesProps> = ({ onSubmit, onCancel }) => {
         attempts: {
           ...quizData.attempts,
           limited: e.target.checked,
-          unlimited: !e.target.checked
-        }
+          unlimited: !e.target.checked,
+        },
       });
     } else if (name === "attemptsUnlimited" && type === "checkbox") {
       setQuizData({
@@ -251,16 +256,16 @@ const AddQuizzes: React.FC<AddQuizzesProps> = ({ onSubmit, onCancel }) => {
         attempts: {
           ...quizData.attempts,
           unlimited: e.target.checked,
-          limited: !e.target.checked
-        }
+          limited: !e.target.checked,
+        },
       });
     } else if (name === "attemptsValue") {
       setQuizData({
         ...quizData,
         attempts: {
           ...quizData.attempts,
-          value: parseInt(value) || 1
-        }
+          value: parseInt(value) || 1,
+        },
       });
     }
   };
@@ -286,34 +291,34 @@ const AddQuizzes: React.FC<AddQuizzesProps> = ({ onSubmit, onCancel }) => {
       title: questionData.title,
       type: questionData.type,
       score: questionData.score,
-      isExisting: false
+      isExisting: false,
     };
 
     setQuizData({
       ...quizData,
-      questions: [...quizData.questions, newQuestion]
+      questions: [...quizData.questions, newQuestion],
     });
 
     setShowAddQuestionForm(false);
 
     setErrors({
       ...errors,
-      questions: ""
+      questions: "",
     });
   };
 
   const handleDeleteQuestion = (id: string) => {
-    const updatedQuestions = quizData.questions.filter(question => question.id !== id);
+    const updatedQuestions = quizData.questions.filter((question) => question.id !== id);
 
     setQuizData({
       ...quizData,
-      questions: updatedQuestions
+      questions: updatedQuestions,
     });
   };
 
   const handleSelectExistingQuestion = (id: string) => {
     if (selectedExistingQuestions.includes(id)) {
-      setSelectedExistingQuestions(selectedExistingQuestions.filter(qId => qId !== id));
+      setSelectedExistingQuestions(selectedExistingQuestions.filter((qId) => qId !== id));
     } else {
       setSelectedExistingQuestions([...selectedExistingQuestions, id]);
     }
@@ -321,15 +326,19 @@ const AddQuizzes: React.FC<AddQuizzesProps> = ({ onSubmit, onCancel }) => {
 
   const handleAddSelectedQuestions = () => {
     if (quizData.questions.length + selectedExistingQuestions.length > 100) {
-      toast.warning(`ไม่สามารถเพิ่มคำถามได้ทั้งหมด เนื่องจากจะทำให้มีคำถามเกิน 100 ข้อ\nสามารถเพิ่มได้อีก ${100 - quizData.questions.length} ข้อ`);
+      toast.warning(
+        `ไม่สามารถเพิ่มคำถามได้ทั้งหมด เนื่องจากจะทำให้มีคำถามเกิน 100 ข้อ\nสามารถเพิ่มได้อีก ${
+          100 - quizData.questions.length
+        } ข้อ`
+      );
       return;
     }
 
-    const questionsToAdd = existingQuestions.filter(q => selectedExistingQuestions.includes(q.id));
+    const questionsToAdd = existingQuestions.filter((q) => selectedExistingQuestions.includes(q.id));
 
     setQuizData({
       ...quizData,
-      questions: [...quizData.questions, ...questionsToAdd]
+      questions: [...quizData.questions, ...questionsToAdd],
     });
 
     setShowExistingQuestions(false);
@@ -337,7 +346,7 @@ const AddQuizzes: React.FC<AddQuizzesProps> = ({ onSubmit, onCancel }) => {
 
     setErrors({
       ...errors,
-      questions: ""
+      questions: "",
     });
   };
 
@@ -345,12 +354,12 @@ const AddQuizzes: React.FC<AddQuizzesProps> = ({ onSubmit, onCancel }) => {
     if (quizData.lessons.includes(lessonId)) {
       setQuizData({
         ...quizData,
-        lessons: quizData.lessons.filter(id => id !== lessonId)
+        lessons: quizData.lessons.filter((id) => id !== lessonId),
       });
     } else {
       setQuizData({
         ...quizData,
-        lessons: [...quizData.lessons, lessonId]
+        lessons: [...quizData.lessons, lessonId],
       });
     }
   };
@@ -359,7 +368,7 @@ const AddQuizzes: React.FC<AddQuizzesProps> = ({ onSubmit, onCancel }) => {
     let isValid = true;
     const newErrors = {
       title: "",
-      questions: ""
+      questions: "",
     };
 
     if (quizData.title.trim() === "") {
@@ -397,36 +406,36 @@ const AddQuizzes: React.FC<AddQuizzesProps> = ({ onSubmit, onCancel }) => {
         const apiData = {
           title: quizData.title,
           description: quizData.description,
-          questions: quizData.questions.map(q => ({
+          questions: quizData.questions.map((q) => ({
             id: q.id,
             title: q.title,
             type: q.type,
             score: q.score,
-            isExisting: q.isExisting || false
+            isExisting: q.isExisting || false,
           })),
           timeLimit: {
             enabled: quizData.timeLimit.enabled,
             value: quizData.timeLimit.value,
-            unit: quizData.timeLimit.unit
+            unit: quizData.timeLimit.unit,
           },
           passingScore: {
             enabled: quizData.passingScore.enabled,
-            value: quizData.passingScore.value
+            value: quizData.passingScore.value,
           },
           attempts: {
             limited: quizData.attempts.limited,
             unlimited: quizData.attempts.unlimited,
-            value: quizData.attempts.value
+            value: quizData.attempts.value,
           },
           lessons: quizData.lessons,
-          status: quizData.status || "draft"
+          status: quizData.status || "draft",
         };
 
         const response = await axios.post(`${apiUrl}/api/courses/quizzes`, apiData, {
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`
-          }
+            "Authorization": `Bearer ${token}`,
+          },
         });
 
         setApiSuccess("สร้างแบบทดสอบสำเร็จ");
@@ -442,19 +451,19 @@ const AddQuizzes: React.FC<AddQuizzesProps> = ({ onSubmit, onCancel }) => {
             timeLimit: {
               enabled: false,
               value: 60,
-              unit: "minutes"
+              unit: "minutes",
             },
             passingScore: {
               enabled: false,
-              value: 0
+              value: 0,
             },
             attempts: {
               limited: true,
               unlimited: false,
-              value: 1
+              value: 1,
             },
             lessons: [],
-            status: "draft"
+            status: "draft",
           });
         }
       } catch (error) {
@@ -475,11 +484,16 @@ const AddQuizzes: React.FC<AddQuizzesProps> = ({ onSubmit, onCancel }) => {
 
   const getQuestionTypeText = (type: QuestionType) => {
     switch (type) {
-      case "TF": return "ถูก/ผิด";
-      case "MC": return "หลายตัวเลือก";
-      case "SC": return "ตัวเลือกเดียว";
-      case "FB": return "เติมคำ";
-      default: return "";
+      case "TF":
+        return "ถูก/ผิด";
+      case "MC":
+        return "หลายตัวเลือก";
+      case "SC":
+        return "ตัวเลือกเดียว";
+      case "FB":
+        return "เติมคำ";
+      default:
+        return "";
     }
   };
 
@@ -489,9 +503,9 @@ const AddQuizzes: React.FC<AddQuizzesProps> = ({ onSubmit, onCancel }) => {
         <div className="alert alert-success alert-dismissible fade show" role="alert">
           <i className="fas fa-check-circle me-2"></i>
           {apiSuccess}
-          <button 
-            type="button" 
-            className="btn-close" 
+          <button
+            type="button"
+            className="btn-close"
             onClick={() => setApiSuccess("")}
             aria-label="Close"
           ></button>
@@ -502,9 +516,9 @@ const AddQuizzes: React.FC<AddQuizzesProps> = ({ onSubmit, onCancel }) => {
         <div className="alert alert-danger alert-dismissible fade show" role="alert">
           <i className="fas fa-exclamation-circle me-2"></i>
           {apiError}
-          <button 
-            type="button" 
-            className="btn-close" 
+          <button
+            type="button"
+            className="btn-close"
             onClick={() => setApiError("")}
             aria-label="Close"
           ></button>
@@ -565,22 +579,26 @@ const AddQuizzes: React.FC<AddQuizzesProps> = ({ onSubmit, onCancel }) => {
           />
 
           <div className="d-flex justify-content-end gap-2 mt-4">
-            <button 
-              type="button" 
-              className="btn btn-outline-secondary" 
+            <button
+              type="button"
+              className="btn btn-outline-secondary"
               onClick={onCancel}
               disabled={isSubmitting}
             >
               ยกเลิก
             </button>
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               className="btn btn-primary"
               disabled={isSubmitting}
             >
               {isSubmitting ? (
                 <>
-                  <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                  <span
+                    className="spinner-border spinner-border-sm me-2"
+                    role="status"
+                    aria-hidden="true"
+                  ></span>
                   กำลังบันทึก...
                 </>
               ) : (
@@ -594,8 +612,9 @@ const AddQuizzes: React.FC<AddQuizzesProps> = ({ onSubmit, onCancel }) => {
       )}
 
       {showAddQuestionForm && (
-        <div className="modal fade show"
-          style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}
+        <div
+          className="modal fade show"
+          style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}
           tabIndex={-1}
         >
           <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
@@ -609,7 +628,10 @@ const AddQuizzes: React.FC<AddQuizzesProps> = ({ onSubmit, onCancel }) => {
                 ></button>
               </div>
               <div className="modal-body">
-                <AddQuestions onSubmit={handleAddNewQuestion} onCancel={() => setShowAddQuestionForm(false)} />
+                <AddQuestions
+                  onSubmit={handleAddNewQuestion}
+                  onCancel={() => setShowAddQuestionForm(false)}
+                />
               </div>
             </div>
           </div>
@@ -617,8 +639,9 @@ const AddQuizzes: React.FC<AddQuizzesProps> = ({ onSubmit, onCancel }) => {
       )}
 
       {showExistingQuestions && (
-        <div className="modal fade show"
-          style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}
+        <div
+          className="modal fade show"
+          style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}
           tabIndex={-1}
         >
           <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
@@ -713,78 +736,6 @@ const AddQuizzes: React.FC<AddQuizzesProps> = ({ onSubmit, onCancel }) => {
                   disabled={selectedExistingQuestions.length === 0}
                 >
                   เพิ่มคำถามที่เลือก ({selectedExistingQuestions.length})
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showLessonModal && (
-        <div className="modal fade show"
-          style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}
-          tabIndex={-1}
-        >
-          <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">เลือกบทเรียน</h5>
-                <button
-                  type="button"
-                  className="btn-close"
-                  onClick={() => setShowLessonModal(false)}
-                ></button>
-              </div>
-              <div className="modal-body">
-                <div className="mb-3">
-                  <div className="input-group">
-                    <input
-                      type="text"
-                      className="form-control"
-                      placeholder="ค้นหาบทเรียน..."
-                      value={lessonSearchTerm}
-                      onChange={(e) => setLessonSearchTerm(e.target.value)}
-                    />
-                    <button className="btn btn-outline-secondary" type="button">
-                      <i className="fas fa-search"></i>
-                    </button>
-                  </div>
-                </div>
-
-                <div className="list-group">
-                  {filteredLessons.length > 0 ? (
-                    filteredLessons.map((lesson) => (
-                      <div
-                        key={lesson.id}
-                        className="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
-                      >
-                        <div>
-                          <h6 className="mb-1">{lesson.title}</h6>
-                          <p className="mb-0 small text-muted">
-                            วิชา: {lesson.subject} | ระยะเวลา: {lesson.duration}
-                          </p>
-                        </div>
-                        <div className="form-check">
-                          <input
-                            className="form-check-input"
-                            type="checkbox"
-                            id={`select-lesson-${lesson.id}`}
-                            checked={quizData.lessons.includes(lesson.id)}
-                            onChange={() => handleToggleLesson(lesson.id)}
-                          />
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-center py-4">
-                      <p className="text-muted">ไม่พบบทเรียนที่ตรงกับคำค้นหา</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-primary" onClick={() => setShowLessonModal(false)}>
-                  เสร็จสิ้น
                 </button>
               </div>
             </div>
