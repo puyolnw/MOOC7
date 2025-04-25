@@ -1,0 +1,596 @@
+/* ===== หน้าบุคลากร ===== */
+.personnel-area {
+    background-color: #f8f9fa;
+    position: relative;
+  }
+  
+  .section-desc {
+    color: #6c757d;
+    font-size: 16px;
+    line-height: 1.6;
+    margin-top: 15px;
+  }
+  
+  /* ===== ส่วนค้นหาและกรอง ===== */
+  .personnel-search {
+    position: relative;
+    max-width: 100%;
+  }
+  
+  .personnel-search-input {
+    height: 54px;
+    border-radius: 27px;
+    padding: 0 60px 0 25px;
+    border: 1px solid #e1e1e1;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+    font-size: 16px;
+    transition: all 0.3s ease;
+  }
+  
+  .personnel-search-input:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  }
+  
+  .search-btn {
+    position: absolute;
+    right: 5px;
+    top: 5px;
+    height: 44px;
+    width: 44px;
+    border-radius: 50%;
+    background-color: var(--primary-color);
+    color: #fff;
+    border: none;
+    font-size: 16px;
+    transition: all 0.3s ease;
+  }
+  
+  .search-btn:hover {
+    background-color: var(--secondary-color);
+  }
+  
+  .personnel-filter {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  
+  .filter-label {
+    font-weight: 600;
+    margin-right: 15px;
+    color: #333;
+    margin-bottom: 10px;
+  }
+  
+  .filter-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  
+  .filter-btn {
+    padding: 8px 16px;
+    border-radius: 20px;
+    background-color: #fff;
+    color: #333;
+    border: 1px solid #e1e1e1;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    cursor: pointer;
+  }
+  
+  .filter-btn:hover {
+    background-color: #f0f0f0;
+  }
+  
+  .filter-btn.active {
+    background-color: var(--primary-color);
+    color: #fff;
+    border-color: var(--primary-color);
+  }
+  
+  /* ===== การ์ดบุคลากร ===== */
+  .personnel-card {
+    background-color: #fff;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+    height: 100%;
+    transition: all 0.3s ease;
+  }
+  
+  .personnel-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  }
+  
+  .personnel-card-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+  }
+  
+  .personnel-image {
+    position: relative;
+    overflow: hidden;
+    height: 280px;
+  }
+  
+  .personnel-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+  }
+  
+  .personnel-card:hover .personnel-image img {
+    transform: scale(1.05);
+  }
+  
+  .personnel-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  
+  .personnel-card:hover .personnel-overlay {
+    opacity: 1;
+  }
+  
+  .view-profile-btn {
+    padding: 10px 20px;
+    background-color: var(--primary-color);
+    color: #fff;
+    border: none;
+    border-radius: 25px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  .view-profile-btn:hover {
+    background-color: var(--secondary-color);
+  }
+  
+  .personnel-info {
+    padding: 20px;
+    text-align: center;
+  }
+  
+  .personnel-name {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 5px;
+    color: #333;
+  }
+  
+  .personnel-position {
+    font-size: 14px;
+    color: var(--primary-color);
+    font-weight: 600;
+    margin-bottom: 5px;
+  }
+  
+  .personnel-department {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 10px;
+  }
+  
+  .personnel-faculty {
+    margin-bottom: 15px;
+  }
+  
+  .personnel-faculty span {
+    display: inline-block;
+    padding: 5px 12px;
+    background-color: #f0f0f0;
+    border-radius: 15px;
+    font-size: 12px;
+    color: #555;
+  }
+  
+  .personnel-contact {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+  }
+  
+  .contact-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background-color: #f5f5f5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #555;
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+  }
+  
+  .contact-icon:hover {
+    background-color: var(--primary-color);
+    color: #fff;
+  }
+  
+  /* ===== Animation ===== */
+  .animate-in {
+    opacity: 0;
+    transform: translateY(30px);
+    animation: fadeInUp 0.6s forwards;
+  }
+  
+  @keyframes fadeInUp {
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  /* ===== Modal ===== */
+  .personnel-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1050;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+  }
+  
+  .personnel-modal-backdrop.show {
+    opacity: 1;
+    visibility: visible;
+  }
+  
+  .personnel-modal {
+    background-color: #fff;
+    border-radius: 15px;
+    width: 90%;
+    max-width: 900px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    transform: scale(0.9);
+    opacity: 0;
+    transition: all 0.3s ease;
+  }
+  
+  .personnel-modal.show {
+    transform: scale(1);
+    opacity: 1;
+  }
+  
+  .personnel-modal-header {
+    padding: 20px 25px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    background-color: #fff;
+    z-index: 10;
+    border-radius: 15px 15px 0 0;
+  }
+  
+  .modal-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #333;
+    margin: 0;
+  }
+  
+  .close-modal {
+    background: none;
+    border: none;
+    font-size: 20px;
+    color: #777;
+    cursor: pointer;
+    transition: color 0.3s ease;
+  }
+  
+  .close-modal:hover {
+    color: #333;
+  }
+  
+  .personnel-modal-body {
+    padding: 25px;
+  }
+  
+  .personnel-profile {
+    background-color: #f8f9fa;
+    border-radius: 12px;
+    overflow: hidden;
+    height: 100%;
+  }
+  
+  .profile-image {
+    height: 250px;
+    overflow: hidden;
+  }
+  
+  .profile-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  
+  .profile-info {
+    padding: 20px;
+  }
+  
+  .info-item {
+    display: flex;
+    margin-bottom: 15px;
+  }
+  
+  .info-item i {
+    width: 36px;
+    height: 36px;
+    background-color: var(--primary-color);
+    color: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 15px;
+  }
+  
+  .info-item h6 {
+    font-size: 14px;
+    color: #777;
+    margin-bottom: 5px;
+  }
+  
+  .info-item p {
+    font-size: 15px;
+    color: #333;
+    margin: 0;
+  }
+  
+  .info-item a {
+    color: var(--primary-color);
+    text-decoration: none;
+  }
+  
+  .info-item a:hover {
+    text-decoration: underline;
+  }
+  
+  .personnel-details {
+    height: 100%;
+  }
+  
+  .details-section {
+    margin-bottom: 25px;
+    background-color: #fff;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+  }
+  
+  .section-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+  }
+  
+  .section-header i {
+    width: 36px;
+    height: 36px;
+    background-color: var(--primary-color);
+    color: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 15px;
+  }
+  
+  .section-header h5 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #333;
+    margin: 0;
+  }
+  
+  .education-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  
+  .education-list li {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px dashed #eee;
+  }
+  
+  .education-list li:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+  }
+  
+  .education-list li i {
+    color: var(--primary-color);
+    margin-right: 10px;
+    margin-top: 3px;
+  }
+  
+  .expertise-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  
+  .expertise-tag {
+    padding: 8px 15px;
+    background-color: #f0f0f0;
+    border-radius: 20px;
+    font-size: 14px;
+    color: #555;
+    transition: all 0.3s ease;
+  }
+  
+  .expertise-tag:hover {
+    background-color: var(--primary-color);
+    color: #fff;
+  }
+  
+  .bio-content {
+    line-height: 1.7;
+    color: #555;
+  }
+  
+  .personnel-modal-footer {
+    padding: 15px 25px;
+    border-top: 1px solid #eee;
+    text-align: right;
+    border-radius: 0 0 15px 15px;
+  }
+  
+  .btn-close-modal {
+    padding: 10px 25px;
+    background-color: var(--primary-color);
+    color: #fff;
+    border: none;
+    border-radius: 25px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  .btn-close-modal:hover {
+    background-color: var(--secondary-color);
+  }
+  
+  /* ===== No Results ===== */
+  .no-results {
+    padding: 50px 20px;
+    text-align: center;
+  }
+  
+  .no-results i {
+    color: #ccc;
+    margin-bottom: 15px;
+  }
+  
+  .no-results h3 {
+    font-size: 24px;
+    color: #333;
+    margin-bottom: 10px;
+  }
+  
+  .no-results p {
+    color: #777;
+    margin-bottom: 20px;
+  }
+  
+  /* ===== Responsive ===== */
+  @media (max-width: 991px) {
+    .personnel-filter {
+      margin-top: 20px;
+      justify-content: center;
+    }
+    
+    .filter-label {
+      width: 100%;
+      text-align: center;
+      margin-bottom: 15px;
+    }
+    
+    .filter-buttons {
+      justify-content: center;
+    }
+    
+    .personnel-modal-body {
+      padding: 15px;
+    }
+    
+    .personnel-profile {
+      margin-bottom: 20px;
+    }
+  }
+  
+  @media (max-width: 767px) {
+    .personnel-search {
+      max-width: 100%;
+      margin: 0 auto;
+    }
+    
+    .personnel-card {
+      max-width: 320px;
+      margin: 0 auto;
+    }
+    
+    .personnel-modal {
+      width: 95%;
+    }
+    
+    .personnel-modal-header {
+      padding: 15px;
+    }
+    
+    .modal-title {
+      font-size: 18px;
+    }
+    
+    .personnel-modal-body {
+      padding: 10px;
+    }
+    
+    .details-section {
+      padding: 15px;
+    }
+    
+    .section-header h5 {
+      font-size: 16px;
+    }
+  }
+  
+  @media (max-width: 575px) {
+    .personnel-image {
+      height: 220px;
+    }
+    
+    .personnel-name {
+      font-size: 16px;
+    }
+    
+    .personnel-position, .personnel-department {
+      font-size: 13px;
+    }
+    
+    .contact-icon {
+      width: 32px;
+      height: 32px;
+    }
+    
+    .expertise-tag {
+      font-size: 12px;
+      padding: 6px 12px;
+    }
+  }
+  

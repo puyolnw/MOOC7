@@ -44,53 +44,53 @@ const sidebar_data: DataType[] = [
       class_name: "mt-40",
       sidebar_details: [
          {
-            id: 1,
+            id: 3,
             link: "/admin-creditbank",
             icon: "fas fa-graduation-cap", // Changed to education icon    
             title: "คลังหลักสูตร",
             hasSubmenu: true,
             submenu: [
                {
-                  id: 1,
+                  id: 4,
                   link: "/admin-creditbank",
                   title: "หลักสูตร",
                },
                {
-                  id: 2,
+                  id: 5,
                   link: "/admin-subjects",
                   title: "รายวิชา",
                },
                {
-                  id: 3,
+                  id: 6,
                   link: "/admin-lessons",
                   title: "บทเรียน",
                },
                {
-                  id: 4,
+                  id: 7,
                   link: "/admin-quizzes",
                   title: "แบบทดสอบ",
                },
                {
-                  id: 7,
+                  id: 8,
                   link: "/admin-questions",
                   title: "คำถาม",
                },
             ],
          },
          {
-            id: 2,
+            id: 9,
             link: "/admin-account/instructors",
             icon: "fas fa-users-cog", // Changed to user management icon    
             title: "บัญชีผู้ใช้",
             hasSubmenu: true,
             submenu: [
                {
-                  id: 1,
+                  id: 10,
                   link: "/admin-account/instructors",
                   title: "อาจารย์",
                },
                {
-                  id: 2,
+                  id: 11,
                   link: "/admin-account/students",
                   title: "นักเรียน",
                }

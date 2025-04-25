@@ -3,7 +3,6 @@ import DashboardCounter from "./DashboardCounter"
 import DashboardReviewTable from "./DashboardReviewTable"
 import { Link } from "react-router-dom"
 import DashboardSidebar from "../../dashboard-common/DashboardSidebar"
-import DashboardCourse from "../../dashboard-common/DashboardCourse"
 import BtnArrow from "../../../svg/BtnArrow"
 
 const DashboardHomeArea = () => {
@@ -23,7 +22,6 @@ const DashboardHomeArea = () => {
                            <DashboardCounter />
                         </div>
                      </div>
-                     <DashboardCourse />
                      <div className="dashboard__content-wrap">
                         <div className="dashboard__content-title">
                            <h4 className="title">My Courses</h4>

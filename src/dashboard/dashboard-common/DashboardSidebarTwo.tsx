@@ -62,25 +62,7 @@ const sidebar_data: DataType[] = [
          },
       ],
    },
-   {
-      id: 2,
-      title: "User",
-      class_name: "mt-30",
-      sidebar_details: [
-         {
-            id: 1,
-            link: "/student-setting",
-            icon: "skillgro-settings",
-            title: "ตั้งค่า",
-         },
-         {
-            id: 2,
-            link: "/",
-            icon: "skillgro-logout",
-            title: "ออกจากระบบ",
-         },
-      ],
-   },
+
 ];
 
 const DashboardSidebarTwo = () => {

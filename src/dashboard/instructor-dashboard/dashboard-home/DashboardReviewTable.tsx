@@ -1,63 +1,100 @@
 import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import axios from "axios";
 
-interface DataType {
+interface CourseData {
    id: number;
    name: string;
-   enroll: number
-}[];
-
-const table_data: DataType[] = [
-   {
-      id: 1,
-      name: "Accounting",
-      enroll: 50,
-   },
-   {
-      id: 2,
-      name: "Marketing",
-      enroll: 43,
-   },
-   {
-      id: 3,
-      name: "Web Design",
-      enroll: 36,
-   },
-   {
-      id: 4,
-      name: "Graphic",
-      enroll: 22,
-   },
-];
+   enrolled: number;
+   completed: number;
+}
 
 const DashboardReviewTable = () => {
+   const [courses, setCourses] = useState<CourseData[]>([]);
+   const [loading, setLoading] = useState(true);
+   const [error, setError] = useState<string | null>(null);
+
+   useEffect(() => {
+      const fetchInstructorCourses = async () => {
+         try {
+            setLoading(true);
+            
+            // Get token from localStorage
+            const token = localStorage.getItem('token');
+            if (!token) {
+               throw new Error("ไม่พบข้อมูลการเข้าสู่ระบบ กรุณาเข้าสู่ระบบใหม่");
+            }
+
+            // Get API base URL from environment variables
+            const API_BASE_URL = import.meta.env.VITE_API_URL;
+
+            // Set up headers with authorization token
+            const config = {
+               headers: {
+                  'Authorization': `Bearer ${token}`
+               }
+            };
+
+            // Fetch instructor's subjects with enrollment data
+            const response = await axios.get(
+               `${API_BASE_URL}/api/courses/subjects/instructors/cou`, 
+               config
+            );
+
+            if (response.data.success) {
+               setCourses(response.data.courses.map((course: any) => ({
+                  id: course.subject_id,
+                  name: course.title || course.subject_name,
+                  enrolled: course.enrollment_count || 0,
+                  completed: course.completion_count || 0
+               })));
+            } else {
+               throw new Error(response.data.message || "ไม่สามารถดึงข้อมูลรายวิชาได้");
+            }
+
+            setLoading(false);
+         } catch (err) {
+            console.error("Error fetching instructor courses:", err);
+            setError(err instanceof Error ? err.message : "เกิดข้อผิดพลาดในการดึงข้อมูล");
+            setLoading(false);
+         }
+      };
+
+      fetchInstructorCourses();
+   }, []);
+
+   if (loading) {
+      return <div className="loading">กำลังโหลดข้อมูล...</div>;
+   }
+
+   if (error) {
+      return <div className="error">เกิดข้อผิดพลาด: {error}</div>;
+   }
+
+   if (courses.length === 0) {
+      return <div className="no-data">ไม่พบข้อมูลรายวิชา</div>;
+   }
+
    return (
       <table className="table table-borderless">
          <thead>
             <tr>
-               <th>Course Name</th>
-               <th>Enrolled</th>
-               <th>Rating</th>
+               <th>ชื่อรายวิชา</th>
+               <th>จำนวนลงทะเบียน</th>
+               <th>สำเร็จการศึกษา</th>
             </tr>
          </thead>
          <tbody>
-            {table_data.map((list) => (
-               <tr key={list.id}>
+            {courses.map((course) => (
+               <tr key={course.id}>
                   <td>
-                     <Link to="/course-details">{list.name}</Link>
+                     <Link to={`/course-details/${course.id}`}>{course.name}</Link>
                   </td>
                   <td>
-                     <p className="color-black">{list.enroll}</p>
+                     <p className="color-black">{course.enrolled}</p>
                   </td>
                   <td>
-                     <div className="review__wrap">
-                        <div className="rating">
-                           <i className="fas fa-star"></i>
-                           <i className="fas fa-star"></i>
-                           <i className="fas fa-star"></i>
-                           <i className="fas fa-star"></i>
-                           <i className="fas fa-star"></i>
-                        </div>
-                     </div>
+                     <p className="color-success">{course.completed}</p>
                   </td>
                </tr>
             ))}

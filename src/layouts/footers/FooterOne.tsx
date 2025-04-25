@@ -10,7 +10,7 @@ const FooterOne = ({ style, style_2 }: any) => {
                <div className="row align-items-center">
                   <div className="col-md-7">
                      <div className="copy-right-text">
-                        <p>© 2010-2024 skillgro.com. All rights reserved.</p>
+                        <p>© 2010-2024 rmu.ac.th All rights reserved.</p>
                      </div>
                   </div>
                   <div className="col-md-5">

@@ -9,7 +9,7 @@ const InstructorCourses = () => {
          <HeaderOne />
          <main className="main-area fix">
             <DashboardBreadcrumb />
-            <InstructorEnrolledCourseArea style={true} />
+            <InstructorEnrolledCourseArea />
          </main>
          <FooterOne />
       </>

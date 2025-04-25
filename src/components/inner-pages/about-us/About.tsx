@@ -17,7 +17,7 @@ const About = () => {
                <div className="row align-items-center justify-content-center">
                   <div className="col-lg-6 col-md-9">
                      <div className="about__images-three tg-svg" ref={svgIconRef}>
-                        <img src="/assets/img/others/inner_about_img.png" alt="img" />
+                        <img src="/assets/img/others/inner_about_img.png" alt="มหาวิทยาลัยราชภัฏมหาสารคาม" />
                         <span className="svg-icon" id="about-svg"></span>
                         <a onClick={() => setIsVideoOpen(true)} style={{ cursor: "pointer" }} className="popup-video">
                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="28" viewBox="0 0 22 28" fill="none">
@@ -30,35 +30,35 @@ const About = () => {
                   <div className="col-lg-6">
                      <div className="about__content-three">
                         <div className="section__title mb-10">
-                           <span className="sub-title">เรียนรู้เพิ่มเติมเกี่ยวกับเรา</span>
+                           <span className="sub-title">เกี่ยวกับเรา</span>
                            <h2 className="title">
-                           เพิ่มขีดความสามารถของนักเรียนในการเข้าถึงของพวกเขา
+                           มหาวิทยาลัยราชภัฏมหาสารคาม
                               <span className="position-relative title-shape-wrap">
                                  <svg x="0px" y="0px" preserveAspectRatio="none" viewBox="0 0 209 59" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <path d="M4.74438 7.70565C69.7006 -1.18799 136.097 -2.38304 203.934 4.1205C207.178 4.48495 209.422 7.14626 208.933 10.0534C206.793 23.6481 205.415 36.5704 204.801 48.8204C204.756 51.3291 202.246 53.5582 199.213 53.7955C136.093 59.7623 74.1922 60.5985 13.5091 56.3043C10.5653 56.0924 7.84371 53.7277 7.42158 51.0325C5.20725 38.2627 2.76333 25.6511 0.0898448 13.1978C-0.465589 10.5873 1.61173 8.1379 4.73327 7.70565" fill="currentcolor" />
                                  </svg>
-                                 เป้าหมาย
+                                 พัฒนาการศึกษา
                               </span>
-                              ที่มีศักยภาพสำหรับการท้าทายในระดับต่อไป
+                              เพื่อท้องถิ่นสังคมไทย
                            </h2>
                         </div>
-                        <p className="desc">เมื่อช่างพิมพ์ที่ไม่รู้จักคนหนึ่งนำแท่นพิมพ์มาจัดเรียงใหม่เพื่อสร้างหนังสือตัวอย่างตัวอักษร แท่นพิมพ์ดังกล่าวอยู่รอดมาได้ไม่เพียงแค่ห้าศตวรรษเท่านั้น แต่ยังก้าวกระโดดไปสู่การเรียงพิมพ์ด้วยระบบอิเล็กทรอนิกส์อีกด้วย</p>
+                        <p className="desc">มหาวิทยาลัยราชภัฏมหาสารคาม เป็นสถาบันอุดมศึกษาเพื่อการพัฒนาท้องถิ่น มุ่งเน้นการผลิตบัณฑิตที่มีคุณภาพ มีความรู้คู่คุณธรรม สำนึกในความเป็นไทย มีความรักและผูกพันต่อท้องถิ่น อีกทั้งส่งเสริมการเรียนรู้ตลอดชีวิตในชุมชน เพื่อช่วยให้คนในท้องถิ่นรู้เท่าทันการเปลี่ยนแปลง</p>
                         <ul className="about__info-list list-wrap">
                            <li className="about__info-list-item">
                               <i className="flaticon-angle-right"></i>
-                              <p className="content">ครูฝึกสอนระดับโลกมากที่สุด</p>
+                              <p className="content">คณาจารย์ผู้เชี่ยวชาญในสาขาวิชาต่างๆ</p>
                            </li>
                            <li className="about__info-list-item">
                               <i className="flaticon-angle-right"></i>
-                              <p className="content">เข้าถึงชั้นเรียนของคุณได้จากทุกที่</p>
+                              <p className="content">หลักสูตรที่ตอบสนองความต้องการของท้องถิ่น</p>
                            </li>
                            <li className="about__info-list-item">
                               <i className="flaticon-angle-right"></i>
-                              <p className="content">แผนหลักสูตรที่ยืดหยุ่น</p>
+                              <p className="content">การเรียนรู้ที่ยืดหยุ่นผ่านระบบออนไลน์</p>
                            </li>
                         </ul>
                         <div className="tg-button-wrap">
-                           <Link to="/contact" className="btn arrow-btn">เริ่มทดลองใช้งานฟรี <BtnArrow /></Link>
+                           <Link to="/contact" className="btn arrow-btn">เริ่มเรียนรู้กับเรา <BtnArrow /></Link>
                         </div>
                      </div>
                   </div>

@@ -71,10 +71,16 @@ const useMenuData = () => {
                         },
                         courseMenu,
                         {
+                            id: 5,
+                            title: "บุคลากร",
+                            link: "/personnel",
+                        },
+                        {
                             id: 3,
                             title: "เกี่ยวกับเรา",
                             link: "/about-us",
                         }
+                
                     ]);
                 }
             } catch (error) {

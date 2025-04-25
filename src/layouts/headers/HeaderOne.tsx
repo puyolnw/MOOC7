@@ -97,8 +97,7 @@ const HeaderOne = () => {
                                     {role === "instructor" && (
                                       <>
                                         <li><Link to="/instructor-dashboard">บัญชีของฉัน</Link></li>
-                                        <li><Link to="/instructor-dashboard">แดชบอร์ดผู้สอน</Link></li>
-                                        <li><Link to="/instructor-courses">จัดการหลักสูตร</Link></li>
+
                                       </>
                                     )}
                                     {role === "admin" && (

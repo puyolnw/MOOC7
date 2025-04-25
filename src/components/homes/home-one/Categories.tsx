@@ -4,42 +4,39 @@ import { Navigation } from 'swiper/modules';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 
-interface Department {
-  department_id: number;
-  department_name: string;
+interface Faculty {
   faculty: string;
   course_count: number;
 }
 
-const departmentIcons: { [key: string]: string } = {
-  'วิทยาการคอมพิวเตอร์': 'skillgro-browser',
-  'คณิตศาสตร์': 'skillgro-calculator',
-  'เทคโนโลยีสารสนเทศ': 'skillgro-computer',
-  'ธุรกิจดิจิทัล': 'skillgro-financial-profit',
-  'เศรษฐศาสตร์': 'skillgro-taxes',
-  'การบริหารจัดการท้องถิ่น': 'skillgro-development-plan',
-  'รัฐประศาสนศาสตร์': 'skillgro-notepad',
-  'รัฐศาสตร์': 'skillgro-mortarboard',
-  'นิติศาสตร์': 'skillgro-text-file',
-  'ศิลปกรรมศาสตร์': 'skillgro-vector',
-  'ภาษาไทยเพื่อการสื่อสาร': 'skillgro-book',
-  'เทคนิคสัตวแพทย์': 'skillgro-microscope',
-  'เทคโนโลยีการเกษตร': 'skillgro-plant',
-  'เทคโนโลยีไฟฟ้า': 'skillgro-smart-watch',
-  'วิศวกรรมคอมพิวเตอร์': 'skillgro-coding',
-  'เทคโนโลยีคอมพิวเตอร์': 'skillgro-web-programming',
-  'เทคโนโลยีชีวภาพ': 'skillgro-dna',
-  'สาธารณสุขชุมชน': 'skillgro-happy-face',
-  'สถิติประยุกต์': 'skillgro-presentation',
-  'ชีววิทยา': 'skillgro-research',
-  'ปราชญ์ชาวบ้าน': 'skillgro-lotus',
-  'หลักสูตรแบบชุดวิชา': 'skillgro-audio-book',
-  'การบริหารการพัฒนา': 'skillgro-strategy',
-  'เทคโนโลยีคอมพิวเตอร์และดิจิทัล': 'skillgro-innovation',
-  'เทคโนโลยีสารสนเทศการเกษตร': 'skillgro-agriculture',
-  'เทคนิคสัตวแพทย์และการพยาบาลสัตว์': 'skillgro-heart',
-  'ปราชญ์ชาวบ้านและภูมิปัญญาท้องถิ่น': 'skillgro-culture'
+// กำหนดไอคอนสำหรับแต่ละคณะ
+// กำหนดไอคอนสำหรับแต่ละคณะที่เหมาะสมจากไฟล์ flaticon-skillgro-new.css
+const facultyIcons: { [key: string]: string } = {
+  'คณะวิทยาศาสตร์': 'skillgro-atom', // ไอคอนอะตอม เหมาะกับวิทยาศาสตร์
+  'คณะเทคโนโลยีสารสนเทศ': 'skillgro-web-programming', // ไอคอนเว็บโปรแกรมมิ่ง เหมาะกับ IT
+  'คณะวิทยาการจัดการ': 'skillgro-investment', // ไอคอนการลงทุน เหมาะกับการจัดการ
+  'คณะรัฐศาสตร์และรัฐประศาสนศาสตร์': 'skillgro-law', // ไอคอนกฎหมาย เหมาะกับรัฐศาสตร์
+  'คณะนิติศาสตร์': 'skillgro-text-file', // ไอคอนไฟล์ข้อความ เหมาะกับนิติศาสตร์
+  'คณะมนุษยศาสตร์และสังคมศาสตร์': 'skillgro-book-2', // ไอคอนหนังสือ เหมาะกับมนุษยศาสตร์
+  'คณะเทคโนโลยีการเกษตร': 'skillgro-lotus-flower', // ไอคอนดอกบัว ใกล้เคียงกับการเกษตร
+  'คณะวิศวกรรมศาสตร์': 'skillgro-development', // ไอคอนการพัฒนา เหมาะกับวิศวกรรม
+  'คณะวิทยาศาสตร์และเทคโนโลยี': 'skillgro-bulb', // ไอคอนหลอดไฟ เหมาะกับวิทยาศาสตร์และเทคโนโลยี
+  'ศูนย์สหกิจศึกษา': 'skillgro-development-plan', // ไอคอนแผนการพัฒนา เหมาะกับสหกิจศึกษา
+  'คณะครุศาสตร์': 'skillgro-mortarboard', // ไอคอนหมวกรับปริญญา เหมาะกับครุศาสตร์
+  'คณะพยาบาลศาสตร์': 'skillgro-heart-2', // ไอคอนหัวใจ เหมาะกับพยาบาล
+  'คณะสัตวแพทยศาสตร์': 'skillgro-tooth', // ไอคอนฟัน ใกล้เคียงกับสัตวแพทย์
+  'คณะเภสัชศาสตร์': 'skillgro-stone', // ไอคอนหิน ใกล้เคียงกับเภสัชศาสตร์
+  'คณะสาธารณสุขศาสตร์': 'skillgro-heart', // ไอคอนหัวใจ เหมาะกับสาธารณสุข
+  'คณะทันตแพทยศาสตร์': 'skillgro-tooth', // ไอคอนฟัน เหมาะกับทันตแพทย์
+  'คณะแพทยศาสตร์': 'skillgro-brain', // ไอคอนสมอง เหมาะกับแพทย์
+  'คณะศิลปกรรมศาสตร์': 'skillgro-vector', // ไอคอนเวกเตอร์ เหมาะกับศิลปกรรม
+  'คณะสถาปัตยกรรมศาสตร์': 'skillgro-customize', // ไอคอนการปรับแต่ง เหมาะกับสถาปัตยกรรม
+  'คณะบริหารธุรกิจ': 'skillgro-profit', // ไอคอนกำไร เหมาะกับบริหารธุรกิจ
+  'คณะบัญชี': 'skillgro-taxes', // ไอคอนภาษี เหมาะกับบัญชี
+  'คณะนิเทศศาสตร์': 'skillgro-marketing', // ไอคอนการตลาด เหมาะกับนิเทศศาสตร์
+  'คณะเศรษฐศาสตร์': 'skillgro-financial-profit', // ไอคอนกำไรทางการเงิน เหมาะกับเศรษฐศาสตร์
 };
+
 
 const setting = {
   slidesPerView: 6,
@@ -60,36 +57,41 @@ const setting = {
 };
 
 const Categories = () => {
-  const [faculties, setFaculties] = useState<Department[]>([]);
+  const [faculties, setFaculties] = useState<Faculty[]>([]);
   const apiURL = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
-    const fetchDepartments = async () => {
+    const fetchFaculties = async () => {
       try {
         const response = await axios.get(`${apiURL}/api/courses/subjects/departments/list`);
         if (response.data.success) {
-          const allDepartments: Department[] = response.data.departments;
+          const allDepartments = response.data.departments;
 
-          // ✅ รวมภาควิชาในคณะเดียวกันให้เหลือคณะเดียว และรวม course_count
-          const uniqueFaculties = Object.values(
-            allDepartments.reduce((acc, curr) => {
-              if (!acc[curr.faculty]) {
-                acc[curr.faculty] = { ...curr };
-              } else {
-                acc[curr.faculty].course_count += curr.course_count;
-              }
-              return acc;
-            }, {} as { [faculty: string]: Department })
-          );
-
+          // รวมภาควิชาในคณะเดียวกันให้เหลือคณะเดียว และรวม course_count
+          const facultiesMap: { [faculty: string]: Faculty } = {};
+          
+          allDepartments.forEach((dept: any) => {
+            if (!facultiesMap[dept.faculty]) {
+              facultiesMap[dept.faculty] = {
+                faculty: dept.faculty,
+                course_count: dept.course_count || 0
+              };
+            } else {
+              facultiesMap[dept.faculty].course_count += (dept.course_count || 0);
+            }
+          });
+          
+          // แปลงเป็น array
+          const uniqueFaculties = Object.values(facultiesMap);
+          
           setFaculties(uniqueFaculties);
         }
       } catch (error) {
-        console.error('Error fetching departments:', error);
+        console.error('Error fetching faculties:', error);
       }
     };
 
-    fetchDepartments();
+    fetchFaculties();
   }, [apiURL]);
 
   return (
@@ -99,7 +101,7 @@ const Categories = () => {
           <div className="col-xl-5 col-lg-7">
             <div className="section__title text-center mb-40">
               <span className="sub-title">หมวดหมู่ที่ได้รับความนิยม</span>
-              <h2 className="title">หมวดหมู่หลักสูตร</h2>
+              <h2 className="title">หมวดหมู่ที่เปิดสอน</h2>
             </div>
           </div>
         </div>
@@ -112,10 +114,9 @@ const Categories = () => {
                     <div className="categories__item">
                       <Link to="/courses">
                         <div className="icon">
-                          <i className={departmentIcons[faculty.faculty] || 'flaticon-education'}></i>
+                          <i className={facultyIcons[faculty.faculty] || 'flaticon-education'}></i>
                         </div>
                         <span className="name">{faculty.faculty}</span>
-
                       </Link>
                     </div>
                   </SwiperSlide>

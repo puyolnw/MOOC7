@@ -2,7 +2,7 @@ import DashboardBanner from "../../dashboard-common/DashboardBanner"
 import DashboardSidebar from "../../dashboard-common/DashboardSidebar"
 import InstructorEnrolledCourseContent from "./InstructorEnrolledCourseContent"
 
-const InstructorEnrolledCourseArea = ({ style }: any) => {
+const InstructorEnrolledCourseArea = () => {
 
   return (
     <section className="dashboard__area section-pb-120">
@@ -11,7 +11,7 @@ const InstructorEnrolledCourseArea = ({ style }: any) => {
         <div className="dashboard__inner-wrap">
           <div className="row">
             <DashboardSidebar />
-            <InstructorEnrolledCourseContent style={style} />
+            <InstructorEnrolledCourseContent  />
           </div>
         </div>
       </div>

@@ -76,6 +76,17 @@ import NotFound from '../pages/NotFound';
 
 import StudentCertificate from '../pages/StudentCertificate';
 
+import InsLessonspage from '../pages/Instructor/InsLessons';
+import InsQuestionspage from '../pages/Instructor/InsQuestions';
+import InsQuizzespage from '../pages/Instructor/InsQuizzes';
+import InsSubjectspage from '../pages/Instructor/InsSubjects';
+
+import InsAddquestionpage from '../pages/Instructor/create/AddQuestions';
+import InsAddlessonspage from '../pages/Instructor/create/AddLessons';
+import InsAddQuizzespage from '../pages/Instructor/create/AddQuizzes';
+import InsAddSubjectspage from '../pages/Instructor/create/AddSubjects';
+
+import Personelpage from '../pages/Personel';
 {/* ลองเพิ่ม */}
 // import AddQuestions from '../forms/Course/AddQuestions';
 
@@ -114,6 +125,7 @@ const AppNavigation = () => {
         <Route path="/registration" element={<Registration />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/subject-details/:id" element={<SubjectDetailsPage />} />
+        <Route path="/personnel" element={<Personelpage/>} />
 
 
 
@@ -160,6 +172,14 @@ const AppNavigation = () => {
         <Route path="/instructor-quiz" element={<InstructorQuiz />} />
         <Route path="/instructor-assignment" element={<InstructorAssignment />} />
         <Route path="/instructor-setting" element={<InstructorSetting />} />
+        <Route path="/instructor-subjects" element={<InsSubjectspage />} />
+        <Route path="/instructor-quizzes" element={<InsQuizzespage/>} />
+        <Route path="/instructor-questions" element={<InsQuestionspage />} />
+        <Route path="/instructor-lessons" element={<InsLessonspage />} />
+        <Route path="/instructor-questions/create-new" element={<InsAddquestionpage/>} />
+        <Route path="/instructor-quizzes/create-new" element={<InsAddQuizzespage />} />
+        <Route path="/instructor-lessons/create-new" element={<InsAddlessonspage />} />
+        <Route path="/instructor-subjects/create-new" element={<InsAddSubjectspage />} />
         </Route>
 
         <Route element={<PrivateRoute allowedRoles={["student"]} />}>

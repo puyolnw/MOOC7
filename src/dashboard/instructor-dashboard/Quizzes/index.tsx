@@ -1,21 +1,19 @@
 import DashboardBreadcrumb from '../../../components/common/breadcrumb/DashboardBreadcrumb'
 import FooterOne from '../../../layouts/footers/FooterOne'
 import HeaderOne from '../../../layouts/headers/HeaderOne'
-import LessonsArea from './LessonsArea'
+import InstQuizzesArea from './InstQuizzesArea'
 
-const AdminLessons = () => {
+const InstQuizzes = () => {
    return (
       <>
          <HeaderOne />
          <main className="main-area fix">
             <DashboardBreadcrumb />
-            <LessonsArea />
+            <InstQuizzesArea />
          </main>
          <FooterOne />
       </>
    )
 }
 
-
-export default AdminLessons
-
+export default InstQuizzes
