@@ -11,8 +11,8 @@ interface EnrolledCourseDetailsAreaProps {
   onStartLearning?: () => void; // เพิ่มบรรทัดนี้
 }
 
-const EnrolledCourseDetailsArea = ({ 
-  single_course, 
+const EnrolledCourseDetailsArea = ({
+  single_course,
   enrollmentData
 }: EnrolledCourseDetailsAreaProps) => {
   const [activeTab, setActiveTab] = useState(0);
@@ -25,8 +25,8 @@ const EnrolledCourseDetailsArea = ({
 
   return (
     <section className="courses__details-area section-py-120">
-    <div className="container">
-      <div className="row">
+      <div className="container">
+        <div className="row">
           <div className="col-xl-9 col-lg-8">
             <div className="courses__details-thumb">
               <img src={single_course.thumb} alt={single_course.title} />
@@ -74,24 +74,24 @@ const EnrolledCourseDetailsArea = ({
                 <div className={`tab-pane fade ${activeTab === 3 ? 'show active' : ''}`} id="progress-tab-pane" role="tabpanel" aria-labelledby="progress-tab">
                   <div className="course-progress-details">
                     <h3 className="mb-4">ความก้าวหน้ารายวิชา</h3>
-                    
+
                     {enrollmentData?.subjects?.length > 0 ? (
                       <div className="subject-progress-list">
                         {enrollmentData.subjects.map((subject: any) => (
                           <div key={subject.subject_id} className="subject-progress-item mb-4 p-3 border rounded">
                             <div className="d-flex justify-content-between align-items-center mb-2">
                               <h5 className="mb-0">{subject.subject_name}</h5>
-                              <span className="badge bg-primary">{typeof subject.progress_percentage === 'number' 
-  ? subject.progress_percentage.toFixed(1) 
-  : parseFloat(subject.progress_percentage).toFixed(1)}%</span>
+                              <span className="badge bg-primary">{typeof subject.progress_percentage === 'number'
+                                ? subject.progress_percentage.toFixed(1)
+                                : parseFloat(subject.progress_percentage).toFixed(1)}%</span>
                             </div>
                             <div className="progress" style={{ height: "8px" }}>
-                              <div 
-                                className="progress-bar" 
-                                role="progressbar" 
+                              <div
+                                className="progress-bar"
+                                role="progressbar"
                                 style={{ width: `${subject.progress_percentage}%` }}
-                                aria-valuenow={subject.progress_percentage} 
-                                aria-valuemin={0} 
+                                aria-valuenow={subject.progress_percentage}
+                                aria-valuemin={0}
                                 aria-valuemax={100}
                               ></div>
                             </div>
@@ -105,12 +105,12 @@ const EnrolledCourseDetailsArea = ({
                         ))}
                       </div>
                     ) : (
-                        <div className="alert alert-info">
+                      <div className="alert alert-info">
                         <i className="fas fa-info-circle me-2"></i>
                         ยังไม่มีข้อมูลความก้าวหน้าในรายวิชา กรุณาเริ่มเรียนรายวิชาเพื่อบันทึกความก้าวหน้า
                       </div>
                     )}
-                    
+
                     <div className="course-completion-info mt-4">
                       <h4>สถานะการเรียน</h4>
                       <div className="card mt-3">
@@ -133,7 +133,7 @@ const EnrolledCourseDetailsArea = ({
                               <h5>{new Date(enrollmentData?.enrollment?.enrollment_date).toLocaleDateString('th-TH')}</h5>
                             </div>
                           </div>
-                          
+
                           {enrollmentData?.enrollment?.status === 'completed' && (
                             <div className="mt-3 text-center">
                               <Link to="/certificates" className="btn btn-success">
@@ -150,17 +150,17 @@ const EnrolledCourseDetailsArea = ({
               </div>
             </div>
           </div>
-          <EnrolledSidebar 
-  subjectCount={single_course.subjectCount} 
-  totalLessons={single_course.totalLessons} 
-  totalQuizzes={single_course.totalQuizzes} 
-  courseId={single_course.id}
-  videoUrl={single_course.videoUrl}
-  coverImage={single_course.thumb}
-  progress={enrollmentData?.enrollment?.progress || 0}
-  enrollmentStatus={enrollmentData?.enrollment?.status || 'in_progress'}
-  subjects={single_course.subjects} // เพิ่มบรรทัดนี้
-/>
+          <EnrolledSidebar
+            subjectCount={single_course.subjectCount}
+            totalLessons={single_course.totalLessons}
+            totalQuizzes={single_course.totalQuizzes}
+            courseId={single_course.id}
+            videoUrl={single_course.videoUrl}
+            coverImage={single_course.thumb}
+            progress={enrollmentData?.enrollment?.progress || 0}
+            enrollmentStatus={enrollmentData?.enrollment?.status || 'in_progress'}
+            subjects={single_course.subjects} // เพิ่มบรรทัดนี้
+          />
         </div>
       </div>
     </section>
