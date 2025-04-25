@@ -14,8 +14,6 @@ interface CourseDetailsProps {
     department: string;
     description: string;
     thumb: string;
-    cover_image: string;
-    cover_image_file_id: string;
     videoUrl?: string;
     subjects: any[];
     subjectCount: number;
@@ -25,43 +23,39 @@ interface CourseDetailsProps {
     isLoading: boolean;
     onStartLearning?: () => void; // เพิ่มฟังก์ชันนี้
     error: string | null;
-
-
+   
   };
 }
-
 
 const CourseDetails = ({ single_course }: CourseDetailsProps) => {
   const [isEnrolled, setIsEnrolled] = useState(false);
   const [enrollmentData, setEnrollmentData] = useState<any>(null);
   const [isCheckingEnrollment, setIsCheckingEnrollment] = useState(true);
   const [enrollError, setEnrollError] = useState<string | null>(null);
-  const apiURL = import.meta.env.VITE_API_URL;
+  const apiURL = import.meta.env.VITE_API_URL ;
 
   // ในส่วนของ useEffect ที่ตรวจสอบการลงทะเบียน
   useEffect(() => {
     // ป้องกันการเรียกซ้ำถ้ากำลังตรวจสอบอยู่แล้ว
     if (!single_course || !single_course.id) return;
-
+    
     // ตรวจสอบว่า user ลงทะเบียนหลักสูตรนี้หรือไม่
     const checkEnrollment = async () => {
       try {
         setIsCheckingEnrollment(true);
         setEnrollError(null);
-
+        
         // ตรวจสอบว่ามี token หรือไม่ (user ล็อกอินหรือไม่)
         const token = localStorage.getItem('token');
-        console.log("Token exists:", !!token); // จะแสดง true ถ้ามี token, false ถ้าไม่มี
-        console.log("Token value:", token); // แสดงค่า token จริงๆ
-
+        
         if (!token) {
           setIsEnrolled(false);
           setIsCheckingEnrollment(false);
           return;
         }
-
+        
         console.log("API URL:", `${apiURL}/api/courses/${single_course.id}/progress`);
-
+        
         // เรียก API เพื่อตรวจสอบการลงทะเบียน
         try {
           const response = await fetch(`${apiURL}/api/courses/${single_course.id}/progress`, {
@@ -71,16 +65,16 @@ const CourseDetails = ({ single_course }: CourseDetailsProps) => {
               'Content-Type': 'application/json'
             }
           });
-
+          
           console.log("Fetch response status:", response.status);
-
+          
           if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
           }
-
+          
           const data = await response.json();
           console.log("Fetch response data:", data);
-
+          
           // ตรวจสอบว่าผู้ใช้ลงทะเบียนแล้วหรือไม่จากข้อมูลที่ได้รับ
           if (data.success && data.isEnrolled) {
             setIsEnrolled(true);
@@ -90,7 +84,7 @@ const CourseDetails = ({ single_course }: CourseDetailsProps) => {
           }
         } catch (error: any) {
           console.error("Error checking enrollment:", error);
-
+          
           // ถ้าเป็น error 404 แสดงว่ายังไม่ได้ลงทะเบียน (ไม่ต้องแสดง error)
           if (error.message && error.message.includes('404')) {
             setIsEnrolled(false);
@@ -109,7 +103,7 @@ const CourseDetails = ({ single_course }: CourseDetailsProps) => {
         setIsCheckingEnrollment(false);
       }
     };
-
+    
     checkEnrollment();
   }, [single_course?.id, apiURL]); // เปลี่ยนจาก [single_course, apiURL] เป็น [single_course?.id, apiURL]
 
@@ -117,7 +111,7 @@ const CourseDetails = ({ single_course }: CourseDetailsProps) => {
   const handleEnroll = async () => {
     try {
       setEnrollError(null);
-
+      
       // ตรวจสอบว่ามี token หรือไม่ (user ล็อกอินหรือไม่)
       const token = localStorage.getItem('token');
       if (!token) {
@@ -125,10 +119,10 @@ const CourseDetails = ({ single_course }: CourseDetailsProps) => {
         window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
         return;
       }
-
+      
       // เรียก API เพื่อลงทะเบียนหลักสูตร
       const response = await axios.post(
-        `${apiURL}/api/courses/${single_course.id}/enroll`,
+        `${apiURL}/api/courses/${single_course.id}/enroll`, 
         {}, // ส่ง empty object เพราะเป็น POST request
         {
           headers: {
@@ -137,11 +131,11 @@ const CourseDetails = ({ single_course }: CourseDetailsProps) => {
           }
         }
       );
-
+      
       if (response.data.success) {
         // ลงทะเบียนสำเร็จ
         setIsEnrolled(true);
-
+        
         // ดึงข้อมูลความก้าวหน้า
         const progressResponse = await axios.get(
           `${apiURL}/api/courses/${single_course.id}/progress`,
@@ -152,11 +146,11 @@ const CourseDetails = ({ single_course }: CourseDetailsProps) => {
             }
           }
         );
-
+        
         if (progressResponse.data.success) {
           setEnrollmentData(progressResponse.data);
         }
-
+        
         // แสดงข้อความแจ้งเตือนว่าลงทะเบียนสำเร็จ
         alert("ลงทะเบียนหลักสูตรสำเร็จ");
       } else {
@@ -165,7 +159,7 @@ const CourseDetails = ({ single_course }: CourseDetailsProps) => {
       }
     } catch (error: any) {
       console.error("Error enrolling in course:", error);
-
+      
       // แสดงข้อความ error ที่ได้จาก API
       if (error.response && error.response.data && error.response.data.message) {
         setEnrollError(error.response.data.message);
@@ -174,13 +168,13 @@ const CourseDetails = ({ single_course }: CourseDetailsProps) => {
       }
     }
   };
-
+  
   return (
     <>
       <HeaderOne />
       <main className="main-area fix">
         <BreadcrumbTwo title={single_course.title} sub_title="หลักสูตร" />
-
+        
         {single_course.isLoading || isCheckingEnrollment ? (
           // แสดง loading ระหว่างโหลดข้อมูล
           <div className="container py-5 text-center">
@@ -199,11 +193,11 @@ const CourseDetails = ({ single_course }: CourseDetailsProps) => {
           </div>
         ) : isEnrolled ? (
           // แสดงหน้าสำหรับผู้ที่ลงทะเบียนแล้ว
-          <EnrolledCourseDetailsArea
-            single_course={single_course}
-            enrollmentData={enrollmentData}
-            onStartLearning={single_course.onStartLearning} // เพิ่ม prop นี้
-          />
+          <EnrolledCourseDetailsArea 
+  single_course={single_course} 
+  enrollmentData={enrollmentData} 
+  onStartLearning={single_course.onStartLearning} // เพิ่ม prop นี้
+/>
         ) : (
           // แสดงหน้าปกติสำหรับผู้ที่ยังไม่ได้ลงทะเบียน
           <>
@@ -215,9 +209,9 @@ const CourseDetails = ({ single_course }: CourseDetailsProps) => {
                 </div>
               </div>
             )}
-            <CourseDetailsArea
-              single_course={single_course}
-              onEnroll={handleEnroll}
+            <CourseDetailsArea 
+              single_course={single_course} 
+              onEnroll={handleEnroll} 
             />
           </>
         )}
