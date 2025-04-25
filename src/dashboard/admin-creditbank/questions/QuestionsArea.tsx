@@ -13,7 +13,7 @@ interface Question {
   text: string;
   quizCode: string;
   quizTitle: string;
-  quizzes: { quiz_id: number; title: string }[]; // เพิ่มข้อมูลแบบฝึกหัด
+  quizzes: { quiz_id: number; title: string }[];
   type: QuestionType;
   status: "active" | "inactive" | "draft";
   difficulty: "easy" | "medium" | "hard";
@@ -45,13 +45,12 @@ const QuestionsArea = () => {
         });
 
         if (response.data && response.data.questions) {
-          // Transform API data to match our Question interface
           const formattedQuestions = response.data.questions.map((q: any) => ({
             id: q.question_id,
             text: q.title,
             quizCode: q.quiz_code || "N/A",
             quizTitle: q.quiz_title || "N/A",
-            quizzes: q.quizzes || [], // เพิ่มการดึงข้อมูลแบบฝึกหัด
+            quizzes: q.quizzes || [],
             type: q.type as QuestionType,
             status: q.status || "active",
             difficulty: q.difficulty || "medium",
@@ -99,7 +98,6 @@ const QuestionsArea = () => {
           }
         });
 
-        // Remove question from state after successful deletion
         setQuestions(questions.filter(question => question.id !== id));
       } catch (error) {
         console.error("Error deleting question:", error);
@@ -178,6 +176,92 @@ const QuestionsArea = () => {
 
   return (
     <section className="dashboard__area section-pb-120">
+      <style>
+        {`
+          /* Responsive table styling */
+          @media (max-width: 768px) {
+            .responsive-table thead {
+              display: none;
+            }
+
+            .responsive-table tbody tr {
+              display: block;
+              margin-bottom: 1rem;
+              border: 1px solid #dee2e6;
+              border-radius: 0.25rem;
+              padding: 0.5rem;
+            }
+
+            .responsive-table tbody td {
+              display: block;
+              text-align: left !important;
+              padding: 0.25rem 0.5rem;
+              border: none;
+              position: relative;
+            }
+
+            .responsive-table tbody td:before {
+              content: attr(data-label);
+              font-weight: bold;
+              display: inline-block;
+              width: 40%;
+              padding-right: 0.5rem;
+            }
+
+            .responsive-table tbody td.text-center {
+              text-align: left !important;
+            }
+
+            /* Adjust action icons for better touch targets */
+            .responsive-table .action-icons {
+              display: flex;
+              justify-content: flex-start;
+              gap: 1.5rem;
+            }
+
+            .responsive-table .icon-action {
+              font-size: 1.2rem;
+              padding: 0.5rem;
+            }
+          }
+
+          /* Ensure search bar and button stack on mobile */
+          @media (max-width: 576px) {
+            .search-and-add {
+              flex-direction: column;
+            }
+
+            .search-and-add .input-group {
+              width: 100% !important;
+              margin-bottom: 0.5rem;
+            }
+          }
+
+          /* Adjust statistics cards for very small screens */
+          @media (max-width: 576px) {
+            .stats-card {
+              padding: 0.75rem !important;
+            }
+
+            .stats-card h6 {
+              font-size: 0.9rem;
+            }
+
+            .stats-card h5 {
+              font-size: 1.1rem;
+            }
+          }
+
+          /* Ensure pagination buttons are touch-friendly */
+          @media (max-width: 576px) {
+            .pagination .page-link {
+              padding: 0.5rem 0.75rem;
+              font-size: 1rem;
+            }
+          }
+        `}
+      </style>
+
       <div className="container">
         <DashboardBanner />
         <div className="dashboard__inner-wrap">
@@ -190,7 +274,6 @@ const QuestionsArea = () => {
                   <p className="desc">จัดการคำถามทั้งหมดในระบบ</p>
                 </div>
 
-                {/* Display error if any */}
                 {error && (
                   <div className="alert alert-danger" role="alert">
                     <i className="fas fa-exclamation-circle me-2"></i>
@@ -198,7 +281,6 @@ const QuestionsArea = () => {
                   </div>
                 )}
 
-                {/* Display loading indicator */}
                 {isLoading ? (
                   <div className="text-center py-5">
                     <div className="spinner-border text-primary" role="status">
@@ -208,29 +290,29 @@ const QuestionsArea = () => {
                   </div>
                 ) : (
                   <>
-                    {/* Statistics */}
+                    {/* Statistics Cards */}
                     <div className="mb-4">
                       <div className="row g-3">
-                        <div className="col-md-3">
-                          <div className="bg-light rounded p-3 text-center">
+                        <div className="col-md-3 col-6">
+                          <div className="bg-light rounded p-3 text-center stats-card">
                             <h6 className="mb-1 text-muted">คำถามทั้งหมด</h6>
                             <h5 className="mb-0">{totalQuestions} ข้อ</h5>
                           </div>
                         </div>
-                        <div className="col-md-3">
-                          <div className="bg-success-subtle rounded p-3 text-center">
+                        <div className="col-md-3 col-6">
+                          <div className="bg-success-subtle rounded p-3 text-center stats-card">
                             <h6 className="mb-1 text-success">เปิดใช้งาน</h6>
                             <h5 className="mb-0">{countByStatus.active} ข้อ</h5>
                           </div>
                         </div>
-                        <div className="col-md-3">
-                          <div className="bg-primary-subtle rounded p-3 text-center">
+                        <div className="col-md-3 col-6">
+                          <div className="bg-primary-subtle rounded p-3 text-center stats-card">
                             <h6 className="mb-1 text-primary">คะแนนรวม</h6>
                             <h5 className="mb-0">{totalScore} คะแนน</h5>
                           </div>
                         </div>
-                        <div className="col-md-3">
-                          <div className="bg-secondary-subtle rounded p-3 text-center">
+                        <div className="col-md-3 col-6">
+                          <div className="bg-secondary-subtle rounded p-3 text-center stats-card">
                             <h6 className="mb-1 text-secondary">ฉบับร่าง</h6>
                             <h5 className="mb-0">{countByStatus.draft} ข้อ</h5>
                           </div>
@@ -238,8 +320,8 @@ const QuestionsArea = () => {
                       </div>
                     </div>
 
-                    {/* Search and Add button */}
-                    <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                    {/* Search and Add Button */}
+                    <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2 search-and-add">
                       <div className="input-group w-50">
                         <input
                           type="text"
@@ -260,11 +342,11 @@ const QuestionsArea = () => {
                       </Link>
                     </div>
 
-                    {/* Questions table */}
+                    {/* Questions Table */}
                     <div className="card shadow-sm border-0">
                       <div className="card-body p-0">
                         <div className="table-responsive">
-                          <table className="table table-hover table-sm mb-0 align-middle table-striped">
+                          <table className="table table-hover table-sm mb-0 align-middle table-striped responsive-table">
                             <thead className="table-light">
                               <tr>
                                 <th>คำถาม</th>
@@ -279,9 +361,9 @@ const QuestionsArea = () => {
                               {currentQuestions.length > 0 ? (
                                 currentQuestions.map((question) => (
                                   <tr key={question.id}>
-                                    <td>
+                                    <td data-label="คำถาม:">
                                       <div className="d-flex flex-column">
-                                        <span className="fw-medium">
+                                        <span className="fw-medium text-truncate d-block" style={{ maxWidth: "100%" }}>
                                           {question.text.length > 60 ? question.text.substring(0, 60) + "..." : question.text}
                                         </span>
                                         <small className="text-muted">
@@ -289,16 +371,12 @@ const QuestionsArea = () => {
                                         </small>
                                       </div>
                                     </td>
-                                    <td>{question.quizzes.length > 0 ? question.quizzes[0].quiz_id : "N/A"}</td> {/* แก้ไขส่วนนี้ */}
-                                    <td className="text-center">
-                                      <QuestionTypeBadge type={question.type} />
-                                    </td>
-                                    <td className="text-center">
-                                      <span className="fw-medium">{question.score} คะแนน</span>
-                                    </td>
-                                    <td className="text-center"><StatusBadge status={question.status} /></td>
-                                    <td>
-                                      <div className="d-flex justify-content-center gap-3">
+                                    <td data-label="รหัสแบบทดสอบ:">{question.quizzes.length > 0 ? question.quizzes[0].quiz_id : "N/A"}</td>
+                                    <td data-label="ประเภท:" className="text-center"><QuestionTypeBadge type={question.type} /></td>
+                                    <td data-label="คะแนน:" className="text-center"><span className="fw-medium">{question.score} คะแนน</span></td>
+                                    <td data-label="สถานะ:" className="text-center"><StatusBadge status={question.status} /></td>
+                                    <td data-label="จัดการ:">
+                                      <div className="d-flex justify-content-center gap-3 action-icons">
                                         <Link to={`/admin-questions/edit-question/${question.id}`} className="text-primary" style={{ display: "inline-flex", alignItems: "center" }}>
                                           <i className="fas fa-edit icon-action" style={{ cursor: "pointer", lineHeight: 1 }}></i>
                                         </Link>
@@ -312,9 +390,7 @@ const QuestionsArea = () => {
                                   </tr>
                                 ))
                               ) : (
-                                <tr>
-                                  <td colSpan={6} className="text-center py-4">ไม่พบข้อมูลคำถาม</td>
-                                </tr>
+                                <tr><td colSpan={6} className="text-center py-4">ไม่พบข้อมูลคำถาม</td></tr>
                               )}
                             </tbody>
                           </table>
@@ -369,4 +445,3 @@ const QuestionsArea = () => {
 };
 
 export default QuestionsArea;
-
