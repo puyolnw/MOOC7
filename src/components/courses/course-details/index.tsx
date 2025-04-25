@@ -30,7 +30,6 @@ interface CourseDetailsProps {
   };
 }
 
-
 const CourseDetails = ({ single_course }: CourseDetailsProps) => {
   const [isEnrolled, setIsEnrolled] = useState(false);
   const [enrollmentData, setEnrollmentData] = useState<any>(null);
