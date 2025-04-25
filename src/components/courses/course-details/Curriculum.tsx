@@ -13,8 +13,8 @@ interface Subject {
   subject_name: string;
   credits: number;
   order_number: number;
-  instructor_count: number;
-  lesson_count: number;
+  instructor_count?: number;
+  lesson_count?: number;
   cover_image?: string;
   cover_image_file_id?: number;
   prerequisites?: Prerequisite[];
@@ -25,6 +25,7 @@ interface CurriculumProps {
 }
 
 const Curriculum: React.FC<CurriculumProps> = ({ subjects }) => {
+
   const styles: Record<string, CSSProperties> = {
     row: {
       display: "flex",
@@ -156,6 +157,7 @@ const Curriculum: React.FC<CurriculumProps> = ({ subjects }) => {
   const [hoveredButton, setHoveredButton] = useState<number | null>(null);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   const apiURL = import.meta.env.VITE_API_URL;
+
   useEffect(() => {
     const handleResize = () => {
       setWindowWidth(window.innerWidth);
@@ -165,7 +167,7 @@ const Curriculum: React.FC<CurriculumProps> = ({ subjects }) => {
     return () => {
       window.removeEventListener("resize", handleResize);
     };
-  }, []);
+  }, [windowWidth]);
 
   const getColumnStyle = (): CSSProperties => {
     if (windowWidth <= 768) {
@@ -199,96 +201,98 @@ const Curriculum: React.FC<CurriculumProps> = ({ subjects }) => {
 
       {subjects.length > 0 ? (
         <div style={styles.row}>
-          {subjects.map((subject) => (
-            <div key={subject.subject_id} style={getColumnStyle()}>
-              <div
-                style={{
-                  ...styles.card,
-                  transform: hoveredCard === subject.subject_id ? "translateY(-5px)" : "none",
-                  boxShadow: hoveredCard === subject.subject_id ? "0 10px 20px rgba(0, 0, 0, 0.1)" : "none",
-                }}
-                onMouseEnter={() => setHoveredCard(subject.subject_id)}
-                onMouseLeave={() => setHoveredCard(null)}
-              >
-                {subject.cover_image ? (
-                  <img
-                    src={
-                      subject.cover_image
-                        ? `${apiURL}/api/courses/subjects/image/${subject.cover_image_file_id}`
-                        : "/assets/img/courses/course_thumb01.jpg"
-                    }
-                    alt={subject.subject_name}
-                    style={styles.cardImage}
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = "/assets/img/courses/course_thumb01.jpg";
-                    }}
-                  />
-                ) : (
-                  <div style={styles.placeholderImage}>
-                    <i className="fas fa-book-open" style={{ marginRight: "8px" }}></i>
-                    {subject.subject_code}
-                  </div>
-                )}
-
-                <div style={styles.cardHeader}>
-                  <h4 style={styles.cardCode}>{subject.subject_code}</h4>
-                  <h5 style={styles.cardTitle}>{subject.subject_name}</h5>
-                </div>
-
-                <div style={styles.cardBody}>
-                  <ul style={styles.infoList}>
-                    <li style={styles.infoItem}>
-                      <i className="fas fa-graduation-cap" style={styles.icon}></i>
-                      <span>{subject.credits} หน่วยกิต</span>
-                    </li>
-                    <li style={styles.infoItem}>
-                      <i className="fas fa-book" style={styles.icon}></i>
-                      <span>{subject.lesson_count} บทเรียน</span>
-                    </li>
-                    <li style={styles.infoItem}>
-                      <i className="fas fa-chalkboard-teacher" style={styles.icon}></i>
-                      <span>{subject.instructor_count} ผู้สอน</span>
-                    </li>
-                  </ul>
-
-                  {subject.prerequisites && subject.prerequisites.length > 0 && (
-                    <div style={styles.prerequisitesContainer}>
-                      <h6 style={styles.prerequisitesTitle}>
-                        <i className="fas fa-project-diagram" style={{ marginRight: "8px" }}></i>
-                        วิชาที่ต้องเรียนก่อน:
-                      </h6>
-                      <div style={styles.prerequisitesList}>
-                        {subject.prerequisites.map((prereq) => (
-                          <span
-                            key={prereq.prerequisite_id}
-                            style={styles.prerequisitesBadge}
-                            title={prereq.prerequisite_name}
-                          >
-                            {prereq.prerequisite_code}
-                          </span>
-                        ))}
-                      </div>
+          {subjects.map((subject) => {
+            return (
+              <div key={subject.subject_id} style={getColumnStyle()}>
+                <div
+                  style={{
+                    ...styles.card,
+                    transform: hoveredCard === subject.subject_id ? "translateY(-5px)" : "none",
+                    boxShadow: hoveredCard === subject.subject_id ? "0 10px 20px rgba(0, 0, 0, 0.1)" : "none",
+                  }}
+                  onMouseEnter={() => setHoveredCard(subject.subject_id)}
+                  onMouseLeave={() => setHoveredCard(null)}
+                >
+                  {subject.cover_image ? (
+                    <img
+                      src={
+                        subject.cover_image && subject.cover_image_file_id
+                          ? `${apiURL}/api/courses/subjects/image/${subject.cover_image_file_id}`
+                          : "/assets/img/courses/course_thumb01.jpg"
+                      }
+                      alt={subject.subject_name || "รายวิชา"}
+                      style={styles.cardImage}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = "/assets/img/courses/course_thumb01.jpg";
+                      }}
+                    />
+                  ) : (
+                    <div style={styles.placeholderImage}>
+                      <i className="fas fa-book-open" style={{ marginRight: "8px" }}></i>
+                      {subject.subject_code || "ไม่มีรหัสวิชา"}
                     </div>
                   )}
-                </div>
 
-                <div style={styles.cardFooter}>
-                  <Link
-                    to={`/subject-details/${subject.subject_id}`}
-                    style={{
-                      ...styles.button,
-                      backgroundColor: hoveredButton === subject.subject_id ? "#0b5ed7" : "#0d6efd",
-                    }}
-                    onMouseEnter={() => setHoveredButton(subject.subject_id)}
-                    onMouseLeave={() => setHoveredButton(null)}
-                  >
-                    ดูรายละเอียดรายวิชา
-                    <i className="fas fa-arrow-right" style={styles.buttonIcon}></i>
-                  </Link>
+                  <div style={styles.cardHeader}>
+                    <h4 style={styles.cardCode}>{subject.subject_code || "ไม่มีรหัสวิชา"}</h4>
+                    <h5 style={styles.cardTitle}>{subject.subject_name || "ไม่มีชื่อวิชา"}</h5>
+                  </div>
+
+                  <div style={styles.cardBody}>
+                    <ul style={styles.infoList}>
+                      <li style={styles.infoItem}>
+                        <i className="fas fa-graduation-cap" style={styles.icon}></i>
+                        <span>{subject.credits ?? 0} หน่วยกิต</span>
+                      </li>
+                      <li style={styles.infoItem}>
+                        <i className="fas fa-book" style={styles.icon}></i>
+                        <span>{subject.lesson_count ?? 0} บทเรียน</span>
+                      </li>
+                      <li style={styles.infoItem}>
+                        <i className="fas fa-chalkboard-teacher" style={styles.icon}></i>
+                        <span>{subject.instructor_count ?? 0} ผู้สอน</span>
+                      </li>
+                    </ul>
+
+                    {subject.prerequisites && subject.prerequisites.length > 0 ? (
+                      <div style={styles.prerequisitesContainer}>
+                        <h6 style={styles.prerequisitesTitle}>
+                          <i className="fas fa-project-diagram" style={{ marginRight: "8px" }}></i>
+                          วิชาที่ต้องเรียนก่อน:
+                        </h6>
+                        <div style={styles.prerequisitesList}>
+                          {subject.prerequisites.map((prereq) => (
+                            <span
+                              key={prereq.prerequisite_id}
+                              style={styles.prerequisitesBadge}
+                              title={prereq.prerequisite_name || ""}
+                            >
+                              {prereq.prerequisite_code || "ไม่มีรหัส"}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+
+                  <div style={styles.cardFooter}>
+                    <Link
+                      to={`/subject-details/${subject.subject_id}`}
+                      style={{
+                        ...styles.button,
+                        backgroundColor: hoveredButton === subject.subject_id ? "#0b5ed7" : "#0d6efd",
+                      }}
+                      onMouseEnter={() => setHoveredButton(subject.subject_id)}
+                      onMouseLeave={() => setHoveredButton(null)}
+                    >
+                      ดูรายละเอียดรายวิชา
+                      <i className="fas fa-arrow-right" style={styles.buttonIcon}></i>
+                    </Link>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       ) : (
         <div className="alert alert-info">
