@@ -30,8 +30,9 @@ export const fetchUserProgress = async (
     const token = localStorage.getItem("token");
     if (!token) return null;
 
+    // เปลี่ยนเป็นใช้ API จาก back_creditbank
     const response = await axios.get(
-      `${apiURL}/api/courses/subjects/${subjectId}/progress`,
+      `${apiURL}/api/courses/learn/progress/${subjectId}`,
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -430,8 +431,8 @@ export const fetchLessonData = async (
     const token = localStorage.getItem("token");
     if (!token) return;
 
-    // ดึงข้อมูลบทเรียนพร้อมความก้าวหน้า
-    const response = await axios.get(`${apiURL}/api/courses/lessons/${lessonId}`, {
+    // เปลี่ยนเป็นใช้ API จาก back_creditbank
+    const response = await axios.get(`${apiURL}/api/courseslesson/${lessonId}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
 
@@ -442,10 +443,9 @@ export const fetchLessonData = async (
       setCurrentLessonData(response.data.lesson);
 
       // ตรวจสอบและจัดการกับแบบทดสอบท้ายบท
-      if (response.data.lesson && (response.data.lesson.quiz_id || response.data.lesson.quiz)) {
-        console.log("Lesson has quiz:", response.data.lesson.quiz || response.data.lesson.quiz_id);
-        const quizData = response.data.lesson.quiz || { quiz_id: response.data.lesson.quiz_id };
-        setCurrentQuizData(quizData);
+      if (response.data.lesson && (response.data.lesson.quiz_id)) {
+        console.log("Lesson has quiz:", response.data.lesson.quiz_id);
+        setCurrentQuizData({ quiz_id: response.data.lesson.quiz_id });
       }
 
       // ดึง YouTube ID จาก URL
@@ -468,77 +468,74 @@ export const fetchLessonData = async (
       }
 
       // อัพเดตสถานะความก้าวหน้าในข้อมูลบทเรียน
-      if (response.data.lesson.progress) {
-        const [sectionId, itemId] = currentLessonId.split("-").map(Number);
-        const updatedLessonData = [...lessonData];
-        const sectionIndex = updatedLessonData.findIndex((s) => s.id === sectionId);
+      const [sectionId, itemId] = currentLessonId.split("-").map(Number);
+      const updatedLessonData = [...lessonData];
+      const sectionIndex = updatedLessonData.findIndex((s) => s.id === sectionId);
 
-        if (sectionIndex !== -1) {
-          const itemIndex = updatedLessonData[sectionIndex].items.findIndex(
-            (i) => i.id === itemId
-          );
+      if (sectionIndex !== -1) {
+        const itemIndex = updatedLessonData[sectionIndex].items.findIndex(
+          (i) => i.id === itemId
+        );
 
-          if (itemIndex !== -1) {
-            // อัพเดตสถานะความก้าวหน้าของบทเรียนนี้
-            updatedLessonData[sectionIndex].items[itemIndex] = {
-              ...updatedLessonData[sectionIndex].items[itemIndex],
-              completed:
-                response.data.lesson.progress.completed ||
-                updatedLessonData[sectionIndex].items[itemIndex].completed,
-              duration: response.data.lesson.progress.completed
-                ? "100%"
-                : `${response.data.lesson.progress.progress || 0}%`,
-            };
+        if (itemIndex !== -1) {
+          // อัพเดตสถานะความก้าวหน้าของบทเรียนนี้
+          updatedLessonData[sectionIndex].items[itemIndex] = {
+            ...updatedLessonData[sectionIndex].items[itemIndex],
+            completed: response.data.lesson.video_completed || 
+                      updatedLessonData[sectionIndex].items[itemIndex].completed,
+            duration: response.data.lesson.video_completed
+              ? "100%"
+              : "0%",
+          };
 
-            // ถ้าบทเรียนนี้เรียนจบแล้ว ให้ปลดล็อคบทเรียนถัดไป
-            if (response.data.lesson.progress.completed) {
-              // ตรวจสอบว่ามีแบบทดสอบท้ายบทหรือไม่
-              const hasQuiz = response.data.lesson.quiz_id || response.data.lesson.quiz;
+          // ถ้าบทเรียนนี้เรียนจบแล้ว ให้ปลดล็อคบทเรียนถัดไป
+          if (response.data.lesson.video_completed) {
+            // ตรวจสอบว่ามีแบบทดสอบท้ายบทหรือไม่
+            const hasQuiz = response.data.lesson.quiz_id;
 
-              // ถ้ามีแบบทดสอบท้ายบท ให้ปลดล็อคแบบทดสอบนั้น
+            // ถ้ามีแบบทดสอบท้ายบท ให้ปลดล็อคแบบทดสอบนั้น
+            if (
+              hasQuiz &&
+              itemIndex + 1 < updatedLessonData[sectionIndex].items.length &&
+              updatedLessonData[sectionIndex].items[itemIndex + 1].type === "quiz"
+            ) {
+              updatedLessonData[sectionIndex].items[itemIndex + 1] = {
+                ...updatedLessonData[sectionIndex].items[itemIndex + 1],
+                lock: false,
+              };
+            }
+            // ถ้าไม่มีแบบทดสอบท้ายบท หรือเป็นรายการสุดท้ายในเซ็กชัน ให้ปลดล็อคบทเรียนในเซ็กชันถัดไป
+            else if (
+              itemIndex === updatedLessonData[sectionIndex].items.length - 1 ||
+              (hasQuiz && itemIndex + 2 === updatedLessonData[sectionIndex].items.length)
+            ) {
+              const nextSectionIndex = sectionIndex + 1;
               if (
-                hasQuiz &&
-                itemIndex + 1 < updatedLessonData[sectionIndex].items.length &&
-                updatedLessonData[sectionIndex].items[itemIndex + 1].type === "quiz"
+                nextSectionIndex < updatedLessonData.length &&
+                updatedLessonData[nextSectionIndex].id !== 9999 &&
+                updatedLessonData[nextSectionIndex].items.length > 0
               ) {
-                updatedLessonData[sectionIndex].items[itemIndex + 1] = {
-                  ...updatedLessonData[sectionIndex].items[itemIndex + 1],
+                updatedLessonData[nextSectionIndex].items[0] = {
+                  ...updatedLessonData[nextSectionIndex].items[0],
                   lock: false,
                 };
               }
-              // ถ้าไม่มีแบบทดสอบท้ายบท หรือเป็นรายการสุดท้ายในเซ็กชัน ให้ปลดล็อคบทเรียนในเซ็กชันถัดไป
-              else if (
-                itemIndex === updatedLessonData[sectionIndex].items.length - 1 ||
-                (hasQuiz && itemIndex + 2 === updatedLessonData[sectionIndex].items.length)
-              ) {
-                const nextSectionIndex = sectionIndex + 1;
-                if (
-                  nextSectionIndex < updatedLessonData.length &&
-                  updatedLessonData[nextSectionIndex].id !== 9999 &&
-                  updatedLessonData[nextSectionIndex].items.length > 0
-                ) {
-                  updatedLessonData[nextSectionIndex].items[0] = {
-                    ...updatedLessonData[nextSectionIndex].items[0],
-                    lock: false,
-                  };
-                }
-              }
             }
-
-            // อัพเดตความก้าวหน้าของเซ็กชัน
-            const totalItems = updatedLessonData[sectionIndex].items.length;
-            const completedItems = updatedLessonData[sectionIndex].items.filter(
-              (item) => item.completed
-            ).length;
-            const sectionProgress = totalItems > 0 ? (completedItems / totalItems) * 100 : 0;
-
-            updatedLessonData[sectionIndex] = {
-              ...updatedLessonData[sectionIndex],
-              count: `${Math.round(sectionProgress)}%`,
-            };
-
-            setLessonData(updatedLessonData);
           }
+
+          // อัพเดตความก้าวหน้าของเซ็กชัน
+          const totalItems = updatedLessonData[sectionIndex].items.length;
+          const completedItems = updatedLessonData[sectionIndex].items.filter(
+            (item) => item.completed
+          ).length;
+          const sectionProgress = totalItems > 0 ? (completedItems / totalItems) * 100 : 0;
+
+          updatedLessonData[sectionIndex] = {
+            ...updatedLessonData[sectionIndex],
+            count: `${Math.round(sectionProgress)}%`,
+          };
+
+          setLessonData(updatedLessonData);
         }
       }
     }
@@ -564,135 +561,26 @@ export const fetchQuizData = async (
       return;
     }
 
-    const apiEndpoint = `${apiURL}/api/courses/quizzes/${quizId}`;
+    // เปลี่ยนเป็นใช้ API จาก back_creditbank
+    const apiEndpoint = `${apiURL}/api/courses/learn/quiz/${quizId}`;
 
     const response = await axios.get(apiEndpoint, {
       headers: { Authorization: `Bearer ${token}` },
     });
 
-    if (response.data.quiz) {
+    if (response.data.success && response.data.quiz) {
       setCurrentQuizData(response.data.quiz);
-    } else if (response.data.success && response.data.data) {
-      setCurrentQuizData(response.data.data);
-    } else {
-      console.error("Quiz data format not recognized");
-    }
-
-    // ตรวจสอบว่ามีข้อมูลความก้าวหน้าในการตอบกลับหรือไม่
-    if (response.data.progress) {
-      const [sectionId, itemId] = currentLessonId.split("-").map(Number);
-      const updatedLessonData = [...lessonData];
-      const sectionIndex = updatedLessonData.findIndex((s) => s.id === sectionId);
-
-      if (sectionIndex !== -1) {
-        const itemIndex = updatedLessonData[sectionIndex].items.findIndex(
-          (i) => i.id === itemId
-        );
-
-        if (itemIndex !== -1) {
-          updatedLessonData[sectionIndex].items[itemIndex] = {
-            ...updatedLessonData[sectionIndex].items[itemIndex],
-            completed:
-              response.data.progress.completed ||
-              updatedLessonData[sectionIndex].items[itemIndex].completed,
-            duration: response.data.progress.completed
-              ? "100%"
-              : `${response.data.progress.progress || 0}%`,
-          };
-
-          // ถ้าเป็นแบบทดสอบก่อนเรียน และทำเสร็จแล้ว ให้ปลดล็อคบทเรียนแรก
-          if (sectionId === 1 && response.data.progress.completed) {
-            const firstLessonSectionIndex = updatedLessonData.findIndex(
-              (s) => s.id > 1 && s.id < 9999
-            );
-            if (
-              firstLessonSectionIndex !== -1 &&
-              updatedLessonData[firstLessonSectionIndex].items.length > 0
-            ) {
-              updatedLessonData[firstLessonSectionIndex].items[0] = {
-                ...updatedLessonData[firstLessonSectionIndex].items[0],
-                lock: false,
-              };
-            }
-          }
-          // ถ้าเป็นแบบทดสอบท้ายบทเรียน และทำเสร็จแล้ว
-          else if (sectionId !== 1 && sectionId !== 9999 && response.data.progress.completed) {
-            // ถ้าเป็นแบบทดสอบสุดท้ายในเซ็กชัน ให้ปลดล็อคบทเรียนในเซ็กชันถัดไป
-            if (itemIndex === updatedLessonData[sectionIndex].items.length - 1) {
-              const nextSectionIndex = sectionIndex + 1;
-              if (
-                nextSectionIndex < updatedLessonData.length &&
-                updatedLessonData[nextSectionIndex].id !== 9999 &&
-                updatedLessonData[nextSectionIndex].items.length > 0
-              ) {
-                updatedLessonData[nextSectionIndex].items[0] = {
-                  ...updatedLessonData[nextSectionIndex].items[0],
-                  lock: false,
-                };
-              }
-            }
-            // ถ้าไม่ใช่แบบทดสอบสุดท้าย ให้ปลดล็อคบทเรียนถัดไปในเซ็กชันเดียวกัน
-            else if (itemIndex + 1 < updatedLessonData[sectionIndex].items.length) {
-              updatedLessonData[sectionIndex].items[itemIndex + 1] = {
-                ...updatedLessonData[sectionIndex].items[itemIndex + 1],
-                lock: false,
-              };
-            }
-          }
-
-          // ตรวจสอบว่าบทเรียนทั้งหมดเรียนจบแล้วหรือไม่ เพื่อปลดล็อคแบบทดสอบหลังเรียน
-          if (response.data.progress.completed) {
-            const allLessonsCompleted = updatedLessonData
-              .filter((section) => section.id !== 1 && section.id !== 9999)
-              .every((section) => section.items.every((item) => item.completed));
-
-            if (allLessonsCompleted) {
-              const postTestSectionIndex = updatedLessonData.findIndex(
-                (s) => s.id === 9999
-              );
-              if (
-                postTestSectionIndex !== -1 &&
-                updatedLessonData[postTestSectionIndex].items.length > 0
-              ) {
-                updatedLessonData[postTestSectionIndex].items[0] = {
-                  ...updatedLessonData[postTestSectionIndex].items[0],
-                  lock: false,
-                };
-              }
-            }
-          }
-
-          const totalItems = updatedLessonData[sectionIndex].items.length;
-          const completedItems = updatedLessonData[sectionIndex].items.filter(
-            (item) => item.completed
-          ).length;
-          const sectionProgress = totalItems > 0 ? (completedItems / totalItems) * 100 : 0;
-
-          updatedLessonData[sectionIndex] = {
-            ...updatedLessonData[sectionIndex],
-            count: `${Math.round(sectionProgress)}%`,
-          };
-
-          setLessonData(updatedLessonData);
-        }
-      }
-
-      if (response.data.progress.completed) {
-        fetchUserProgress().then((data) => {
-          setProgressData(data);
-        });
-      }
-    } else {
-      // ถ้าไม่มีข้อมูลความก้าวหน้าในการตอบกลับ ให้ดึงข้อมูลความก้าวหน้าแยก
+      
+      // ตรวจสอบความคืบหน้าของแบบทดสอบ
       try {
         const progressResponse = await axios.get(
-          `${apiURL}/api/courses/quizzes/${quizId}/progress`,
+          `${apiURL}/api/courses/learn/lesson/${quizId}/progress`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
         );
 
-        if (progressResponse.data.success && progressResponse.data.progress) {
+        if (progressResponse.data.success) {
           const [sectionId, itemId] = currentLessonId.split("-").map(Number);
           const updatedLessonData = [...lessonData];
           const sectionIndex = updatedLessonData.findIndex((s) => s.id === sectionId);
@@ -703,17 +591,18 @@ export const fetchQuizData = async (
             );
 
             if (itemIndex !== -1) {
+              const progress = progressResponse.data.progress || 0;
+              // กำหนดค่า isCompleted จากข้อมูลที่ได้รับ
+              const isCompleted = progress >= 100;
+              
               updatedLessonData[sectionIndex].items[itemIndex] = {
                 ...updatedLessonData[sectionIndex].items[itemIndex],
-                completed:
-                  progressResponse.data.progress.completed ||
-                  updatedLessonData[sectionIndex].items[itemIndex].completed,
-                duration: progressResponse.data.progress.completed
-                  ? "100%"
-                  : `${progressResponse.data.progress.progress || 0}%`,
+                completed: isCompleted || updatedLessonData[sectionIndex].items[itemIndex].completed,
+                duration: isCompleted ? "100%" : `${progress}%`,
               };
+
               // ถ้าเป็นแบบทดสอบก่อนเรียน และทำเสร็จแล้ว ให้ปลดล็อคบทเรียนแรก
-              if (sectionId === 1 && progressResponse.data.progress.completed) {
+              if (sectionId === 1 && isCompleted) {
                 const firstLessonSectionIndex = updatedLessonData.findIndex(
                   (s) => s.id > 1 && s.id < 9999
                 );
@@ -743,7 +632,7 @@ export const fetchQuizData = async (
             }
           }
 
-          if (progressResponse.data.progress.completed) {
+          if (completed) {
             fetchUserProgress().then((data) => {
               setProgressData(data);
             });
@@ -755,6 +644,38 @@ export const fetchQuizData = async (
     }
   } catch (error) {
     console.error("Error fetching quiz data:", error);
+  }
+};
+
+// ฟังก์ชันสำหรับบันทึกความก้าวหน้าของบทเรียน
+export const saveLessonProgress = async (
+  lessonId: number,
+  apiURL: string,
+  position: number,
+  duration: number,
+  completed: boolean
+) => {
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) return false;
+
+    // เปลี่ยนเป็นใช้ API จาก back_creditbank
+    const response = await axios.post(
+      `${apiURL}/api/courses/learn/lesson/${lessonId}/progress`,
+      {
+        position,
+        duration,
+        completed
+      },
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+
+    return response.data.success;
+  } catch (error) {
+    console.error("Error saving lesson progress:", error);
+    return false;
   }
 };
 
@@ -843,7 +764,7 @@ export const updateSectionProgress = (lessonData: SectionData[]) => {
 
 // ฟังก์ชันสำหรับตรวจสอบว่ามีแบบทดสอบท้ายบทหรือไม่
 export const hasQuizAfterLesson = (lessonData: any) => {
-  return lessonData && (lessonData.quiz_id || lessonData.quiz);
+  return lessonData && lessonData.quiz_id;
 };
 
 // ฟังก์ชันสำหรับหาแบบทดสอบท้ายบทของบทเรียน
@@ -908,4 +829,36 @@ export const findNextLessonAfterQuiz = (
 // ฟังก์ชันสำหรับตรวจสอบว่าเรียนจบรายวิชาแล้วหรือไม่
 export const isSubjectCompleted = (progressData: any) => {
   return progressData?.progress?.progress_percentage === 100;
+};
+
+// ฟังก์ชันสำหรับดึงข้อมูลหลักสูตรและรายวิชา
+export const fetchCourseData = async (
+  courseId: string,
+  apiURL: string
+) => {
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) return null;
+
+    // เปลี่ยนเป็นใช้ API จาก back_creditbank
+    const response = await axios.get(
+      `${apiURL}/api/courses/learn/course/${courseId}`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+
+    if (response.data.success) {
+      return {
+        course: response.data.course,
+        subjects: response.data.subjects,
+        lessons: response.data.lessons,
+        prePostQuizzes: response.data.prePostQuizzes
+      };
+    }
+    return null;
+  } catch (error) {
+    console.error("Error fetching course data:", error);
+    return null;
+  }
 };

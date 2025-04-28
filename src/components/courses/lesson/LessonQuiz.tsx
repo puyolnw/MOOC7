@@ -97,23 +97,20 @@ const LessonQuiz = ({ onComplete, quizData, }: LessonQuizProps) => {
           return;
         }
         
-        const response = await axios.get(`${apiURL}/api/courses/quizzes/${quizId}`, {
+        // เปลี่ยนเป็นใช้ API จาก back_creditbank
+        const response = await axios.get(`${apiURL}/api/courses/learn/quiz/${quizId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         
         // ตรวจสอบว่าเป็นแบบทดสอบก่อนเรียนหรือไม่จากข้อมูลที่ได้รับ
-        if (response.data.quiz?.type === 'pre_test' || response.data.type === 'pre_test' ||
-            (response.data.quiz?.title && response.data.quiz.title.toLowerCase().includes('ก่อนเรียน')) ||
-            (response.data.title && response.data.title.toLowerCase().includes('ก่อนเรียน'))) {
+        if (response.data.quiz?.type === 'pre_test' || 
+            (response.data.quiz?.title && response.data.quiz.title.toLowerCase().includes('ก่อนเรียน'))) {
           setIsPreTest(true);
         }
         
-        if (response.data.questions && Array.isArray(response.data.questions)) {
-          processQuizQuestions(response.data.questions);
-        } else if (response.data.quiz && response.data.quiz.questions && Array.isArray(response.data.quiz.questions)) {
+        // ปรับโครงสร้างข้อมูลตาม API ของ back_creditbank
+        if (response.data.success && response.data.quiz) {
           processQuizQuestions(response.data.quiz.questions);
-        } else if (response.data.data && Array.isArray(response.data.data)) {
-          processQuizQuestions(response.data.data);
         } else {
           setError("ไม่พบข้อมูลคำถามในแบบทดสอบ");
           setIsLoading(false);
@@ -137,34 +134,32 @@ const LessonQuiz = ({ onComplete, quizData, }: LessonQuizProps) => {
       }
       
       const formattedQuestions: Question[] = apiQuestions.map(q => {
+        // ปรับให้เข้ากับโครงสร้างข้อมูลของ back_creditbank
         const questionText = q.question_text || q.title || q.description || q.question || "";
         const questionId = q.question_id || q.id || 0;
         
         let type: QuestionType = 'single';
         
-        if (q.type === 'SC' || q.type === 'single_choice') {
+        // แปลงประเภทคำถามจาก back_creditbank เป็นประเภทที่ใช้ในคอมโพเนนต์
+        if (q.type === 'SC') {
           type = 'single';
-        } else if (q.type === 'MC' || q.type === 'multiple_choice') {
+        } else if (q.type === 'MC') {
           type = 'multiple';
-        } else if (q.type === 'TF' || q.type === 'true_false') {
+        } else if (q.type === 'TF') {
           type = 'truefalse';
-        } else if (q.type === 'FB' || q.type === 'text') {
+        } else if (q.type === 'FB') {
           type = 'text';
         }
         
         let formattedOptions: Array<{ text: string; choice_id: number }> = [];
         
-        if (q.options && Array.isArray(q.options)) {
-          formattedOptions = q.options.map((opt: any, index: number) => {
-            return typeof opt === 'string' 
-              ? { text: opt, choice_id: q.choice_ids?.[index] || index + 1 }
-              : { text: opt.text || opt.title || "", choice_id: opt.choice_id || opt.id || index + 1 };
-          });
-        } else if (q.choices && Array.isArray(q.choices)) {
-          formattedOptions = q.choices.map((choice: any, index: number) => {
-            return typeof choice === 'string' 
-              ? { text: choice, choice_id: q.choice_ids?.[index] || index + 1 }
-              : { text: choice.text || choice.title || "", choice_id: choice.choice_id || choice.id || index + 1 };
+        // แปลงตัวเลือกคำตอบจาก back_creditbank
+        if (q.choices && Array.isArray(q.choices)) {
+          formattedOptions = q.choices.map((choice: any) => {
+            return { 
+              text: choice.text || "", 
+              choice_id: choice.choice_id || 0 
+            };
           });
         }
         
@@ -224,13 +219,12 @@ const LessonQuiz = ({ onComplete, quizData, }: LessonQuizProps) => {
     const newSelectedAnswers = [...selectedSingleAnswers];
     newSelectedAnswers[currentQuestion] = choiceId; // เก็บ choice_id แทน index
     setSelectedSingleAnswers(newSelectedAnswers);
-    console.log("selectedSingleAnswers:", answerIndex);
+    console.log("Selected Single Answer:", answerIndex);
   };
  
   const handleMultipleAnswerSelect = (answerIndex: number, choiceId: number) => {
     const newSelectedAnswers = [...selectedMultipleAnswers];
-    console.log("selectedSingleAnswers:", answerIndex);
-    
+    console.log("Selected Single Answer:", answerIndex);
     if (!newSelectedAnswers[currentQuestion]) {
       newSelectedAnswers[currentQuestion] = [];
     }
@@ -265,47 +259,48 @@ const LessonQuiz = ({ onComplete, quizData, }: LessonQuizProps) => {
       const token = localStorage.getItem("token");
       if (!token || !quizData?.quiz_id) return false;
       
-      // รวบรวมคำตอบทั้งหมด
+      // รวบรวมคำตอบทั้งหมดในรูปแบบที่ back_creditbank ต้องการ
       const answers = questions.map((question, index) => {
-        let answer;
+        let choiceId = null;
+        let textAnswer = null;
         
         switch (question.type) {
           case 'single':
-            answer = selectedSingleAnswers[index]; // ส่ง choice_id
+            choiceId = selectedSingleAnswers[index];
             break;
           case 'multiple':
-            answer = selectedMultipleAnswers[index] || []; // ส่งอาร์เรย์ของ choice_id
+            // back_creditbank รับเฉพาะ choiceId เดียว ไม่รองรับหลายตัวเลือก
+            // ในกรณีนี้เราส่งตัวเลือกแรกที่ผู้ใช้เลือก
+            choiceId = selectedMultipleAnswers[index]?.[0] || null;
             break;
           case 'truefalse':
-            // ส่งค่า boolean เป็นข้อความ "true" หรือ "false"
-            answer = selectedTrueFalseAnswers[index] !== undefined ? 
-              String(selectedTrueFalseAnswers[index]) : "";
+            // แปลง boolean เป็น choiceId (1=true, 2=false)
+            choiceId = selectedTrueFalseAnswers[index] === true ? 1 : 2;
             break;
           case 'text':
-            answer = textAnswers[index] || "";
+            textAnswer = textAnswers[index] || "";
             break;
         }
         
         return {
-          question_id: question.question_id,
-          answer_type: question.type,
-          answer
+          questionId: question.question_id,
+          choiceId,
+          textAnswer
         };
       });
       
-      const submitEndpoint = `${apiURL}/api/courses/quizzes/${quizData.quiz_id}/submit`;
-      console.log("Submitting quiz answers to:", submitEndpoint);
-      console.log("Answers:", answers);
-      
-      const response = await axios.post(submitEndpoint, 
+      // เปลี่ยนเป็นใช้ API จาก back_creditbank
+      const response = await axios.post(
+        `${apiURL}/api/courses/learn/quiz/${quizData.quiz_id}/submit`, 
         { answers },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
       if (response.data.success) {
-        setScore(response.data.score || 0);
-        setTotalScore(response.data.total || questions.length);
-        setIsPassed(response.data.passed || false);
+        // ปรับให้เข้ากับโครงสร้างข้อมูลของ back_creditbank
+        setScore(response.data.result.totalScore || 0);
+        setTotalScore(response.data.result.maxScore || questions.length);
+        setIsPassed(response.data.result.passed || false);
         setShowResult(true);
         return true;
       } else {
@@ -396,6 +391,23 @@ const LessonQuiz = ({ onComplete, quizData, }: LessonQuizProps) => {
   };
 
   const handleCompleteQuiz = () => {
+    // บันทึกความคืบหน้าของ quiz ด้วย API ของ back_creditbank
+    if (quizData?.quiz_id) {
+      const token = localStorage.getItem("token");
+      if (token) {
+        axios.post(`${apiURL}/api/courses/learn/quiz/progress`, {
+          quizId: quizData.quiz_id,
+          score: score,
+          maxScore: totalScore,
+          passed: isPassed
+        }, {
+          headers: { Authorization: `Bearer ${token}` }
+        }).catch(error => {
+          console.error("Error saving quiz progress:", error);
+        });
+      }
+    }
+    
     onComplete(score, isPassed);
   };
 
@@ -429,7 +441,7 @@ const LessonQuiz = ({ onComplete, quizData, }: LessonQuizProps) => {
 
   if (showResult) {
     const percentage = totalScore > 0 ? Math.round((score / totalScore) * 100) : 0;
-    const passThreshold = 70; // 70% ถือว่าผ่าน
+    const passThreshold = 60; // 60% ถือว่าผ่าน (ตามที่กำหนดใน back_creditbank)
     const passed = percentage >= passThreshold;
     
     return (
