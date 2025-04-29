@@ -24,40 +24,40 @@ interface ModalProps {
   filteredInstructors: Instructor[];
   filteredCourses: { id: string; title: string; category: string; subjects: number }[];
   handleAddLesson: (lessonId: string) => void;
-  handleSelectQuiz: (quizId: string) => void;
+  // handleSelectQuiz: (quizId: string) => void;
   handleToggleInstructor: (instructorId: string) => void;
   handleToggleCourse: (courseId: string) => void;
   subjectData: SubjectData;
-  quizType: "pre" | "post";
+  // quizType: "pre" | "post";
 }
 
 const Modals: React.FC<ModalProps> = ({
   showLessonModal,
-  showQuizModal,
+  // showQuizModal,
   showInstructorModal,
   showCourseModal,
   setShowLessonModal,
-  setShowQuizModal,
+  // setShowQuizModal,
   setShowInstructorModal,
   setShowCourseModal,
   lessonSearchTerm,
-  quizSearchTerm,
+  // quizSearchTerm,
   instructorSearchTerm,
   courseSearchTerm,
   setLessonSearchTerm,
-  setQuizSearchTerm,
+  // setQuizSearchTerm,
   setInstructorSearchTerm,
   setCourseSearchTerm,
   filteredLessons,
-  filteredQuizzes,
+  // filteredQuizzes,
   filteredInstructors,
   filteredCourses,
   handleAddLesson,
-  handleSelectQuiz,
+  // handleSelectQuiz,
   handleToggleInstructor,
   handleToggleCourse,
   subjectData,
-  quizType,
+  // quizType,
 }) => (
   <>
     {/* Modal เลือกบทเรียน */}
@@ -131,7 +131,7 @@ const Modals: React.FC<ModalProps> = ({
     )}
 
     {/* Modal เลือกแบบทดสอบ */}
-    {showQuizModal && (
+    {/* {showQuizModal && (
       <div className="modal fade show" style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}>
         <div className="modal-dialog modal-lg modal-dialog-centered modal-slide-down">
           <div className="modal-content">
@@ -189,7 +189,7 @@ const Modals: React.FC<ModalProps> = ({
           </div>
         </div>
       </div>
-    )}
+    )} */}
 
 
 {showInstructorModal && (

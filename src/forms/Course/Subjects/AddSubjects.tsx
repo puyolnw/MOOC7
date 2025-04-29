@@ -3,7 +3,7 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import SubjectInfoSection from "./SubjectInfoSection";
 import LessonSection from "./LessonSection";
-import QuizSection from "./QuizSection";
+// import QuizSection from "./QuizSection";
 import InstructorSection from "./InstructorSection";
 import CourseSection from "./CourseSection";
 import Modals from "./Modals";
@@ -108,7 +108,7 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel, subjectTo
   const [showQuizModal, setShowQuizModal] = useState(false);
   const [showCourseModal, setShowCourseModal] = useState(false);
   const [showInstructorModal, setShowInstructorModal] = useState(false);
-  const [quizType, setQuizType] = useState<"pre" | "post">("pre");
+  // const [quizType, setQuizType] = useState<"pre" | "post">("pre");
 
   // สถานะสำหรับการค้นหา
   const [lessonSearchTerm, setLessonSearchTerm] = useState("");
@@ -421,35 +421,35 @@ const handleDragEnd = (result: any) => {
   };
 
   // เลือกแบบทดสอบ
-  const handleSelectQuiz = (quizId: string) => {
-    if (quizType === "pre") {
-      setSubjectData({
-        ...subjectData,
-        preTestId: quizId,
-      });
-    } else {
-      setSubjectData({
-        ...subjectData,
-        postTestId: quizId,
-      });
-    }
-    setShowQuizModal(false);
-  };
+  // const handleSelectQuiz = (quizId: string) => {
+  //   if (quizType === "pre") {
+  //     setSubjectData({
+  //       ...subjectData,
+  //       preTestId: quizId,
+  //     });
+  //   } else {
+  //     setSubjectData({
+  //       ...subjectData,
+  //       postTestId: quizId,
+  //     });
+  //   }
+  //   setShowQuizModal(false);
+  // };
 
   // ลบแบบทดสอบ
-  const handleRemoveQuiz = (type: "pre" | "post") => {
-    if (type === "pre") {
-      setSubjectData({
-        ...subjectData,
-        preTestId: null,
-      });
-    } else {
-      setSubjectData({
-        ...subjectData,
-        postTestId: null,
-      });
-    }
-  };
+  // const handleRemoveQuiz = (type: "pre" | "post") => {
+  //   if (type === "pre") {
+  //     setSubjectData({
+  //       ...subjectData,
+  //       preTestId: null,
+  //     });
+  //   } else {
+  //     setSubjectData({
+  //       ...subjectData,
+  //       postTestId: null,
+  //     });
+  //   }
+  // };
 
   // เพิ่ม/ลบอาจารย์
 
@@ -721,14 +721,14 @@ const findInstructorById = (instructorId: string) => {
             setShowLessonModal={setShowLessonModal}
           />
 
-          <QuizSection
+          {/* <QuizSection
             subjectData={subjectData}
             availableQuizzes={availableQuizzes}
             handleSelectQuiz={handleSelectQuiz}
             handleRemoveQuiz={handleRemoveQuiz}
             setShowQuizModal={setShowQuizModal}
             setQuizType={setQuizType}
-          />
+          /> */}
 
           <InstructorSection
             subjectData={subjectData}
@@ -771,7 +771,7 @@ const findInstructorById = (instructorId: string) => {
             setShowCourseModal={setShowCourseModal}
             showInstructorModal={showInstructorModal}
             setShowInstructorModal={setShowInstructorModal}
-            quizType={quizType}
+            // quizType={quizType}
             lessonSearchTerm={lessonSearchTerm}
             setLessonSearchTerm={setLessonSearchTerm}
             quizSearchTerm={quizSearchTerm}
@@ -785,7 +785,7 @@ const findInstructorById = (instructorId: string) => {
             filteredCourses={filteredCourses}
             filteredInstructors={filteredInstructors}
             handleAddLesson={handleAddLesson}
-            handleSelectQuiz={handleSelectQuiz}
+            // handleSelectQuiz={handleSelectQuiz}
             handleToggleCourse={handleToggleCourse}
             handleToggleInstructor={handleToggleInstructor}
             subjectData={subjectData}
