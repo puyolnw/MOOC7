@@ -1,27 +1,82 @@
 import { useEffect, useRef, useState } from "react";
+import axios from 'axios';
 import Plyr from 'plyr';
 import 'plyr/dist/plyr.css';
 import './LessonVideo.css';
+
+const API_URL = import.meta.env.VITE_API_URL;
 
 interface LessonVideoProps {
   onComplete: () => void;
   currentLesson: string;
   youtubeId?: string;
+  lessonId: number;
 }
 
-const LessonVideo = ({ onComplete, currentLesson, youtubeId = 'BboMpayJomw' }: LessonVideoProps) => {
+const LessonVideo = ({ onComplete, currentLesson, youtubeId = 'BboMpayJomw', lessonId }: LessonVideoProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<Plyr | null>(null);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const isSeekingRef = useRef(false);
 
-  const [progress, setProgress] = useState(10); // เริ่มต้นที่ 10%
+  const [progress, setProgress] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [watchedTime, setWatchedTime] = useState(0);
+  const [videoDuration, setVideoDuration] = useState(0);
+  console.log("Log:", videoDuration);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const saveVideoProgress = async (position: number, duration: number) => {
+    try {
+      await axios.post(`${API_URL}/api/learn/lesson/${lessonId}/video-progress`,
+        { position, duration },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        }
+      );
+    } catch (error) {
+      console.error("Error saving video progress:", error);
+    }
+  };
+
+  const fetchVideoProgress = async () => {
+    if (lessonId <= 0) return;
+
+    try {
+      setIsLoading(true);
+      const response = await axios.get(`${API_URL}/api/learn/lesson/${lessonId}/video-progress`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+
+      if (response.data.success && response.data.progress) {
+        const { last_position_seconds, duration_seconds, video_completed } = response.data.progress;
+
+        if (playerRef.current && last_position_seconds) {
+          playerRef.current.currentTime = last_position_seconds;
+        }
+        if (duration_seconds) {
+          setVideoDuration(duration_seconds);
+        }
+
+        if (video_completed) {
+          setIsCompleted(true);
+          onComplete();
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching video progress:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    if (containerRef.current) {
+    fetchVideoProgress();
+  }, [lessonId]);
+
+  useEffect(() => {
+    if (containerRef.current && !isLoading) {
       while (containerRef.current.firstChild) {
         containerRef.current.removeChild(containerRef.current.firstChild);
       }
@@ -42,45 +97,43 @@ const LessonVideo = ({ onComplete, currentLesson, youtubeId = 'BboMpayJomw' }: L
       });
 
       playerRef.current.on('ready', () => {
-        // เมื่อ player พร้อม ให้ตั้งตำแหน่งวิดีโอที่ 10%
-        if (playerRef.current) {
-          const duration = playerRef.current.duration || 0;
-          const tenPercentPosition = duration * 0.1;
-          playerRef.current.currentTime = tenPercentPosition;
-          setWatchedTime(tenPercentPosition);
-        }
+        // ดึง duration จริง ๆ หลัง ready
+        const checkDuration = setInterval(() => {
+          if (playerRef.current?.duration && playerRef.current.duration > 0) {
+            setVideoDuration(playerRef.current.duration);
+            clearInterval(checkDuration);
+          }
+        }, 500);
       });
 
-      playerRef.current.on('play', () => {
-        setIsPlaying(true);
-        if (!isSeekingRef.current) {
-          timerRef.current = setInterval(() => {
-            setWatchedTime(prev => prev + 1);
-          }, 1000);
+      playerRef.current.on('timeupdate', () => {
+        if (playerRef.current && playerRef.current.duration > 0) {
+          const currentProgress = (playerRef.current.currentTime / playerRef.current.duration) * 100;
+          setProgress(currentProgress);
+
+          if (currentProgress >= 90 && !isCompleted) {
+            setIsCompleted(true);
+            onComplete();
+          }
         }
       });
 
       playerRef.current.on('pause', () => {
-        setIsPlaying(false);
-        if (timerRef.current) clearInterval(timerRef.current);
-      });
-
-      playerRef.current.on('seeking', () => {
-        isSeekingRef.current = true;
-        if (timerRef.current) clearInterval(timerRef.current);
+        if (playerRef.current) {
+          saveVideoProgress(playerRef.current.currentTime, playerRef.current.duration);
+        }
       });
 
       playerRef.current.on('seeked', () => {
-        isSeekingRef.current = false;
-        if (playerRef.current?.playing) {
-          timerRef.current = setInterval(() => {
-            setWatchedTime(prev => prev + 1);
-          }, 1000);
+        if (playerRef.current) {
+          saveVideoProgress(playerRef.current.currentTime, playerRef.current.duration);
         }
       });
 
       playerRef.current.on('ended', () => {
-        if (timerRef.current) clearInterval(timerRef.current);
+        if (playerRef.current) {
+          saveVideoProgress(playerRef.current.duration, playerRef.current.duration);
+        }
       });
 
       playerRef.current.on('error', (e) => {
@@ -90,32 +143,18 @@ const LessonVideo = ({ onComplete, currentLesson, youtubeId = 'BboMpayJomw' }: L
 
     return () => {
       if (playerRef.current) {
+        saveVideoProgress(
+          playerRef.current.currentTime,
+          playerRef.current.duration
+        );
         playerRef.current.destroy();
       }
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
     };
-  }, [currentLesson, youtubeId]);
+  }, [currentLesson, youtubeId, lessonId, isLoading]);
 
-  useEffect(() => {
-    // เมื่อเปลี่ยนบทเรียน ให้ตั้งค่าเริ่มต้นที่ 10%
-    setProgress(10);
-    setWatchedTime(0); // ตั้งเป็น 0 เพราะเราจะตั้งค่าใหม่ใน ready event
-    setIsCompleted(false);
-    setIsPlaying(false);
-  }, [currentLesson]);
-
-  useEffect(() => {
-    const duration = playerRef.current?.duration || 1;
-    const currentProgress = (watchedTime / duration) * 100;
-    setProgress(Math.max(10, currentProgress)); // ให้ progress ไม่ต่ำกว่า 10%
-
-    if (currentProgress > 90 && !isCompleted) {
-      setIsCompleted(true);
-      onComplete();
-    }
-  }, [watchedTime, onComplete, isCompleted]);
+  if (isLoading) {
+    return <div className="video-loading">กำลังโหลดวิดีโอ...</div>;
+  }
 
   return (
     <div className="video-lesson-container">
@@ -134,7 +173,7 @@ const LessonVideo = ({ onComplete, currentLesson, youtubeId = 'BboMpayJomw' }: L
       )}
       <div className="video-controls-info">
         <div className="video-status">
-          {isPlaying ? (
+          {playerRef.current?.playing ? (
             <span className="status-playing">กำลังเล่น</span>
           ) : (
             <span className="status-paused">หยุดชั่วคราว</span>

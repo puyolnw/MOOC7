@@ -48,7 +48,7 @@ const CourseDetailsArea = ({ single_course, onEnroll }: CourseDetailsAreaProps) 
                     </li>
                   )}
                   <li><i className="flaticon-book"></i>{single_course.totalLessons} บทเรียน</li>
-                  <li><i className="flaticon-quiz"></i>{single_course.totalQuizzes} แบบทดสอบ</li>
+                  <li><i className="flaticon-quiz"></i>{single_course.totalQuizzes} แบบทดสอบก</li>
                 </ul>
               </div>
               <ul className="nav nav-tabs" id="myTab" role="tablist">

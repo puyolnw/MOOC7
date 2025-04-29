@@ -1,5 +1,4 @@
-import  { useState } from "react";
-//import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
 import './LessonFaq.css';
 
 interface LessonItem {
@@ -38,7 +37,7 @@ const LessonFaq = ({ lessonData, onSelectLesson }: LessonFaqProps) => {
    };
 
    // เมื่อโหลดหน้า ให้เปิดแอคคอร์เดียนที่มีบทเรียนปัจจุบัน (บทแรกที่ยังไม่เสร็จ)
-   useState(() => {
+   useEffect(() => {
      for (const section of lessonData) {
        for (const item of section.items) {
          if (!item.completed) {
@@ -47,54 +46,56 @@ const LessonFaq = ({ lessonData, onSelectLesson }: LessonFaqProps) => {
          }
        }
      }
-   });
+   }, [lessonData]); // เพิ่ม dependency เป็น lessonData
 
-   return (
-      <div className="accordion" id="accordionExample">
-         {lessonData.map((section) => (
-            <div key={section.id} className="accordion-item">
-               <h2 className="accordion-header">
-                  <button 
-                     className={`accordion-button ${activeAccordion === section.id ? '' : 'collapsed'}`}
-                     type="button"
-                     onClick={() => toggleAccordion(section.id)}
-                  >
-                     <span className="section-title">{section.title}</span>
-                     <span className={`section-status ${section.count === "ผ่าน" ? "status-passed" : "status-not-passed"}`}>
-                        {section.count}
+   // ในส่วนของการแสดงผล
+return (
+   <div className="accordion" id="accordionExample">
+     {lessonData.map((section) => (
+       <div key={section.id} className="accordion-item">
+         <h2 className="accordion-header">
+           <button 
+             className={`accordion-button ${activeAccordion === section.id ? '' : 'collapsed'}`}
+             type="button"
+             onClick={() => toggleAccordion(section.id)}
+           >
+             <span className="section-title">{section.title}</span>
+             <span className={`section-status ${section.count === "ผ่าน" ? "status-passed" : "status-not-passed"}`}>
+               {section.count}
+             </span>
+           </button>
+         </h2>
+         <div 
+           id={`collapseOne${section.id}`} 
+           className={`accordion-collapse collapse ${activeAccordion === section.id ? 'show' : ''}`}
+         >
+           <div className="accordion-body">
+             <ul className="list-wrap">
+               {section.items.map((item) => (
+                 <li
+                   key={item.id}
+                   className={`course-item ${item.completed ? 'completed' : ''} ${item.lock ? 'locked' : ''}`}
+                   onClick={() => handleItemClick(section.id, item)}
+                 >
+                   <div className="course-item-link">
+                     <span className="item-name">
+                       {item.lock && <i className="fas fa-lock lock-icon"></i>}
+                       {item.title}
                      </span>
-                  </button>
-               </h2>
-               <div 
-                  id={`collapseOne${section.id}`} 
-                  className={`accordion-collapse collapse ${activeAccordion === section.id ? 'show' : ''}`}
-               >
-                  <div className="accordion-body">
-                     <ul className="list-wrap">
-                        {section.items.map((item) => (
-                           <li
-                              key={item.id}
-                              className={`course-item ${item.completed ? 'completed' : ''} ${item.lock ? 'locked' : ''}`}
-                              onClick={() => handleItemClick(section.id, item)}
-                           >
-                              <div className="course-item-link">
-                                 <span className="item-name">
-                                    {item.lock && <i className="fas fa-lock lock-icon"></i>}
-                                    {item.title}
-                                 </span>
-                                 <span className={`item-status ${item.completed ? "status-passed" : "status-not-passed"}`}>
-                                    {item.completed ? 'ผ่าน' : 'ไม่ผ่าน'}
-                                 </span>
-                              </div>
-                           </li>
-                        ))}
-                     </ul>
-                  </div>
-               </div>
-            </div>
-         ))}
-      </div>
-   );
+                     <span className={`item-status ${item.completed ? "status-passed" : "status-not-passed"}`}>
+                       {item.completed ? 'ผ่าน' : 'ไม่ผ่าน'}
+                     </span>
+                   </div>
+                 </li>
+               ))}
+             </ul>
+           </div>
+         </div>
+       </div>
+     ))}
+   </div>
+ );
+ 
 };
 
 export default LessonFaq;
