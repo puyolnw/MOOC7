@@ -453,18 +453,18 @@ const AddLessons: React.FC<AddLessonsProps> = ({ onSubmit, onCancel, lessonToEdi
       isValid = false;
     }
     
-    if (lessonData.videoUrl === "" && uploadedFiles.length === 0 && existingFiles.length - filesToRemove.length === 0) {
-      newErrors.content = "กรุณาเพิ่มวิดีโอหรืออัปโหลดไฟล์อย่างน้อย 1 รายการ";
-      isValid = false;
-    }
+    // if (lessonData.videoUrl === "" && uploadedFiles.length === 0 && existingFiles.length - filesToRemove.length === 0) {
+    //   newErrors.content = "กรุณาเพิ่มวิดีโอหรืออัปโหลดไฟล์อย่างน้อย 1 รายการ";
+    //   isValid = false;
+    // }
     
-    if (lessonData.videoUrl !== "") {
-      const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})(?!.*&list=.*)(?!.*&index=.*)/;
-      if (!youtubeRegex.test(lessonData.videoUrl)) {
-        newErrors.videoUrl = "URL วิดีโอไม่ถูกต้อง ต้องเป็น URL ของ YouTube ที่มีรูปแบบถูกต้อง";
-        isValid = false;
-      }
-    }
+    // if (lessonData.videoUrl !== "") {
+    //   const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})(?!.*&list=.*)(?!.*&index=.*)/;
+    //   if (!youtubeRegex.test(lessonData.videoUrl)) {
+    //     newErrors.videoUrl = "URL วิดีโอไม่ถูกต้อง ต้องเป็น URL ของ YouTube ที่มีรูปแบบถูกต้อง";
+    //     isValid = false;
+    //   }
+    // }
     
     if (lessonData.hasQuiz && !lessonData.quizId) {
       newErrors.quiz = "กรุณาเลือกแบบทดสอบ";

@@ -29,11 +29,11 @@ interface SelectedLesson {
   order: number;
 }
 
-interface Quiz {
-  quiz_id: number;
-  title: string;
-  question_count: number;
-}
+// interface Quiz {
+//   quiz_id: number;
+//   title: string;
+//   question_count: number;
+// }
 
 interface Instructor {
   instructor_id: number;
@@ -92,20 +92,20 @@ const EditSubject: React.FC = () => {
   });
 
   const [showLessonModal, setShowLessonModal] = useState(false);
-  const [showQuizModal, setShowQuizModal] = useState(false);
+  // const [showQuizModal, setShowQuizModal] = useState(false);
   const [showInstructorModal, setShowInstructorModal] = useState(false);
   const [showCourseModal, setShowCourseModal] = useState(false);
-  const [quizType, setQuizType] = useState<"pre" | "post">("pre");
+  // const [quizType, setQuizType] = useState<"pre" | "post">("pre");
 
   const [lessonSearchTerm, setLessonSearchTerm] = useState("");
-  const [quizSearchTerm, setQuizSearchTerm] = useState("");
+  // const [quizSearchTerm, setQuizSearchTerm] = useState("");
   const [instructorSearchTerm, setInstructorSearchTerm] = useState("");
   const [courseSearchTerm, setCourseSearchTerm] = useState("");
 
   const [availableLessons, setAvailableLessons] = useState<
     { id: number; title: string }[]
   >([]);
-  const [availableQuizzes, setAvailableQuizzes] = useState<Quiz[]>([]);
+  // const [availableQuizzes, setAvailableQuizzes] = useState<Quiz[]>([]);
   const [availableInstructors, setAvailableInstructors] = useState<
     Instructor[]
   >([]);
@@ -116,13 +116,11 @@ const EditSubject: React.FC = () => {
 
   // Extract Google Drive file ID from webViewLink
   const extractFileId = (url: unknown): string | null => {
-    // Check if url is a non-empty string
     if (typeof url !== "string" || url.trim() === "") {
       console.warn("Invalid cover_image URL:", url);
       return null;
     }
 
-    // More specific regex for Google Drive file IDs (25-44 characters, alphanumeric and hyphens)
     const regex = /[a-zA-Z0-9_-]{25,44}/;
     const match = url.match(regex);
     if (!match) {
@@ -163,7 +161,6 @@ const EditSubject: React.FC = () => {
         }
 
         const subject = subjectResponse.data.subject;
-        // Log cover_image for debugging
         console.log("cover_image from backend:", subject.cover_image);
 
         const coverImageFileId = subject.cover_image
@@ -188,8 +185,8 @@ const EditSubject: React.FC = () => {
               title: l.title,
               order: l.order_number,
             })) || [],
-          preTestId: subject.pre_test_id || null,
-          postTestId: subject.post_test_id || null,
+          preTestId: null, // Set to null
+          postTestId: null, // Set to null
           instructors: subject.instructors?.map((i: any) => i.instructor_id) || [],
           allowAllLessons: subject.allow_all_lessons || false,
           courses: subject.courses?.map((c: any) => c.course_id) || [],
@@ -209,23 +206,6 @@ const EditSubject: React.FC = () => {
             lessonsResponse.data.lessons.map((lesson: any) => ({
               id: lesson.lesson_id,
               title: lesson.title || "",
-            }))
-          );
-        }
-
-        // Fetch available quizzes
-        const quizzesResponse = await axios.get(
-          `${apiUrl}/api/courses/quizzes`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-        if (quizzesResponse.data.message === "ดึงข้อมูลแบบทดสอบสำเร็จ") {
-          setAvailableQuizzes(
-            quizzesResponse.data.quizzes.map((quiz: any) => ({
-              quiz_id: quiz.quiz_id,
-              title: quiz.title || "",
-              question_count: quiz.question_count || 0,
             }))
           );
         }
@@ -323,10 +303,6 @@ const EditSubject: React.FC = () => {
   // Filter functions
   const filteredLessons = availableLessons.filter((lesson) =>
     lesson.title.toLowerCase().includes(lessonSearchTerm.toLowerCase())
-  );
-
-  const filteredQuizzes = availableQuizzes.filter((quiz) =>
-    quiz.title.toLowerCase().includes(quizSearchTerm.toLowerCase())
   );
 
   const filteredInstructors = availableInstructors.filter(
@@ -454,19 +430,6 @@ const EditSubject: React.FC = () => {
     }));
   };
 
-  const handleOpenQuizModal = (type: "pre" | "post") => {
-    setQuizType(type);
-    setShowQuizModal(true);
-  };
-
-  const handleSelectQuiz = (quizId: number) => {
-    setSubjectData((prev) => ({
-      ...prev,
-      [quizType === "pre" ? "preTestId" : "postTestId"]: quizId,
-    }));
-    setShowQuizModal(false);
-  };
-
   const handleToggleInstructor = (instructorId: number) => {
     setSubjectData((prev) => ({
       ...prev,
@@ -569,14 +532,8 @@ const EditSubject: React.FC = () => {
           }))
         )
       );
-      formData.append(
-        "preTestId",
-        subjectData.preTestId ? String(subjectData.preTestId) : ""
-      );
-      formData.append(
-        "postTestId",
-        subjectData.postTestId ? String(subjectData.postTestId) : ""
-      );
+      formData.append("preTestId", ""); // Send empty string (null equivalent)
+      formData.append("postTestId", ""); // Send empty string (null equivalent)
       formData.append("instructors", JSON.stringify(subjectData.instructors));
       formData.append("allowAllLessons", String(subjectData.allowAllLessons));
       formData.append("courses", JSON.stringify(subjectData.courses));
@@ -627,11 +584,6 @@ const EditSubject: React.FC = () => {
 
   const handleCancel = () => {
     navigate("/admin-subjects");
-  };
-
-  const findQuizById = (quizId: number | null) => {
-    if (!quizId) return null;
-    return availableQuizzes.find((quiz) => quiz.quiz_id === quizId);
   };
 
   const findCourseById = (courseId: number) => {
@@ -810,7 +762,9 @@ const EditSubject: React.FC = () => {
             </p>
             <div className="d-flex align-items-center gap-3">
               <div
-                className="cover-image-preview rounded border"
+                className="cover
+
+-image-preview rounded border"
                 style={{
                   width: "150px",
                   height: "100px",
@@ -923,6 +877,8 @@ const EditSubject: React.FC = () => {
             )}
           </div>
 
+          {/* Commented out Pre-Test Section */}
+          {/*
           <div className="mb-3">
             <label className="form-label">แบบทดสอบก่อนเรียน</label>
             <div className="d-flex">
@@ -969,7 +925,10 @@ const EditSubject: React.FC = () => {
               แบบทดสอบก่อนเรียนจะให้ผู้เรียนทำก่อนเริ่มเรียนรายวิชา
             </small>
           </div>
+          */}
 
+          {/* Commented out Post-Test Section */}
+          {/*
           <div className="mb-3">
             <label className="form-label">แบบทดสอบหลังเรียน</label>
             <div className="d-flex">
@@ -1016,6 +975,7 @@ const EditSubject: React.FC = () => {
               แบบทดสอบหลังเรียนจะให้ผู้เรียนทำหลังจากเรียนรายวิชาเสร็จสิ้น
             </small>
           </div>
+          */}
 
           <div className="mb-3">
             <label className="form-label">อาจารย์ผู้สอน</label>
@@ -1285,80 +1245,6 @@ const EditSubject: React.FC = () => {
         </div>
       )}
 
-      {showQuizModal && (
-        <div
-          className="modal fade show"
-          style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}
-        >
-          <div className="modal-dialog modal-lg modal-dialog-centered modal-slide-down">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">
-                  เลือกแบบทดสอบ{quizType === "pre" ? "ก่อนเรียน" : "หลังเรียน"}
-                </h5>
-                <button
-                  type="button"
-                  className="btn-close"
-                  onClick={() => setShowQuizModal(false)}
-                ></button>
-              </div>
-              <div className="modal-body modal-body-scrollable">
-                <div className="mb-3">
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder="ค้นหาแบบทดสอบ..."
-                    value={quizSearchTerm}
-                    onChange={(e) => setQuizSearchTerm(e.target.value)}
-                  />
-                </div>
-                <div className="quiz-list">
-                  {filteredQuizzes.length > 0 ? (
-                    <div className="list-group">
-                      {filteredQuizzes.map((quiz) => (
-                        <div
-                          key={quiz.quiz_id}
-                          className="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
-                        >
-                          <div>
-                            <h6 className="mb-1">{quiz.title}</h6>
-                            <p className="mb-0 small text-muted">
-                              จำนวนคำถาม: {quiz.question_count} ข้อ
-                            </p>
-                          </div>
-                          <button
-                            type="button"
-                            className="btn btn-sm btn-outline-primary"
-                            onClick={() => handleSelectQuiz(quiz.quiz_id)}
-                          >
-                            เลือก
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-4">
-                      <p className="text-muted">
-                        ไม่พบแบบทดสอบที่ตรงกับคำค้นหา
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div className="modal-footer">
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => setShowQuizModal(false)}
-                >
-                  ยกเลิก
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {showInstructorModal && (
         <div
           className="modal fade show"
@@ -1390,7 +1276,9 @@ const EditSubject: React.FC = () => {
                       {filteredInstructors.map((instructor) => (
                         <div
                           key={instructor.instructor_id}
-                          className="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
+                          className="list
+
+-group-item list-group-item-action d-flex justify-content-between align-items-center"
                         >
                           <div>
                             <h6 className="mb-1">{instructor.name}</h6>
