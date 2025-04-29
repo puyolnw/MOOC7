@@ -317,21 +317,156 @@
     border-top: 1px solid #e9ecef;
     padding-top: 20px;
 }
-/* ปรับปรุงสไตล์สำหรับแบบทดสอบ */
-.course-item .badge {
-    font-size: 0.7rem;
-    padding: 0.25em 0.5em;
+/* เพิ่มสไตล์ใหม่ต่อจากโค้ดเดิม */
+
+/* สไตล์สำหรับหัวข้อและสถานะในแอคคอร์เดียน */
+.accordion-button {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding: 12px 15px;
+  }
+  
+  .section-title {
+    flex: 1;
+    text-align: left;
+    font-size: 14px;
+    font-weight: 500;
+    margin-right: 10px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .section-status {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 12px;
+    min-width: 60px;
+    text-align: center;
+    white-space: nowrap;
+  }
+  
+  /* สไตล์สำหรับรายการบทเรียน */
+  .course-item {
+    padding: 10px 15px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  
+  .course-item:hover {
+    background-color: #f8f9fa;
+  }
+  
+  .course-item-link {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+  }
+  
+  .item-name {
+    flex: 1;
+    font-size: 13px;
+    margin-right: 10px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .item-status {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 6px;
     border-radius: 10px;
+    min-width: 55px;
+    text-align: center;
+    white-space: nowrap;
   }
   
-  /* ปรับปรุงสไตล์สำหรับบทเรียนที่กำลังเรียนอยู่ */
-  .course-item.active {
-    background-color: #e8f4ff;
-    border-left: 3px solid #0d6efd;
+  /* สีสถานะ */
+  .status-passed {
+    background-color: #e6f7e9;
+    color: #28a745;
   }
   
-  /* ปรับปรุงสไตล์สำหรับบทเรียนที่ถูกล็อค */
-  .course-item.locked {
+  .status-not-passed {
+    background-color: #f8f9fa;
+    color: #6c757d;
+  }
+  
+  .status-in-progress {
+    background-color: #e6f1ff;
+    color: #007bff;
+  }
+  
+  /* ปรับแต่ง progress bar */
+  .progress-container {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  
+  .progress-bar-wrapper {
+    flex: 1;
+    height: 8px;
+    background-color: #e9ecef;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-right: 10px;
+  }
+  
+  .progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #4CAF50, #8BC34A);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+  }
+  
+  .progress-percentage {
+    font-size: 12px;
+    font-weight: 600;
+    color: #28a745;
+    min-width: 40px;
+    text-align: right;
+  }
+  
+  .progress-status {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+  }
+  
+  .status-text {
+    color: #6c757c;
+  }
+  
+  .status-value {
+    font-weight: 600;
+    color: #28a745;
+  }
+  
+  /* ปรับแต่งส่วนของ lesson progress */
+  .lesson__progress {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 15px;
+    margin-top: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  }
+  
+  .lesson__progress h4 {
+    font-size: 14px;
+    margin-bottom: 12px;
+    color: #343a40;
+    font-weight: 600;
+  }
+/* เพิ่มสไตล์สำหรับบทเรียนที่ถูกล็อค */
+.course-item.locked {
     opacity: 0.7;
     cursor: not-allowed;
     background-color: #f8f9fa;
@@ -341,205 +476,8 @@
     color: #6c757d;
   }
   
-  .course-item.locked .fa-lock {
+  .lock-icon {
     margin-right: 5px;
-    color: #dc3545;
-  }
-  
-  /* ปรับปรุงสไตล์สำหรับบทเรียนที่เรียนจบแล้ว */
-  .course-item.completed .item-name::before {
-    content: "\f00c";
-    font-family: "Font Awesome 5 Free";
-    font-weight: 900;
-    margin-right: 8px;
-    color: #198754;
-  }
-  
-  /* ปรับปรุงสไตล์สำหรับหัวข้อบท */
-  .accordion-button[data-progress="100"] {
-    color: #198754;
-  }
-  
-  .accordion-button[data-progress="100"] .lesson-count {
-    background-color: #d1e7dd;
-    color: #0f5132;
-  }
-  /* Existing CSS remains the same */
-
-/* Enhanced Course Completion Styles */
-.course-completed-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 500px;
-    background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
-    border-radius: 15px;
-    padding: 30px;
-  }
-  
-  .course-completed-message {
-    text-align: center;
-    max-width: 600px;
-    padding: 40px;
-    background-color: white;
-    border-radius: 20px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-    animation: fadeInUp 0.8s ease-out;
-  }
-  
-  @keyframes fadeInUp {
-    from {
-      opacity: 0;
-      transform: translateY(30px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-  
-  .completion-icon {
-    margin-bottom: 25px;
-  }
-  
-  .completion-icon i {
-    font-size: 80px;
-    color: #4CAF50;
-    animation: pulse 2s infinite;
-  }
-  
-  @keyframes pulse {
-    0% {
-      transform: scale(0.95);
-      box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7);
-    }
-    
-    70% {
-      transform: scale(1);
-      box-shadow: 0 0 0 15px rgba(76, 175, 80, 0);
-    }
-    
-    100% {
-      transform: scale(0.95);
-      box-shadow: 0 0 0 0 rgba(76, 175, 80, 0);
-    }
-  }
-  
-  .course-completed-message h2 {
-    font-size: 32px;
-    color: #333;
-    margin-bottom: 15px;
-    font-weight: 700;
-  }
-  
-  .course-completed-message p {
-    font-size: 18px;
-    color: #666;
-    margin-bottom: 30px;
-  }
-  
-  .completion-actions {
-    display: flex;
-    justify-content: center;
-    gap: 15px;
-    margin-top: 30px;
-  }
-  
-  .completion-actions .btn {
-    padding: 12px 25px;
-    font-weight: 600;
-    border-radius: 50px;
-    transition: all 0.3s ease;
-  }
-  
-  .completion-actions .btn-primary {
-    background-color: #4CAF50;
-    border-color: #4CAF50;
-  }
-  
-  .completion-actions .btn-primary:hover {
-    background-color: #3d8b40;
-    border-color: #3d8b40;
-    transform: translateY(-3px);
-    box-shadow: 0 7px 14px rgba(76, 175, 80, 0.3);
-  }
-  
-  .completion-actions .btn-outline-primary {
-    color: #4CAF50;
-    border-color: #4CAF50;
-  }
-  
-  .completion-actions .btn-outline-primary:hover {
-    background-color: #f1f9f1;
-    color: #3d8b40;
-    transform: translateY(-3px);
-    box-shadow: 0 7px 14px rgba(76, 175, 80, 0.15);
-  }
-  
-  /* Certificate display in completion screen */
-  .certificate-preview {
-    margin-top: 30px;
-    padding: 20px;
-    background-color: #f9f9f9;
-    border-radius: 10px;
-    border: 1px dashed #ddd;
-  }
-  
-  .certificate-preview img {
-    max-width: 100%;
-    height: auto;
-    border-radius: 5px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-  }
-  
-  /* Improved lesson navigation */
-  .lesson__sidebar {
-    position: sticky;
-    top: 20px;
-    height: calc(100vh - 40px);
-    overflow-y: auto;
-  }
-  
-  /* Improved lesson items */
-  .course-item {
-    transition: all 0.3s ease;
-    border-left: 3px solid transparent;
-  }
-  
-  .course-item:hover {
-    background-color: #f8f9fa;
-  }
-  
-  .course-item.active {
-    background-color: #e8f5e9;
-    border-left: 3px solid #4CAF50;
-  }
-  
-  .course-item.completed {
-    background-color: #f1f8e9;
-  }
-  
-  .course-item.locked {
-    opacity: 0.7;
-    background-color: #f5f5f5;
-  }
-  
-  /* Progress bar animation */
-  .progress-bar {
-    transition: width 1s ease;
-    background: linear-gradient(90deg, #4CAF50, #8BC34A);
-    animation: progressAnimation 1.5s ease-in-out;
-  }
-  
-  @keyframes progressAnimation {
-    0% {
-      background-position: 0% 50%;
-    }
-    50% {
-      background-position: 100% 50%;
-    }
-    100% {
-      background-position: 0% 50%;
-    }
-  }
-  
+    font-size: 11px;
+    color: #6c757d;
+  }  

@@ -1,13 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import LessonFaq from "./LessonFaq";
 import LessonNavTav from "./LessonNavTav";
 import LessonVideo from "./LessonVideo";
 import LessonQuiz from "./LessonQuiz";
-import LessonSidebar from "./LessonSidebar";
-import axios from "axios";
-import { Link } from "react-router-dom";
 import "./LessonArea.css";
-import { fetchUserProgress, processSubjectData, fetchLessonData as fetchLessonDataUtil, fetchQuizData as fetchQuizDataUtil } from "./LessonPixxel";
 
+// สร้าง interface สำหรับข้อมูลบทเรียน
 interface LessonItem {
   id: number;
   title: string;
@@ -15,10 +13,9 @@ interface LessonItem {
   completed: boolean;
   type: 'video' | 'quiz';
   duration: string;
-  lessonId?: number;
-  quizId?: number;
 }
 
+// สร้าง interface สำหรับข้อมูลส่วน (section)
 interface SectionData {
   id: number;
   title: string;
@@ -26,629 +23,444 @@ interface SectionData {
   items: LessonItem[];
 }
 
-interface LessonAreaProps {
-  isLoading?: boolean;
-  subjectData?: any;
-  error?: string | null;
-  subjectId?: string;
-  progressData?: any;
-  refreshProgress?: () => Promise<any>;
-}
+const LessonArea = () => {
+   const [currentView, setCurrentView] = useState<'video' | 'quiz'>('video');
+   const [progress, setProgress] = useState<number>(40); // ตัวอย่างความคืบหน้า 40%
+   const [currentLesson, setCurrentLesson] = useState<string>("1.1 เนื้อหาหลัก");
+   const [currentLessonId, setCurrentLessonId] = useState<string>("2-0"); // format: "section-item"
+   const [completedCount, setCompletedCount] = useState(0); // เพิ่ม state เพื่อติดตามจำนวนบทเรียนที่เรียนจบ
+   
+   // สร้าง state เก็บข้อมูลบทเรียนทั้งหมด
+   const [lessonData, setLessonData] = useState<SectionData[]>(() => {
+     // แปลงข้อมูลจาก faq_data ใน LessonFaq.tsx
+     const initialData = [
+       {
+         id: 1,
+         title: "แบบทดสอบก่อนเรียน",
+         count: "ผ่าน",
+         items: [
+           {
+             id: 0,
+             title: "เริ่มทำแบบทดสอบก่อนเรียน",
+             lock: false, // บทเรียนแรกไม่ล็อค
+             completed: true,
+             type: 'quiz' as 'video' | 'quiz',
+             duration: "100%"
+           }
+         ]
+       },
+       {
+         id: 2,
+         title: "บทที่ 1 การวิเคราะห์ข้อมูลเบื้องต้น",
+         count: "ผ่าน",
+         items: [
+           {
+             id: 0,
+             title: "1.1 เนื้อหาหลัก",
+             lock: false, // ไม่ล็อคเพราะบทก่อนหน้าเสร็จแล้ว
+             completed: true,
+             type: 'video' as 'video' | 'quiz',
+             duration: "100%"
+           },
+           {
+             id: 1,
+             title: "1.2 แบบฝึกหัดท้ายบท",
+             lock: false, // ไม่ล็อคเพราะบทก่อนหน้าเสร็จแล้ว
+             completed: true,
+             type: 'quiz' as 'video' | 'quiz',
+             duration: "100%"
+           }
+         ]
+       },
+       {
+         id: 3,
+         title: "บทที่ 2 การแจกแจงความน่าจะเป็น (Probability Distributions)",
+         count: "ไม่ผ่าน",
+         items: [
+           {
+             id: 0,
+             title: "2.1 เนื้อหาหลัก",
+             lock: false, // ไม่ล็อคเพราะบทก่อนหน้าเสร็จแล้ว
+             completed: false,
+             type: 'video' as 'video' | 'quiz',
+             duration: "0%"
+           },
+           {
+             id: 1,
+             title: "2.2 แบบฝึกหัดท้ายบท",
+             lock: true, // ล็อคเพราะบทก่อนหน้ายังไม่เสร็จ
+             completed: false,
+             type: 'quiz' as 'video' | 'quiz',
+             duration: "0%"
+           }
+         ]
+       },
+       {
+         id: 4,
+         title: "บทที่ 3 การสุ่มตัวอย่างและการแจกแจงตัวอย่าง (Sampling and Sampling Distributions)",
+         count: "ไม่ผ่าน",
+         items: [
+           {
+             id: 0,
+             title: "3.1 เนื้อหาหลัก",
+             lock: true, // ล็อคเพราะบทก่อนหน้ายังไม่เสร็จ
+             completed: false,
+             type: 'video' as 'video' | 'quiz',
+             duration: "0%"
+           },
+           {
+             id: 1,
+             title: "3.2 แบบฝึกหัดท้ายบท",
+             lock: true, // ล็อคเพราะบทก่อนหน้ายังไม่เสร็จ
+             completed: false,
+             type: 'quiz' as 'video' | 'quiz',
+             duration: "0%"
+           }
+         ]
+       },
+       {
+         id: 5,
+         title: "บทที่ 4 การประมาณค่า (Estimation)",
+         count: "ไม่ผ่าน",
+         items: [
+           {
+             id: 0,
+             title: "4.1 เนื้อหาหลัก",
+             lock: true, // ล็อคเพราะบทก่อนหน้ายังไม่เสร็จ
+             completed: false,
+             type: 'video' as 'video' | 'quiz',
+             duration: "0%"
+           },
+           {
+             id: 1,
+             title: "4.2 แบบฝึกหัดท้ายบท",
+             lock: true, // ล็อคเพราะบทก่อนหน้ายังไม่เสร็จ
+             completed: false,
+             type: 'quiz' as 'video' | 'quiz',
+             duration: "0%"
+           }
+         ]
+       },
+       {
+         id: 6,
+         title: "แบบทดสอบหลังเรียน",
+         count: "ไม่ผ่าน",
+         items: [
+           {
+             id: 0,
+             title: "เริ่มทำแบบทดสอบหลังเรียน",
+             lock: true, // ล็อคเพราะบทก่อนหน้ายังไม่เสร็จ
+             completed: false,
+             type: 'quiz' as 'video' | 'quiz',
+             duration: "0%"
+           }
+         ]
+       }
+     ];
+     return initialData;
+   });
 
-const LessonArea = ({ isLoading = false, subjectData, error = null, subjectId, progressData: initialProgressData, refreshProgress }: LessonAreaProps) => {
-  const [currentView, setCurrentView] = useState<'video' | 'quiz'>('video');
-  const [progress, setProgress] = useState<number>(0);
-  const [currentLesson, setCurrentLesson] = useState<string>("");
-  const [currentLessonId, setCurrentLessonId] = useState<string>("");
-  const [currentLessonData, setCurrentLessonData] = useState<any>(null);
-  const [currentQuizData, setCurrentQuizData] = useState<any>(null);
-  const [youtubeId, setYoutubeId] = useState<string>("");
-  const [progressData, setProgressData] = useState<any>(initialProgressData);
-  const [courseCompleted, setCourseCompleted] = useState<boolean>(false);
+   // คำนวณความคืบหน้าทั้งหมด
+   const calculateTotalProgress = () => {
+     let totalItems = 0;
+     let completedItems = 0;
+     
+     lessonData.forEach(section => {
+       section.items.forEach(item => {
+         totalItems++;
+         if (item.completed) {
+           completedItems++;
+         }
+       });
+     });
+     
+     return totalItems > 0 ? (completedItems / totalItems) * 100 : 0;
+   };
 
-  const apiURL = import.meta.env.VITE_API_URL as string;
+   // ใช้ useRef เพื่อติดตามการ render ครั้งแรก
+   const isFirstRender = useRef(true);
 
-  const [lessonData, setLessonData] = useState<SectionData[]>([]);
+   // หาบทเรียนปัจจุบันที่ควรเรียน (บทแรกที่ยังไม่เสร็จ)
+   const findCurrentLesson = () => {
+     for (const section of lessonData) {
+       for (const item of section.items) {
+         if (!item.completed) {
+           return {
+             sectionId: section.id,
+             itemId: item.id,
+             title: item.title,
+             type: item.type
+           };
+         }
+       }
+     }
+     // ถ้าทุกบทเรียนเสร็จแล้ว ให้กลับไปที่บทสุดท้าย
+     const lastSection = lessonData[lessonData.length - 1];
+     const lastItem = lastSection.items[lastSection.items.length - 1];
+     return {
+       sectionId: lastSection.id,
+       itemId: lastItem.id,
+       title: lastItem.title,
+       type: lastItem.type
+     };
+   };
 
-  // ตั้งค่า progressData เริ่มต้น
-  useEffect(() => {
-    if (initialProgressData) {
-      console.log("Setting initial progress data:", initialProgressData);
-      setProgressData(initialProgressData);
-      if (initialProgressData.progress?.progress_percentage === 100) {
-        setCourseCompleted(true);
-      }
-      // คำนวณ progress จาก initialProgressData
-      const totalProgress = initialProgressData.progress?.progress_percentage || 0;
-      setProgress(totalProgress);
-    }
-  }, [initialProgressData]);
+   // อัปเดตการล็อคบทเรียนตามความคืบหน้า
+   const updateLessonLocks = () => {
+     let previousCompleted = true; // บทเรียนแรกไม่ล็อค
+     let currentSectionIndex = -1;
+     let currentItemIndex = -1;
+     
+     const updatedData = lessonData.map((section, sectionIndex) => {
+       const updatedItems = section.items.map((item, itemIndex) => {
+         // ถ้าเป็นบทเรียนแรกของส่วนแรก หรือบทเรียนก่อนหน้าเสร็จแล้ว
+         const shouldUnlock = (sectionIndex === 0 && itemIndex === 0) || previousCompleted;
+         
+         // เก็บตำแหน่งของบทเรียนแรกที่ยังไม่เสร็จ
+         if (!item.completed && currentSectionIndex === -1) {
+           currentSectionIndex = sectionIndex;
+           currentItemIndex = itemIndex;
+         }
+         
+         // อัปเดตสถานะการล็อค
+         const updatedItem = {
+           ...item,
+           lock: !shouldUnlock
+         };
+         
+         // อัปเดตสถานะสำหรับบทเรียนถัดไป
+         previousCompleted = item.completed;
+         
+         return updatedItem;
+       });
+       
+       return {
+         ...section,
+         items: updatedItems
+       };
+     });
+     
+     setLessonData(updatedData);
+     
+     // ถ้าพบบทเรียนปัจจุบัน ให้เลือกบทเรียนนั้น
+     if (currentSectionIndex !== -1) {
+       const currentItem = updatedData[currentSectionIndex].items[currentItemIndex];
+       setCurrentLessonId(`${currentSectionIndex + 1}-${currentItemIndex}`);
+       setCurrentLesson(currentItem.title);
+       setCurrentView(currentItem.type);
+     }
+   };
 
-  // ดึงข้อมูลความก้าวหน้าเมื่อ subjectId หรือ apiURL เปลี่ยน
-  useEffect(() => {
-    if (!subjectId) return;
+   // เมื่อโหลดหน้าครั้งแรก ให้อัปเดตการล็อคบทเรียนและเลือกบทเรียนปัจจุบัน
+   useEffect(() => {
+     updateLessonLocks();
+     
+     // ค้นหาบทเรียนปัจจุบันและเลือก
+     const currentLesson = findCurrentLesson();
+     setCurrentLessonId(`${currentLesson.sectionId}-${currentLesson.itemId}`);
+     setCurrentLesson(currentLesson.title);
+     setCurrentView(currentLesson.type);
+     
+     // คำนวณความคืบหน้ารวม
+     const totalProgress = calculateTotalProgress();
+     setProgress(totalProgress);
+   }, []); // เรียกใช้เฉพาะครั้งแรกที่โหลดหน้า
 
-    fetchUserProgress(subjectId, apiURL, setCourseCompleted).then(data => {
-      if (data) {
-        setProgressData(data);
-        console.log("Progress data updated:", data);
-        if (data.progress?.progress_percentage === 100) {
-          setCourseCompleted(true);
-        }
-        // อัปเดต progress จากข้อมูลที่ดึงมา
-        const totalProgress = data.progress?.progress_percentage || 0;
-        setProgress(totalProgress);
-      }
-    });
-  }, [subjectId, apiURL]);
+   // อัปเดตความคืบหน้าของแต่ละส่วนเมื่อ completedCount เปลี่ยนแปลง
+   useEffect(() => {
+     // ข้ามการทำงานในครั้งแรก
+     if (isFirstRender.current) {
+       isFirstRender.current = false;
+       return;
+     }
 
-  // ประมวลผล subjectData และ progressData เพื่อสร้าง lessonData
-  useEffect(() => {
-    if (subjectData) {
-      console.log("Subject Data Structure:", JSON.stringify(subjectData, null, 2));
+     const updatedData = lessonData.map(section => {
+       const totalItems = section.items.length;
+       const completedItems = section.items.filter(item => item.completed).length;
+       
+       // ตรวจสอบว่าทุกรายการในส่วนนี้เสร็จสิ้นหรือไม่
+       const allCompleted = completedItems === totalItems;
+       
+       return {
+         ...section,
+         count: allCompleted ? "ผ่าน" : "ไม่ผ่าน"
+       };
+     });
+     
+     // อัปเดตความคืบหน้ารวม
+     const totalProgress = calculateTotalProgress();
+     setProgress(totalProgress);
+     
+     // อัปเดต lessonData โดยไม่ทำให้เกิด loop
+     setLessonData(updatedData);
+     
+     // อัปเดตการล็อคบทเรียน
+     updateLessonLocks();
+   }, [completedCount]); // ใช้ completedCount แทน lessonData เพื่อป้องกัน loop
 
-      fetchUserProgress(subjectId, apiURL).then(progressInfo => {
-        console.log("Progress Info Structure:", JSON.stringify(progressInfo, null, 2));
-
-        if (progressInfo) {
-          setProgressData(progressInfo);
-
-          // บันทึกข้อมูลความก้าวหน้าลงใน localStorage
-          if (subjectId) {
-            localStorage.setItem(`progress_${subjectId}`, JSON.stringify(progressInfo));
-          }
-        } else if (subjectId) {
-          // ดึงจาก localStorage หาก fetch ไม่สำเร็จ
-          const savedProgress = localStorage.getItem(`progress_${subjectId}`);
-          if (savedProgress) {
-            try {
-              const parsedProgress = JSON.parse(savedProgress);
-              setProgressData(parsedProgress);
-              console.log("Using saved progress data from localStorage:", parsedProgress);
-            } catch (e) {
-              console.error("Error parsing saved progress:", e);
-            }
-          }
-        }
-
-        const processedData = processSubjectData(subjectData, progressInfo);
-        setLessonData(processedData);
-
-        // อัปเดต progress หลังจากได้ lessonData
-        const totalProgress = progressInfo?.progress?.progress_percentage || calculateTotalProgress(processedData);
-        setProgress(totalProgress);
-        console.log("Initial progress calculated:", totalProgress);
-
-        if (progressInfo?.progress?.progress_percentage === 100) {
-          setCourseCompleted(true);
-        } else {
-          findCurrentLesson(processedData, progressInfo);
-        }
-      });
-    }
-  }, [subjectData, subjectId, apiURL]);
-
-  const findCurrentLesson = (lessonData: SectionData[], progressInfo: any) => {
-    if (!lessonData || lessonData.length === 0) return;
-    console.log("Finding current lesson with progress info:", progressInfo);
-    for (const section of lessonData) {
-      for (const item of section.items) {
-        if (!item.completed && !item.lock) {
-          setCurrentLessonId(`${section.id}-${item.id}`);
-          setCurrentLesson(item.title);
-          setCurrentView(item.type);
-
-          if (item.type === 'video' && item.lessonId) {
-            fetchLessonData(item.lessonId);
-          } else if (item.type === 'quiz' && item.quizId) {
-            fetchQuizData(item.quizId);
-          }
-          return;
-        }
-      }
-    }
-
-    for (const section of lessonData) {
-      for (const item of section.items) {
-        if (!item.lock) {
-          setCurrentLessonId(`${section.id}-${item.id}`);
-          setCurrentLesson(item.title);
-          setCurrentView(item.type);
-
-          if (item.type === 'video' && item.lessonId) {
-            fetchLessonData(item.lessonId);
-          } else if (item.type === 'quiz' && item.quizId) {
-            fetchQuizData(item.quizId);
-          }
-          return;
-        }
-      }
-    }
-  };
-
-  const fetchLessonData = async (lessonId: number) => {
-    await fetchLessonDataUtil(
-      lessonId,
-      apiURL,
-      currentLessonId,
-      lessonData,
-      setCurrentLessonData,
-      setCurrentQuizData,
-      setYoutubeId,
-      setLessonData
-    );
-  };
-
-  const fetchQuizData = async (quizId: number) => {
-    await fetchQuizDataUtil(
-      quizId,
-      apiURL,
-      currentLessonId,
-      lessonData,
-      setCurrentQuizData,
-      setLessonData,
-      async () => await fetchUserProgress(subjectId, apiURL),
-      setProgressData
-    );
-  };
-
-  // ฟังก์ชันคำนวณความก้าวหน้า
-  const calculateTotalProgress = (data: SectionData[] = lessonData) => {
-    // ใช้ค่าจาก progressData ถ้ามี
-    if (progressData?.progress?.progress_percentage !== undefined) {
-      return progressData.progress.progress_percentage;
-    }
-
-    // คำนวณจาก lessonData
-    let totalItems = 0;
-    let completedItems = 0;
-
-    data.forEach(section => {
-      section.items.forEach(item => {
-        totalItems++;
-        if (item.completed) {
-          completedItems++;
-        }
-      });
-    });
-
-    // ป้องกันการหารด้วย 0
-    const calculatedProgress = totalItems > 0 ? Math.min(100, (completedItems / totalItems) * 100) : 0;
-    console.log("Calculated progress:", calculatedProgress, "Total items:", totalItems, "Completed items:", completedItems);
-    return calculatedProgress;
-  };
-
-  // อัปเดต progress ทุกครั้งที่ lessonData หรือ progressData เปลี่ยน
-  useEffect(() => {
-    const totalProgress = calculateTotalProgress();
-    setProgress(totalProgress);
-    console.log("Progress updated due to lessonData or progressData change:", totalProgress);
-  }, [lessonData, progressData]);
-
-  const handleLessonComplete = async () => {
-    const [sectionId, itemId] = currentLessonId.split('-').map(Number);
-
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) return;
-
-      let currentItem: LessonItem | undefined;
-      lessonData.forEach(section => {
-        if (section.id === sectionId) {
-          section.items.forEach(item => {
-            if (item.id === itemId) {
-              currentItem = item;
-            }
-          });
-        }
-      });
-
-      if (!currentItem) return;
-
-      if (!currentItem.completed) {
-        if (currentItem.type === 'video' && currentItem.lessonId) {
-          const response = await axios.post(`${apiURL}/api/courses/lessons/${currentItem.lessonId}/complete`,
-            { subject_id: subjectId },
-            { headers: { Authorization: `Bearer ${token}` } }
-          );
-
-          if (response.data.success) {
-            console.log("Lesson completed successfully:", response.data);
-
-            // อัปเดตข้อมูลบทเรียนปัจจุบัน
-            setCurrentLessonData((prev: any) => ({
-              ...prev,
-              completed: true
-            }));
-
-            // อัปเดตสถานะในข้อมูลบทเรียน
-            const updatedLessonData = [...lessonData];
-            const sectionIndex = updatedLessonData.findIndex(s => s.id === sectionId);
-
-            if (sectionIndex !== -1) {
-              const itemIndex = updatedLessonData[sectionIndex].items.findIndex(i => i.id === itemId);
-
-              if (itemIndex !== -1) {
-                updatedLessonData[sectionIndex].items[itemIndex] = {
-                  ...updatedLessonData[sectionIndex].items[itemIndex],
+      // ฟังก์ชันเมื่อบทเรียนเสร็จสิ้น
+      const handleLessonComplete = () => {
+        // แยก section ID และ item ID
+        const [sectionId, itemId] = currentLessonId.split('-').map(Number);
+        
+        // อัปเดตสถานะการเรียนเป็นเสร็จสิ้น
+        const updatedData = lessonData.map(section => {
+          if (section.id === sectionId) {
+            const updatedItems = section.items.map(item => {
+              if (item.id === itemId) {
+                return {
+                  ...item,
                   completed: true,
                   duration: "100%"
                 };
-
-                // ปลดล็อคบทเรียนถัดไป
-                if (itemIndex + 1 < updatedLessonData[sectionIndex].items.length) {
-                  updatedLessonData[sectionIndex].items[itemIndex + 1] = {
-                    ...updatedLessonData[sectionIndex].items[itemIndex + 1],
-                    lock: false
-                  };
-                } else if (sectionIndex + 1 < updatedLessonData.length) {
-                  const nextSectionIndex = sectionIndex + 1;
-                  if (updatedLessonData[nextSectionIndex].items.length > 0) {
-                    updatedLessonData[nextSectionIndex].items[0] = {
-                      ...updatedLessonData[nextSectionIndex].items[0],
-                      lock: false
-                    };
-                  }
-                }
-
-                // อัปเดตความก้าวหน้าของเซ็กชัน
-                const totalItems = updatedLessonData[sectionIndex].items.length;
-                const completedItems = updatedLessonData[sectionIndex].items.filter(item => item.completed).length;
-                const sectionProgress = totalItems > 0 ? (completedItems / totalItems) * 100 : 0;
-
-                updatedLessonData[sectionIndex] = {
-                  ...updatedLessonData[sectionIndex],
-                  count: `${Math.round(sectionProgress)}%`
-                };
-
-                setLessonData(updatedLessonData);
-
-                // คำนวณ progress ใหม่หลังจากอัปเดต lessonData
-                const totalProgress = calculateTotalProgress(updatedLessonData);
-                setProgress(totalProgress);
-                console.log("Progress after lesson completion:", totalProgress);
               }
-            }
+              return item;
+            });
+            
+            return {
+              ...section,
+              items: updatedItems
+            };
           }
-        } else if (currentItem.type === 'quiz' && currentItem.quizId) {
-          const response = await axios.post(`${apiURL}/api/courses/quizzes/${currentItem.quizId}/complete`,
-            { subject_id: subjectId },
-            { headers: { Authorization: `Bearer ${token}` } }
-          );
-
-          if (response.data.success) {
-            console.log("Quiz completed successfully:", response.data);
-
-            const updatedLessonData = [...lessonData];
-            const sectionIndex = updatedLessonData.findIndex(s => s.id === sectionId);
-
-            if (sectionIndex !== -1) {
-              const itemIndex = updatedLessonData[sectionIndex].items.findIndex(i => i.id === itemId);
-              if (itemIndex !== -1) {
-                updatedLessonData[sectionIndex].items[itemIndex] = {
-                  ...updatedLessonData[sectionIndex].items[itemIndex],
-                  completed: true,
-                  duration: "100%"
-                };
-
-                // ปลดล็อคบทเรียนถัดไปตามเงื่อนไข
-                if (sectionId === 1) {
-                  const firstLessonSectionIndex = updatedLessonData.findIndex(s => s.id > 1 && s.id < 9999);
-                  if (firstLessonSectionIndex !== -1 && updatedLessonData[firstLessonSectionIndex].items.length > 0) {
-                    updatedLessonData[firstLessonSectionIndex].items[0] = {
-                      ...updatedLessonData[firstLessonSectionIndex].items[0],
-                      lock: false
-                    };
-                  }
-                } else if (itemIndex === updatedLessonData[sectionIndex].items.length - 1) {
-                  const nextSectionIndex = sectionIndex + 1;
-                  if (nextSectionIndex < updatedLessonData.length &&
-                    updatedLessonData[nextSectionIndex].items.length > 0) {
-                    updatedLessonData[nextSectionIndex].items[0] = {
-                      ...updatedLessonData[nextSectionIndex].items[0],
-                      lock: false
-                    };
-                  }
-                } else if (itemIndex + 1 < updatedLessonData[sectionIndex].items.length) {
-                  updatedLessonData[sectionIndex].items[itemIndex + 1] = {
-                    ...updatedLessonData[sectionIndex].items[itemIndex + 1],
-                    lock: false
-                  };
-                }
-
-                // ตรวจสอบว่าบทเรียนทั้งหมดเรียนจบแล้วหรือไม่ เพื่อปลดล็อคแบบทดสอบหลังเรียน
-                const allLessonsCompleted = updatedLessonData
-                  .filter(section => section.id !== 1 && section.id !== 9999)
-                  .every(section => section.items.every(item => item.completed));
-
-                if (allLessonsCompleted) {
-                  const postTestSectionIndex = updatedLessonData.findIndex(s => s.id === 9999);
-                  if (postTestSectionIndex !== -1 && updatedLessonData[postTestSectionIndex].items.length > 0) {
-                    updatedLessonData[postTestSectionIndex].items[0] = {
-                      ...updatedLessonData[postTestSectionIndex].items[0],
-                      lock: false
-                    };
-                  }
-                }
-
-                // อัปเดตความก้าวหน้าของเซ็กชัน
-                const totalItems = updatedLessonData[sectionIndex].items.length;
-                const completedItems = updatedLessonData[sectionIndex].items.filter(item => item.completed).length;
-                const sectionProgress = totalItems > 0 ? (completedItems / totalItems) * 100 : 0;
-
-                updatedLessonData[sectionIndex] = {
-                  ...updatedLessonData[sectionIndex],
-                  count: `${Math.round(sectionProgress)}%`
-                };
-
-                setLessonData(updatedLessonData);
-
-                // คำนวณ progress ใหม่หลังจากอัปเดต lessonData
-                const totalProgress = calculateTotalProgress(updatedLessonData);
-                setProgress(totalProgress);
-                console.log("Progress after quiz completion:", totalProgress);
-              }
+          return section;
+        });
+        
+        setLessonData(updatedData);
+        // เพิ่มจำนวนบทเรียนที่เรียนจบ
+        setCompletedCount(prev => prev + 1);
+        
+        // หาบทเรียนถัดไปที่ควรเรียน
+        let foundNext = false;
+        let nextSectionId = sectionId;
+        let nextItemId = itemId;
+        
+        // ค้นหาบทเรียนถัดไปในส่วนปัจจุบัน
+        const currentSection = updatedData.find(s => s.id === sectionId);
+        if (currentSection) {
+          for (let i = itemId + 1; i < currentSection.items.length; i++) {
+            if (!currentSection.items[i].completed) {
+              nextItemId = i;
+              foundNext = true;
+              break;
             }
           }
         }
-      }
-
-      // ดึงข้อมูลความก้าวหน้าใหม่หลังจากทำบทเรียนเสร็จ
-      if (refreshProgress) {
-        console.log("Refreshing progress after lesson completion");
-        const newProgressData = await refreshProgress();
-        if (newProgressData) {
-          console.log("New progress data after completion:", newProgressData);
-          setProgressData(newProgressData);
-
-          if (newProgressData.progress?.progress_percentage === 100) {
-            setCourseCompleted(true);
+        
+        // ถ้าไม่พบในส่วนปัจจุบัน ให้ค้นหาในส่วนถัดไป
+        if (!foundNext) {
+          for (let s = sectionId; s < updatedData.length; s++) {
+            if (s === sectionId) continue; // ข้ามส่วนปัจจุบัน
+            
+            for (let i = 0; i < updatedData[s].items.length; i++) {
+              if (!updatedData[s].items[i].completed) {
+                nextSectionId = updatedData[s].id;
+                nextItemId = i;
+                foundNext = true;
+                break;
+              }
+            }
+            
+            if (foundNext) break;
+          }
+        }
+        
+        // ถ้าพบบทเรียนถัดไป ให้เลือกบทเรียนนั้น
+        if (foundNext) {
+          const nextSection = updatedData.find(s => s.id === nextSectionId);
+          if (nextSection) {
+            const nextItem = nextSection.items[nextItemId];
+            setCurrentLessonId(`${nextSectionId}-${nextItemId}`);
+            setCurrentLesson(nextItem.title);
+            setCurrentView(nextItem.type);
+          }
+        }
+      };
+      const getCurrentLessonCompleted = () => {
+        // แยก section ID และ item ID
+        const [sectionId, itemId] = currentLessonId.split('-').map(Number);
+        
+        // หาบทเรียนปัจจุบัน
+        const section = lessonData.find(s => s.id === sectionId);
+        if (section) {
+          const item = section.items.find(i => i.id === itemId);
+          return item?.completed || false;
+        }
+        
+        return false;
+      };
+      // ฟังก์ชันเมื่อเลือกบทเรียน
+      const handleSelectLesson = (sectionId: number, itemId: number, title: string, type: 'video' | 'quiz') => {
+        // ตรวจสอบว่าบทเรียนนี้ถูกล็อคหรือไม่
+        const section = lessonData.find(s => s.id === sectionId);
+        if (section) {
+          const item = section.items.find(i => i.id === itemId);
+          if (item && item.lock) {
+            // ถ้าบทเรียนถูกล็อค ให้แสดงข้อความแจ้งเตือน
+            alert("คุณต้องเรียนบทเรียนก่อนหน้าให้เสร็จก่อน");
             return;
           }
-          setProgress(newProgressData.progress?.progress_percentage || 0);
         }
-      } else {
-        const progressInfo = await fetchUserProgress(subjectId, apiURL);
-        if (progressInfo) {
-          console.log("Updated progress after completion:", progressInfo);
-          setProgressData(progressInfo);
-
-          // บันทึกข้อมูลความก้าวหน้าลงใน localStorage
-          if (subjectId) {
-            localStorage.setItem(`progress_${subjectId}`, JSON.stringify(progressInfo));
-          }
-
-          // อัปเดตข้อมูลบทเรียนตามความก้าวหน้าใหม่
-          const processedData = processSubjectData(subjectData, progressInfo);
-          setLessonData(processedData);
-
-          if (progressInfo?.progress?.progress_percentage === 100) {
-            setCourseCompleted(true);
-            return;
-          }
-          setProgress(progressInfo.progress?.progress_percentage || 0);
-        }
-      }
-
-      // หาบทเรียนถัดไปที่ควรเรียน
-      findNextLesson();
-
-    } catch (error) {
-      console.error("Error completing lesson:", error);
-    }
-  };
-
-  const findNextLesson = () => {
-    for (const section of lessonData) {
-      for (const item of section.items) {
-        if (!item.completed && !item.lock) {
-          setCurrentLessonId(`${section.id}-${item.id}`);
-          setCurrentLesson(item.title);
-          setCurrentView(item.type);
-
-          if (item.type === 'video' && item.lessonId) {
-            fetchLessonData(item.lessonId);
-          } else if (item.type === 'quiz' && item.quizId) {
-            fetchQuizData(item.quizId);
-          }
-          return;
-        }
-      }
-    }
-  };
-
-  const handleSelectLesson = async (sectionId: number, itemId: number, title: string, type: 'video' | 'quiz') => {
-    const section = lessonData.find(s => s.id === sectionId);
-    if (section) {
-      const item = section.items.find(i => i.id === itemId);
-      if (item && item.lock) {
-        alert("บทเรียนนี้ถูกล็อค คุณต้องเรียนบทเรียนก่อนหน้าให้เสร็จก่อน");
-        return;
-      }
-
-      setCurrentLessonId(`${sectionId}-${itemId}`);
-      setCurrentLesson(title);
-      setCurrentView(type);
-
-      if (item) {
-        if (type === 'video' && item.lessonId) {
-          await fetchLessonData(item.lessonId);
-        } else if (type === 'quiz' && item.quizId) {
-          await fetchQuizData(item.quizId);
-        }
-      }
-    }
-  };
-
-  const refreshProgressData = async () => {
-    try {
-      if (!subjectId) return;
-
-      console.log("Manually refreshing progress data...");
-      const progressInfo = await fetchUserProgress(subjectId, apiURL);
-
-      if (progressInfo) {
-        console.log("Progress refreshed:", progressInfo);
-        setProgressData(progressInfo);
-
-        // บันทึกข้อมูลความก้าวหน้าลงใน localStorage
-        localStorage.setItem(`progress_${subjectId}`, JSON.stringify(progressInfo));
-
-        // อัปเดต progress
-        const totalProgress = progressInfo?.progress?.progress_percentage || calculateTotalProgress();
-        setProgress(totalProgress);
-        console.log("Progress after refresh:", totalProgress);
-
-        return progressInfo;
-      }
-    } catch (error) {
-      console.error("Error refreshing progress:", error);
-    }
-    return null;
-  };
-
-  useEffect(() => {
-    if (!subjectId) return;
-
-    const intervalId = setInterval(() => {
-      console.log("Auto-refreshing progress data...");
-      refreshProgressData();
-    }, 30000); // 30 วินาที
-
-    return () => clearInterval(intervalId);
-  }, [subjectId]);
-
-  if (isLoading) {
-    return (
-      <section className="lesson__area section-pb-120">
-        <div className="container-fluid">
-          <div className="row">
-            <div className="col-12 text-center py-5">
-              <div className="spinner-border text-primary" role="status">
-                <span className="visually-hidden">Loading...</span>
-              </div>
-              <p className="mt-3">กำลังโหลดข้อมูลบทเรียน...</p>
-            </div>
-          </div>
-        </div>
-      </section>
-    );
-  }
-
-  if (error) {
-    return (
-      <section className="lesson__area section-pb-120">
-        <div className="container-fluid">
-          <div className="row">
-            <div className="col-12 text-center py-5">
-              <div className="alert alert-danger" role="alert">
-                {error}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-    );
-  }
-
-  return (
-    <section className="lesson__area section-pb-120">
-      <div className="container-fluid">
-        <div className="row gx-4">
-          <LessonSidebar
-            subjectTitle={subjectData?.title || subjectData?.subject_name || "สถิติประยุกต์"}
-            lessonData={lessonData}
-            onSelectLesson={handleSelectLesson}
-            currentLessonId={currentLessonId}
-            onViewChange={setCurrentView}
-            progressData={progressData}
-            progress={progress}
-          />
-          <div className="col-xl-9 col-lg-8 lesson__main">
-            <div className="lesson__video-wrap">
-              {courseCompleted ? (
-                <div className="course-completed-container">
-                  <div className="course-completed-message">
-                    <div className="completion-icon">
-                      <i className="fas fa-check-circle"></i>
-                    </div>
-                    <h2>ยินดีด้วย! คุณได้เรียนจบรายวิชานี้แล้ว</h2>
-                    <p>คุณได้ทำความเข้าใจเนื้อหาทั้งหมดและผ่านแบบทดสอบเรียบร้อยแล้ว</p>
-                    <div className="completion-actions">
-                      <Link to="/courses" className="btn btn-primary btn-lg">
-                        ไปยังรายวิชาอื่น
-                      </Link>
-                      <button
-                        className="btn btn-outline-primary btn-lg ms-3"
-                        onClick={() => setCourseCompleted(false)}
-                      >
-                        ทบทวนเนื้อหา
-                      </button>
-                    </div>
+        
+        // ถ้าบทเรียนไม่ถูกล็อค ให้เลือกบทเรียนนั้น
+        setCurrentLessonId(`${sectionId}-${itemId}`);
+        setCurrentLesson(title);
+        setCurrentView(type);
+      };
+   
+      return (
+         <section className="lesson__area section-pb-120">
+            <div className="container-fluid">
+               <div className="row gx-4">
+                  {/* Sidebar */}
+                  <div className="col-xl-3 col-lg-4 lesson__sidebar">
+                     <div className="lesson__content">
+                        <h2 className="title">รายวิขา : ภาษาไทยเพื่อการสื่อสาร</h2>
+                        <LessonFaq 
+                           onViewChange={setCurrentView} 
+                           lessonData={lessonData}
+                           onSelectLesson={handleSelectLesson}
+                        />
+                        <div className="lesson__progress">
+                           <h4>ความคืบหน้า</h4>
+                           <div className="progress-container">
+                              <div className="progress-bar-wrapper">
+                                 <div className="progress-bar" style={{ width: `${progress}%` }}></div>
+                              </div>
+                              <div className="progress-percentage">{progress.toFixed(0)}%</div>
+                           </div>
+                           <div className="progress-status">
+                              <span className="status-text">สถานะ: </span>
+                              <span className="status-value">
+                                 {progress < 100 ? 'กำลังเรียน' : 'เรียนจบแล้ว'}
+                              </span>
+                           </div>
+                        </div>
+                     </div>
                   </div>
-                </div>
-              ) : currentView === 'quiz' ? (
-                currentQuizData ? (
-                  <LessonQuiz
-                    onComplete={handleLessonComplete}
-                    quizData={currentQuizData}
-                    subjectId={subjectId}
-                  />
-                ) : (
-                  <div className="text-center py-5">
-                    <div className="spinner-border text-primary" role="status">
-                      <span className="visually-hidden">กำลังโหลดแบบทดสอบ...</span>
-                    </div>
-                    <p className="mt-3">กำลังโหลดแบบทดสอบ...</p>
+                  {/* Main Content */}
+                  <div className="col-xl-9 col-lg-8 lesson__main">
+                  <div className="lesson__video-wrap">
+   {currentView === 'quiz' ? (
+      <LessonQuiz 
+         onComplete={handleLessonComplete} 
+         isCompleted={getCurrentLessonCompleted()} // เพิ่มการส่ง prop isCompleted
+      />
+   ) : (
+      <LessonVideo
+         onComplete={handleLessonComplete}
+         currentLesson={currentLesson}
+      />
+   )}
+</div>
+                     <div className="lesson__nav-tab fixed-nav-tab">
+                        <LessonNavTav />
+                     </div>
                   </div>
-                )
-              ) : (
-                currentLessonData && youtubeId ? (
-                  <>
-                    <LessonVideo
-                      onComplete={handleLessonComplete}
-                      currentLesson={currentLesson}
-                      youtubeId={youtubeId}
-                      lessonData={currentLessonData}
-                      progressData={progressData}
-                      subjectId={subjectId}
-                    />
-                    {currentLessonData && (currentLessonData.quiz_id || currentLessonData.quiz) && (
-                      <div className="lesson-quiz-link mt-3">
-                        <button
-                          className="btn btn-primary"
-                          onClick={() => {
-                            if (currentLessonData.completed || progress >= 90) {
-                              setCurrentView('quiz');
-                              setCurrentQuizData(currentLessonData.quiz || { quiz_id: currentLessonData.quiz_id });
-                            } else {
-                              alert("คุณต้องดูวิดีโอให้จบก่อนจึงจะสามารถทำแบบทดสอบได้");
-                            }
-                          }}
-                        >
-                          ทำแบบทดสอบท้ายบท
-                        </button>
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <div className="text-center py-5">
-                    <div className="spinner-border text-primary" role="status">
-                      <span className="visually-hidden">กำลังโหลดวิดีโอ...</span>
-                    </div>
-                    <p className="mt-3">กำลังโหลดวิดีโอ...</p>
-                  </div>
-                )
-              )}
+               </div>
             </div>
-            <div className="lesson__nav-tab fixed-nav-tab">
-              <LessonNavTav />
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-};
-
-export default LessonArea;
+         </section>
+      );
+   };
+   
+   export default LessonArea;
+   

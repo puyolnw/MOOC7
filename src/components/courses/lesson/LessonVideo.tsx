@@ -1,41 +1,24 @@
 import { useEffect, useRef, useState } from "react";
 import Plyr from 'plyr';
 import 'plyr/dist/plyr.css';
-import axios from "axios";
 import './LessonVideo.css';
 
 interface LessonVideoProps {
   onComplete: () => void;
   currentLesson: string;
-  youtubeId: string;
-  lessonData: any;
-  progressData?: any;
-  subjectId?: string;
+  youtubeId?: string;
 }
 
-const LessonVideo = ({ onComplete, currentLesson, youtubeId = 'BboMpayJomw', lessonData, progressData, subjectId }: LessonVideoProps) => {
+const LessonVideo = ({ onComplete, currentLesson, youtubeId = 'BboMpayJomw' }: LessonVideoProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<Plyr | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const isSeekingRef = useRef(false);
-  const apiURL = import.meta.env.VITE_API_URL;
 
-  const [progress, setProgress] = useState(0);
+  const [progress, setProgress] = useState(10); // เริ่มต้นที่ 10%
   const [isCompleted, setIsCompleted] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [watchedTime, setWatchedTime] = useState(0);
-  const [videoDuration, setVideoDuration] = useState(0);
-  const [lastUpdateTime, setLastUpdateTime] = useState(0);
-
-  useEffect(() => {
-    if (lessonData?.completed) {
-      setIsCompleted(true);
-      setProgress(100);
-    } else {
-      setIsCompleted(false);
-      setProgress(lessonData?.progress || 0);
-    }
-  }, [lessonData]);
 
   useEffect(() => {
     if (containerRef.current) {
@@ -59,17 +42,12 @@ const LessonVideo = ({ onComplete, currentLesson, youtubeId = 'BboMpayJomw', les
       });
 
       playerRef.current.on('ready', () => {
-        const duration = playerRef.current?.duration || 0;
-        setVideoDuration(duration);
-        
-        if (progressData && progressData.lessons) {
-          const lessonProgress = progressData.lessons.find(
-            (lesson: any) => lesson.lesson_id === parseInt(lessonData?.lesson_id)
-          );
-          
-          if (lessonProgress && lessonProgress.last_position_seconds) {
-            playerRef.current?.forward(lessonProgress.last_position_seconds);
-          }
+        // เมื่อ player พร้อม ให้ตั้งตำแหน่งวิดีโอที่ 10%
+        if (playerRef.current) {
+          const duration = playerRef.current.duration || 0;
+          const tenPercentPosition = duration * 0.1;
+          playerRef.current.currentTime = tenPercentPosition;
+          setWatchedTime(tenPercentPosition);
         }
       });
 
@@ -78,7 +56,6 @@ const LessonVideo = ({ onComplete, currentLesson, youtubeId = 'BboMpayJomw', les
         if (!isSeekingRef.current) {
           timerRef.current = setInterval(() => {
             setWatchedTime(prev => prev + 1);
-            updateProgress();
           }, 1000);
         }
       });
@@ -98,31 +75,17 @@ const LessonVideo = ({ onComplete, currentLesson, youtubeId = 'BboMpayJomw', les
         if (playerRef.current?.playing) {
           timerRef.current = setInterval(() => {
             setWatchedTime(prev => prev + 1);
-            updateProgress();
           }, 1000);
         }
       });
 
       playerRef.current.on('ended', () => {
         if (timerRef.current) clearInterval(timerRef.current);
-        setProgress(100);
-        handleVideoComplete();
       });
 
       playerRef.current.on('error', (e) => {
         console.error('Player error:', e);
       });
-      
-      const durationCheckInterval = setInterval(() => {
-        if (playerRef.current && playerRef.current.duration > 0) {
-          setVideoDuration(playerRef.current.duration);
-          clearInterval(durationCheckInterval);
-        }
-      }, 1000);
-      
-      return () => {
-        clearInterval(durationCheckInterval);
-      };
     }
 
     return () => {
@@ -133,124 +96,26 @@ const LessonVideo = ({ onComplete, currentLesson, youtubeId = 'BboMpayJomw', les
         clearInterval(timerRef.current);
       }
     };
-  }, [currentLesson, youtubeId, progressData, lessonData]);
+  }, [currentLesson, youtubeId]);
 
   useEffect(() => {
-    setWatchedTime(0);
+    // เมื่อเปลี่ยนบทเรียน ให้ตั้งค่าเริ่มต้นที่ 10%
+    setProgress(10);
+    setWatchedTime(0); // ตั้งเป็น 0 เพราะเราจะตั้งค่าใหม่ใน ready event
+    setIsCompleted(false);
     setIsPlaying(false);
-    
-    if (lessonData?.completed) {
+  }, [currentLesson]);
+
+  useEffect(() => {
+    const duration = playerRef.current?.duration || 1;
+    const currentProgress = (watchedTime / duration) * 100;
+    setProgress(Math.max(10, currentProgress)); // ให้ progress ไม่ต่ำกว่า 10%
+
+    if (currentProgress > 90 && !isCompleted) {
       setIsCompleted(true);
-      setProgress(100);
-    } else {
-      setIsCompleted(false);
-      setProgress(lessonData?.progress || 0);
+      onComplete();
     }
-  }, [currentLesson, lessonData]);
-
-  const updateProgress = async () => {
-    if (!lessonData?.lesson_id) return;
-    
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) return;
-      
-      const currentTime = playerRef.current?.currentTime || 0;
-      const duration = playerRef.current?.duration || 0;
-      
-      if (duration > 0) {
-        if (currentTime >= duration) {
-          setProgress(100);
-          
-          if (!isCompleted) {
-            handleVideoComplete();
-          }
-        } else {
-          const currentProgress = (currentTime / duration) * 100;
-          setProgress(currentProgress);
-          
-          if (currentProgress > 90 && !isCompleted) {
-            handleVideoComplete();
-          }
-        }
-        
-        const now = Date.now();
-        if (watchedTime % 5 === 0 || now - lastUpdateTime > 5000 || Math.abs(currentTime - lastUpdateTime) > 10) {
-          setLastUpdateTime(now);
-          
-          await axios.post(
-            `${apiURL}/api/courses/lessons/${lessonData.lesson_id}/progress`, 
-            {
-              last_position_seconds: currentTime,
-              duration_seconds: duration,
-              completed: currentTime >= duration || progress >= 100,
-              subject_id: subjectId
-            },
-            {
-              headers: { Authorization: `Bearer ${token}` }
-            }
-          );
-          
-          if (subjectId && (currentTime >= duration || progress >= 90)) {
-            try {
-              await axios.get(`${apiURL}/api/courses/subjects/${subjectId}/progress`, {
-                headers: { Authorization: `Bearer ${token}` }
-              });
-            } catch (error) {
-              console.error("Error updating subject progress:", error);
-            }
-          }
-        }
-      }
-    } catch (error) {
-      console.error("Error updating progress:", error);
-    }
-  };
-
- // แก้ไขฟังก์ชัน handleVideoComplete ประมาณบรรทัด 200-230
-const handleVideoComplete = async () => {
-  if (isCompleted) return;
-  
-  try {
-    const token = localStorage.getItem("token");
-    if (!token || !lessonData?.lesson_id) return;
-    
-    const response = await axios.post(
-      `${apiURL}/api/courses/lessons/${lessonData.lesson_id}/complete`,
-      { subject_id: subjectId },
-      {
-        headers: { Authorization: `Bearer ${token}` }
-      }
-    );
-    
-    if (response.data.success) {
-      setIsCompleted(true);
-      setProgress(100);
-      
-      // ตรวจสอบว่ามี quiz หรือไม่ก่อนเรียกฟังก์ชัน onComplete
-      if (lessonData.quiz_id || lessonData.quiz) {
-        // ถ้ามี quiz ให้แสดงปุ่มทำแบบทดสอบแทนที่จะไปบทเรียนถัดไปทันที
-        // onComplete จะถูกเรียกเมื่อคลิกปุ่มทำแบบทดสอบในหน้า LessonArea
-      } else {
-        // ถ้าไม่มี quiz ให้ไปบทเรียนถัดไปทันที
-        onComplete();
-      }
-      
-      if (subjectId) {
-        try {
-          await axios.get(`${apiURL}/api/courses/subjects/${subjectId}/progress`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-        } catch (error) {
-          console.error("Error updating subject progress:", error);
-        }
-      }
-    }
-  } catch (error) {
-    console.error("Error marking lesson as complete:", error);
-  }
-};
-
+  }, [watchedTime, onComplete, isCompleted]);
 
   return (
     <div className="video-lesson-container">
@@ -276,15 +141,7 @@ const handleVideoComplete = async () => {
           )}
         </div>
         <div className="video-progress-info">
-          {isCompleted || (playerRef.current && playerRef.current.currentTime >= playerRef.current.duration) ? (
-            <span>100% ของวิดีโอ</span>
-          ) : (
-            <span>{typeof progress === 'number' ? progress.toFixed(0) : Number(progress).toFixed(0)}% ของวิดีโอ</span>
-          )}
-          <span className="video-duration">
-            {" "}({isCompleted ? videoDuration.toFixed(1) : (playerRef.current ? playerRef.current.currentTime.toFixed(1) : 0)}/
-            {playerRef.current ? playerRef.current.duration.toFixed(1) : 0} วินาที)
-          </span>
+          <span>{progress.toFixed(0)}% ของวิดีโอ</span>
         </div>
       </div>
     </div>
@@ -292,4 +149,3 @@ const handleVideoComplete = async () => {
 };
 
 export default LessonVideo;
-
