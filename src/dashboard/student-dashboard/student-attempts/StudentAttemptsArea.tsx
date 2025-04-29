@@ -21,7 +21,7 @@ const StudentAttemptsArea = () => {
   const [error, setError] = useState<string | null>(null);
 
   // ดึง API URL จาก environment variable
-  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3301/api";
+  const API_URL = import.meta.env.VITE_API_URL ;
 
   useEffect(() => {
     const fetchQuizHistory = async () => {

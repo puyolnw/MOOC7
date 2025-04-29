@@ -106,7 +106,7 @@ const AppNavigation = () => {
         <Route path="/home-eight" element={<HomeEight />} />
         <Route path="/courses" element={<Course />} />
         <Route path="/course-details/:id" element={<CourseDetails />} />
-        <Route path="/course-learning/:courseId/:subjectId?" element={<Lesson />} />
+        <Route path="/course-learning/:courseId/:subjectId" element={<Lesson />} />
         <Route path="/about-us" element={<About />} />
         <Route path="/instructors" element={<Instructor />} />
         <Route path="/instructor-details" element={<InstructorDetails />} />
@@ -124,7 +124,6 @@ const AppNavigation = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/registration" element={<Registration />} />
         <Route path="/contact" element={<Contact />} />
-        <Route path="/subject-details/:id" element={<SubjectDetailsPage />} />
         <Route path="/subject-details/:courseId/:id" element={<SubjectDetailsPage />} />
         <Route path="/personnel" element={<Personelpage/>} />
 
