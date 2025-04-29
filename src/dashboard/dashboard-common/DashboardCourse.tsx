@@ -23,7 +23,12 @@ interface CourseType {
    progress_percentage: number;
    cover_image_file_id: string | null;
    cover_image: string | null;
+   totalLessons?: number;
+   completedLessons?: number;
 }
+
+// Interface สำหรับข้อมูล progress ที่ได้จาก API
+
 
 const DashboardCourse = () => {
    const [courses, setCourses] = useState<CourseType[]>([]);
@@ -83,6 +88,33 @@ const DashboardCourse = () => {
                      console.error(`Error fetching details for course ${course.course_id}:`, err);
                   }
                   
+                  // ดึงข้อมูล progress จาก API ใหม่
+                  let progressDetails = {
+                     overallPercentage: courseDetails.progress_percentage || 0,
+                     totalLessons: courseDetails.total_subjects || 0,
+                     completedLessons: courseDetails.completed_subjects || 0
+                  };
+                  
+                  try {
+                     // เรียกใช้ API /course/:courseId/progress-detail
+                     const progressResponse = await axios.get(`${API_URL}/api/learn/course/${course.course_id}/progress-detail`, {
+                        headers: {
+                           Authorization: `Bearer ${token}`
+                        }
+                     });
+                     
+                     if (progressResponse.data.success) {
+                        progressDetails = {
+                           overallPercentage: progressResponse.data.overallPercentage,
+                           totalLessons: progressResponse.data.totalLessons,
+                           completedLessons: progressResponse.data.completedLessons
+                        };
+                        console.log(`Course ${index + 1} progress details:`, progressDetails);
+                     }
+                  } catch (err) {
+                     console.error(`Error fetching progress details for course ${course.course_id}:`, err);
+                  }
+                  
                   console.log(`Course ${index + 1} (${courseDetails.title || courseDetails.course_title}) image data:`, {
                      cover_image_file_id: courseDetails.cover_image_file_id,
                      cover_image: courseDetails.cover_image
@@ -97,16 +129,18 @@ const DashboardCourse = () => {
                      avatar_thumb: "/assets/img/courses/course_tutor01.png", // รูปภาพเริ่มต้นของผู้สอน
                      avatar_name: "อาจารย์ผู้สอน", // ชื่อเริ่มต้นของผู้สอน
                      review: "4.5", // คะแนนเริ่มต้น
-                     progress: courseDetails.progress_percentage || 0,
-                     book: `${courseDetails.total_subjects || 0} วิชา`,
+                     progress: progressDetails.overallPercentage, // ใช้ค่า progress จาก API ใหม่
+                     book: `${progressDetails.totalLessons || 0} วิชา`,
                      time: courseDetails.enrollment_date ? new Date(courseDetails.enrollment_date).toLocaleDateString('th-TH') : "-",
-                     mortarboard: courseDetails.completed_subjects ? `${courseDetails.completed_subjects}/${courseDetails.total_subjects}` : "0/0",
+                     mortarboard: `${progressDetails.completedLessons || 0}/${progressDetails.totalLessons || 0}`,
                      status: courseDetails.status,
                      enrollment_date: courseDetails.enrollment_date,
                      completion_date: courseDetails.completion_date,
-                     progress_percentage: courseDetails.progress_percentage || 0,
+                     progress_percentage: progressDetails.overallPercentage, // ใช้ค่า progress จาก API ใหม่
                      cover_image_file_id: courseDetails.cover_image_file_id || null,
-                     cover_image: courseDetails.cover_image || null
+                     cover_image: courseDetails.cover_image || null,
+                     totalLessons: progressDetails.totalLessons,
+                     completedLessons: progressDetails.completedLessons
                   };
                }));
                
@@ -158,7 +192,7 @@ const DashboardCourse = () => {
    return (
       <div className="progress__courses-wrap">
          <div className="dashboard__content-title">
-            <h4 className="title">คอร์สที่กำลังดำเนินอยู่</h4>
+            <h4 className="title">คอร์สของฉัน</h4>
          </div>
          
          {loading ? (
@@ -221,9 +255,6 @@ const DashboardCourse = () => {
                               <div className="author-two">
                                  <Link to="/instructor-details"><img src={item.avatar_thumb} alt="img" />{item.avatar_name}</Link>
                               </div>
-                              <div className="avg-rating">
-                                 <i className="fas fa-star"></i> {item.review}
-                              </div>
                            </div>
                            <div className="progress-item progress-item-two">
                               <h6 className="title">COMPLETE <span>{item.progress}%</span></h6>
@@ -249,3 +280,4 @@ const DashboardCourse = () => {
 }
 
 export default DashboardCourse
+

@@ -5,7 +5,6 @@ import DashboardBannerTwo from "../../dashboard-common/DashboardBannerTwo";
 import DashboardCourse from "../../dashboard-common/DashboardCourse";
 import DashboardSidebarTwo from "../../dashboard-common/DashboardSidebarTwo";
 
-// กำหนด interface สำหรับข้อมูลที่จะดึงมาจาก API
 interface DashboardStats {
   totalEnrolled: number;
   inProgress: number;
@@ -14,8 +13,14 @@ interface DashboardStats {
   error: string | null;
 }
 
+interface CourseData {
+  course_id: number;
+  title: string;
+  completed: boolean | null;
+  status: 'completed' | 'in_progress' | 'not_started';
+}
+
 const StudentDashboardArea = () => {
-  // สร้าง state สำหรับเก็บข้อมูลสถิติ
   const [dashboardStats, setDashboardStats] = useState<DashboardStats>({
     totalEnrolled: 0,
     inProgress: 0,
@@ -24,12 +29,11 @@ const StudentDashboardArea = () => {
     error: null
   });
 
-  // ดึง API URL จาก environment variable
+  const [courses, setCourses] = useState<CourseData[]>([]);
+  console.log("Courses:", courses);
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3301/api";
 
-  // ฟังก์ชันสำหรับดึงข้อมูลจาก API
   const fetchDashboardData = async () => {
-    // ดึง token จาก localStorage
     const token = localStorage.getItem("token");
     
     if (!token) {
@@ -42,29 +46,24 @@ const StudentDashboardArea = () => {
     }
 
     try {
-      // ดึงข้อมูลความคืบหน้าของผู้ใช้
-      const response = await axios.get(`${API_URL}/api/courses/user/progress`, {
+      const response = await axios.get(`${API_URL}/api/data/student/dashboard/courses`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
       });
 
       if (response.data.success) {
-        const { courses } = response.data.progress;
+        const { overview, courses } = response.data;
         
-        // นับจำนวนคอร์สทั้งหมด คอร์สที่กำลังเรียน และคอร์สที่เรียนจบ
-        const totalEnrolled = courses.length;
-        const inProgress = courses.filter((course: any) => course.status === 'in_progress').length;
-        const completed = courses.filter((course: any) => course.status === 'completed').length;
-
-        // อัพเดท state
         setDashboardStats({
-          totalEnrolled,
-          inProgress,
-          completed,
+          totalEnrolled: overview.totalEnrolled,
+          inProgress: overview.inProgress,
+          completed: overview.completed,
           isLoading: false,
           error: null
         });
+
+        setCourses(courses);
       } else {
         setDashboardStats({
           ...dashboardStats,
@@ -82,12 +81,10 @@ const StudentDashboardArea = () => {
     }
   };
 
-  // ดึงข้อมูลเมื่อคอมโพเนนต์ถูกโหลด
   useEffect(() => {
     fetchDashboardData();
   }, []);
 
-  // สร้างข้อมูลสำหรับแสดงในส่วนของ counter
   const dashboard_count_data = [
     {
       id: 1,
@@ -123,7 +120,6 @@ const StudentDashboardArea = () => {
                 </div>
                 <div className="row">
                   {dashboardStats.isLoading ? (
-                    // แสดง loading state
                     <div className="col-12 text-center py-5">
                       <div className="spinner-border text-primary" role="status">
                         <span className="visually-hidden">กำลังโหลด...</span>
@@ -131,7 +127,6 @@ const StudentDashboardArea = () => {
                       <p className="mt-3">กำลังโหลดข้อมูล...</p>
                     </div>
                   ) : dashboardStats.error ? (
-                    // แสดงข้อความ error
                     <div className="col-12 text-center py-5">
                       <div className="alert alert-danger" role="alert">
                         <i className="fas fa-exclamation-circle me-2"></i>
@@ -139,7 +134,6 @@ const StudentDashboardArea = () => {
                       </div>
                     </div>
                   ) : (
-                    // แสดงข้อมูลสถิติ
                     dashboard_count_data.map((item) => (
                       <div key={item.id} className="col-lg-4 col-md-4 col-sm-6">
                         <div className="dashboard__counter-item">

@@ -1,0 +1,28 @@
+/* เพิ่มในไฟล์ CSS ของคุณ */
+.dashboard__quiz-result {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-weight: 500;
+  }
+  
+  .dashboard__quiz-result.passed {
+    background-color: #e6f7e6;
+    color: #28a745;
+  }
+  
+  .dashboard__quiz-result.failed {
+    background-color: #f8e6e6;
+    color: #dc3545;
+  }
+  
+  .dashboard__quiz-info p {
+    margin-bottom: 5px;
+    color: #777;
+    font-size: 14px;
+  }
+  
+  .dashboard__quiz-info .title {
+    margin-bottom: 0;
+  }
+  
