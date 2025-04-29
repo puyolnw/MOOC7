@@ -2,7 +2,7 @@ import { useState } from "react";
 import Overview from "../course-details/Overview";
 import Instructors from "../course-details/Instructors";
 
-const tab_title: string[] = ["ข้อมูลทั่วไป", "ผู้สอน", "ความคิดเห็น"];
+const tab_title: string[] = ["ข้อมูลทั่วไป", "ผู้สอน",];
 
 interface LessonNavTavProps {
   description: string;

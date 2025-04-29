@@ -1,0 +1,251 @@
+/* Start Learning Modal Styles */
+.start-learning-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    animation: fadeIn 0.3s ease;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  .start-learning-modal-content {
+    background-color: white;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+    animation: slideUp 0.4s ease;
+  }
+  
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(50px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  .start-learning-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 25px;
+    border-bottom: 1px solid #e9ecef;
+    background-color: #f8f9fa;
+  }
+  
+  .start-learning-modal-header h4 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #333;
+    margin: 0;
+  }
+  
+  .close-button {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: #6c757d;
+    cursor: pointer;
+    transition: color 0.2s;
+  }
+  
+  .close-button:hover {
+    color: #343a40;
+  }
+  
+  .start-learning-modal-body {
+    padding: 30px 25px;
+    text-align: center;
+  }
+  
+  .start-learning-icon {
+    font-size: 60px;
+    color: #3f78e0;
+    margin-bottom: 20px;
+    animation: bounce 1.5s infinite;
+  }
+  
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+  
+  .start-learning-modal-body h5 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 15px;
+  }
+  
+  .next-lesson-info {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 20px;
+    text-align: left;
+    border-left: 4px solid #3f78e0;
+  }
+  
+  .subject-title, .lesson-title {
+    margin-bottom: 5px;
+  }
+  
+  .subject-title span, .lesson-title span {
+    font-weight: 600;
+    color: #495057;
+  }
+  
+  .start-learning-modal-body p {
+    color: #6c757d;
+    margin-bottom: 25px;
+  }
+  
+  .start-learning-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+  }
+  
+  .btn-cancel, .btn-start {
+    padding: 12px 25px;
+    border-radius: 50px;
+    font-weight: 500;
+    font-size: 15px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  
+  .btn-cancel {
+    background-color: #f8f9fa;
+    color: #495057;
+    border: 1px solid #ced4da;
+  }
+  
+  .btn-cancel:hover {
+    background-color: #e9ecef;
+    transform: translateY(-2px);
+  }
+  
+  .btn-start {
+    background-color: #3f78e0;
+    color: white;
+    box-shadow: 0 4px 10px rgba(63, 120, 224, 0.3);
+  }
+  
+  .btn-start:hover {
+    background-color: #3567c3;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(63, 120, 224, 0.4);
+  }
+  
+  /* ปรับแต่งสำหรับหน้าจอขนาดเล็ก */
+  @media (max-width: 576px) {
+    .start-learning-modal-content {
+      width: 95%;
+    }
+    
+    .start-learning-modal-header {
+      padding: 15px 20px;
+    }
+    
+    .start-learning-modal-header h4 {
+      font-size: 18px;
+    }
+    
+    .start-learning-modal-body {
+      padding: 20px;
+    }
+    
+    .start-learning-icon {
+      font-size: 50px;
+    }
+    
+    .start-learning-modal-body h5 {
+      font-size: 16px;
+    }
+    
+    .start-learning-buttons {
+      flex-direction: column;
+      gap: 10px;
+    }
+    
+    .btn-cancel, .btn-start {
+      width: 100%;
+      padding: 10px 20px;
+    }
+  }
+  
+  /* เพิ่มสไตล์สำหรับปุ่มเริ่มเรียน */
+  .courses__details-action .btn-primary {
+    background-color: #3f78e0;
+    border-color: #3f78e0;
+    font-weight: 600;
+    padding: 12px 20px;
+    border-radius: 50px;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+  
+  .courses__details-action .btn-primary:hover {
+    background-color: #3567c3;
+    border-color: #3567c3;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(63, 120, 224, 0.4);
+  }
+  
+  .courses__details-action .btn-primary:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 5px rgba(63, 120, 224, 0.4);
+  }
+  
+  .courses__details-action .btn-primary:disabled {
+    background-color: #6c94d4;
+    border-color: #6c94d4;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+  
+  /* เพิ่มสไตล์สำหรับแถบความก้าวหน้า */
+  .course-progress-wrap .progress {
+    height: 10px;
+    border-radius: 5px;
+    background-color: #e9ecef;
+    overflow: hidden;
+  }
+  
+  .course-progress-wrap .progress-bar {
+    background: linear-gradient(90deg, #4CAF50, #8BC34A);
+    border-radius: 5px;
+    transition: width 0.8s ease;
+  }
+  
+  .course-progress-wrap .text-success {
+    color: #28a745 !important;
+  }
+  
+  .course-progress-wrap .text-primary {
+    color: #007bff !important;
+  }
+  
+  .course-progress-wrap .text-warning {
+    color: #ffc107 !important;
+  }
+  

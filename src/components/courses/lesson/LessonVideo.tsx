@@ -11,20 +11,29 @@ interface LessonVideoProps {
   currentLesson: string;
   youtubeId?: string;
   lessonId: number;
+  onNextLesson?: () => void;
 }
 
-const LessonVideo = ({ onComplete, currentLesson, youtubeId = 'BboMpayJomw', lessonId }: LessonVideoProps) => {
+const LessonVideo = ({ onComplete, currentLesson, youtubeId = 'BboMpayJomw', lessonId, onNextLesson }: LessonVideoProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<Plyr | null>(null);
+  const hasCompletedRef = useRef(false); // ใช้ ref เพื่อติดตามว่าได้ทำการ complete แล้วหรือยัง
 
   const [progress, setProgress] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
-  const [videoDuration, setVideoDuration] = useState(0);
-  console.log("Log:", videoDuration);
+  const [videoDuration, setVideoDuration] = useState(0); 
+  console.log("Video Duration:", videoDuration);
   const [isLoading, setIsLoading] = useState(true);
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
 
   const saveVideoProgress = async (position: number, duration: number) => {
     try {
+      // ถ้าเคย complete แล้ว ไม่ต้องส่ง API อีก
+      if (hasCompletedRef.current && position >= duration * 0.9) {
+        console.log("Video already completed, not sending progress update");
+        return;
+      }
+      
       await axios.post(`${API_URL}/api/learn/lesson/${lessonId}/video-progress`,
         { position, duration },
         {
@@ -61,6 +70,7 @@ const LessonVideo = ({ onComplete, currentLesson, youtubeId = 'BboMpayJomw', les
 
         if (video_completed) {
           setIsCompleted(true);
+          hasCompletedRef.current = true; // บันทึกว่าได้ complete แล้ว
           onComplete();
         }
       }
@@ -71,8 +81,30 @@ const LessonVideo = ({ onComplete, currentLesson, youtubeId = 'BboMpayJomw', les
     }
   };
 
+  // ฟังก์ชันสำหรับดูวิดีโอซ้ำ
+  const handleRewatch = () => {
+    if (playerRef.current) {
+      playerRef.current.currentTime = 0;
+      playerRef.current.play();
+      setShowCompletionModal(false);
+    }
+  };
+
+  // ฟังก์ชันสำหรับไปบทเรียนถัดไป
+  const handleNextLesson = () => {
+    setShowCompletionModal(false);
+    if (onNextLesson) {
+      onNextLesson();
+    }
+  };
+
   useEffect(() => {
     fetchVideoProgress();
+    
+    // Reset refs when lessonId changes
+    return () => {
+      hasCompletedRef.current = false;
+    };
   }, [lessonId]);
 
   useEffect(() => {
@@ -111,9 +143,12 @@ const LessonVideo = ({ onComplete, currentLesson, youtubeId = 'BboMpayJomw', les
           const currentProgress = (playerRef.current.currentTime / playerRef.current.duration) * 100;
           setProgress(currentProgress);
 
-          if (currentProgress >= 90 && !isCompleted) {
+          // เมื่อถึง 90% และยังไม่เคย complete
+          if (currentProgress >= 90 && !hasCompletedRef.current) {
             setIsCompleted(true);
+            hasCompletedRef.current = true; // บันทึกว่าได้ complete แล้ว
             onComplete();
+            // ไม่แสดง modal ทันที ให้ดูวิดีโอต่อไปได้
           }
         }
       });
@@ -133,6 +168,8 @@ const LessonVideo = ({ onComplete, currentLesson, youtubeId = 'BboMpayJomw', les
       playerRef.current.on('ended', () => {
         if (playerRef.current) {
           saveVideoProgress(playerRef.current.duration, playerRef.current.duration);
+          // แสดง modal เมื่อวิดีโอจบจริงๆ
+          setShowCompletionModal(true);
         }
       });
 
@@ -183,6 +220,66 @@ const LessonVideo = ({ onComplete, currentLesson, youtubeId = 'BboMpayJomw', les
           <span>{progress.toFixed(0)}% ของวิดีโอ</span>
         </div>
       </div>
+
+      {/* ปุ่มควบคุมเพิ่มเติม */}
+      {isCompleted && (
+        <div className="video-additional-controls">
+          <button 
+            className="btn-rewatch-inline" 
+            onClick={handleRewatch}
+          >
+            <i className="fas fa-redo"></i> ดูซ้ำ
+          </button>
+          {onNextLesson && (
+            <button 
+              className="btn-next-lesson-inline" 
+              onClick={handleNextLesson}
+            >
+              <i className="fas fa-arrow-right"></i> ไปเนื้อหาถัดไป
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Modal เมื่อดูวิดีโอจบ */}
+      {showCompletionModal && (
+        <div className="video-completion-modal">
+          <div className="video-completion-modal-content">
+            <div className="video-completion-header">
+              <h4>คุณดูวิดีโอจบแล้ว</h4>
+              <button 
+                className="close-button" 
+                onClick={() => setShowCompletionModal(false)}
+              >
+                &times;
+              </button>
+            </div>
+            <div className="video-completion-body">
+              <div className="completion-icon">
+                <i className="fas fa-check-circle"></i>
+              </div>
+              <h5>ยินดีด้วย! คุณได้เรียนรู้เนื้อหาบทเรียนนี้เรียบร้อยแล้ว</h5>
+              <p>คุณต้องการทำอะไรต่อไป?</p>
+              <div className="video-completion-buttons">
+                <button 
+                  className="btn-rewatch" 
+                  onClick={handleRewatch}
+                >
+                  <i className="fas fa-redo"></i> ดูซ้ำ
+                </button>
+                {onNextLesson && (
+                  <button 
+                    className="btn-next-lesson" 
+                    onClick={handleNextLesson}
+                  >
+                    <i className="fas fa-arrow-right"></i> ไปเนื้อหาถัดไป
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
