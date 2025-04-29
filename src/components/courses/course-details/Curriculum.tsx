@@ -22,9 +22,10 @@ interface Subject {
 
 interface CurriculumProps {
   subjects: Subject[];
+  courseId: number; // Add this line
 }
 
-const Curriculum: React.FC<CurriculumProps> = ({ subjects }) => {
+const Curriculum: React.FC<CurriculumProps> = ({ subjects, courseId }) => {
 
   const styles: Record<string, CSSProperties> = {
     row: {
@@ -276,18 +277,18 @@ const Curriculum: React.FC<CurriculumProps> = ({ subjects }) => {
                   </div>
 
                   <div style={styles.cardFooter}>
-                    <Link
-                      to={`/subject-details/${subject.subject_id}`}
-                      style={{
-                        ...styles.button,
-                        backgroundColor: hoveredButton === subject.subject_id ? "#0b5ed7" : "#0d6efd",
-                      }}
-                      onMouseEnter={() => setHoveredButton(subject.subject_id)}
-                      onMouseLeave={() => setHoveredButton(null)}
-                    >
-                      ดูรายละเอียดรายวิชา
-                      <i className="fas fa-arrow-right" style={styles.buttonIcon}></i>
-                    </Link>
+                  <Link
+  to={`/subject-details/${courseId}/${subject.subject_id}`}
+  style={{
+    ...styles.button,
+    backgroundColor: hoveredButton === subject.subject_id ? "#0b5ed7" : "#0d6efd",
+  }}
+  onMouseEnter={() => setHoveredButton(subject.subject_id)}
+  onMouseLeave={() => setHoveredButton(null)}
+>
+  ดูรายละเอียดรายวิชา
+  <i className="fas fa-arrow-right" style={styles.buttonIcon}></i>
+</Link>
                   </div>
                 </div>
               </div>

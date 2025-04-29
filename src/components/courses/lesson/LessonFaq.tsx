@@ -48,7 +48,7 @@ const LessonFaq = ({ lessonData, onSelectLesson }: LessonFaqProps) => {
      }
    }, [lessonData]); // เพิ่ม dependency เป็น lessonData
 
-   // ในส่วนของการแสดงผล
+   // ในส่วนของการแสดงผลผ
 return (
    <div className="accordion" id="accordionExample">
      {lessonData.map((section) => (

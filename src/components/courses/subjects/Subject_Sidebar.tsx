@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import InjectableSvg from "../../../hooks/InjectableSvg";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import VideoPopup from "../../../modals/VideoPopup";
+import axios from "axios";
+import BtnArrow from "../../../svg/BtnArrow";
 
 interface SidebarProps {
   subject_id: number;
@@ -11,19 +13,65 @@ interface SidebarProps {
   lesson_count: number;
   quiz_count: number;
   cover_image?: string;
+  course_id: number; // Add course_id prop
 }
 
 const Sidebar = ({
+  subject_id,
   subject_code,
   subject_name,
   credits,
   lesson_count,
   quiz_count,
   cover_image,
+  course_id
 }: SidebarProps) => {
   const [isVideoOpen, setIsVideoOpen] = useState(false);
+  const [progress, setProgress] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
+  const apiURL = import.meta.env.VITE_API_URL;
 
-  console.log("Cover image received in Sidebar:", cover_image);
+  useEffect(() => {
+    const fetchSubjectProgress = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+
+        const response = await axios.get(
+          `${apiURL}/api/learn/subject/${subject_id}/progress`,
+          {
+            headers: { Authorization: `Bearer ${token}` }
+          }
+        );
+
+        if (response.data.success) {
+          setProgress(response.data);
+        }
+      } catch (error) {
+        console.error("Error fetching subject progress:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchSubjectProgress();
+  }, [subject_id, apiURL]);
+
+  const handleStartLearning = () => {
+    const courseId = new URLSearchParams(window.location.search).get('courseId');
+    const pathParts = window.location.pathname.split('/');
+    const courseIdFromPath = pathParts[2]; // Get courseId from URL path
+    
+    const finalCourseId = course_id || courseIdFromPath || courseId;
+    
+    if (finalCourseId) {
+      navigate(`/course-learning/${finalCourseId}/${subject_id}`);
+    } else {
+      console.warn('Course ID not found');
+      // Optionally redirect to courses page or show error
+    }
+  };
 
   return (
     <>
@@ -40,6 +88,45 @@ const Sidebar = ({
               loading="lazy"
             />
           </div>
+
+          {/* Add Progress Section */}
+          <div className="course-progress-wrap p-3 bg-light rounded mb-4">
+            <h5 className="title mb-3">ความคืบหน้าของคุณ</h5>
+            {isLoading ? (
+              <div className="text-center py-2">
+                <div className="spinner-border spinner-border-sm text-primary" role="status">
+                  <span className="visually-hidden">กำลังโหลด...</span>
+                </div>
+              </div>
+            ) : progress ? (
+              <>
+                <div className="progress mb-2" style={{ height: "10px" }}>
+                  <div
+                    className="progress-bar bg-success"
+                    role="progressbar"
+                    style={{ width: `${progress.progressPercentage}%` }}
+                    aria-valuenow={progress.progressPercentage}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                  ></div>
+                </div>
+                <div className="d-flex justify-content-between">
+                  <span>{Math.round(progress.progressPercentage)}% เสร็จสิ้น</span>
+                  <span>
+                    {progress.subjectPassed ? (
+                      <span className="text-success">เรียนจบแล้ว</span>
+                    ) : (
+                      <span className="text-primary">กำลังเรียน</span>
+                    )}
+                  </span>
+                </div>
+                <div className="mt-2 small">
+                  <div>บทเรียนที่เรียนจบ: {progress.completedLessons}/{progress.totalLessons}</div>
+                </div>
+              </>
+            ) : null}
+          </div>
+
           <div className="courses__information-wrap">
             <h5 className="title">ข้อมูลรายวิชา:</h5>
             <ul className="list-wrap">
@@ -75,6 +162,18 @@ const Sidebar = ({
               <li><Link to="#"><i className="fab fa-youtube"></i></Link></li>
             </ul>
           </div>
+          {/* Add Start Learning Button */}
+          <div className="sidebar-action mt-4">
+            <button
+              onClick={handleStartLearning}
+              className="btn btn-primary w-100 mb-3"
+            >
+              เริ่มเรียน
+              <BtnArrow />
+            </button>
+          </div>
+
+         
         </div>
       </div>
       <VideoPopup

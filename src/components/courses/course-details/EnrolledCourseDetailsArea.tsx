@@ -34,7 +34,7 @@ const EnrolledCourseDetailsArea = ({
         if (!token) return;
         
         const response = await axios.get(
-          `${API_URL}/api/course/${single_course.id}/progress-detail`,
+          `${API_URL}/api/learn/course/${single_course.id}/progress-detail`,
           {
             headers: {
               Authorization: `Bearer ${token}`
@@ -177,8 +177,11 @@ const EnrolledCourseDetailsArea = ({
                   <Overview description={single_course.description} />
                 </div>
                 <div className={`tab-pane fade ${activeTab === 1 ? 'show active' : ''}`} id="curriculum-tab-pane" role="tabpanel" aria-labelledby="curriculum-tab">
-                  <Curriculum subjects={single_course.subjects} />
-                </div>
+  <Curriculum 
+    subjects={single_course.subjects} 
+    courseId={single_course.id}  // Pass the courseId prop
+  />
+</div>
                 <div className={`tab-pane fade ${activeTab === 2 ? 'show active' : ''}`} id="instructors-tab-pane" role="tabpanel" aria-labelledby="instructors-tab">
                   <Instructors instructors={single_course.instructors} />
                 </div>

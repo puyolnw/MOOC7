@@ -36,6 +36,13 @@ interface CourseData {
   course_id: number;
   title: string;
   description: string;
+  instructors: Array<{
+    instructor_id: number;
+    name: string;
+    position: string;
+    avatar?: string;
+    bio?: string;
+  }>;
   subjects: {
     subject_id: number;
     title: string;
@@ -56,6 +63,7 @@ interface CourseData {
     }[];
   }[];
 }
+
 
 interface LessonAreaProps {
   courseId?: number;
@@ -485,9 +493,14 @@ useEffect(() => {
                       />
                     )}
                   </div>
-                  <div className="lesson__nav-tab fixed-nav-tab">
-                    <LessonNavTav />
-                  </div>
+                  // In the return statement, update the LessonNavTav component:
+<div className="lesson__nav-tab fixed-nav-tab">
+  <LessonNavTav 
+    description={courseData?.description || ""}
+    instructors={courseData?.instructors || []}
+  />
+</div>
+
                 </div>
               </div>
             </div>

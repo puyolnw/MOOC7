@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import FooterOne from "../../../layouts/footers/FooterOne";
 import HeaderOne from "../../../layouts/headers/HeaderOne";
@@ -10,10 +10,14 @@ import { toast } from "react-toastify";
 const SubjectDetails = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const apiURL = import.meta.env.VITE_API_URL || "http://localhost:3301";
   const [subjectDetails, setSubjectDetails] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Extract course_id from location state or query params
+  const courseId = location.state?.courseId || new URLSearchParams(location.search).get('courseId');
 
   useEffect(() => {
     const fetchSubjectDetails = async () => {
@@ -38,9 +42,7 @@ const SubjectDetails = () => {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
 
-
         if (response.data && response.data.success && response.data.subject) {
-
           const subjectData = {
             ...response.data.subject,
             lessons: response.data.subject.lessons.map((lesson: any) => ({
@@ -116,7 +118,10 @@ const SubjectDetails = () => {
             </div>
           </div>
         ) : (
-          <SubjectDetailsArea subject_details={subjectDetails} />
+          <SubjectDetailsArea 
+            subject_details={subjectDetails} 
+            course_id={courseId} // Pass course_id to SubjectDetailsArea
+          />
         )}
       </main>
       <FooterOne style={false} style_2={true} />

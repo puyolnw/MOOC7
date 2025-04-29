@@ -1,145 +1,178 @@
-import { useState } from "react";
-import VideoPopup from "../../../modals/VideoPopup";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import axios from "axios";
 
-interface Lesson {
+interface LessonItem {
+  id: number;
   lesson_id: number;
   title: string;
-  order_number: number;
+  lock: boolean;
+  completed: boolean;
+  type: 'video' | 'quiz';
+  duration: string;
   video_url?: string;
-  can_preview: boolean;
-  file_count: number;
+  quiz_id?: number;
+}
+
+interface SectionData {
+  id: number;
+  subject_id: number;
+  title: string;
+  count: string;
+  items: LessonItem[];
 }
 
 interface CurriculumProps {
-  lessons: Lesson[];
+  lessons: any[];
+  subjectId: number;
 }
 
-const Curriculum = ({ lessons }: CurriculumProps) => {
-  const [isVideoOpen, setIsVideoOpen] = useState(false);
-  const [currentVideoId, setCurrentVideoId] = useState("Ml4XCF-JS0k");
-  const [openAccordion, setOpenAccordion] = useState<number | null>(0);
+const Curriculum = ({ lessons, subjectId }: CurriculumProps) => {
+  const [lessonData, setLessonData] = useState<SectionData[]>([]);
+  const [activeAccordion, setActiveAccordion] = useState<number | null>(null);
+  const [progress, setProgress] = useState(0);
+  const [completedCount, setCompletedCount] = useState(0);
+  const apiURL = import.meta.env.VITE_API_URL;
+
+  useEffect(() => {
+    const fetchLessonProgress = async () => {
+      try {
+        const sections: SectionData[] = [];
+        
+        for (const lesson of lessons) {
+          const progressResponse = await axios.get(
+            `${apiURL}/api/learn/lesson/${lesson.lesson_id}/video-progress`,
+            {
+              headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            }
+          );
+
+          const items: LessonItem[] = [];
+          
+          // Add video lesson
+          items.push({
+            id: 0,
+            lesson_id: lesson.lesson_id,
+            title: `${lesson.order_number}.1 เนื้อหาบทเรียน`,
+            lock: false,
+            completed: progressResponse.data.progress?.video_completed || false,
+            type: 'video',
+            duration: progressResponse.data.progress?.video_completed ? "100%" : "0%",
+            video_url: lesson.video_url
+          });
+
+          // Add quiz if exists
+          if (lesson.quiz_id) {
+            items.push({
+              id: 1,
+              lesson_id: lesson.lesson_id,
+              title: `${lesson.order_number}.2 แบบทดสอบท้ายบท`,
+              lock: !progressResponse.data.progress?.video_completed,
+              completed: progressResponse.data.progress?.quiz_completed || false,
+              type: 'quiz',
+              duration: progressResponse.data.progress?.quiz_completed ? "100%" : "0%",
+              quiz_id: lesson.quiz_id
+            });
+          }
+
+          sections.push({
+            id: lesson.lesson_id,
+            subject_id: subjectId,
+            title: `บทที่ ${lesson.order_number}: ${lesson.title}`,
+            count: progressResponse.data.progress?.overall_completed ? "ผ่าน" : "ไม่ผ่าน",
+            items
+          });
+        }
+
+        setLessonData(sections);
+
+        // Fetch overall subject progress
+        const subjectResponse = await axios.get(
+          `${apiURL}/api/learn/subject/${subjectId}/progress`,
+          {
+            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+          }
+        );
+
+        if (subjectResponse.data.success) {
+          setProgress(subjectResponse.data.progressPercentage);
+          setCompletedCount(subjectResponse.data.completedLessons);
+        }
+
+      } catch (error) {
+        console.error("Error fetching lesson progress:", error);
+      }
+    };
+
+    fetchLessonProgress();
+  }, [lessons, subjectId]);
 
   const toggleAccordion = (id: number) => {
-    setOpenAccordion((prev) => (prev === id ? null : id));
-  };
-
-  // ฟังก์ชันสำหรับดึง YouTube video ID จาก URL
-  const getYoutubeVideoId = (url?: string) => {
-    if (!url) return "Ml4XCF-JS0k";
-    
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-    const match = url.match(regExp);
-    
-    return (match && match[2].length === 11)
-      ? match[2]
-      : "Ml4XCF-JS0k";
-  };
-
-  // เรียงลำดับบทเรียนตาม order_number
-  const sortedLessons = [...lessons].sort((a, b) => a.order_number - b.order_number);
-
-  const handlePlayVideo = (videoUrl?: string) => {
-    if (videoUrl) {
-      setCurrentVideoId(getYoutubeVideoId(videoUrl));
-      setIsVideoOpen(true);
-    }
+    setActiveAccordion(activeAccordion === id ? null : id);
   };
 
   return (
-    <>
-      <div className="courses__curriculum-wrap">
+    <div className="courses__curriculum-wrap">
+      <div className="curriculum-header mb-4">
         <h3 className="title">บทเรียนในรายวิชา</h3>
-        <p>รายวิชานี้ประกอบด้วยบทเรียนทั้งหมด {lessons.length} บทเรียน ซึ่งแต่ละบทเรียนจะมีเนื้อหาและแบบทดสอบที่ออกแบบมาเพื่อให้ผู้เรียนได้รับความรู้และทักษะอย่างครบถ้วน</p>
-        
-        {sortedLessons.length > 0 ? (
-          <div className="accordion" id="accordionExample">
-            {sortedLessons.map((lesson, index) => (
-              <div key={lesson.lesson_id} className="accordion-item">
-                <h2 className="accordion-header" id={`heading${lesson.lesson_id}`}>
-                  <button
-                    className={`accordion-button ${openAccordion === lesson.lesson_id ? "" : "collapsed"}`}
-                    type="button"
-                    onClick={() => toggleAccordion(lesson.lesson_id)}
-                    aria-expanded={openAccordion === lesson.lesson_id}
-                    aria-controls={`collapse${lesson.lesson_id}`}
-                  >
-                    บทที่ {index + 1}: {lesson.title}
-                  </button>
-                </h2>
-                <div
-                  id={`collapse${lesson.lesson_id}`}
-                  className={`accordion-collapse collapse ${openAccordion === lesson.lesson_id ? "show" : ""}`}
-                  aria-labelledby={`heading${lesson.lesson_id}`}
-                  data-bs-parent="#accordionExample"
-                >
-                  <div className="accordion-body">
-                    <ul className="list-wrap">
-                      <li className={`course-item ${lesson.can_preview ? "open-item" : ""}`}>
-                        {lesson.can_preview ? (
-                          <a 
-                            onClick={() => handlePlayVideo(lesson.video_url)} 
-                            style={{ cursor: "pointer" }} 
-                            className="course-item-link"
-                          >
-                            <span className="item-name">ดูตัวอย่างบทเรียน</span>
-                            <div className="course-item-meta">
-                              <span className="item-meta duration">
-                                {lesson.video_url && <i className="fas fa-play-circle"></i>}
-                              </span>
-                            </div>
-                          </a>
-                        ) : (
-                          <Link to={`/lesson/${lesson.lesson_id}`} className="course-item-link">
-                            <span className="item-name">เข้าสู่บทเรียน</span>
-                            <div className="course-item-meta">
-                              <span className="item-meta duration">
-                                {lesson.video_url && <i className="fas fa-play-circle"></i>}
-                              </span>
-                              <span className="item-meta course-item-status">
-                                <img src="/assets/img/icons/lock.svg" alt="icon" />
-                              </span>
-                            </div>
-                          </Link>
-                        )}
-                      </li>
-                      {lesson.file_count > 0 && (
-                        <li className="course-item">
-                          <div className="course-item-info">
-                            <span className="item-name">
-                              <i className="fas fa-file-alt me-2"></i>
-                              เอกสารประกอบการเรียน: {lesson.file_count} ไฟล์
-                            </span>
-                          </div>
-                        </li>
-                      )}
-                      <li className="course-item">
-                        <Link to={`/lesson/${lesson.lesson_id}`} className="course-item-link">
-                          <span className="item-name">รายละเอียดบทเรียน</span>
-                          <div className="course-item-meta">
-                            <i className="fas fa-arrow-right"></i>
-                          </div>
-                        </Link>
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            ))}
+        <div className="progress-info mt-3">
+          <div className="progress" style={{ height: "10px" }}>
+            <div
+              className="progress-bar bg-success"
+              role="progressbar"
+              style={{ width: `${progress}%` }}
+            ></div>
           </div>
-        ) : (
-          <div className="alert alert-info">
-            <i className="fas fa-info-circle me-2"></i>
-            ยังไม่มีบทเรียนในรายวิชานี้
+          <div className="d-flex justify-content-between mt-2">
+            <span>{completedCount} / {lessons.length} บทเรียน</span>
+            <span>{Math.round(progress)}% เสร็จสิ้น</span>
           </div>
-        )}
+        </div>
       </div>
-      <VideoPopup
-        isVideoOpen={isVideoOpen}
-        setIsVideoOpen={setIsVideoOpen}
-        videoId={currentVideoId}
-      />
-    </>
+
+      <div className="accordion">
+        {lessonData.map((section) => (
+          <div key={section.id} className="accordion-item">
+            <h2 className="accordion-header">
+              <button
+                className={`accordion-button ${activeAccordion === section.id ? '' : 'collapsed'}`}
+                onClick={() => toggleAccordion(section.id)}
+              >
+                <span className="section-title">{section.title}</span>
+                <span className={`section-status ${section.count === "ผ่าน" ? "status-passed" : "status-not-passed"}`}>
+                  {section.count}
+                </span>
+              </button>
+            </h2>
+            <div className={`accordion-collapse collapse ${activeAccordion === section.id ? 'show' : ''}`}>
+              <div className="accordion-body">
+                <ul className="list-wrap">
+                  {section.items.map((item) => (
+                    <li
+                      key={`${section.id}-${item.id}`}
+                      className={`course-item ${item.completed ? 'completed' : ''} ${item.lock ? 'locked' : ''}`}
+                    >
+                      <Link 
+                        to={`/lesson/${item.lesson_id}`} 
+                        className="course-item-link"
+                      >
+                        <span className="item-name">
+                          {item.lock && <i className="fas fa-lock lock-icon"></i>}
+                          {item.title}
+                        </span>
+                        <span className={`item-status ${item.completed ? "status-passed" : "status-not-passed"}`}>
+                          {item.completed ? 'ผ่าน' : 'ไม่ผ่าน'}
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 };
 

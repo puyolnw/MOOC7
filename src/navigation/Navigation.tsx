@@ -125,6 +125,7 @@ const AppNavigation = () => {
         <Route path="/registration" element={<Registration />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/subject-details/:id" element={<SubjectDetailsPage />} />
+        <Route path="/subject-details/:courseId/:id" element={<SubjectDetailsPage />} />
         <Route path="/personnel" element={<Personelpage/>} />
 
 

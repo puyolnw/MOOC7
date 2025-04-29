@@ -1,3 +1,4 @@
+// Update the imports
 import { useState } from "react";
 import Overview from "./Subject_Overview";
 import Sidebar from "./Subject_Sidebar";
@@ -9,9 +10,10 @@ const tab_title: string[] = ["ภาพรวม", "บทเรียน", "อ
 
 interface SubjectDetailsAreaProps {
   subject_details: any;
+  course_id: number;
 }
 
-const SubjectDetailsArea = ({ subject_details }: SubjectDetailsAreaProps) => {
+const SubjectDetailsArea = ({ subject_details, course_id }: SubjectDetailsAreaProps) => {
   const [activeTab, setActiveTab] = useState(0);
   const apiURL = import.meta.env.VITE_API_URL || "http://localhost:3301";
 
@@ -19,7 +21,6 @@ const SubjectDetailsArea = ({ subject_details }: SubjectDetailsAreaProps) => {
     setActiveTab(index);
   };
 
-  // ตรวจสอบว่า subject_details มีค่าหรือไม่
   if (!subject_details || !subject_details.subject_id) {
     return (
       <section className="courses__details-area section-py-120">
@@ -33,7 +34,6 @@ const SubjectDetailsArea = ({ subject_details }: SubjectDetailsAreaProps) => {
     );
   }
 
-  // ดึงข้อมูลที่จำเป็นจาก subject_details พร้อมกับตรวจสอบว่ามีค่าหรือไม่
   const {
     subject_id,
     subject_code = "รหัสวิชา",
@@ -50,7 +50,6 @@ const SubjectDetailsArea = ({ subject_details }: SubjectDetailsAreaProps) => {
     cover_image,
   } = subject_details;
 
-  // Helper function: extract fileId from Google Drive URL
   const extractGoogleDriveFileId = (url: string): string | null => {
     const match = url.match(/\/d\/([a-zA-Z0-9_-]+)\//);
     return match ? match[1] : null;
@@ -62,17 +61,7 @@ const SubjectDetailsArea = ({ subject_details }: SubjectDetailsAreaProps) => {
       ? `${apiURL}/api/courses/image/${extractGoogleDriveFileId(cover_image)}`
       : "/assets/img/courses/courses_details.jpg";
 
-
-
-  // คำนวณจำนวนแบบทดสอบทั้งหมด
   const totalQuizCount = (preTest ? 1 : 0) + (postTest ? 1 : 0) + (quiz_count || 0);
-
-  // ปรับการจัดการ avatar ของ instructor
-  const instructorAvatar = instructors[0]?.avatar
-    ? typeof instructors[0].avatar === "string" && instructors[0].avatar.startsWith("data:image/")
-      ? instructors[0].avatar
-      : `${apiURL}/${instructors[0].avatar}`
-    : "/assets/img/courses/course_author001.png";
 
   return (
     <section className="courses__details-area section-py-120">
@@ -84,7 +73,6 @@ const SubjectDetailsArea = ({ subject_details }: SubjectDetailsAreaProps) => {
                 src={finalCoverImage}
                 alt={subject_name}
                 onError={(e) => {
-                  console.warn(`Failed to load cover image: ${finalCoverImage}`);
                   (e.target as HTMLImageElement).src = "/assets/img/courses/courses_details.jpg";
                 }}
                 loading="lazy"
@@ -108,12 +96,10 @@ const SubjectDetailsArea = ({ subject_details }: SubjectDetailsAreaProps) => {
                   {instructors.length > 0 && (
                     <li className="author-two">
                       <img
-                        src={instructorAvatar}
+                        src={instructors[0].avatar || "/assets/img/courses/course_author001.png"}
                         alt={instructors[0].name}
                         onError={(e) => {
-                          console.warn(`Failed to load instructor avatar: ${instructorAvatar}`);
-                          (e.target as HTMLImageElement).src =
-                            "/assets/img/courses/course_author001.png";
+                          (e.target as HTMLImageElement).src = "/assets/img/courses/course_author001.png";
                         }}
                         loading="lazy"
                       />
@@ -150,7 +136,6 @@ const SubjectDetailsArea = ({ subject_details }: SubjectDetailsAreaProps) => {
                   className={`tab-pane fade ${activeTab === 0 ? "show active" : ""}`}
                   id="overview-tab-pane"
                   role="tabpanel"
-                  aria-labelledby="overview-tab"
                 >
                   <Overview description={description} preTest={preTest} postTest={postTest} />
                 </div>
@@ -158,15 +143,13 @@ const SubjectDetailsArea = ({ subject_details }: SubjectDetailsAreaProps) => {
                   className={`tab-pane fade ${activeTab === 1 ? "show active" : ""}`}
                   id="curriculum-tab-pane"
                   role="tabpanel"
-                  aria-labelledby="curriculum-tab"
                 >
-                  <Curriculum lessons={lessons} />
+                  <Curriculum lessons={lessons} subjectId={subject_id} />
                 </div>
                 <div
                   className={`tab-pane fade ${activeTab === 2 ? "show active" : ""}`}
                   id="instructors-tab-pane"
                   role="tabpanel"
-                  aria-labelledby="instructors-tab"
                 >
                   <Instructors instructors={instructors} />
                 </div>
@@ -181,6 +164,7 @@ const SubjectDetailsArea = ({ subject_details }: SubjectDetailsAreaProps) => {
             lesson_count={lessons.length}
             quiz_count={totalQuizCount}
             cover_image={finalCoverImage}
+            course_id={course_id}
           />
         </div>
       </div>
