@@ -333,10 +333,10 @@ const EditSubject: React.FC = () => {
         name === "credits"
           ? Number(value)
           : name === "departmentId"
-          ? value === ""
-            ? null
-            : Number(value)
-          : value,
+            ? value === ""
+              ? null
+              : Number(value)
+            : value,
     }));
 
     if (name in errors) {
@@ -1195,20 +1195,18 @@ const EditSubject: React.FC = () => {
                         return (
                           <div
                             key={lesson.id}
-                            className={`list-group-item list-group-item-action d-flex justify-content-between align-items-center ${
-                              isSelected ? "bg-light" : ""
-                            }`}
+                            className={`list-group-item list-group-item-action d-flex justify-content-between align-items-center ${isSelected ? "bg-light" : ""
+                              }`}
                           >
                             <div>
                               <h6 className="mb-0">{lesson.title}</h6>
                             </div>
                             <button
                               type="button"
-                              className={`btn btn-sm ${
-                                isSelected
-                                  ? "btn-success disabled"
-                                  : "btn-outline-primary"
-                              }`}
+                              className={`btn btn-sm ${isSelected
+                                ? "btn-success disabled"
+                                : "btn-outline-primary"
+                                }`}
                               onClick={() => handleAddLesson(lesson.id)}
                               disabled={isSelected}
                             >
@@ -1244,7 +1242,79 @@ const EditSubject: React.FC = () => {
           </div>
         </div>
       )}
-
+      {/* {showQuizModal && (
+        <div
+          className="modal fade show"
+          style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}
+        >
+          <div className="modal-dialog modal-lg modal-dialog-centered modal-slide-down">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">
+                  เลือกแบบทดสอบ{quizType === "pre" ? "ก่อนเรียน" : "หลังเรียน"}
+                </h5>
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={() => setShowQuizModal(false)}
+                ></button>
+              </div>
+              <div className="modal-body modal-body-scrollable">
+                <div className="mb-3">
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="ค้นหาแบบทดสอบ..."
+                    value={quizSearchTerm}
+                    onChange={(e) => setQuizSearchTerm(e.target.value)}
+                  />
+                </div>
+                <div className="quiz-list">
+                  {filteredQuizzes.length > 0 ? (
+                    <div className="list-group">
+                      {filteredQuizzes.map((quiz) => (
+                        <div
+                          key={quiz.quiz_id}
+                          className="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
+                        >
+                          <div>
+                            <h6 className="mb-1">{quiz.title}</h6>
+                            <p className="mb-0 small text-muted">
+                              จำนวนคำถาม: {quiz.question_count} ข้อ
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-outline-primary"
+                            onClick={() => handleSelectQuiz(quiz.quiz_id)}
+                          >
+                            เลือก
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-4">
+                      <p className="text-muted">
+                        ไม่พบแบบทดสอบที่ตรงกับคำค้นหา
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setShowQuizModal(false)}
+                >
+                  ยกเลิก
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )} */}
       {showInstructorModal && (
         <div
           className="modal fade show"
