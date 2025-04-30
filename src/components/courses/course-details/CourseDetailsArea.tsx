@@ -63,11 +63,11 @@ const CourseDetailsArea = ({ single_course, onEnroll }: CourseDetailsAreaProps) 
                   <Overview description={single_course.description} />
                 </div>
                 <div className={`tab-pane fade ${activeTab === 1 ? 'show active' : ''}`} id="curriculum-tab-pane" role="tabpanel" aria-labelledby="curriculum-tab">
-  <Curriculum 
-    subjects={single_course.subjects} 
-    courseId={single_course.id} // Add courseId prop
-  />
-</div>
+                  <Curriculum
+                    subjects={single_course.subjects}
+                    courseId={single_course.id} // Add courseId prop
+                  />
+                </div>
                 <div className={`tab-pane fade ${activeTab === 2 ? 'show active' : ''}`} id="instructors-tab-pane" role="tabpanel" aria-labelledby="instructors-tab">
                   <Instructors instructors={single_course.instructors} />
                 </div>
@@ -77,7 +77,7 @@ const CourseDetailsArea = ({ single_course, onEnroll }: CourseDetailsAreaProps) 
               </div>
             </div>
           </div>
-          <Sidebar 
+          <Sidebar
             subjectCount={single_course.subjectCount}
             totalLessons={single_course.totalLessons}
             totalQuizzes={single_course.totalQuizzes}

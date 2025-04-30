@@ -277,18 +277,18 @@ const Curriculum: React.FC<CurriculumProps> = ({ subjects, courseId }) => {
                   </div>
 
                   <div style={styles.cardFooter}>
-                  <Link
-  to={`/subject-details/${courseId}/${subject.subject_id}`}
-  style={{
-    ...styles.button,
-    backgroundColor: hoveredButton === subject.subject_id ? "#0b5ed7" : "#0d6efd",
-  }}
-  onMouseEnter={() => setHoveredButton(subject.subject_id)}
-  onMouseLeave={() => setHoveredButton(null)}
->
-  ดูรายละเอียดรายวิชา
-  <i className="fas fa-arrow-right" style={styles.buttonIcon}></i>
-</Link>
+                    <Link
+                      to={`/subject-details/${courseId}/${subject.subject_id}`}
+                      style={{
+                        ...styles.button,
+                        backgroundColor: hoveredButton === subject.subject_id ? "#0b5ed7" : "#0d6efd",
+                      }}
+                      onMouseEnter={() => setHoveredButton(subject.subject_id)}
+                      onMouseLeave={() => setHoveredButton(null)}
+                    >
+                      ดูรายละเอียดรายวิชา
+                      <i className="fas fa-arrow-right" style={styles.buttonIcon}></i>
+                    </Link>
                   </div>
                 </div>
               </div>

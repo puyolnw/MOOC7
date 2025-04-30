@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
 
@@ -9,12 +9,12 @@ interface Department {
   department_name: string;
 }
 
-// Interface สำหรับข้อมูลผู้สอน
+// Interface สำหรับข้อมูลผู้สอน (ใช้สำหรับฟอร์ม)
 interface InstructorData {
   username: string;
   email: string;
-  password: string;
-  confirmPassword: string;
+  password?: string; // Optional for edit
+  confirmPassword?: string; // Optional for edit
   firstName: string;
   lastName: string;
   position: string;
@@ -24,6 +24,7 @@ interface InstructorData {
   avatarPreview: string;
 }
 
+// Interface สำหรับข้อมูลผู้สอนที่ได้จาก API
 interface InstructorResponse {
   user_id: number;
   instructor_id: number;
@@ -33,18 +34,20 @@ interface InstructorResponse {
   last_name: string;
   position: string;
   department: string;
+  description: string | null;
   avatar_path: string | null; // Google Drive URL (TEXT column)
   avatar_file_id: string | null; // Google Drive file ID
 }
 
-interface AddInstructorsProps {
+interface EditInstructorsProps {
   onSubmit?: (instructorData: InstructorResponse) => void;
   onCancel?: () => void;
 }
 
-const AddInstructors: React.FC<AddInstructorsProps> = ({ onSubmit, onCancel }) => {
+const EditInstructors: React.FC<EditInstructorsProps> = ({ onSubmit, onCancel }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>(); // Get instructor ID from URL params
   const apiURL = import.meta.env.VITE_API_URL;
 
   // State สำหรับการโหลดและข้อผิดพลาด
@@ -84,9 +87,9 @@ const AddInstructors: React.FC<AddInstructorsProps> = ({ onSubmit, onCancel }) =
     description: "",
   });
 
-  // ดึงข้อมูลแผนกจาก API
+  // ดึงข้อมูลผู้สอนและข้อมูลแผนกเมื่อเริ่มต้น
   useEffect(() => {
-    const fetchDepartments = async () => {
+    const fetchData = async () => {
       try {
         setIsLoading(true);
         setApiError(null);
@@ -99,28 +102,58 @@ const AddInstructors: React.FC<AddInstructorsProps> = ({ onSubmit, onCancel }) =
           return;
         }
 
-        const response = await axios.get(`${apiURL}/api/courses/subjects/departments/list`, {
+        // Fetch departments
+        const deptResponse = await axios.get(`${apiURL}/api/courses/subjects/departments/list`, {
           headers: {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${token}`,
           },
         });
 
-        if (response.data.success) {
-          setDepartments(response.data.departments);
+        if (deptResponse.data.success) {
+          setDepartments(deptResponse.data.departments);
         } else {
           setApiError("ไม่สามารถดึงข้อมูลแผนกได้");
         }
+
+        // Fetch instructor data
+        const instructorResponse = await axios.get(`${apiURL}/api/accounts/instructors/${id}`, {
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+        });
+
+        if (instructorResponse.data.success) {
+          const instructor = instructorResponse.data.instructor as InstructorResponse;
+          setInstructorData({
+            username: instructor.username,
+            email: instructor.email,
+            password: "", // Password is not fetched for security reasons
+            confirmPassword: "",
+            firstName: instructor.first_name,
+            lastName: instructor.last_name,
+            position: instructor.position,
+            department: instructor.department,
+            description: instructor.description || "",
+            avatar: null,
+            avatarPreview: instructor.avatar_file_id
+              ? `${apiURL}/api/accounts/instructors/avatar/${instructor.avatar_file_id}`
+              : "",
+          });
+        } else {
+          setApiError("ไม่สามารถดึงข้อมูลผู้สอนได้");
+        }
       } catch (error) {
-        console.error("Error fetching departments:", error);
-        setApiError("เกิดข้อผิดพลาดในการดึงข้อมูลแผนก");
+        console.error("Error fetching data:", error);
+        setApiError("เกิดข้อผิดพลาดในการดึงข้อมูล");
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchDepartments();
-  }, [apiURL]);
+    fetchData();
+  }, [apiURL, id]);
 
   // จัดการการเปลี่ยนแปลงข้อมูลในฟอร์ม
   const handleInputChange = (
@@ -217,19 +250,18 @@ const AddInstructors: React.FC<AddInstructorsProps> = ({ onSubmit, onCancel }) =
       isValid = false;
     }
 
-    // ตรวจสอบรหัสผ่าน
-    if (!instructorData.password) {
-      newErrors.password = "กรุณาระบุรหัสผ่าน";
-      isValid = false;
-    } else if (instructorData.password.length < 6) {
-      newErrors.password = "รหัสผ่านต้องมีความยาวอย่างน้อย 6 ตัวอักษร";
-      isValid = false;
-    }
+    // ตรวจสอบรหัสผ่าน (ถ้ามีการกรอก)
+    if (instructorData.password) {
+      if (instructorData.password.length < 6) {
+        newErrors.password = "รหัสผ่านต้องมีความยาวอย่างน้อย 6 ตัวอักษร";
+        isValid = false;
+      }
 
-    // ตรวจสอบการยืนยันรหัสผ่าน
-    if (instructorData.password !== instructorData.confirmPassword) {
-      newErrors.confirmPassword = "รหัสผ่านไม่ตรงกัน";
-      isValid = false;
+      // ตรวจสอบการยืนยันรหัสผ่าน
+      if (instructorData.password !== instructorData.confirmPassword) {
+        newErrors.confirmPassword = "รหัสผ่านไม่ตรงกัน";
+        isValid = false;
+      }
     }
 
     // ตรวจสอบชื่อ
@@ -285,28 +317,32 @@ const AddInstructors: React.FC<AddInstructorsProps> = ({ onSubmit, onCancel }) =
       const formData = new FormData();
       formData.append("username", instructorData.username);
       formData.append("email", instructorData.email);
-      formData.append("password", instructorData.password);
+      if (instructorData.password) {
+        formData.append("password", instructorData.password);
+      }
       formData.append("firstName", instructorData.firstName);
       formData.append("lastName", instructorData.lastName);
       formData.append("position", instructorData.position);
       formData.append("department", instructorData.department);
       formData.append("description", instructorData.description);
 
-      if (instructorData.avatar) {
-        formData.append("avatar", instructorData.avatar);
+      if (instructorData.avatar !== undefined) {
+        if (instructorData.avatar) {
+          formData.append("avatar", instructorData.avatar);
+        } else {
+          formData.append("removeAvatar", "true"); // Signal to backend to remove avatar
+        }
       }
-
-      // ส่งข้อมูลไปยัง API
-      const response = await axios.post(`${apiURL}/api/accounts/instructors`, formData, {
+      const response = await axios.put(`${apiURL}/api/accounts/instructors/${id}`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
-          // Note: Content-Type is automatically set to multipart/form-data by axios when using FormData
+          // Content-Type is automatically set to multipart/form-data by axios when using FormData
         },
       });
 
       if (response.data.success) {
-        setApiSuccess("สร้างบัญชีผู้สอนสำเร็จ");
-        toast.success("สร้างบัญชีผู้สอนสำเร็จ");
+        setApiSuccess("อัปเดตข้อมูลผู้สอนสำเร็จ");
+        toast.success("อัปเดตข้อมูลผู้สอนสำเร็จ");
 
         // ถ้าสำเร็จและมี callback onSubmit ให้เรียกใช้
         if (onSubmit) {
@@ -318,11 +354,11 @@ const AddInstructors: React.FC<AddInstructorsProps> = ({ onSubmit, onCancel }) =
           }, 1500);
         }
       } else {
-        setApiError(response.data.message || "เกิดข้อผิดพลาดในการสร้างบัญชีผู้สอน");
-        toast.error(response.data.message || "เกิดข้อผิดพลาดในการสร้างบัญชีผู้สอน");
+        setApiError(response.data.message || "เกิดข้อผิดพลาดในการอัปเดตข้อมูลผู้สอน");
+        toast.error(response.data.message || "เกิดข้อผิดพลาดในการอัปเดตข้อมูลผู้สอน");
       }
     } catch (error: any) {
-      console.error("Error creating instructor account:", error);
+      console.error("Error updating instructor account:", error);
       const errorMessage =
         error.response?.data?.message || "เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์";
       setApiError(errorMessage);
@@ -345,11 +381,21 @@ const AddInstructors: React.FC<AddInstructorsProps> = ({ onSubmit, onCancel }) =
   // ล้าง URL ของรูปภาพตัวอย่างเมื่อคอมโพเนนต์ถูกทำลาย
   useEffect(() => {
     return () => {
-      if (instructorData.avatarPreview) {
+      if (instructorData.avatarPreview && instructorData.avatar) {
         URL.revokeObjectURL(instructorData.avatarPreview);
       }
     };
-  }, [instructorData.avatarPreview]);
+  }, [instructorData.avatarPreview, instructorData.avatar]);
+
+  if (isLoading) {
+    return (
+      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: "200px" }}>
+        <div className="spinner-border" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit}>
@@ -412,16 +458,16 @@ const AddInstructors: React.FC<AddInstructorsProps> = ({ onSubmit, onCancel }) =
           <div className="row mb-3">
             <div className="col-md-6">
               <label htmlFor="password" className="form-label">
-                รหัสผ่าน <span className="text-danger">*</span>
+                รหัสผ่าน (เว้นว่างหากไม่ต้องการเปลี่ยน)
               </label>
               <input
                 type="password"
                 className={`form-control ${errors.password ? "is-invalid" : ""}`}
                 id="password"
                 name="password"
-                value={instructorData.password}
+                value={instructorData.password || ""}
                 onChange={handleInputChange}
-                placeholder="ระบุรหัสผ่าน"
+                placeholder="ระบุรหัสผ่านใหม่ (ถ้าต้องการเปลี่ยน)"
               />
               {errors.password && <div className="invalid-feedback">{errors.password}</div>}
               <small className="form-text text-muted">รหัสผ่านต้องมีความยาวอย่างน้อย 6 ตัวอักษร</small>
@@ -429,16 +475,16 @@ const AddInstructors: React.FC<AddInstructorsProps> = ({ onSubmit, onCancel }) =
 
             <div className="col-md-6">
               <label htmlFor="confirmPassword" className="form-label">
-                ยืนยันรหัสผ่าน <span className="text-danger">*</span>
+                ยืนยันรหัสผ่าน
               </label>
               <input
                 type="password"
                 className={`form-control ${errors.confirmPassword ? "is-invalid" : ""}`}
                 id="confirmPassword"
                 name="confirmPassword"
-                value={instructorData.confirmPassword}
+                value={instructorData.confirmPassword || ""}
                 onChange={handleInputChange}
-                placeholder="ยืนยันรหัสผ่านอีกครั้ง"
+                placeholder="ยืนยันรหัสผ่านใหม่ (ถ้าต้องการเปลี่ยน)"
               />
               {errors.confirmPassword && (
                 <div className="invalid-feedback">{errors.confirmPassword}</div>
@@ -593,10 +639,10 @@ const AddInstructors: React.FC<AddInstructorsProps> = ({ onSubmit, onCancel }) =
                     onClick={() => fileInputRef.current?.click()}
                   >
                     <i className="fas fa-upload me-2"></i>
-                    {instructorData.avatar ? "เปลี่ยนรูป" : "อัปโหลดรูป"}
+                    {instructorData.avatarPreview ? "เปลี่ยนรูป" : "อัปโหลดรูป"}
                   </button>
 
-                  {instructorData.avatar && (
+                  {instructorData.avatarPreview && (
                     <button
                       type="button"
                       className="btn btn-outline-danger"
@@ -641,4 +687,4 @@ const AddInstructors: React.FC<AddInstructorsProps> = ({ onSubmit, onCancel }) =
   );
 };
 
-export default AddInstructors;
+export default EditInstructors;

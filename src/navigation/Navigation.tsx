@@ -19,6 +19,7 @@ import AdminEditSubjectspage from '../pages/Admin/edit/AdminEditSubject';
 
 import AdminAccountInstructorspage from '../pages/Admin/account/AccountInstructors';
 import CreateAccountInstructorspage from '../pages/Admin/account/create/AddInstructors';
+import EditAccountInstructorspage from '../pages/Admin/account/edit/EditInstructors';
 import AdminStudentpage from '../pages/Admin/account/AccountStudent';
 import CreateAccountStudentspage from '../pages/Admin/account/create/AddStudents';
 
@@ -155,6 +156,7 @@ const AppNavigation = () => {
         <Route path="/admin-account/students" element={<AdminStudentpage/>} />
 
         <Route path="/admin-account/instructors/create-new" element={< CreateAccountInstructorspage />} />
+        <Route path="/admin-account/instructors/edit-instructor/:id" element={< EditAccountInstructorspage />} />
         <Route path="/admin-account/students/create-new" element={< CreateAccountStudentspage />} />
 
         </Route>
