@@ -66,11 +66,12 @@ interface CourseData {
 
 
 interface LessonAreaProps {
-  courseId?: number;
+  courseId: number;
+  subjectId: number; // เพิ่ม subjectId เพื่อรับค่าจาก props
 }
 
-const LessonArea = ({ courseId: propsCourseId }: LessonAreaProps) => {
-  const [courseId] = useState<number>(propsCourseId || 1); // ใช้ค่าจาก props หรือค่าเริ่มต้น
+const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
+
   const [currentView, setCurrentView] = useState<'video' | 'quiz'>('video');
   const [progress, setProgress] = useState<number>(0);
   const [currentLesson, setCurrentLesson] = useState<string>("");
@@ -88,7 +89,7 @@ const LessonArea = ({ courseId: propsCourseId }: LessonAreaProps) => {
   const [loading, setLoading] = useState<boolean>(true);
 
   // โหลดข้อมูลหลักสูตรทั้งหมดเมื่อโหลดหน้า
-  // ในส่วนของการแปลงข้อมูลจาก API เป็นรูปแบบที่ใช้ใน LessonFaq
+// ในส่วนของการแปลงข้อมูลจาก API เป็นรูปแบบที่ใช้ใน LessonFaq
 useEffect(() => {
   const fetchCourseData = async () => {
     try {
@@ -99,90 +100,109 @@ useEffect(() => {
         }
       });
       
-      if (response.data.success) {
+      if (response.data.success && response.data.course) {
         setCourseData(response.data.course);
         
         // แปลงข้อมูลจาก API เป็นรูปแบบที่ใช้ใน LessonFaq
         const sections: SectionData[] = [];
         
-        // สร้าง section สำหรับวิชา (subject)
-        const subject = response.data.course.subjects[0]; // เลือกวิชาแรก
-        setCurrentSubjectTitle(subject.title); // เก็บชื่อวิชา
-        
-        // สร้าง section สำหรับแต่ละบทเรียน (lesson)
-        subject.lessons.forEach((lesson: any, lessonIndex: number) => {
-          // สร้าง section สำหรับบทเรียน
-          const sectionItems: LessonItem[] = [];
+        // ตรวจสอบว่ามีวิชาหรือไม่
+        if (response.data.course.subjects && response.data.course.subjects.length > 0) {
+          // ค้นหาวิชาที่ตรงกับ subjectId ที่รับมา
+          const subject = response.data.course.subjects.find((s: any) => s.subject_id === subjectId);
           
-          // เพิ่มรายการวิดีโอ
-          sectionItems.push({
-            id: 0,
-            lesson_id: lesson.lesson_id,
-            title: `${lessonIndex + 1}.1 เนื้อหาวิดีโอ`,
-            lock: false,
-            completed: lesson.progress?.video_completed || false, // ใช้ข้อมูลจาก API
-            type: 'video',
-            duration: lesson.progress?.video_completed ? "100%" : "0%", // ใช้ข้อมูลจาก API
-            video_url: lesson.video_url,
-            quiz_id: lesson.quiz ? lesson.quiz.quiz_id : undefined
-          });
-          
-          // เพิ่มรายการแบบทดสอบ (ถ้ามี)
-          if (lesson.quiz) {
-            sectionItems.push({
-              id: 1,
-              lesson_id: lesson.lesson_id,
-              title: `${lessonIndex + 1}.2 แบบทดสอบท้ายบท`,
-              lock: !lesson.progress?.video_completed, // ล็อคถ้ายังไม่ดูวิดีโอจบ
-              completed: lesson.quiz.progress?.passed || false, // ใช้ข้อมูลจาก API
-              type: 'quiz',
-              duration: lesson.quiz.progress?.passed ? "100%" : "0%", // ใช้ข้อมูลจาก API
-              quiz_id: lesson.quiz.quiz_id
-            });
+          if (!subject) {
+            console.error(`ไม่พบรายวิชารหัส ${subjectId} ในหลักสูตรรหัส ${courseId}`);
+            setLoading(false);
+            return;
           }
           
-          // เพิ่ม section
-          sections.push({
-            id: lesson.lesson_id,
-            subject_id: subject.subject_id,
-            title: `บทที่ ${lessonIndex + 1}: ${lesson.title}`,
-            count: lesson.progress?.overall_completed ? "ผ่าน" : "ไม่ผ่าน", // ใช้ข้อมูลจาก API
-            items: sectionItems,
-            quiz_id: lesson.quiz ? lesson.quiz.quiz_id : undefined
-          });
-        });
-        
-        setLessonData(sections);
-        
-        // ตั้งค่าบทเรียนแรก
-        if (sections.length > 0 && sections[0].items.length > 0) {
-          const firstSection = sections[0];
-          const firstItem = firstSection.items[0];
-          
-          setCurrentLessonId(`${firstSection.id}-${firstItem.id}`);
-          setCurrentLesson(firstItem.title);
-          setCurrentView(firstItem.type);
+          setCurrentSubjectTitle(subject.title); // เก็บชื่อวิชา
           setCurrentSubjectId(subject.subject_id);
           
-          setCurrentLessonData({
-            ...firstItem,
-            quiz_id: firstSection.quiz_id
-          });
-          
-          // ตั้งค่า YouTube ID จาก URL
-          if (firstItem.video_url) {
-            const videoId = extractYoutubeId(firstItem.video_url);
-            if (videoId) setYoutubeId(videoId);
-          }
-          
-          // ตั้งค่าข้อมูลแบบทดสอบ
-          if (firstSection.quiz_id) {
-            const firstLesson = subject.lessons[0];
-            if (firstLesson.quiz) {
-              setCurrentQuizData(firstLesson.quiz);
+          // ตรวจสอบว่ามีบทเรียนหรือไม่
+          if (subject.lessons && subject.lessons.length > 0) {
+            // สร้าง section สำหรับแต่ละบทเรียน (lesson)
+            subject.lessons.forEach((lesson: any, lessonIndex: number) => {
+              // สร้าง section สำหรับบทเรียน
+              const sectionItems: LessonItem[] = [];
+              
+              // เพิ่มรายการวิดีโอ
+              sectionItems.push({
+                id: 0,
+                lesson_id: lesson.lesson_id,
+                title: `${lessonIndex + 1}.1 เนื้อหาวิดีโอ`,
+                lock: false,
+                completed: lesson.progress?.video_completed || false, // ใช้ข้อมูลจาก API
+                type: 'video',
+                duration: lesson.progress?.video_completed ? "100%" : "0%", // ใช้ข้อมูลจาก API
+                video_url: lesson.video_url,
+                quiz_id: lesson.quiz ? lesson.quiz.quiz_id : undefined
+              });
+              
+              // เพิ่มรายการแบบทดสอบ (ถ้ามี)
+              if (lesson.quiz) {
+                sectionItems.push({
+                  id: 1,
+                  lesson_id: lesson.lesson_id,
+                  title: `${lessonIndex + 1}.2 แบบทดสอบท้ายบท`,
+                  lock: !lesson.progress?.video_completed, // ล็อคถ้ายังไม่ดูวิดีโอจบ
+                  completed: lesson.quiz.progress?.passed || false, // ใช้ข้อมูลจาก API
+                  type: 'quiz',
+                  duration: lesson.quiz.progress?.passed ? "100%" : "0%", // ใช้ข้อมูลจาก API
+                  quiz_id: lesson.quiz.quiz_id
+                });
+              }
+              
+              // เพิ่ม section
+              sections.push({
+                id: lesson.lesson_id,
+                subject_id: subject.subject_id,
+                title: `บทที่ ${lessonIndex + 1}: ${lesson.title}`,
+                count: lesson.progress?.overall_completed ? "ผ่าน" : "ไม่ผ่าน", // ใช้ข้อมูลจาก API
+                items: sectionItems,
+                quiz_id: lesson.quiz ? lesson.quiz.quiz_id : undefined
+              });
+            });
+            
+            setLessonData(sections);
+            
+            // ตั้งค่าบทเรียนแรก
+            if (sections.length > 0 && sections[0].items.length > 0) {
+              const firstSection = sections[0];
+              const firstItem = firstSection.items[0];
+              
+              setCurrentLessonId(`${firstSection.id}-${firstItem.id}`);
+              setCurrentLesson(firstItem.title);
+              setCurrentView(firstItem.type);
+              
+              setCurrentLessonData({
+                ...firstItem,
+                quiz_id: firstSection.quiz_id
+              });
+              
+              // ตั้งค่า YouTube ID จาก URL
+              if (firstItem.video_url) {
+                const videoId = extractYoutubeId(firstItem.video_url);
+                if (videoId) setYoutubeId(videoId);
+              }
+              
+              // ตั้งค่าข้อมูลแบบทดสอบ
+              if (firstSection.quiz_id) {
+                const firstLesson = subject.lessons[0];
+                if (firstLesson.quiz) {
+                  setCurrentQuizData(firstLesson.quiz);
+                }
+              }
             }
+          } else {
+            console.log("ไม่พบบทเรียนในวิชานี้");
           }
+        } else {
+          console.log("ไม่พบวิชาในหลักสูตรนี้");
         }
+      } else {
+        console.error("ไม่สามารถโหลดข้อมูลหลักสูตรได้");
       }
     } catch (error) {
       console.error("Error fetching course data:", error);
@@ -192,39 +212,43 @@ useEffect(() => {
   };
   
   fetchCourseData();
-}, [courseId]);
+}, [courseId, subjectId]); // เพิ่ม subjectId ใน dependencies
+
+
 
 
   
   // โหลดความคืบหน้าของวิชาเมื่อมีการเปลี่ยนวิชา
-  useEffect(() => {
-    const fetchSubjectProgress = async () => {
-      if (!currentSubjectId) return;
-      
-      try {
-        // แก้ไขการเรียก API โดยใช้ API_URL จาก .env
-        const response = await axios.get(`${API_URL}/api/learn/subject/${currentSubjectId}/progress`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`
-          }
-        });
-        
-        if (response.data.success) {
-          const { progressPercentage, completedLessons } = response.data;
-          
-          setProgress(progressPercentage);
-          setCompletedCount(completedLessons);
-          
-          // อัปเดตสถานะการเรียนจบของแต่ละบทเรียน
-          updateLessonCompletionStatus();
-        }
-      } catch (error) {
-        console.error("Error fetching subject progress:", error);
-      }
-    };
+ // โหลดความคืบหน้าของวิชาเมื่อมีการเปลี่ยนวิชา
+useEffect(() => {
+  const fetchSubjectProgress = async () => {
+    if (!currentSubjectId) return;
     
-    fetchSubjectProgress();
-  }, [currentSubjectId, completedCount]);
+    try {
+      // แก้ไขการเรียก API โดยใช้ API_URL จาก .env
+      const response = await axios.get(`${API_URL}/api/learn/subject/${currentSubjectId}/progress`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (response.data.success) {
+        const { progressPercentage, completedLessons } = response.data;
+        
+        setProgress(progressPercentage);
+        setCompletedCount(completedLessons);
+        
+        // อัปเดตสถานะการเรียนจบของแต่ละบทเรียน
+        updateLessonCompletionStatus();
+      }
+    } catch (error) {
+      console.error("Error fetching subject progress:", error);
+    }
+  };
+  
+  fetchSubjectProgress();
+}, [currentSubjectId, completedCount]);
+
   
   // ฟังก์ชันสกัด YouTube ID จาก URL
   const extractYoutubeId = (url: string): string | null => {
@@ -275,39 +299,45 @@ useEffect(() => {
   };
   
   // ฟังก์ชันเมื่อบทเรียนเสร็จสิ้น
-  const handleLessonComplete = () => {
-    // แยก section ID และ item ID
-    const [sectionId, itemId] = currentLessonId.split('-').map(Number);
-    
-    // อัปเดตสถานะการเรียนเป็นเสร็จสิ้น
-    const updatedData = lessonData.map(section => {
-      if (section.id === sectionId) {
-        const updatedItems = section.items.map(item => {
-          if (item.id === itemId) {
-            return {
-              ...item,
-              completed: true,
-              duration: "100%"
-            };
-          }
-          return item;
-        });
-        
-        return {
-          ...section,
-          items: updatedItems
-        };
-      }
-      return section;
-    });
-    
-    setLessonData(updatedData);
-    // เพิ่มจำนวนบทเรียนที่เรียนจบ
-    setCompletedCount(prev => prev + 1);
-    
-    // หาบทเรียนถัดไปที่ควรเรียน
-    findAndSetNextLesson(sectionId, itemId, updatedData);
-  };
+ // แก้ไขฟังก์ชัน handleLessonComplete
+const handleLessonComplete = () => {
+  // แยก section ID และ item ID
+  const [sectionId, itemId] = currentLessonId.split('-').map(Number);
+  
+  // อัปเดตสถานะการเรียนเป็นเสร็จสิ้น
+  const updatedData = lessonData.map(section => {
+    if (section.id === sectionId) {
+      const updatedItems = section.items.map(item => {
+        if (item.id === itemId) {
+          return {
+            ...item,
+            completed: true,
+            duration: "100%"
+          };
+        }
+        return item;
+      });
+      
+      return {
+        ...section,
+        items: updatedItems
+      };
+    }
+    return section;
+  });
+  
+  setLessonData(updatedData);
+  // เพิ่มจำนวนบทเรียนที่เรียนจบ
+  setCompletedCount(prev => prev + 1);
+  
+  // ไม่ต้องเรียก findAndSetNextLesson ทันที
+  if (currentView === 'quiz') {
+    // ไม่ต้องทำอะไร ปล่อยให้ LessonQuiz จัดการแสดง modal เอง
+  } else {
+
+  }
+};
+
   
   // ฟังก์ชันค้นหาและตั้งค่าบทเรียนถัดไป
   const findAndSetNextLesson = (currentSectionId: number, currentItemId: number, updatedData: SectionData[]) => {
@@ -319,7 +349,7 @@ useEffect(() => {
     const currentSection = updatedData.find(s => s.id === currentSectionId);
     if (currentSection) {
       for (let i = 0; i < currentSection.items.length; i++) {
-        if (i > currentItemId && !currentSection.items[i].completed && !currentSection.items[i].lock) {
+        if (i > currentItemId && !currentSection.items[i].lock) {
           nextItemId = i;
           foundNext = true;
           break;
@@ -333,52 +363,52 @@ useEffect(() => {
         const section = updatedData[s];
         if (section.id === currentSectionId) continue; // ข้ามส่วนปัจจุบัน
         
-               // ค้นหาบทเรียนถัดไปที่ยังไม่เสร็จและไม่ล็อค
-               for (let i = 0; i < section.items.length; i++) {
-                if (!section.items[i].completed && !section.items[i].lock) {
-                  nextSectionId = section.id;
-                  nextItemId = i;
-                  foundNext = true;
-                  break;
-                }
-              }
-              
-              if (foundNext) break;
-            }
+        // ค้นหาบทเรียนถัดไปที่ไม่ล็อค
+        for (let i = 0; i < section.items.length; i++) {
+          if (!section.items[i].lock) {
+            nextSectionId = section.id;
+            nextItemId = i;
+            foundNext = true;
+            break;
           }
-          
-          // ถ้าพบบทเรียนถัดไป ให้เลือกบทเรียนนั้น
-          if (foundNext) {
-            const nextSection = updatedData.find(s => s.id === nextSectionId);
-            if (nextSection) {
-              const nextItem = nextSection.items[nextItemId];
-              setCurrentLessonId(`${nextSectionId}-${nextItemId}`);
-              setCurrentLesson(nextItem.title);
-              setCurrentView(nextItem.type);
-              setCurrentSubjectId(nextSection.subject_id);
-              
-              setCurrentLessonData({
-                ...nextItem,
-                quiz_id: nextItem.type === 'quiz' ? nextItem.quiz_id : nextSection.quiz_id
-              });
-              
-              // ตั้งค่า YouTube ID จาก URL
-              if (nextItem.type === 'video' && nextItem.video_url) {
-                const videoId = extractYoutubeId(nextItem.video_url);
-                if (videoId) setYoutubeId(videoId);
-              }
-              
-              // ตั้งค่าข้อมูลแบบทดสอบ
-              if (courseData && nextItem.type === 'quiz' && nextItem.quiz_id) {
-                // หา lesson ที่ตรงกับ nextSectionId (lesson_id)
-                const lesson = courseData.subjects[0].lessons.find(l => l.lesson_id === nextSectionId);
-                if (lesson && lesson.quiz) {
-                  setCurrentQuizData(lesson.quiz);
-                }
-              }
-            }
+        }
+        
+        if (foundNext) break;
+      }
+    }
+    
+    // ถ้าพบบทเรียนถัดไป ให้เลือกบทเรียนนั้น
+    if (foundNext) {
+      const nextSection = updatedData.find(s => s.id === nextSectionId);
+      if (nextSection) {
+        const nextItem = nextSection.items[nextItemId];
+        setCurrentLessonId(`${nextSectionId}-${nextItemId}`);
+        setCurrentLesson(nextItem.title);
+        setCurrentView(nextItem.type);
+        setCurrentSubjectId(nextSection.subject_id);
+        
+        setCurrentLessonData({
+          ...nextItem,
+          quiz_id: nextItem.type === 'quiz' ? nextItem.quiz_id : nextSection.quiz_id
+        });
+        
+        // ตั้งค่า YouTube ID จาก URL
+        if (nextItem.type === 'video' && nextItem.video_url) {
+          const videoId = extractYoutubeId(nextItem.video_url);
+          if (videoId) setYoutubeId(videoId);
+        }
+        
+        // ตั้งค่าข้อมูลแบบทดสอบ
+        if (courseData && nextItem.type === 'quiz' && nextItem.quiz_id) {
+          // หา lesson ที่ตรงกับ nextSectionId (lesson_id)
+          const lesson = courseData.subjects[0].lessons.find(l => l.lesson_id === nextSectionId);
+          if (lesson && lesson.quiz) {
+            setCurrentQuizData(lesson.quiz);
           }
-        };
+        }
+      }
+    }
+  };
         
         // ตรวจสอบว่าบทเรียนปัจจุบันเรียนจบแล้วหรือไม่
         const getCurrentLessonCompleted = () => {
@@ -440,9 +470,30 @@ useEffect(() => {
         // ใช้ useRef เพื่อติดตามการ render ครั้งแรก
 
       
-        if (loading) {
-          return <div className="loading">กำลังโหลด...</div>;
-        }
+        // แก้ไขส่วนการแสดงผลขณะโหลด
+if (loading) {
+  return (
+    <section className="lesson__area section-pb-120">
+      <div className="container-fluid">
+        <div className="lesson-loading-container">
+          <div className="lesson-loading-content">
+            <div className="spinner-container">
+              <div className="spinner-border-lg"></div>
+            </div>
+            <h3 className="loading-title">กำลังโหลดบทเรียน</h3>
+            <p className="loading-text">กรุณารอสักครู่ ระบบกำลังเตรียมเนื้อหาบทเรียนให้คุณ...</p>
+            <div className="loading-progress">
+              <div className="loading-bar">
+                <div className="loading-bar-progress"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
       
         return (
           <section className="lesson__area section-pb-120">
@@ -477,23 +528,30 @@ useEffect(() => {
                 {/* Main Content */}
                 <div className="col-xl-9 col-lg-8 lesson__main">
                   <div className="lesson__video-wrap">
-                    {currentView === 'quiz' ? (
-                      <LessonQuiz 
-                        onComplete={handleLessonComplete} 
-                        isCompleted={getCurrentLessonCompleted()}
-                        quizId={currentLessonData?.quiz_id || 0}
-                        quizData={currentQuizData?.questions || []}
-                      />
-                    ) : (
-                      <LessonVideo
-                        onComplete={handleLessonComplete}
-                        currentLesson={currentLesson}
-                        youtubeId={youtubeId}
-                        lessonId={currentLessonData?.lesson_id || 0}
-                      />
-                    )}
+         
+{currentView === 'quiz' ? (
+  <LessonQuiz 
+    onComplete={handleLessonComplete} 
+    isCompleted={getCurrentLessonCompleted()}
+    quizId={currentLessonData?.quiz_id || 0}
+    quizData={currentQuizData?.questions || []}
+  />
+) : (
+  <LessonVideo
+    onComplete={handleLessonComplete}
+    currentLesson={currentLesson}
+    youtubeId={youtubeId}
+    lessonId={currentLessonData?.lesson_id || 0}
+    onNextLesson={findAndSetNextLesson.bind(null, 
+      parseInt(currentLessonId.split('-')[0]), 
+      parseInt(currentLessonId.split('-')[1]), 
+      lessonData
+    )}
+  />
+)}
+
                   </div>
-                  // In the return statement, update the LessonNavTav component:
+               
 <div className="lesson__nav-tab fixed-nav-tab">
   <LessonNavTav 
     description={courseData?.description || ""}

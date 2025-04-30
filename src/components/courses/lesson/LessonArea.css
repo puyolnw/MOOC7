@@ -481,3 +481,525 @@
     font-size: 11px;
     color: #6c757d;
   }  
+
+/* เพิ่ม CSS สำหรับหน้าโหลด */
+.lesson-loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 70vh;
+  width: 100%;
+}
+
+.lesson-loading-content {
+    text-align: center;
+    background-color: white;
+    border-radius: 12px;
+    padding: 40px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    max-width: 500px;
+    width: 100%;
+  }
+  
+  .spinner-container {
+    margin-bottom: 25px;
+  }
+  
+  .spinner-border-lg {
+    display: inline-block;
+    width: 60px;
+    height: 60px;
+    border: 4px solid rgba(63, 120, 224, 0.2);
+    border-radius: 50%;
+    border-top-color: #3f78e0;
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  
+  .loading-title {
+    font-size: 24px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 15px;
+  }
+  
+  .loading-text {
+    color: #6c757d;
+    margin-bottom: 25px;
+    font-size: 16px;
+  }
+  
+  .loading-progress {
+    width: 100%;
+    margin-top: 10px;
+  }
+  
+  .loading-bar {
+    height: 6px;
+    background-color: #e9ecef;
+    border-radius: 3px;
+    overflow: hidden;
+    position: relative;
+  }
+  
+  .loading-bar-progress {
+    position: absolute;
+    height: 100%;
+    background: linear-gradient(90deg, #3f78e0, #5a94ff);
+    border-radius: 3px;
+    width: 30%;
+    animation: loading-animation 1.5s infinite ease-in-out;
+  }
+  
+  @keyframes loading-animation {
+    0% {
+      left: -30%;
+      width: 30%;
+    }
+    50% {
+      width: 50%;
+    }
+    100% {
+      left: 100%;
+      width: 30%;
+    }
+  }
+  
+  /* เพิ่ม animation ให้กับองค์ประกอบต่างๆ */
+  .lesson-loading-content {
+    animation: fadeIn 0.5s ease;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  /* ปรับแต่งสำหรับหน้าจอขนาดเล็ก */
+  @media (max-width: 576px) {
+    .lesson-loading-content {
+      padding: 25px;
+    }
+    
+    .spinner-border-lg {
+      width: 50px;
+      height: 50px;
+    }
+    
+    .loading-title {
+      font-size: 20px;
+    }
+    
+    .loading-text {
+      font-size: 14px;
+    }
+  }
+  
+  /* เพิ่ม CSS สำหรับ Video Completion Modal */
+  .video-completion-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    animation: fadeIn 0.3s ease;
+  }
+  
+  .video-completion-modal-content {
+    background-color: white;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+    animation: slideUp 0.4s ease;
+  }
+  
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(50px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  .video-completion-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 25px;
+    border-bottom: 1px solid #e9ecef;
+  }
+  
+  .video-completion-header h4 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #333;
+    margin: 0;
+  }
+  
+  .close-button {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: #6c757d;
+    cursor: pointer;
+    transition: color 0.2s;
+  }
+  
+  .close-button:hover {
+    color: #343a40;
+  }
+  
+  .video-completion-body {
+    padding: 30px 25px;
+    text-align: center;
+  }
+  
+  .completion-icon {
+    font-size: 60px;
+    color: #28a745;
+    margin-bottom: 20px;
+    animation: pulse 1.5s infinite;
+  }
+  
+  @keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+  }
+  
+  .video-completion-body h5 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 15px;
+  }
+  
+  .video-completion-body p {
+    color: #6c757d;
+    margin-bottom: 25px;
+  }
+  
+  .video-completion-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+  }
+  
+  .btn-rewatch, .btn-next-lesson {
+    padding: 12px 25px;
+    border-radius: 50px;
+    font-weight: 500;
+    font-size: 15px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  
+  .btn-rewatch {
+    background-color: #f8f9fa;
+    color: #495057;
+    border: 1px solid #ced4da;
+  }
+  
+  .btn-rewatch:hover {
+    background-color: #e9ecef;
+    transform: translateY(-2px);
+  }
+  
+  .btn-next-lesson {
+    background-color: #3f78e0;
+    color: white;
+    box-shadow: 0 4px 10px rgba(63, 120, 224, 0.3);
+  }
+  
+  .btn-next-lesson:hover {
+    background-color: #3567c3;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(63, 120, 224, 0.4);
+  }
+  
+  /* ปรับแต่งสำหรับหน้าจอขนาดเล็ก */
+  @media (max-width: 576px) {
+    .video-completion-modal-content {
+      width: 95%;
+    }
+    
+    .video-completion-header {
+      padding: 15px 20px;
+    }
+    
+    .video-completion-header h4 {
+      font-size: 18px;
+    }
+    
+    .video-completion-body {
+      padding: 20px;
+    }
+    
+    .completion-icon {
+      font-size: 50px;
+    }
+    
+    .video-completion-body h5 {
+      font-size: 16px;
+    }
+    
+    .video-completion-buttons {
+      flex-direction: column;
+      gap: 10px;
+    }
+    
+    .btn-rewatch, .btn-next-lesson {
+      width: 100%;
+      padding: 10px 20px;
+    }
+  }
+  
+  /* เพิ่ม CSS สำหรับปุ่มควบคุมเพิ่มเติม */
+  .video-additional-controls {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 20px;
+  }
+  
+  .btn-rewatch-inline, .btn-next-lesson-inline {
+    padding: 10px 20px;
+    border-radius: 50px;
+    font-weight: 500;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  
+  .btn-rewatch-inline {
+    background-color: #f8f9fa;
+    color: #495057;
+    border: 1px solid #ced4da;
+  }
+  
+  .btn-rewatch-inline:hover {
+    background-color: #e9ecef;
+    transform: translateY(-2px);
+  }
+  
+  .btn-next-lesson-inline {
+    background-color: #3f78e0;
+    color: white;
+    box-shadow: 0 4px 10px rgba(63, 120, 224, 0.3);
+  }
+  
+  .btn-next-lesson-inline:hover {
+    background-color: #3567c3;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(63, 120, 224, 0.4);
+  }
+  
+  /* เพิ่ม CSS สำหรับ Quiz Completion Modal */
+  .quiz-completion-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    animation: fadeIn 0.3s ease;
+  }
+  
+  .quiz-completion-modal-content {
+    background-color: white;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+    animation: slideUp 0.4s ease;
+  }
+  
+  .quiz-completion-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 25px;
+    border-bottom: 1px solid #e9ecef;
+    background-color: #f8f9fa;
+  }
+  
+  .quiz-completion-header h4 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #28a745;
+    margin: 0;
+  }
+  
+  .quiz-completion-body {
+    padding: 30px 25px;
+    text-align: center;
+  }
+  
+  .quiz-completion-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 20px;
+  }
+  
+  .btn-retry {
+    background-color: #f8f9fa;
+    color: #495057;
+    border: 1px solid #ced4da;
+    padding: 12px 25px;
+    border-radius: 50px;
+    font-weight: 500;
+    font-size: 15px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  
+  .btn-retry:hover {
+    background-color: #e9ecef;
+    transform: translateY(-2px);
+  }
+  
+  /* เพิ่ม CSS สำหรับหน้า Quiz Completed */
+  .quiz-completed-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 400px;
+    width: 100%;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+  }
+  
+  .quiz-completed-message {
+    text-align: center;
+    padding: 30px;
+    max-width: 500px;
+  }
+  
+  .quiz-completed-message i {
+    font-size: 60px;
+    color: #28a745;
+    margin-bottom: 20px;
+    display: block;
+  }
+  
+  .quiz-completed-message h3 {
+    font-size: 24px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 15px;
+  }
+  
+  .quiz-completed-message p {
+    color: #6c757d;
+    margin-bottom: 25px;
+    font-size: 16px;
+  }
+  
+  .quiz-completed-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+  }
+  
+  /* เพิ่ม CSS สำหรับหน้า Quiz Result */
+  .quiz-result-container {
+    padding: 30px;
+    text-align: center;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  }
+  
+  .quiz-result-container h3 {
+    font-size: 24px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 25px;
+  }
+  
+  .quiz-score {
+    margin-bottom: 30px;
+  }
+  
+  .score-circle {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 30px;
+    font-weight: 700;
+    margin: 0 auto 20px;
+  }
+  
+  .score-circle.passed {
+    background-color: rgba(40, 167, 69, 0.1);
+    color: #28a745;
+    border: 3px solid #28a745;
+  }
+  
+  .score-circle.failed {
+    background-color: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+    border: 3px solid #dc3545;
+  }
+  
+  .score-text {
+    font-size: 18px;
+    color: #6c757d;
+    margin-bottom: 10px;
+  }
+  
+  .result-status {
+    font-size: 20px;
+    font-weight: 600;
+    padding: 5px 15px;
+    border-radius: 20px;
+    display: inline-block;
+  }
+  
+  .result-status.passed {
+    background-color: rgba(40, 167, 69, 0.1);
+    color: #28a745;
+  }
+  
+  .result-status.failed {
+    background-color: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+  }
+  
+  .quiz-result-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 30px;
+  }
+  
