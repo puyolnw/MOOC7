@@ -4,7 +4,8 @@ interface Instructor {
   instructor_id: number;
   name: string;
   position: string;
-  avatar: string;
+  avatar_path?: string | null; 
+  avatar_file_id?: string | null; 
   bio: string;
 }
 
@@ -16,6 +17,7 @@ const Instructors = ({ instructors }: InstructorsProps) => {
   const apiURL = import.meta.env.VITE_API_URL;
 
   return (
+    console.log(instructors),
     <div className="courses__instructors-wrap">
       <h3 className="title">อาจารย์ผู้สอน</h3>
       
@@ -26,7 +28,11 @@ const Instructors = ({ instructors }: InstructorsProps) => {
               <div className="team__item-two">
                 <div className="team__thumb-two">
                   <img 
-                    src={instructor.avatar ? `${apiURL}/${instructor.avatar}` : "/assets/img/team/team_img01.jpg"} 
+                    src={
+                      instructor.avatar_file_id
+                        ? `${apiURL}/api/accounts/instructors/avatar/${instructor.avatar_file_id}`
+                        : "/assets/img/courses/course_thumb01.jpg"
+                    } 
                     alt={instructor.name} 
                   />
                 </div>

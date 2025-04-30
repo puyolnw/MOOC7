@@ -1,10 +1,11 @@
-import { Link } from "react-router-dom"
+import { Link } from "react-router-dom";
 
 interface Instructor {
   instructor_id: number;
   name: string;
   position: string;
-  avatar?: string;
+  avatar_path?: string | null; 
+  avatar_file_id?: string | null; 
   bio?: string;
 }
 
@@ -12,8 +13,11 @@ interface InstructorsProps {
   instructors: Instructor[];
 }
 
+const apiURL = import.meta.env.VITE_API_URL;
+
 const Instructors = ({ instructors }: InstructorsProps) => {
   return (
+    console.log(instructors),
     <div className="instructors-section p-6">
       <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
         <span className="bg-primary-100 p-2 rounded-full">
@@ -32,9 +36,16 @@ const Instructors = ({ instructors }: InstructorsProps) => {
               <div className="flex flex-col items-center">
                 <div className="relative mb-4">
                   <img
-                    src={instructor.avatar || "/assets/img/courses/course_instructors.png"}
+                    src={
+                      instructor.avatar_file_id
+                        ? `${apiURL}/api/accounts/instructors/avatar/${instructor.avatar_file_id}`
+                        : "/assets/img/courses/course_thumb01.jpg"
+                    }
                     alt={instructor.name}
-                    className="w-24 h-24 rounded-full object-cover border-4 border-primary-100"
+                    className="w-24 h-24 object-cover border-4 border-primary-100"
+                    onError={(e) => {
+                      e.currentTarget.src = "/assets/img/courses/course_thumb01.jpg"; // Fallback on error
+                    }}
                   />
                   <span className="absolute bottom-0 right-0 bg-green-500 p-1.5 rounded-full">
                     <i className="fas fa-check text-white text-xs"></i>
@@ -57,9 +68,9 @@ const Instructors = ({ instructors }: InstructorsProps) => {
 
                 <div className="flex gap-4 mt-6">
                   {[
-                    { icon: 'facebook-f', color: 'hover:bg-blue-600' },
-                    { icon: 'twitter', color: 'hover:bg-sky-500' },
-                    { icon: 'instagram', color: 'hover:bg-pink-600' }
+                    { icon: "facebook-f", color: "hover:bg-blue-600" },
+                    { icon: "twitter", color: "hover:bg-sky-500" },
+                    { icon: "instagram", color: "hover:bg-pink-600" },
                   ].map((social, index) => (
                     <Link
                       key={index}
@@ -81,7 +92,7 @@ const Instructors = ({ instructors }: InstructorsProps) => {
         </div>
       )}
     </div>
-  )
-}
+  );
+};
 
-export default Instructors
+export default Instructors;

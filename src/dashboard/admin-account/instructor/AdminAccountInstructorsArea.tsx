@@ -46,6 +46,7 @@ const SimplePagination: React.FC<PaginationProps> = ({ currentPage, totalPages, 
   );
 
   return (
+    
     <nav aria-label="Page navigation">
       <ul className="pagination mb-0">
         <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
@@ -180,8 +181,7 @@ const AdminAccountInstructorsArea: React.FC = () => {
           },
         });
   
-        // Update this condition to match backend response
-        if (response.data.message === "Instructor deleted successfully") {
+        if (response.data.success) {
           setInstructors(prev => prev.filter(instructor => instructor.instructor_id !== instructorId));
           setFilteredInstructors(prev => prev.filter(instructor => instructor.instructor_id !== instructorId));
           toast.success("ลบผู้สอนสำเร็จ");
@@ -311,7 +311,7 @@ const AdminAccountInstructorsArea: React.FC = () => {
                               <td>
                                 <div className="d-flex justify-content-center gap-3">
                                   <Link
-                                    to={`/admin-account/instructors/edit/${instructor.instructor_id}`}
+                                    to={`/admin-account/instructors/edit-instructor/${instructor.instructor_id}`}
                                     className="text-primary"
                                     style={{ display: "inline-flex", alignItems: "center" }}
                                   >

@@ -333,10 +333,10 @@ const EditSubject: React.FC = () => {
         name === "credits"
           ? Number(value)
           : name === "departmentId"
-          ? value === ""
-            ? null
-            : Number(value)
-          : value,
+            ? value === ""
+              ? null
+              : Number(value)
+            : value,
     }));
 
     if (name in errors) {
@@ -1195,20 +1195,18 @@ const EditSubject: React.FC = () => {
                         return (
                           <div
                             key={lesson.id}
-                            className={`list-group-item list-group-item-action d-flex justify-content-between align-items-center ${
-                              isSelected ? "bg-light" : ""
-                            }`}
+                            className={`list-group-item list-group-item-action d-flex justify-content-between align-items-center ${isSelected ? "bg-light" : ""
+                              }`}
                           >
                             <div>
                               <h6 className="mb-0">{lesson.title}</h6>
                             </div>
                             <button
                               type="button"
-                              className={`btn btn-sm ${
-                                isSelected
+                              className={`btn btn-sm ${isSelected
                                   ? "btn-success disabled"
                                   : "btn-outline-primary"
-                              }`}
+                                }`}
                               onClick={() => handleAddLesson(lesson.id)}
                               disabled={isSelected}
                             >
