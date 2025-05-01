@@ -9,17 +9,15 @@ import QuizSection from "./QuizSection";
 
 // ข้อมูลบทเรียน
 interface LessonData {
-    title: string;
-    description: string;
-    files: File[];
-    videoUrl: string;
-    canPreview: boolean;
-    hasQuiz: boolean;
-    quizId: string | null;
-    subjects: string[]; // หรือ number[] ถ้า subjectId เป็นตัวเลข
-    status?: string; // เพิ่มฟิลด์ status
-  }
-  
+  title: string;
+  description: string;
+  videoUrl: string;
+  canPreview: boolean;
+  hasQuiz: boolean;
+  quizId: string | null;
+  subjects: string[];
+  status: string;
+}
 
 // ข้อมูลแบบทดสอบ
 interface Quiz {
@@ -51,48 +49,44 @@ interface AddLessonsProps {
 const AddLessons: React.FC<AddLessonsProps> = ({ onSubmit, onCancel, lessonToEdit }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const apiUrl = import.meta.env.VITE_API_URL;
-  
+
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [apiError, setApiError] = useState<string>("");
   const [apiSuccess, setApiSuccess] = useState<string>("");
-  
+
   const [availableSubjects, setAvailableSubjects] = useState<Subject[]>([]);
   const [availableQuizzes, setAvailableQuizzes] = useState<Quiz[]>([]);
-  
+
   const [lessonData, setLessonData] = useState<LessonData>({
     title: "",
     description: "",
-    files: [],
     videoUrl: "",
     canPreview: false,
     hasQuiz: false,
     quizId: null,
     subjects: [],
-    status: "active" // เพิ่มค่าเริ่มต้นเป็น active
+    status: "active",
   });
-  
+
   const [errors, setErrors] = useState({
     title: "",
     content: "",
     videoUrl: "",
     files: "",
-    quiz: ""
+    quiz: "",
   });
-  
+
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [existingFiles, setExistingFiles] = useState<any[]>([]);
   const [filesToRemove, setFilesToRemove] = useState<string[]>([]);
-  
+
   const [showQuizModal, setShowQuizModal] = useState(false);
   const [showCreateQuizModal, setShowCreateQuizModal] = useState(false);
 
-  
-  const [subjectSearchTerm] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
-  
   const [selectedQuiz, setSelectedQuiz] = useState<Quiz | null>(null);
-  
+
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
@@ -102,99 +96,42 @@ const AddLessons: React.FC<AddLessonsProps> = ({ onSubmit, onCancel, lessonToEdi
           toast.error("กรุณาเข้าสู่ระบบก่อนใช้งาน");
           return;
         }
-        
-        // เรียกใช้ endpoint ที่มีอยู่จริงในระบบ
-        try {
-          const subjectsResponse = await axios.get(`${apiUrl}/api/courses/lessons/subjects/all`, {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
-          });
-          
-          if (subjectsResponse.data.success) {
-            const subjects = subjectsResponse.data.subjects.map((subject: any) => ({
-              id: subject.subject_id,
-              title: subject.subject_name,
-              category: subject.department || "ไม่ระบุ",
-              credits: subject.credits || 0,
-              subject_id: subject.subject_id,
-              subject_name: subject.subject_name,
-              subject_code: subject.subject_code,
-              department: subject.department
-            }));
-            setAvailableSubjects(subjects);
-          }
-        } catch (error) {
-          console.error("Error fetching subjects:", error);
-          // ถ้า endpoint แรกไม่ทำงาน ให้ลองใช้ endpoint สำรอง
-          try {
-            const fallbackResponse = await axios.get(`${apiUrl}/api/courses/subjects/available`, {
-              headers: {
-                Authorization: `Bearer ${token}`
-              }
-            });
-            
-            if (fallbackResponse.data.success) {
-              const subjects = fallbackResponse.data.subjects.map((subject: any) => ({
-                id: subject.subject_id,
-                title: subject.subject_name || subject.title,
-                category: subject.department || "ไม่ระบุ",
-                credits: subject.credits || 0,
-                subject_id: subject.subject_id,
-                subject_name: subject.subject_name || subject.title,
-                subject_code: subject.subject_code,
-                department: subject.department
-              }));
-              setAvailableSubjects(subjects);
-            }
-          } catch (fallbackError) {
-            console.error("Error fetching subjects from fallback endpoint:", fallbackError);
-          }
+
+        // Fetch subjects
+        const subjectsResponse = await axios.get(`${apiUrl}/api/courses/lessons/subjects/all`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (subjectsResponse.data.success) {
+          const subjects = subjectsResponse.data.subjects.map((subject: any) => ({
+            id: subject.subject_id,
+            title: subject.subject_name,
+            category: subject.department || "ไม่ระบุ",
+            credits: subject.credits || 0,
+            subject_id: subject.subject_id,
+            subject_name: subject.subject_name,
+            subject_code: subject.subject_code,
+            department: subject.department,
+          }));
+          setAvailableSubjects(subjects);
         }
-        
-        // ทำแบบเดียวกันกับ quizzes
-        try {
-          const quizzesResponse = await axios.get(`${apiUrl}/api/courses/lessons/quizzes/all`, {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
-          });
-          
-          if (quizzesResponse.data.success) {
-            const quizzes = quizzesResponse.data.quizzes.map((quiz: any) => ({
-              id: quiz.quiz_id,
-              title: quiz.title,
-              description: quiz.description,
-              questions: quiz.question_count,
-              type: quiz.type
-            }));
-            setAvailableQuizzes(quizzes);
-          }
-        } catch (error) {
-          console.error("Error fetching quizzes:", error);
-          // ถ้า endpoint แรกไม่ทำงาน ให้ลองใช้ endpoint สำรอง
-          try {
-            const fallbackResponse = await axios.get(`${apiUrl}/api/courses/quizzes`, {
-              headers: {
-                Authorization: `Bearer ${token}`
-              }
-            });
-            
-            if (fallbackResponse.data.success) {
-              const quizzes = fallbackResponse.data.quizzes.map((quiz: any) => ({
-                id: quiz.quiz_id,
-                title: quiz.title,
-                description: quiz.description,
-                questions: quiz.question_count || 0,
-                type: quiz.type || "general"
-              }));
-              setAvailableQuizzes(quizzes);
-            }
-          } catch (fallbackError) {
-            console.error("Error fetching quizzes from fallback endpoint:", fallbackError);
-          }
+
+        // Fetch quizzes
+        const quizzesResponse = await axios.get(`${apiUrl}/api/courses/lessons/quizzes/all`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (quizzesResponse.data.success) {
+          const quizzes = quizzesResponse.data.quizzes.map((quiz: any) => ({
+            id: quiz.quiz_id,
+            title: quiz.title,
+            description: quiz.description,
+            questions: quiz.question_count,
+            type: quiz.type,
+          }));
+          setAvailableQuizzes(quizzes);
         }
-        
+
         if (lessonToEdit) {
           loadLessonData(lessonToEdit);
         }
@@ -205,10 +142,10 @@ const AddLessons: React.FC<AddLessonsProps> = ({ onSubmit, onCancel, lessonToEdi
         setIsLoading(false);
       }
     };
-    
+
     fetchData();
   }, [apiUrl, lessonToEdit]);
-  
+
   const loadLessonData = async (lessonId: string) => {
     try {
       const token = localStorage.getItem("token");
@@ -216,40 +153,43 @@ const AddLessons: React.FC<AddLessonsProps> = ({ onSubmit, onCancel, lessonToEdi
         toast.error("กรุณาเข้าสู่ระบบก่อนใช้งาน");
         return;
       }
-      
+
       const response = await axios.get(`${apiUrl}/api/courses/lessons/${lessonId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
+        headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       if (response.data.success) {
         const lesson = response.data.lesson;
-        
-        if (lesson.quiz) {
+
+        if (lesson.quiz_id) {
           setSelectedQuiz({
-            id: lesson.quiz.quiz_id,
-            title: lesson.quiz.title,
-            questions: lesson.quiz.questions,
-            description: lesson.quiz.description,
-            type: lesson.quiz.type
+            id: lesson.quiz_id,
+            title: lesson.quiz_title,
+            questions: lesson.quiz_question_count || 0,
+            description: "",
+            type: lesson.quiz_type || "general",
           });
         }
-        
-        if (lesson.files && lesson.files.length > 0) {
-          setExistingFiles(lesson.files);
+
+        if (lesson.attachments && lesson.attachments.length > 0) {
+          setExistingFiles(lesson.attachments.map((file: any) => ({
+            file_id: file.file_id,
+            file_name: file.title,
+            file_size: file.file_size,
+            file_type: file.file_type,
+            file_url: file.file_url,
+          })));
         }
-        
+
         setLessonData({
           title: lesson.title || "",
           description: lesson.description || "",
-          files: [],
           videoUrl: lesson.video_url || "",
-          canPreview: lesson.can_preview || false,
-          hasQuiz: lesson.has_quiz || false,
+          canPreview: false, // Backend ไม่มีฟิลด์นี้ ปรับตามความเหมาะสม
+          hasQuiz: lesson.quiz_id !== null,
           quizId: lesson.quiz_id || null,
           subjects: lesson.subjects ? lesson.subjects.map((s: any) => s.subject_id) : [],
-          status: lesson.status || "active" // เพิ่มการโหลดค่า status
+          status: lesson.status || "active",
         });
       }
     } catch (error) {
@@ -257,187 +197,125 @@ const AddLessons: React.FC<AddLessonsProps> = ({ onSubmit, onCancel, lessonToEdi
       toast.error("เกิดข้อผิดพลาดในการโหลดข้อมูลบทเรียน");
     }
   };
-  
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setLessonData({
-      ...lessonData,
-      [name]: value
-    });
-    
+    setLessonData({ ...lessonData, [name]: value });
+
     if (name === "title" || name === "videoUrl") {
-      setErrors({
-        ...errors,
-        [name]: ""
-      });
+      setErrors({ ...errors, [name]: "" });
     }
-    
+
     if (name === "videoUrl" && value) {
       validateYoutubeUrl(value);
     }
   };
-  
+
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, checked } = e.target;
-    
+
     if (name === "hasQuiz" && !checked) {
-      setLessonData({
-        ...lessonData,
-        hasQuiz: checked,
-        quizId: null
-      });
+      setLessonData({ ...lessonData, hasQuiz: checked, quizId: null });
       setSelectedQuiz(null);
     } else {
-      setLessonData({
-        ...lessonData,
-        [name]: checked
-      });
+      setLessonData({ ...lessonData, [name]: checked });
     }
   };
-  
+
   const validateYoutubeUrl = (url: string) => {
     if (url === "") {
-      setErrors({
-        ...errors,
-        videoUrl: ""
-      });
+      setErrors({ ...errors, videoUrl: "" });
       return;
     }
-    
-    const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})(?!.*&list=.*)(?!.*&index=.*)/;
+
+    const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
     const match = url.match(youtubeRegex);
-    
+
     if (!match) {
       setErrors({
         ...errors,
-        videoUrl: "URL วิดีโอไม่ถูกต้อง ต้องเป็น URL ของ YouTube ที่มีรูปแบบถูกต้อง (ไม่มีพารามิเตอร์ list หรือ index)"
+        videoUrl: "URL วิดีโอไม่ถูกต้อง ต้องเป็น URL ของ YouTube ที่มีรูปแบบถูกต้อง",
       });
     } else {
-      setErrors({
-        ...errors,
-        videoUrl: ""
-      });
+      setErrors({ ...errors, videoUrl: "" });
     }
   };
-  
+
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
-    
-    if (uploadedFiles.length + existingFiles.length - filesToRemove.length + files.length > 2) {
-      setErrors({
-        ...errors,
-        files: "สามารถอัปโหลดไฟล์ได้สูงสุด 2 ไฟล์"
-      });
-      return;
-    }
-    
+
     const newFiles: File[] = [];
     let hasError = false;
-    
+
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      
-      if (file.size > 2 * 1024 * 1024) {
-        setErrors({
-          ...errors,
-          files: "ขนาดไฟล์ต้องไม่เกิน 2 MB"
-        });
+
+      // Backend อนุญาตไฟล์ขนาดสูงสุด 50MB
+      if (file.size > 50 * 1024 * 1024) {
+        setErrors({ ...errors, files: "ขนาดไฟล์ต้องไม่เกิน 50 MB" });
         hasError = true;
         break;
       }
-      
+
       const fileType = file.name.split('.').pop()?.toLowerCase();
-      if (fileType !== 'pdf' && fileType !== 'txt') {
-        setErrors({
-          ...errors,
-          files: "รองรับเฉพาะไฟล์ PDF และ TXT เท่านั้น"
-        });
+      if (!['pdf', 'doc', 'docx', 'xls', 'xlsx'].includes(fileType || '')) {
+        setErrors({ ...errors, files: "รองรับเฉพาะไฟล์ PDF, DOC, DOCX, XLS และ XLSX เท่านั้น" });
         hasError = true;
         break;
       }
-      
+
       newFiles.push(file);
     }
-    
+
     if (!hasError) {
       setUploadedFiles([...uploadedFiles, ...newFiles]);
-      setLessonData({
-        ...lessonData,
-        files: [...uploadedFiles, ...newFiles]
-      });
-      setErrors({
-        ...errors,
-        files: "",
-        content: ""
-      });
+      setErrors({ ...errors, files: "" });
     }
-    
+
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
   };
-  
+
   const handleRemoveFile = (index: number) => {
     const newFiles = [...uploadedFiles];
     newFiles.splice(index, 1);
     setUploadedFiles(newFiles);
-    setLessonData({
-      ...lessonData,
-      files: newFiles
-    });
   };
-  
+
   const handleRemoveExistingFile = (fileId: string) => {
     setFilesToRemove([...filesToRemove, fileId]);
-    setExistingFiles(existingFiles.filter(file => file.file_id !== fileId));
   };
-  
+
   const handleSelectQuiz = (quizId: string) => {
-    // Find the quiz object using the quizId
     const quiz = availableQuizzes.find(q => q.id === quizId);
-    
     if (quiz) {
       setSelectedQuiz(quiz);
-      setLessonData({
-        ...lessonData,
-        quizId: quiz.id
-      });
+      setLessonData({ ...lessonData, quizId: quiz.id });
       setShowQuizModal(false);
-      
-      setErrors({
-        ...errors,
-        quiz: ""
-      });
+      setErrors({ ...errors, quiz: "" });
     }
   };
-  
+
   const handleToggleSubject = (subjectId: string) => {
     if (lessonData.subjects.includes(subjectId)) {
       setLessonData({
         ...lessonData,
-        subjects: lessonData.subjects.filter(id => id !== subjectId)
+        subjects: lessonData.subjects.filter(id => id !== subjectId),
       });
     } else {
       setLessonData({
         ...lessonData,
-        subjects: [...lessonData.subjects, subjectId]
+        subjects: [...lessonData.subjects, subjectId],
       });
     }
   };
-  
-  const filteredSubjects = availableSubjects.filter(subject => 
-    subject.title?.toLowerCase().includes(subjectSearchTerm.toLowerCase()) || 
-    (subject.category && typeof subject.category === 'string' && subject.category.toLowerCase().includes(subjectSearchTerm.toLowerCase())) ||
-    (subject.subject_code && subject.subject_code.toLowerCase().includes(subjectSearchTerm.toLowerCase()))
-    
-  );
-  console.log(filteredSubjects);
-  
-  const filteredQuizzes = availableQuizzes.filter(quiz => 
+
+  const filteredQuizzes = availableQuizzes.filter(quiz =>
     quiz.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
-  
+
   const validateForm = () => {
     let isValid = true;
     const newErrors = {
@@ -445,147 +323,235 @@ const AddLessons: React.FC<AddLessonsProps> = ({ onSubmit, onCancel, lessonToEdi
       content: "",
       videoUrl: "",
       files: "",
-      quiz: ""
+      quiz: "",
     };
-    
+
     if (lessonData.title.trim() === "") {
       newErrors.title = "กรุณาระบุชื่อบทเรียน";
       isValid = false;
     }
-    
-    // if (lessonData.videoUrl === "" && uploadedFiles.length === 0 && existingFiles.length - filesToRemove.length === 0) {
-    //   newErrors.content = "กรุณาเพิ่มวิดีโอหรืออัปโหลดไฟล์อย่างน้อย 1 รายการ";
-    //   isValid = false;
-    // }
-    
-    // if (lessonData.videoUrl !== "") {
-    //   const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})(?!.*&list=.*)(?!.*&index=.*)/;
-    //   if (!youtubeRegex.test(lessonData.videoUrl)) {
-    //     newErrors.videoUrl = "URL วิดีโอไม่ถูกต้อง ต้องเป็น URL ของ YouTube ที่มีรูปแบบถูกต้อง";
-    //     isValid = false;
-    //   }
-    // }
-    
+
+    if (lessonData.videoUrl !== "") {
+      const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+      if (!youtubeRegex.test(lessonData.videoUrl)) {
+        newErrors.videoUrl = "URL วิดีโอไม่ถูกต้อง ต้องเป็น URL ของ YouTube ที่มีรูปแบบถูกต้อง";
+        isValid = false;
+      }
+    }
+
     if (lessonData.hasQuiz && !lessonData.quizId) {
       newErrors.quiz = "กรุณาเลือกแบบทดสอบ";
       isValid = false;
     }
-    
+
     setErrors(newErrors);
     return isValid;
   };
-  
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (validateForm()) {
-      setIsSubmitting(true);
-      setApiError("");
-      setApiSuccess("");
-      
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) {
-          setApiError("กรุณาเข้าสู่ระบบก่อนใช้งาน");
+
+    if (!validateForm()) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    setApiError("");
+    setApiSuccess("");
+
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setApiError("กรุณาเข้าสู่ระบบก่อนใช้งาน");
+        toast.error("กรุณาเข้าสู่ระบบก่อนใช้งาน");
+        setIsSubmitting(false);
+        return;
+      }
+
+      // อัปโหลดไฟล์ก่อนสร้าง/อัปเดตบทเรียน
+      const fileUploadErrors: string[] = [];
+      let lessonId: string | null = null;
+
+      if (uploadedFiles.length > 0) {
+        // สร้างบทเรียนชั่วคราวเพื่อรับ lessonId สำหรับอัปโหลดไฟล์
+        const tempFormData = new FormData();
+        tempFormData.append("title", lessonData.title);
+        tempFormData.append("description", lessonData.description);
+        tempFormData.append("videoUrl", lessonData.videoUrl);
+        tempFormData.append("status", lessonData.status);
+
+        if (lessonData.hasQuiz && lessonData.quizId) {
+          tempFormData.append("quizId", lessonData.quizId);
+        }
+
+        if (lessonData.subjects && lessonData.subjects.length > 0) {
+          lessonData.subjects.forEach(subjectId => {
+            tempFormData.append("subjects[]", subjectId);
+          });
+        }
+
+        let tempResponse;
+        try {
+          tempResponse = await axios.post(`${apiUrl}/api/courses/lessons`, tempFormData, {
+            headers: {
+              "Content-Type": "multipart/form-data",
+              "Authorization": `Bearer ${token}`,
+            },
+          });
+          lessonId = tempResponse.data.lessonId;
+        } catch (error) {
+          console.error("Error creating temporary lesson:", error);
+          setApiError("เกิดข้อผิดพลาดในการเตรียมการอัปโหลดไฟล์");
+          toast.error("เกิดข้อผิดพลาดในการเตรียมการอัปโหลดไฟล์");
           setIsSubmitting(false);
           return;
         }
-        
-        const formData = new FormData();
-        formData.append("title", lessonData.title);
-        formData.append("description", lessonData.description);
-        formData.append("videoUrl", lessonData.videoUrl);
-        formData.append("status", lessonData.status || "active"); // เพิ่ม status
-        
-        if (lessonData.hasQuiz && lessonData.quizId) {
-          formData.append("quizId", lessonData.quizId);
-        }
-        
-        // แปลงรูปแบบการส่ง subjects ให้ตรงกับที่ backend ต้องการ
-        if (lessonData.subjects && lessonData.subjects.length > 0) {
-          lessonData.subjects.forEach(subjectId => {
-            formData.append("subjects[]", subjectId);
-          });
-        }
-        
-        // ไม่ส่งไฟล์ไปยัง backend
-        // uploadedFiles.forEach(file => {
-        //   formData.append("files", file);
-        // });
-        
-        // ถ้ามีไฟล์ที่ต้องการลบ ให้ส่งเฉพาะ ID ไป
-        if (filesToRemove.length > 0) {
-          filesToRemove.forEach(fileId => {
-            formData.append("filesToRemove[]", fileId);
-          });
-        }
-        
-        let response;
-        
-        if (lessonToEdit) {
-          response = await axios.put(`${apiUrl}/api/courses/lessons/${lessonToEdit}`, formData, {
-            headers: {
-              "Content-Type": "multipart/form-data",
-              "Authorization": `Bearer ${token}`
+
+        // อัปโหลดไฟล์
+        for (const file of uploadedFiles) {
+          const attachmentFormData = new FormData();
+          attachmentFormData.append("file", file);
+          attachmentFormData.append("title", file.name);
+
+          try {
+            await axios.post(`${apiUrl}/api/courses/lessons/${lessonId}/attachments`, attachmentFormData, {
+              headers: {
+                "Content-Type": "multipart/form-data",
+                "Authorization": `Bearer ${token}`,
+              },
+            });
+          } catch (fileError) {
+            console.error(`Error uploading file ${file.name}:`, fileError);
+            let errorMessage = "เกิดข้อผิดพลาดในการอัปโหลดไฟล์";
+            if (axios.isAxiosError(fileError) && fileError.response) {
+              errorMessage = fileError.response.data.message || errorMessage;
             }
-          });
-          
-          setApiSuccess("แก้ไขบทเรียนสำเร็จ");
-          toast.success("แก้ไขบทเรียนสำเร็จ");
-        } else {
+            fileUploadErrors.push(`ไม่สามารถอัปโหลดไฟล์ "${file.name}": ${errorMessage}`);
+          }
+        }
+
+        // หากมีข้อผิดพลาดจากการอัปโหลดไฟล์
+        if (fileUploadErrors.length > 0) {
+          // ลบบทเรียนชั่วคราว
+          if (lessonId) {
+            try {
+              await axios.delete(`${apiUrl}/api/courses/lessons/${lessonId}`, {
+                headers: { Authorization: `Bearer ${token}` },
+              });
+            } catch (deleteError) {
+              console.error("Error deleting temporary lesson:", deleteError);
+            }
+          }
+
+          // แสดงข้อผิดพลาดทั้งหมด
+          const combinedErrorMessage = fileUploadErrors.join("; ");
+          setApiError(combinedErrorMessage);
+          toast.error(combinedErrorMessage);
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
+      // ดำเนินการสร้าง/อัปเดตบทเรียน
+      const formData = new FormData();
+      formData.append("title", lessonData.title);
+      formData.append("description", lessonData.description);
+      formData.append("videoUrl", lessonData.videoUrl);
+      formData.append("status", lessonData.status);
+
+      if (lessonData.hasQuiz && lessonData.quizId) {
+        formData.append("quizId", lessonData.quizId);
+      }
+
+      if (lessonData.subjects && lessonData.subjects.length > 0) {
+        lessonData.subjects.forEach(subjectId => {
+          formData.append("subjects[]", subjectId);
+        });
+      }
+
+      let response;
+      if (lessonToEdit) {
+        // อัปเดตบทเรียน
+        response = await axios.put(`${apiUrl}/api/courses/lessons/${lessonToEdit}`, formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            "Authorization": `Bearer ${token}`,
+          },
+        });
+
+        lessonId = lessonToEdit;
+        setApiSuccess("แก้ไขบทเรียนสำเร็จ");
+        toast.success("แก้ไขบทเรียนสำเร็จ");
+
+        // ลบไฟล์ที่มีการเลือกให้ลบ
+        if (filesToRemove.length > 0) {
+          for (const fileId of filesToRemove) {
+            await axios.delete(`${apiUrl}/api/courses/lessons/${lessonId}/attachments/${fileId}`, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+          }
+        }
+      } else {
+        // ใช้ lessonId จากการสร้างชั่วคราว หรือสร้างใหม่ถ้าไม่มีไฟล์
+        if (!lessonId) {
           response = await axios.post(`${apiUrl}/api/courses/lessons`, formData, {
             headers: {
               "Content-Type": "multipart/form-data",
-              "Authorization": `Bearer ${token}`
-            }
+              "Authorization": `Bearer ${token}`,
+            },
           });
-          
-          setApiSuccess("สร้างบทเรียนสำเร็จ");
-          toast.success("สร้างบทเรียนสำเร็จ");
-        }
-        
-        if (onSubmit) {
-          onSubmit(response.data.lesson);
+          lessonId = response.data.lessonId;
         } else {
-          setLessonData({
-            title: "",
-            description: "",
-            files: [],
-            videoUrl: "",
-            canPreview: false,
-            hasQuiz: false,
-            quizId: null,
-            subjects: [],
-            status: "active"
+          // อัปเดตบทเรียนชั่วคราว
+          response = await axios.put(`${apiUrl}/api/courses/lessons/${lessonId}`, formData, {
+            headers: {
+              "Content-Type": "multipart/form-data",
+              "Authorization": `Bearer ${token}`,
+            },
           });
-          setUploadedFiles([]);
-          setExistingFiles([]);
-          setFilesToRemove([]);
-          setSelectedQuiz(null);
         }
-      } catch (error) {
-        console.error("Error submitting lesson:", error);
-        
-        if (axios.isAxiosError(error) && error.response) {
-          setApiError(error.response.data.message || "เกิดข้อผิดพลาดในการสร้างบทเรียน");
-          toast.error(error.response.data.message || "เกิดข้อผิดพลาดในการสร้างบทเรียน");
-        } else {
-          setApiError("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้");
-          toast.error("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้");
-        }
-      } finally {
-        setIsSubmitting(false);
+        setApiSuccess("สร้างบทเรียนสำเร็จ");
+        toast.success("สร้างบทเรียนสำเร็จ");
       }
+
+      if (onSubmit) {
+        onSubmit({ ...response.data, lessonId });
+      } else {
+        setLessonData({
+          title: "",
+          description: "",
+          videoUrl: "",
+          canPreview: false,
+          hasQuiz: false,
+          quizId: null,
+          subjects: [],
+          status: "active",
+        });
+        setUploadedFiles([]);
+        setExistingFiles([]);
+        setFilesToRemove([]);
+        setSelectedQuiz(null);
+      }
+    } catch (error) {
+      console.error("Error submitting lesson:", error);
+      if (axios.isAxiosError(error) && error.response) {
+        setApiError(error.response.data.message || "เกิดข้อผิดพลาดในการสร้างบทเรียน");
+        toast.error(error.response.data.message || "เกิดข้อผิดพลาดในการสร้างบทเรียน");
+      } else {
+        setApiError("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้");
+        toast.error("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้");
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
-  
-  
+
   const handleCancel = () => {
     if (onCancel) {
       onCancel();
     }
   };
-  
+
   const handleCreateQuiz = (quizData: any) => {
     if (quizData && quizData.id) {
       const newQuiz: Quiz = {
@@ -593,50 +559,49 @@ const AddLessons: React.FC<AddLessonsProps> = ({ onSubmit, onCancel, lessonToEdi
         title: quizData.title,
         questions: quizData.questions?.length || 0,
         description: quizData.description,
-        type: quizData.type || "general"
+        type: quizData.type || "general",
       };
-      
+
       setAvailableQuizzes([...availableQuizzes, newQuiz]);
-      
       setSelectedQuiz(newQuiz);
       setLessonData({
         ...lessonData,
         hasQuiz: true,
-        quizId: newQuiz.id
+        quizId: newQuiz.id,
       });
     }
-    
+
     setShowCreateQuizModal(false);
   };
-  
+
   return (
     <form onSubmit={handleSubmit}>
       {apiSuccess && (
         <div className="alert alert-success alert-dismissible fade show" role="alert">
           <i className="fas fa-check-circle me-2"></i>
           {apiSuccess}
-          <button 
-            type="button" 
-            className="btn-close" 
+          <button
+            type="button"
+            className="btn-close"
             onClick={() => setApiSuccess("")}
             aria-label="Close"
           ></button>
         </div>
       )}
-      
+
       {apiError && (
         <div className="alert alert-danger alert-dismissible fade show" role="alert">
           <i className="fas fa-exclamation-circle me-2"></i>
           {apiError}
-          <button 
-            type="button" 
-            className="btn-close" 
+          <button
+            type="button"
+            className="btn-close"
             onClick={() => setApiError("")}
             aria-label="Close"
           ></button>
         </div>
       )}
-      
+
       {isLoading ? (
         <div className="text-center py-5">
           <div className="spinner-border text-primary" role="status">
@@ -652,10 +617,7 @@ const AddLessons: React.FC<AddLessonsProps> = ({ onSubmit, onCancel, lessonToEdi
             handleInputChange={handleInputChange}
             handleCheckboxChange={handleCheckboxChange}
           />
-          
-          {/* เพิ่มส่วนเลือกสถานะ */}
-          
-          
+
           <LessonContentSection
             lessonData={lessonData}
             errors={errors}
@@ -668,13 +630,13 @@ const AddLessons: React.FC<AddLessonsProps> = ({ onSubmit, onCancel, lessonToEdi
             filesToRemove={filesToRemove}
             fileInputRef={fileInputRef}
           />
-          
+
           <SubjectSelectionSection
-  lessonData={lessonData}
-  availableSubjects={availableSubjects}
-  handleToggleSubject={handleToggleSubject}
-/>
-          
+            lessonData={lessonData}
+            availableSubjects={availableSubjects}
+            handleToggleSubject={handleToggleSubject}
+          />
+
           <QuizSection
             lessonData={lessonData}
             errors={errors}
@@ -688,18 +650,18 @@ const AddLessons: React.FC<AddLessonsProps> = ({ onSubmit, onCancel, lessonToEdi
             searchTerm={searchTerm}
             setSearchTerm={setSearchTerm}
           />
-          
+
           <div className="d-flex justify-content-end gap-2 mt-4">
-            <button 
-              type="button" 
-              className="btn btn-outline-secondary" 
+            <button
+              type="button"
+              className="btn btn-outline-secondary"
               onClick={handleCancel}
               disabled={isSubmitting}
             >
               ยกเลิก
             </button>
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               className="btn btn-primary"
               disabled={isSubmitting}
             >
@@ -717,9 +679,10 @@ const AddLessons: React.FC<AddLessonsProps> = ({ onSubmit, onCancel, lessonToEdi
           </div>
         </>
       )}
-      
+
       {showCreateQuizModal && (
-        <div className="modal fade show"
+        <div
+          className="modal fade show"
           style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}
           tabIndex={-1}
         >
@@ -745,4 +708,3 @@ const AddLessons: React.FC<AddLessonsProps> = ({ onSubmit, onCancel, lessonToEdi
 };
 
 export default AddLessons;
-

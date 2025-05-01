@@ -75,14 +75,14 @@ const LessonContentSection: React.FC<LessonContentSectionProps> = ({
             id="files"
             ref={fileInputRef}
             onChange={handleFileUpload}
-            accept=".pdf,.txt"
+            accept=".pdf,.doc,.docx,.xls,.xlsx"
             multiple
           />
           <label className="input-group-text" htmlFor="files">อัปโหลด</label>
           {errors.files && <div className="invalid-feedback">{errors.files}</div>}
         </div>
         <small className="text-muted d-block">
-          รองรับไฟล์ PDF และ TXT ขนาดไม่เกิน 2 MB (สูงสุด 2 ไฟล์)
+          รองรับไฟล์ PDF, DOC, DOCX, XLS และ XLSX ขนาดไม่เกิน 50 MB
         </small>
         
         {uploadedFiles.length > 0 && (
@@ -93,7 +93,7 @@ const LessonContentSection: React.FC<LessonContentSectionProps> = ({
                 <li key={index} className="list-group-item d-flex justify-content-between align-items-center">
                   <div>
                     <i className={`fas ${file.name.endsWith('.pdf') ? 'fa-file-pdf' : 'fa-file-alt'} me-2 text-danger`}></i>
-                    {file.name} ({(file.size / 1024).toFixed(2)} KB)
+                    {file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)
                   </div>
                   <button
                     type="button"
@@ -108,7 +108,7 @@ const LessonContentSection: React.FC<LessonContentSectionProps> = ({
           </div>
         )}
         
-        {existingFiles.length > 0 && filesToRemove.length < existingFiles.length && (
+        {existingFiles.length > 0 && (
           <div className="mt-3">
             <h6>ไฟล์ที่มีอยู่แล้ว:</h6>
             <ul className="list-group">
@@ -118,7 +118,7 @@ const LessonContentSection: React.FC<LessonContentSectionProps> = ({
                   <li key={file.file_id} className="list-group-item d-flex justify-content-between align-items-center">
                     <div>
                       <i className={`fas ${file.file_name.endsWith('.pdf') ? 'fa-file-pdf' : 'fa-file-alt'} me-2 text-danger`}></i>
-                      {file.file_name} ({(file.file_size / 1024).toFixed(2)} KB)
+                      {file.file_name} ({(file.file_size / 1024 / 1024).toFixed(2)} MB)
                     </div>
                     <button
                       type="button"
