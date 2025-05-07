@@ -86,6 +86,7 @@ import InsAddquestionpage from '../pages/Instructor/create/AddQuestions';
 import InsAddlessonspage from '../pages/Instructor/create/AddLessons';
 import InsAddQuizzespage from '../pages/Instructor/create/AddQuizzes';
 import InsAddSubjectspage from '../pages/Instructor/create/AddSubjects';
+import InsGradingpage from '../pages/Instructor/InsSpecialQuiz';
 
 import Personelpage from '../pages/Personel';
 {/* ลองเพิ่ม */}
@@ -139,7 +140,7 @@ const AppNavigation = () => {
         <Route path="/admin-lessons" element={<AdminLessonsbankpage/>} />
         <Route path="/admin-questions" element={<AdminQuestionspage/>} />
         <Route path="/admin-quizzes" element={<AdminQuizzespage/>} />
-
+        <Route path="/instructor-grading" element={<InsGradingpage />} />
         <Route path="/admin-questions/create-new" element={<AdminAddquestionpage/>} />
         <Route path="/admin-quizzes/create-new" element={<AdminAddQuizzespage />} />
         <Route path="/admin-lessons/create-new" element={<AdminAddlessonspage />} />
@@ -182,6 +183,7 @@ const AppNavigation = () => {
         <Route path="/instructor-quizzes/create-new" element={<InsAddQuizzespage />} />
         <Route path="/instructor-lessons/create-new" element={<InsAddlessonspage />} />
         <Route path="/instructor-subjects/create-new" element={<InsAddSubjectspage />} />
+        <Route path="/instructor-grading" element={<InsGradingpage />} />
         </Route>
 
         <Route element={<PrivateRoute allowedRoles={["student"]} />}>

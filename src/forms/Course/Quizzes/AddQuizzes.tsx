@@ -6,9 +6,11 @@ import QuizInfoSection from "./QuizInfoSection";
 import QuestionsSection from "./QuestionsSection";
 import LessonsSection from "./LessonsSection";
 import SettingsSection from "./SettingsSection";
+import SpecialQuizSection from "./SpecialQuizSections";
 
 // ประเภทของคำถาม
 type QuestionType = "TF" | "MC" | "SC" | "FB";
+type QuizType = "normal" | "special";
 
 // ข้อมูลคำถาม
 interface Question {
@@ -48,6 +50,7 @@ interface QuizData {
   };
   lessons: string[];
   status: string;
+  allowFileUpload?: boolean; // สำหรับแบบทดสอบพิเศษ
 }
 
 interface AddQuizzesProps {
@@ -62,6 +65,7 @@ const AddQuizzes: React.FC<AddQuizzesProps> = ({ onSubmit, onCancel }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [apiError, setApiError] = useState("");
   const [apiSuccess, setApiSuccess] = useState("");
+  const [quizType, setQuizType] = useState<QuizType>("normal");
 
   const [availableLessons, setAvailableLessons] = useState<Lesson[]>([]);
   const [quizData, setQuizData] = useState<QuizData>({
@@ -84,6 +88,7 @@ const AddQuizzes: React.FC<AddQuizzesProps> = ({ onSubmit, onCancel }) => {
     },
     lessons: [],
     status: "draft",
+    allowFileUpload: false,
   });
 
   const [errors, setErrors] = useState({
@@ -98,6 +103,7 @@ const AddQuizzes: React.FC<AddQuizzesProps> = ({ onSubmit, onCancel }) => {
   const [existingQuestions, setExistingQuestions] = useState<Question[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedExistingQuestions, setSelectedExistingQuestions] = useState<string[]>([]);
+  const [fbQuestions, setFbQuestions] = useState<Question[]>([]); // สำหรับแบบทดสอบพิเศษ
 
   useEffect(() => {
     const fetchData = async () => {
@@ -105,37 +111,37 @@ const AddQuizzes: React.FC<AddQuizzesProps> = ({ onSubmit, onCancel }) => {
       try {
         const apiUrl = import.meta.env.VITE_API_URL;
         const token = localStorage.getItem("token");
-
+  
         if (!token) {
           setApiError("ไม่พบข้อมูลการเข้าสู่ระบบ กรุณาเข้าสู่ระบบใหม่");
           setIsLoading(false);
           return;
         }
-
+  
         const lessonsResponse = await axios.get(`${apiUrl}/api/courses/lessons`, {
           headers: {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${token}`,
           },
         });
-
+  
         if (lessonsResponse.data && lessonsResponse.data.lessons) {
           const formattedLessons = lessonsResponse.data.lessons.map((lesson: any) => ({
             id: lesson.lesson_id.toString(),
             title: lesson.title,
-            subject: lesson.subjects?.length > 0 ? lesson.subjects[0].subject_name : "ไม่ระบุวิชา", // ใช้ subject_name
+            subject: lesson.subjects?.length > 0 ? lesson.subjects[0].subject_name : "ไม่ระบุวิชา",
             duration: lesson.duration ? `${lesson.duration} นาที` : "ไม่ระบุระยะเวลา",
           }));
           setAvailableLessons(formattedLessons);
         }
-
+  
         const questionsResponse = await axios.get(`${apiUrl}/api/courses/questions`, {
           headers: {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${token}`,
           },
         });
-
+  
         if (questionsResponse.data && questionsResponse.data.questions) {
           const formattedQuestions = questionsResponse.data.questions.map((question: any) => ({
             id: question.question_id,
@@ -145,7 +151,14 @@ const AddQuizzes: React.FC<AddQuizzesProps> = ({ onSubmit, onCancel }) => {
             isExisting: true,
           }));
           setExistingQuestions(formattedQuestions);
-        }
+          // กรองเฉพาะคำถามประเภท MC
+          const mcOnlyQuestions = formattedQuestions.filter((q: Question) => q.type === "MC");
+          setExistingQuestions(mcOnlyQuestions);
+          
+          // สำหรับแบบทดสอบพิเศษ ยังคงใช้คำถามประเภท FB
+          const fbOnlyQuestions = formattedQuestions.filter((q: Question) => q.type === "FB");
+  setFbQuestions(fbOnlyQuestions);
+}
       } catch (error) {
         console.error("Error fetching data:", error);
         setApiError("ไม่สามารถโหลดข้อมูลได้");
@@ -153,11 +166,14 @@ const AddQuizzes: React.FC<AddQuizzesProps> = ({ onSubmit, onCancel }) => {
         setIsLoading(false);
       }
     };
-
+  
     fetchData();
   }, []);
-
-  const filteredExistingQuestions = existingQuestions.filter((question) =>
+  const filteredExistingQuestions = existingQuestions
+  .filter((question) => 
+    // กรองคำถามที่ยังไม่ถูกเลือก (ไม่อยู่ในรายการ quizData.questions)
+    !quizData.questions.some(q => q.id === question.id) &&
+    // กรองตามคำค้นหา
     question.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -182,6 +198,14 @@ const AddQuizzes: React.FC<AddQuizzesProps> = ({ onSubmit, onCancel }) => {
         title: "",
       });
     }
+  };
+
+  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, checked } = e.target;
+    setQuizData({
+      ...quizData,
+      [name]: checked,
+    });
   };
 
   const handleTimeLimitChange = (
@@ -334,7 +358,7 @@ const AddQuizzes: React.FC<AddQuizzesProps> = ({ onSubmit, onCancel }) => {
       return;
     }
 
-    const questionsToAdd = existingQuestions.filter((q) => selectedExistingQuestions.includes(q.id));
+    const questionsToAdd = existingQuestions.filter((q: Question) => selectedExistingQuestions.includes(q.id));
 
     setQuizData({
       ...quizData,
@@ -376,8 +400,13 @@ const AddQuizzes: React.FC<AddQuizzesProps> = ({ onSubmit, onCancel }) => {
       isValid = false;
     }
 
-    if (quizData.questions.length === 0) {
+    if (quizType === "normal" && quizData.questions.length === 0) {
       newErrors.questions = "กรุณาเพิ่มคำถามอย่างน้อย 1 ข้อ";
+      isValid = false;
+    }
+
+    if (quizType === "special" && selectedExistingQuestions.length === 0) {
+      newErrors.questions = "กรุณาเลือกคำถามแบบเติมคำตอบอย่างน้อย 1 ข้อ";
       isValid = false;
     }
 
@@ -403,47 +432,68 @@ const AddQuizzes: React.FC<AddQuizzesProps> = ({ onSubmit, onCancel }) => {
           return;
         }
 
-        const apiData = {
-          title: quizData.title,
-          description: quizData.description,
-          questions: quizData.questions.map((q) => ({
-            id: q.id,
-            title: q.title,
-            type: q.type,
-            score: q.score,
-            isExisting: q.isExisting || false,
-          })),
-          timeLimit: {
-            enabled: quizData.timeLimit.enabled,
-            value: quizData.timeLimit.value,
-            unit: quizData.timeLimit.unit,
-          },
-          passingScore: {
-            enabled: quizData.passingScore.enabled,
-            value: quizData.passingScore.value,
-          },
-          attempts: {
-            limited: quizData.attempts.limited,
-            unlimited: quizData.attempts.unlimited,
-            value: quizData.attempts.value,
-          },
-          lessons: quizData.lessons,
-          status: quizData.status || "draft",
-        };
+        let response;
 
-        const response = await axios.post(`${apiUrl}/api/courses/quizzes`, apiData, {
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`,
-          },
-        });
+        if (quizType === "normal") {
+          // ส่งข้อมูลแบบทดสอบปกติ
+          const apiData = {
+            title: quizData.title,
+            description: quizData.description,
+            questions: quizData.questions.map((q) => ({
+              id: q.id,
+              title: q.title,
+              type: q.type,
+              score: q.score,
+              isExisting: q.isExisting || false,
+            })),
+            timeLimit: {
+              enabled: quizData.timeLimit.enabled,
+              value: quizData.timeLimit.value,
+              unit: quizData.timeLimit.unit,
+            },
+            passingScore: {
+              enabled: quizData.passingScore.enabled,
+              value: quizData.passingScore.value,
+            },
+            attempts: {
+              limited: quizData.attempts.limited,
+              unlimited: quizData.attempts.unlimited,
+              value: quizData.attempts.value,
+            },
+            lessons: quizData.lessons,
+            status: quizData.status || "draft",
+          };
 
-        setApiSuccess("สร้างแบบทดสอบสำเร็จ");
-        toast.success("สร้างแบบทดสอบสำเร็จ");
+          response = await axios.post(`${apiUrl}/api/courses/quizzes`, apiData, {
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${token}`,
+            },
+          });
+        } else {
+          // ส่งข้อมูลแบบทดสอบพิเศษ
+          const apiData = {
+            title: quizData.title,
+            description: quizData.description,
+            question_ids: selectedExistingQuestions,
+            allow_file_upload: quizData.allowFileUpload,
+          };
+
+          response = await axios.post(`${apiUrl}/api/specialquiz/special-quiz`, apiData, {
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${token}`,
+            },
+          });
+        }
+
+        setApiSuccess(`สร้างแบบทดสอบ${quizType === "special" ? "พิเศษ" : ""}สำเร็จ`);
+        toast.success(`สร้างแบบทดสอบ${quizType === "special" ? "พิเศษ" : ""}สำเร็จ`);
 
         if (onSubmit) {
           onSubmit(response.data.quiz);
         } else {
+          // รีเซ็ตฟอร์ม
           setQuizData({
             title: "",
             description: "",
@@ -464,14 +514,16 @@ const AddQuizzes: React.FC<AddQuizzesProps> = ({ onSubmit, onCancel }) => {
             },
             lessons: [],
             status: "draft",
+            allowFileUpload: false,
           });
+          setSelectedExistingQuestions([]);
         }
       } catch (error) {
         console.error("Error submitting quiz:", error);
 
         if (axios.isAxiosError(error) && error.response) {
-          setApiError(error.response.data.message || "เกิดข้อผิดพลาดในการสร้างแบบทดสอบ");
-          toast.error(error.response.data.message || "เกิดข้อผิดพลาดในการสร้างแบบทดสอบ");
+          setApiError(error.response.data.message || `เกิดข้อผิดพลาดในการสร้างแบบทดสอบ${quizType === "special" ? "พิเศษ" : ""}`);
+          toast.error(error.response.data.message || `เกิดข้อผิดพลาดในการสร้างแบบทดสอบ${quizType === "special" ? "พิเศษ" : ""}`);
         } else {
           setApiError("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้");
           toast.error("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้");
@@ -486,8 +538,6 @@ const AddQuizzes: React.FC<AddQuizzesProps> = ({ onSubmit, onCancel }) => {
     switch (type) {
       case "TF":
         return "ถูก/ผิด";
-      case "MC":
-        return "หลายตัวเลือก";
       case "SC":
         return "ตัวเลือกเดียว";
       case "FB":
@@ -525,6 +575,39 @@ const AddQuizzes: React.FC<AddQuizzesProps> = ({ onSubmit, onCancel }) => {
         </div>
       )}
 
+      {/* ปุ่มเลือกประเภทแบบทดสอบ */}
+      <div className="card shadow-sm border-0 mb-4">
+        <div className="card-body">
+          <h5 className="mb-3">เลือกประเภทแบบทดสอบ</h5>
+          <div className="d-flex gap-3">
+            <button
+              type="button"
+              className={`btn ${quizType === "normal" ? "btn-primary" : "btn-outline-primary"} px-4 py-3 d-flex flex-column align-items-center`}
+              onClick={() => setQuizType("normal")}
+            >
+              <i className="fas fa-tasks fs-3 mb-2"></i>
+              <span>แบบทดสอบปกติ</span>
+              <small className="text-center mt-1">
+                {quizType === "normal" ? "เลือกแล้ว" : "คลิกเพื่อเลือก"}
+              </small>
+            </button>
+            <button
+              type="button"
+              className={`btn ${quizType === "special" ? "btn-primary" : "btn-outline-primary"} px-4 py-3 d-flex flex-column align-items-center`}
+              onClick={() => setQuizType("special")}
+            >
+              <i className="fas fa-file-alt fs-3 mb-2"></i>
+              <span>แบบทดสอบพิเศษ</span>
+              <small className="text-center mt-1">
+                {quizType === "special" ? "เลือกแล้ว" : "คลิกเพื่อเลือก"}
+              </small>
+            </button>
+          </div>
+          <div className="mt-3">
+          </div>
+        </div>
+      </div>
+
       {isLoading ? (
         <div className="text-center py-5">
           <div className="spinner-border text-primary" role="status">
@@ -540,43 +623,56 @@ const AddQuizzes: React.FC<AddQuizzesProps> = ({ onSubmit, onCancel }) => {
             errors={errors}
           />
 
-          <QuestionsSection
-            quizData={quizData}
-            errors={errors}
-            handleDeleteQuestion={handleDeleteQuestion}
-            handleAddNewQuestion={handleAddNewQuestion}
-            existingQuestions={existingQuestions}
-            showAddQuestionForm={showAddQuestionForm}
-            setShowAddQuestionForm={setShowAddQuestionForm}
-            showExistingQuestions={showExistingQuestions}
-            setShowExistingQuestions={setShowExistingQuestions}
-            selectedExistingQuestions={selectedExistingQuestions}
-            setSelectedExistingQuestions={setSelectedExistingQuestions}
-            handleSelectExistingQuestion={handleSelectExistingQuestion}
-            handleAddSelectedQuestions={handleAddSelectedQuestions}
-            searchTerm={searchTerm}
-            setSearchTerm={setSearchTerm}
-            filteredExistingQuestions={filteredExistingQuestions}
-          />
+          {quizType === "normal" ? (
+            <>
+              <QuestionsSection
+                quizData={quizData}
+                errors={errors}
+                handleDeleteQuestion={handleDeleteQuestion}
+                handleAddNewQuestion={handleAddNewQuestion}
+                existingQuestions={existingQuestions}
+                showAddQuestionForm={showAddQuestionForm}
+                setShowAddQuestionForm={setShowAddQuestionForm}
+                showExistingQuestions={showExistingQuestions}
+                setShowExistingQuestions={setShowExistingQuestions}
+                selectedExistingQuestions={selectedExistingQuestions}
+                setSelectedExistingQuestions={setSelectedExistingQuestions}
+                handleSelectExistingQuestion={handleSelectExistingQuestion}
+                handleAddSelectedQuestions={handleAddSelectedQuestions}
+                searchTerm={searchTerm}
+                setSearchTerm={setSearchTerm}
+                filteredExistingQuestions={filteredExistingQuestions}
+              />
 
-          <LessonsSection
-            quizData={quizData}
-            availableLessons={availableLessons}
-            showLessonModal={showLessonModal}
-            setShowLessonModal={setShowLessonModal}
-            lessonSearchTerm={lessonSearchTerm}
-            setLessonSearchTerm={setLessonSearchTerm}
-            filteredLessons={filteredLessons}
-            handleToggleLesson={handleToggleLesson}
-          />
+              <LessonsSection
+                quizData={quizData}
+                availableLessons={availableLessons}
+                showLessonModal={showLessonModal}
+                setShowLessonModal={setShowLessonModal}
+                lessonSearchTerm={lessonSearchTerm}
+                setLessonSearchTerm={setLessonSearchTerm}
+                filteredLessons={filteredLessons}
+                handleToggleLesson={handleToggleLesson}
+              />
 
-          <SettingsSection
-            quizData={quizData}
-            handleTimeLimitChange={handleTimeLimitChange}
-            handlePassingScoreChange={handlePassingScoreChange}
-            handleAttemptsChange={handleAttemptsChange}
-            handleInputChange={handleInputChange}
-          />
+              <SettingsSection
+                quizData={quizData}
+                handleTimeLimitChange={handleTimeLimitChange}
+                handlePassingScoreChange={handlePassingScoreChange}
+                handleAttemptsChange={handleAttemptsChange}
+                handleInputChange={handleInputChange}
+              />
+            </>
+          ) : (
+            <SpecialQuizSection
+              quizData={quizData}
+              fbQuestions={fbQuestions}
+              selectedExistingQuestions={selectedExistingQuestions}
+              setSelectedExistingQuestions={setSelectedExistingQuestions}
+              handleCheckboxChange={handleCheckboxChange}
+              errors={errors}
+            />
+          )}
 
           <div className="d-flex justify-content-end gap-2 mt-4">
             <button
@@ -603,7 +699,7 @@ const AddQuizzes: React.FC<AddQuizzesProps> = ({ onSubmit, onCancel }) => {
                 </>
               ) : (
                 <>
-                  <i className="fas fa-save me-2"></i>บันทึกแบบทดสอบ
+                  <i className="fas fa-save me-2"></i>บันทึกแบบทดสอบ{quizType === "special" ? "พิเศษ" : ""}
                 </>
               )}
             </button>
@@ -690,60 +786,62 @@ const AddQuizzes: React.FC<AddQuizzesProps> = ({ onSubmit, onCancel }) => {
                             <td>
                               <div className="form-check">
                                 <input
-                                  className="form-check-input"
-                                  type="checkbox"
-                                  id={`select-${question.id}`}
-                                  checked={selectedExistingQuestions.includes(question.id)}
-                                  onChange={() => handleSelectExistingQuestion(question.id)}
-                                />
-                              </div>
-                            </td>
-                            <td>{question.title}</td>
-                            <td>
-                              <span className="badge bg-info rounded-pill">
-                                {getQuestionTypeText(question.type)}
-                              </span>
-                            </td>
-                            <td>{question.score}</td>
-                          </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td colSpan={4} className="text-center py-3">
-                            ไม่พบคำถามที่ตรงกับคำค้นหา
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-              <div className="modal-footer">
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => {
-                    setShowExistingQuestions(false);
-                    setSelectedExistingQuestions([]);
-                  }}
-                >
-                  ยกเลิก
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  onClick={handleAddSelectedQuestions}
-                  disabled={selectedExistingQuestions.length === 0}
-                >
-                  เพิ่มคำถามที่เลือก ({selectedExistingQuestions.length})
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </form>
-  );
-};
+                                                                    className="form-check-input"
+                                                                    type="checkbox"
+                                                                    id={`select-${question.id}`}
+                                                                    checked={selectedExistingQuestions.includes(question.id)}
+                                                                    onChange={() => handleSelectExistingQuestion(question.id)}
+                                                                  />
+                                                                </div>
+                                                              </td>
+                                                              <td>{question.title}</td>
+                                                              <td>
+                                                                <span className="badge bg-info rounded-pill">
+                                                                  {getQuestionTypeText(question.type)}
+                                                                </span>
+                                                              </td>
+                                                              <td>{question.score}</td>
+                                                            </tr>
+                                                          ))
+                                                        ) : (
+                                                          <tr>
+                                                            <td colSpan={4} className="text-center py-3">
+                                                              ไม่พบคำถามที่ตรงกับคำค้นหา
+                                                            </td>
+                                                          </tr>
+                                                        )}
+                                                      </tbody>
+                                                    </table>
+                                                  </div>
+                                                </div>
+                                                <div className="modal-footer">
+                                                  <button
+                                                    type="button"
+                                                    className="btn btn-secondary"
+                                                    onClick={() => {
+                                                      setShowExistingQuestions(false);
+                                                      setSelectedExistingQuestions([]);
+                                                    }}
+                                                  >
+                                                    ยกเลิก
+                                                  </button>
+                                                  <button
+                                                    type="button"
+                                                    className="btn btn-primary"
+                                                    onClick={handleAddSelectedQuestions}
+                                                    disabled={selectedExistingQuestions.length === 0}
+                                                  >
+                                                    เพิ่มคำถามที่เลือก ({selectedExistingQuestions.length})
+                                                  </button>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        )}
+                                      </form>
+                                    );
+                                  };
+                                  
+                                  export default AddQuizzes;
+                                  
 
-export default AddQuizzes;

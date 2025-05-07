@@ -1,11 +1,13 @@
 import { Link } from "react-router-dom";
+import styles from "./Instructors.module.css";
+import { useState } from "react";
 
 interface Instructor {
   instructor_id: number;
   name: string;
   position: string;
-  avatar_path?: string | null; 
-  avatar_file_id?: string | null; 
+  avatar_path?: string | null;
+  avatar_file_id?: string | null;
   bio?: string;
 }
 
@@ -16,79 +18,186 @@ interface InstructorsProps {
 const apiURL = import.meta.env.VITE_API_URL;
 
 const Instructors = ({ instructors }: InstructorsProps) => {
+  const [activeTab, setActiveTab] = useState<string>("instructors");
+  
+  // Separate instructors into groups (dummy logic for now, replace with real data handling later)
+  const courseSupervisors: Instructor[] = []; // No data for now
+  const courseCommittee: Instructor[] = []; // No data for now
+  const courseInstructors = instructors; // Use all instructors as course instructors
+
+  const getAvatarUrl = (instructor: Instructor) => {
+    if (instructor.avatar_file_id) {
+      return `${apiURL}/api/accounts/instructors/avatar/${instructor.avatar_file_id}`;
+    }
+    return "/assets/img/courses/course_thumb01.jpg";
+  };
+
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    e.currentTarget.src = "/assets/img/courses/course_thumb01.jpg";
+  };
+
   return (
-    console.log(instructors),
-    <div className="instructors-section p-6">
-      <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-        <span className="bg-primary-100 p-2 rounded-full">
-          <i className="fas fa-chalkboard-teacher text-primary-600"></i>
-        </span>
-        ผู้สอนในหลักสูตร
-      </h2>
-
-      {instructors && instructors.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {instructors.map((instructor) => (
-            <div
-              key={instructor.instructor_id}
-              className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow"
-            >
-              <div className="flex flex-col items-center">
-                <div className="relative mb-4">
-                  <img
-                    src={
-                      instructor.avatar_file_id
-                        ? `${apiURL}/api/accounts/instructors/avatar/${instructor.avatar_file_id}`
-                        : "/assets/img/courses/course_thumb01.jpg"
-                    }
-                    alt={instructor.name}
-                    className="w-24 h-24 object-cover border-4 border-primary-100"
-                    onError={(e) => {
-                      e.currentTarget.src = "/assets/img/courses/course_thumb01.jpg"; // Fallback on error
-                    }}
-                  />
-                  <span className="absolute bottom-0 right-0 bg-green-500 p-1.5 rounded-full">
-                    <i className="fas fa-check text-white text-xs"></i>
-                  </span>
-                </div>
-
-                <h3 className="text-xl font-bold text-gray-800">{instructor.name}</h3>
-                <p className="text-primary-600 font-medium mt-1">{instructor.position}</p>
-
-                <div className="flex items-center mt-2 text-yellow-400">
-                  {[...Array(5)].map((_, i) => (
-                    <i key={i} className="fas fa-star text-sm"></i>
-                  ))}
-                  <span className="ml-2 text-gray-600 text-sm">(4.8)</span>
-                </div>
-
-                <p className="text-gray-600 text-center mt-4 line-clamp-3">
-                  {instructor.bio || "ไม่มีข้อมูลประวัติผู้สอน"}
-                </p>
-
-                <div className="flex gap-4 mt-6">
-                  {[
-                    { icon: "facebook-f", color: "hover:bg-blue-600" },
-                    { icon: "twitter", color: "hover:bg-sky-500" },
-                    { icon: "instagram", color: "hover:bg-pink-600" },
-                  ].map((social, index) => (
-                    <Link
-                      key={index}
-                      to="#"
-                      className={`w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 text-gray-600 ${social.color} hover:text-white transition-colors`}
-                    >
-                      <i className={`fab fa-${social.icon}`}></i>
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            </div>
-          ))}
+    <div className="bg-white p-6 rounded-xl shadow-sm">
+      <div className={styles["section-header"]}>
+        <div className={styles["section-icon"]}>
+          <i className="fas fa-chalkboard-teacher"></i>
         </div>
-      ) : (
-        <div className="bg-blue-50 text-blue-800 p-4 rounded-lg flex items-center gap-2">
-          <i className="fas fa-info-circle"></i>
-          <p>ยังไม่มีข้อมูลผู้สอนในหลักสูตรนี้</p>
+        <h2 className={styles["section-title"]}>รายละเอียดทีมอาจารย์</h2>
+      </div>
+
+      {/* Tabs Navigation */}
+      <div className={styles["tabs-container"]}>
+        <button
+          className={`${styles["tab-button"]} ${
+            activeTab === "instructors" ? styles["tab-button-active"] : ""
+          }`}
+          onClick={() => setActiveTab("instructors")}
+        >
+          ผู้สอนประจำรายวิชา
+        </button>
+        <button
+          className={`${styles["tab-button"]} ${
+            activeTab === "supervisors" ? styles["tab-button-active"] : ""
+          }`}
+          onClick={() => setActiveTab("supervisors")}
+        >
+          อาจารย์ผู้ดูแลหลักสูตร
+        </button>
+        <button
+          className={`${styles["tab-button"]} ${
+            activeTab === "committee" ? styles["tab-button-active"] : ""
+          }`}
+          onClick={() => setActiveTab("committee")}
+        >
+          กรรมการหลักสูตร
+        </button>
+      </div>
+
+      {/* Course Instructors Section */}
+      {activeTab === "instructors" && (
+        <div>
+          {courseInstructors && courseInstructors.length > 0 ? (
+            <div className={styles["instructors-grid"]}>
+              {courseInstructors.map((instructor) => (
+                <div
+                  key={instructor.instructor_id}
+                  className={styles["instructor-card"]}
+                >
+                  <div className="relative">
+                    <img
+                      src={getAvatarUrl(instructor)}
+                      alt={instructor.name}
+                      className={styles["instructor-image"]}
+                      onError={handleImageError}
+                    />
+                    <div className={styles["verified-badge"]}>
+                      <i className="fas fa-check text-white text-xs"></i>
+                    </div>
+                  </div>
+
+                  <p className={styles["instructor-position"]}>{instructor.position}</p>
+                  <h4 className={styles["instructor-name"]}>{instructor.name}</h4>
+
+                  <p className={styles["instructor-bio"]}>
+                    {instructor.bio || "ไม่มีข้อมูลประวัติผู้สอน"}
+                  </p>
+
+                  <div className={styles["social-links"]}>
+                    {[
+                      { icon: "facebook-f", color: "hover:bg-blue-600" },
+                      { icon: "twitter", color: "hover:bg-sky-500" },
+                      { icon: "linkedin-in", color: "hover:bg-blue-700" },
+                      { icon: "instagram", color: "hover:bg-pink-600" },
+                    ].map((social, index) => (
+                      <Link
+                        key={index}
+                        to="#"
+                        className={`${styles["social-link"]} ${social.color} hover:text-white`}
+                        aria-label={`${social.icon} link`}
+                      >
+                        <i className={`fab fa-${social.icon}`}></i>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className={styles["empty-state"]}>
+              <i className="fas fa-info-circle text-2xl mb-2"></i>
+              <p>ยังไม่มีข้อมูลผู้สอนในหลักสูตรนี้</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Course Supervisors Section */}
+      {activeTab === "supervisors" && (
+        <div>
+          {courseSupervisors.length > 0 ? (
+            <div className={styles["instructors-grid"]}>
+              {courseSupervisors.map((supervisor) => (
+                <div
+                  key={supervisor.instructor_id}
+                  className={styles["instructor-card"]}
+                >
+                  <div className="relative">
+                    <img
+                      src={getAvatarUrl(supervisor)}
+                      alt={supervisor.name}
+                      className={styles["instructor-image"]}
+                      onError={handleImageError}
+                    />
+                    <div className={styles["verified-badge"]}>
+                      <i className="fas fa-check text-white text-xs"></i>
+                    </div>
+                  </div>
+                  <p className={styles["instructor-position"]}>{supervisor.position}</p>
+                  <h4 className={styles["instructor-name"]}>{supervisor.name}</h4>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className={styles["empty-state"]}>
+              <i className="fas fa-user-tie text-2xl mb-2"></i>
+              <p>ยังไม่มีข้อมูลอาจารย์ผู้ดูแลหลักสูตร</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Course Committee Section */}
+      {activeTab === "committee" && (
+        <div>
+          {courseCommittee.length > 0 ? (
+            <div className={styles["instructors-grid"]}>
+              {courseCommittee.map((committee) => (
+                <div
+                  key={committee.instructor_id}
+                  className={styles["instructor-card"]}
+                >
+                  <div className="relative">
+                    <img
+                      src={getAvatarUrl(committee)}
+                      alt={committee.name}
+                      className={styles["instructor-image"]}
+                      onError={handleImageError}
+                    />
+                    <div className={styles["verified-badge"]}>
+                      <i className="fas fa-check text-white text-xs"></i>
+                    </div>
+                  </div>
+                  <p className={styles["instructor-position"]}>{committee.position}</p>
+                  <h4 className={styles["instructor-name"]}>{committee.name}</h4>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className={styles["empty-state"]}>
+              <i className="fas fa-users-cog text-2xl mb-2"></i>
+              <p>ยังไม่มีข้อมูลกรรมการหลักสูตร</p>
+            </div>
+          )}
         </div>
       )}
     </div>
