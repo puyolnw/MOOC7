@@ -27,10 +27,38 @@ interface Question {
   }[];
 }
 
+interface Attachment {
+  attachment_id: number;
+  file_name: string;
+  file_url: string;
+}
+
+interface Answer {
+  question_id: number;
+  choice_id?: number;
+  text_answer?: string;
+  attachment_ids?: number[];
+  is_correct?: boolean;
+  score_earned?: number;
+  attachments?: Attachment[];
+}
+
+interface Attempt {
+  attempt_id: number;
+  start_time: string;
+  end_time: string;
+  score: number;
+  max_score: number;
+  passed: boolean;
+  status: string;
+  answers: Answer[];
+}
+
 const LessonQuiz = ({ onComplete, isCompleted = false, quizId, quizData = [] }: LessonQuizProps) => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [showResult, setShowResult] = useState(false);
   const [score, setScore] = useState(0);
+  const [maxScore, setMaxScore] = useState(0);
   const [isPassed, setIsPassed] = useState(false);
   const [hasAttempted, setHasAttempted] = useState(false);
   console.log("isCompleted:", hasAttempted);
@@ -38,6 +66,8 @@ const LessonQuiz = ({ onComplete, isCompleted = false, quizId, quizData = [] }: 
   const [questions, setQuestions] = useState<Question[]>([]);
   const [isSpecialQuiz, setIsSpecialQuiz] = useState(false);
   const [isAwaitingReview, setIsAwaitingReview] = useState(false);
+  const [previousAttempts, setPreviousAttempts] = useState<Attempt[]>([]);
+  const [uploadedAttachments, setUploadedAttachments] = useState<Attachment[]>([]);
   
   // For single choice questions (SC, TF)
   const [selectedSingleAnswers, setSelectedSingleAnswers] = useState<number[]>([]);
@@ -48,8 +78,8 @@ const LessonQuiz = ({ onComplete, isCompleted = false, quizId, quizData = [] }: 
   // For text questions and Fill in the Blank
   const [textAnswers, setTextAnswers] = useState<string[]>([]);
   
-  // For file uploads
-  const [files, setFiles] = useState<File[]>([]);
+  // For file uploads (เชื่อมโยงไฟล์กับคำถาม)
+  const [files, setFiles] = useState<{ questionIndex: number, file: File }[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // กำหนดเกณฑ์การผ่าน (65%)
@@ -68,7 +98,6 @@ const LessonQuiz = ({ onComplete, isCompleted = false, quizId, quizData = [] }: 
         
         // ถ้ามีข้อมูล quizData ที่ส่งมาจาก props ให้ใช้ข้อมูลนั้น
         if (quizData && quizData.length > 0) {
-          // แปลงข้อมูลให้อยู่ในรูปแบบที่ต้องการ
           const formattedQuestions = quizData.map((q: any) => ({
             question_id: q.question_id,
             title: q.question_text || q.title,
@@ -79,7 +108,6 @@ const LessonQuiz = ({ onComplete, isCompleted = false, quizId, quizData = [] }: 
           
           setQuestions(formattedQuestions);
           
-          // ตรวจสอบว่าเป็นแบบทดสอบพิเศษหรือไม่ (มีคำถามประเภท FB)
           const hasFillInBlank = formattedQuestions.some(q => q.type === 'FB');
           setIsSpecialQuiz(hasFillInBlank);
           
@@ -88,7 +116,7 @@ const LessonQuiz = ({ onComplete, isCompleted = false, quizId, quizData = [] }: 
         }
         
         // ถ้าไม่มีข้อมูลจาก props ให้ดึงข้อมูลจาก API
-        const response = await axios.get(`${API_URL}/api/learn/quiz/${quizId}`, {
+        const response = await axios.get(`${API_URL}/api/courses/quizzes/${quizId}`, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('token')}`
           }
@@ -97,13 +125,35 @@ const LessonQuiz = ({ onComplete, isCompleted = false, quizId, quizData = [] }: 
         if (response.data.success && response.data.quiz) {
           setQuestions(response.data.quiz.questions);
           
-          // ตรวจสอบว่าเป็นแบบทดสอบพิเศษหรือไม่
           const hasFillInBlank = response.data.quiz.questions.some((q: any) => q.type === 'FB');
           setIsSpecialQuiz(hasFillInBlank);
           
-          // ตรวจสอบสถานะการรอตรวจ
           if (response.data.quiz.status === 'awaiting_review') {
             setIsAwaitingReview(true);
+          }
+        }
+        
+        // ดึงข้อมูลการส่งครั้งก่อนหน้า
+        const attemptsResponse = await axios.get(`${API_URL}/api/courses/quizzes/${quizId}/attempts`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        
+        if (attemptsResponse.data.success && attemptsResponse.data.attempts) {
+          setPreviousAttempts(attemptsResponse.data.attempts);
+          setHasAttempted(true);
+          
+          const latestAttempt = attemptsResponse.data.attempts[0];
+          if (latestAttempt) {
+            setScore(latestAttempt.score);
+            setMaxScore(latestAttempt.max_score);
+            setIsPassed(latestAttempt.passed);
+            setShowResult(true);
+            setIsAwaitingReview(latestAttempt.status === 'awaiting_review');
+            if (latestAttempt.answers.some((ans: Answer) => ans.attachments && ans.attachments.length > 0)) {
+              setUploadedAttachments(latestAttempt.answers.flatMap((ans: Answer) => ans.attachments || []));
+            }
           }
         }
       } catch (error) {
@@ -115,7 +165,6 @@ const LessonQuiz = ({ onComplete, isCompleted = false, quizId, quizData = [] }: 
     
     fetchQuizData();
     
-    // เช็คว่าทำข้อสอบผ่านแล้วหรือไม่
     if (isCompleted) {
       setIsPassed(true);
       setShowResult(true);
@@ -133,20 +182,16 @@ const LessonQuiz = ({ onComplete, isCompleted = false, quizId, quizData = [] }: 
   const handleMultipleAnswerSelect = (answerIndex: number) => {
     const newSelectedAnswers = [...selectedMultipleAnswers];
     
-    // Initialize the array for current question if it doesn't exist
     if (!newSelectedAnswers[currentQuestion]) {
       newSelectedAnswers[currentQuestion] = [];
     }
     
-    // Toggle selection
     const currentSelections = newSelectedAnswers[currentQuestion];
     const selectionIndex = currentSelections.indexOf(answerIndex);
     
     if (selectionIndex === -1) {
-      // Add selection
       currentSelections.push(answerIndex);
     } else {
-      // Remove selection
       currentSelections.splice(selectionIndex, 1);
     }
     
@@ -160,10 +205,13 @@ const LessonQuiz = ({ onComplete, isCompleted = false, quizId, quizData = [] }: 
     setTextAnswers(newTextAnswers); 
   };
   
-  // Handle file upload
+  // Handle file upload (เชื่อมโยงไฟล์กับคำถาม)
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      const newFiles = Array.from(e.target.files);
+      const newFiles = Array.from(e.target.files).map(file => ({
+        questionIndex: currentQuestion,
+        file
+      }));
       setFiles(prevFiles => [...prevFiles, ...newFiles]);
     }
   };
@@ -179,45 +227,76 @@ const LessonQuiz = ({ onComplete, isCompleted = false, quizId, quizData = [] }: 
       const formData = new FormData();
       
       const answers = questions.map((question, index) => {
-        let answer;
+        const answer: any = {
+          questionId: question.question_id,
+        };
         
         switch (question.type) {
           case 'SC':
           case 'TF':
-            // ส่ง choice_id ที่เลือก
-            answer = question.choices[selectedSingleAnswers[index]]?.choice_id;
+            if (selectedSingleAnswers[index] !== undefined) {
+              answer.selectedOptionId = question.choices[selectedSingleAnswers[index]]?.choice_id;
+            }
             break;
             
           case 'MC':
-            // ส่งเป็น array ของ choice_id ที่เลือก
-            answer = selectedMultipleAnswers[index]?.map(idx => question.choices[idx]?.choice_id) || [];
+            if (selectedMultipleAnswers[index]?.length > 0) {
+              answer.selectedOptionId = selectedMultipleAnswers[index].map(idx => question.choices[idx]?.choice_id);
+            }
             break;
             
           case 'FB':
-            // ส่งคำตอบแบบข้อความ
-            answer = textAnswers[index] || '';
+            if (textAnswers[index]) {
+              answer.textAnswer = textAnswers[index];
+            }
+            // เพิ่มไฟล์ที่เกี่ยวข้องกับคำถามนี้
+            const questionFiles = files.filter(f => f.questionIndex === index);
+            if (questionFiles.length > 0) {
+              answer.files = questionFiles.map(f => f.file);
+            }
+            if (uploadedAttachments.length > 0) {
+              answer.attachmentIds = uploadedAttachments.map(attachment => attachment.attachment_id);
+            }
             break;
             
           default:
-            answer = null;
+            return null;
         }
         
-        return {
-          question_id: question.question_id,
-          answer
-        };
-      }).filter(a => a.answer !== undefined && a.answer !== null);
+        return answer;
+      }).filter(a => a !== null);
       
-      // เพิ่ม answers เข้าไปใน FormData
-      formData.append('answers', JSON.stringify(answers));
-      
-      // เพิ่มไฟล์ที่อัปโหลด (ถ้ามี)
-      files.forEach(file => {
-        formData.append('files', file);
+      // ส่งข้อมูลคำตอบและไฟล์
+      answers.forEach((answer, index) => {
+        formData.append(`answers[${index}][questionId]`, answer.questionId.toString());
+        if (answer.selectedOptionId) {
+          if (Array.isArray(answer.selectedOptionId)) {
+            answer.selectedOptionId.forEach((id: number, idx: number) => {
+              formData.append(`answers[${index}][selectedOptionId][${idx}]`, id.toString());
+            });
+          } else {
+            formData.append(`answers[${index}][selectedOptionId]`, answer.selectedOptionId.toString());
+          }
+        }
+        if (answer.textAnswer) {
+          formData.append(`answers[${index}][textAnswer]`, answer.textAnswer);
+        }
+        if (answer.attachmentIds) {
+          formData.append(`answers[${index}][attachmentIds]`, JSON.stringify(answer.attachmentIds));
+        }
+        // เพิ่มไฟล์ที่เกี่ยวข้องกับคำถามนี้
+        if (answer.files && answer.files.length > 0) {
+          answer.files.forEach((file: File) => {
+            formData.append(`answers[${index}][files]`, file);
+          });
+        }
       });
       
+      formData.append('startTime', new Date().toISOString());
+      formData.append('endTime', new Date().toISOString());
+      
       const response = await axios.post(
-        `${API_URL}/api/learn/quiz/${quizId}/submit`, 
+        `${API_URL}/api/courses/quizzes/${quizId}/submit`, 
         formData,
         {
           headers: {
@@ -227,28 +306,40 @@ const LessonQuiz = ({ onComplete, isCompleted = false, quizId, quizData = [] }: 
         }
       );
       
-      if (response.data.success) {
-        const { totalScore, maxScore, percentage, passed, isSpecialQuiz } = response.data.result;
+      if (response.data.message === 'ส่งแบบทดสอบสำเร็จ') {
+        const result = response.data.result;
+        setScore(result.totalScore || 0);
+        setMaxScore(result.maxScore || 0);
+        setIsPassed(result.passed);
         
-        setScore(totalScore || 0);
-        setIsPassed(passed);
+        if (result.uploadedFiles && result.uploadedFiles.length > 0) {
+          setUploadedAttachments(result.uploadedFiles.map((file: any) => ({
+            attachment_id: file.attachment_id,
+            file_name: file.file_name,
+            file_url: file.file_url || ''
+          })));
+        }
         
-        // ถ้าเป็นแบบทดสอบพิเศษ ให้แสดงสถานะรอตรวจ
         if (isSpecialQuiz) {
           setIsAwaitingReview(true);
         }
         
-        // ถ้าผ่านเกณฑ์ ให้เรียก onComplete
-        if (passed) {
+        if (result.passed) {
           onComplete();
         }
         
-        return { totalScore, maxScore, percentage, passed, isSpecialQuiz };
+        return result;
       }
       
-      return null;
+      throw new Error('การส่งแบบทดสอบล้มเหลว: ' + (response.data.message || 'ไม่ทราบสาเหตุ'));
     } catch (error) {
-      console.error("Error submitting quiz:", error);
+      if (axios.isAxiosError(error)) {
+        console.error("Error submitting quiz:", error.message, error.response?.data);
+        alert(`เกิดข้อผิดพลาด: ${error.message} - ${error.response?.data?.message || 'กรุณาตรวจสอบ URL หรือ Quiz ID'}`);
+      } else {
+        console.error("Error submitting quiz:", error);
+        alert('เกิดข้อผิดพลาดที่ไม่คาดคิด กรุณาลองใหม่');
+      }
       return null;
     }
   };
@@ -266,12 +357,10 @@ const LessonQuiz = ({ onComplete, isCompleted = false, quizId, quizData = [] }: 
         setScore(result.totalScore || 0);
         setIsPassed(result.passed);
         
-        // ถ้าเป็นแบบทดสอบพิเศษ ให้แสดงสถานะรอตรวจ
         if (result.isSpecialQuiz) {
           setIsAwaitingReview(true);
         }
       } else {
-        // ถ้าไม่สามารถส่งคำตอบได้ ให้คำนวณคะแนนเอง
         let newScore = 0;
         
         for (let i = 0; i < questions.length; i++) {
@@ -287,7 +376,6 @@ const LessonQuiz = ({ onComplete, isCompleted = false, quizId, quizData = [] }: 
               break;
               
             case 'MC':
-              // ตรวจสอบว่าเลือกตัวเลือกที่ถูกต้องทั้งหมด
               const selectedChoices = selectedMultipleAnswers[i] || [];
               const correctChoices = question.choices
                 .map((choice, idx) => ({ idx, is_correct: choice.is_correct }))
@@ -300,26 +388,22 @@ const LessonQuiz = ({ onComplete, isCompleted = false, quizId, quizData = [] }: 
               }
               break;
               
-            // ไม่สามารถตรวจคำตอบแบบ FB ได้อัตโนมัติ
             case 'FB':
               setIsAwaitingReview(true);
               break;
           }
         }
         
-        // ถ้าเป็นแบบทดสอบพิเศษ ไม่ต้องคำนวณคะแนน
         if (isSpecialQuiz) {
           setIsAwaitingReview(true);
         } else {
           const maxScore = questions.reduce((sum, q) => sum + q.score, 0);
           const percentage = (newScore / maxScore) * 100;
-          const passed = percentage >= PASSING_PERCENTAGE;
-          
+          setMaxScore(maxScore);
           setScore(newScore);
-          setIsPassed(passed);
+          setIsPassed(percentage >= PASSING_PERCENTAGE);
           
-          // ถ้าผ่านเกณฑ์ ให้เรียก onComplete
-          if (passed) {
+          if (percentage >= PASSING_PERCENTAGE) {
             onComplete();
           }
         }
@@ -337,48 +421,46 @@ const LessonQuiz = ({ onComplete, isCompleted = false, quizId, quizData = [] }: 
 
   const handleFinish = () => {
     if (isPassed || isAwaitingReview) {
-      // ถ้าผ่านแล้วหรือรอตรวจ ให้ไปบทเรียนถัดไป
       onComplete();
     } else {
-      // ถ้าไม่ผ่าน ให้เริ่มทำข้อสอบใหม่
       resetQuiz();
     }
   };
 
-  // รีเซ็ตแบบทดสอบเพื่อทำใหม่
   const resetQuiz = () => {
     setCurrentQuestion(0);
     setSelectedSingleAnswers([]);
     setSelectedMultipleAnswers([]);
     setTextAnswers([]);
     setFiles([]);
+    setUploadedAttachments([]);
     setShowResult(false);
     setIsAwaitingReview(false);
+    setHasAttempted(false);
   };
 
-    // Check if current question has been answered
-    const isCurrentQuestionAnswered = () => {
-      if (questions.length === 0 || currentQuestion >= questions.length) {
+  const isCurrentQuestionAnswered = () => {
+    if (questions.length === 0 || currentQuestion >= questions.length) {
+      return false;
+    }
+    
+    const question = questions[currentQuestion];
+    
+    switch (question.type) {
+      case 'SC':
+      case 'TF':
+        return selectedSingleAnswers[currentQuestion] !== undefined;
+        
+      case 'MC':
+        return selectedMultipleAnswers[currentQuestion]?.length > 0;
+        
+      case 'FB':
+        return textAnswers[currentQuestion]?.trim().length > 0 || files.filter(f => f.questionIndex === currentQuestion).length > 0;
+        
+      default:
         return false;
-      }
-      
-      const question = questions[currentQuestion];
-      
-      switch (question.type) {
-        case 'SC':
-        case 'TF':
-          return selectedSingleAnswers[currentQuestion] !== undefined;
-          
-        case 'MC':
-          return selectedMultipleAnswers[currentQuestion]?.length > 0;
-          
-        case 'FB':
-          return textAnswers[currentQuestion]?.trim().length > 0;
-          
-        default:
-          return false;
-      }
-    };
+    }
+  };
 
   if (loading) {
     return (
@@ -425,7 +507,6 @@ const LessonQuiz = ({ onComplete, isCompleted = false, quizId, quizData = [] }: 
   }
 
   if (showResult) {
-    const maxScore = questions.reduce((sum, q) => sum + q.score, 0);
     const percentage = maxScore > 0 ? Math.round((score / maxScore) * 100) : 0;
     
     return (
@@ -445,6 +526,41 @@ const LessonQuiz = ({ onComplete, isCompleted = false, quizId, quizData = [] }: 
               <p>คิดเป็น: <span className="percentage">{percentage}%</span></p>
               <p>เกณฑ์ผ่าน: {PASSING_PERCENTAGE}%</p>
             </div>
+            {previousAttempts.length > 0 && (
+              <div className="previous-attempts mt-4">
+                <h4>การส่งครั้งก่อนหน้า</h4>
+                {previousAttempts.map((attempt, index) => (
+                  <div key={index} className="attempt-summary mb-3">
+                    <p><strong>ครั้งที่ {previousAttempts.length - index}</strong></p>
+                    <p>วันที่ส่ง: {new Date(attempt.end_time).toLocaleString()}</p>
+                    <p>คะแนน: {attempt.score} / {attempt.max_score}</p>
+                    <p>สถานะ: {attempt.passed ? 'ผ่าน' : 'ไม่ผ่าน'}</p>
+                    {attempt.answers.some(ans => ans.attachments && ans.attachments.length > 0) && (
+                      <div className="attached-files">
+                        <p><strong>ไฟล์แนบ:</strong></p>
+                        {attempt.answers.map((answer, ansIndex) => (
+                          answer.attachments && answer.attachments.length > 0 && (
+                            <div key={ansIndex} className="answer-attachments mb-2">
+                              <p>คำถามที่ {ansIndex + 1}:</p>
+                              <ul className="list-group">
+                                {answer.attachments.map((attachment) => (
+                                  <li key={attachment.attachment_id} className="list-group-item">
+                                    <a href={attachment.file_url} target="_blank" rel="noopener noreferrer">
+                                      <i className="fas fa-file me-2"></i>
+                                      {attachment.file_name}
+                                    </a>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
             <button className="btn btn-primary" onClick={handleFinish}>
               {isPassed ? 'ไปยังบทเรียนถัดไป' : 'ลองทำอีกครั้ง'}
             </button>
@@ -557,6 +673,7 @@ const LessonQuiz = ({ onComplete, isCompleted = false, quizId, quizData = [] }: 
                     onChange={handleFileChange}
                     multiple
                     ref={fileInputRef}
+                    accept=".pdf,.doc,.docx,.xls,.xlsx"
                   />
                   <button 
                     className="btn btn-outline-secondary" 
@@ -568,15 +685,15 @@ const LessonQuiz = ({ onComplete, isCompleted = false, quizId, quizData = [] }: 
                 </div>
                 
                 {/* Show uploaded files */}
-                {files.length > 0 && (
+                {(files.filter(f => f.questionIndex === currentQuestion).length > 0 || uploadedAttachments.length > 0) && (
                   <div className="uploaded-files mt-2">
                     <p className="mb-2">ไฟล์ที่แนบ:</p>
                     <ul className="list-group">
-                      {files.map((file, index) => (
+                      {files.filter(f => f.questionIndex === currentQuestion).map((fileObj, index) => (
                         <li key={index} className="list-group-item d-flex justify-content-between align-items-center">
                           <div>
                             <i className="fas fa-file me-2"></i>
-                            {file.name} ({(file.size / 1024).toFixed(2)} KB)
+                            {fileObj.file.name} ({(fileObj.file.size / 1024).toFixed(2)} KB)
                           </div>
                           <button 
                             className="btn btn-sm btn-danger"
@@ -586,13 +703,21 @@ const LessonQuiz = ({ onComplete, isCompleted = false, quizId, quizData = [] }: 
                           </button>
                         </li>
                       ))}
+                      {uploadedAttachments.map((attachment, index) => (
+                        <li key={index} className="list-group-item">
+                          <a href={attachment.file_url} target="_blank" rel="noopener noreferrer">
+                            <i className="fas fa-file me-2"></i>
+                            {attachment.file_name}
+                          </a>
+                        </li>
+                      ))}
                     </ul>
                   </div>
                 )}
                 
                 <p className="text-muted small mt-2">
                   <i className="fas fa-info-circle me-1"></i>
-                  สามารถอัปโหลดไฟล์ได้สูงสุด 10 ไฟล์ ขนาดไม่เกิน 10MB ต่อไฟล์
+                  สามารถอัปโหลดไฟล์ได้สูงสุด 10 ไฟล์ ขนาดไม่เกิน 50MB ต่อไฟล์ (รองรับ .pdf, .doc, .docx, .xls, .xlsx)
                 </p>
               </div>
             </div>

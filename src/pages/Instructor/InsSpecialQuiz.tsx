@@ -7,7 +7,7 @@ const InsGradingpage= () => {
    return (
       <Wrapper>
          <SEO pageTitle={'Creditbank Ins Questions'} />
-         <InsGrading />a
+         <InsGrading />
       </Wrapper>
    );
 };
