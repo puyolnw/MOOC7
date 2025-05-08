@@ -16,6 +16,8 @@ interface Answer {
   text_answer: string;
   file_name?: string;
   file_url?: string;
+  uploaded_by?: string;
+  upload_time?: string;
 }
 
 interface Question {
@@ -63,7 +65,7 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
           }
           
           const response = await axios.get(
-            `${apiURL}/api/specialquiz/special-quiz/pending-reviews`,
+            `${apiURL}/api/special-quiz/pending-reviews`,
             {
               headers: {
                 Authorization: `Bearer ${token}`
@@ -103,7 +105,7 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
           
           // ดึงข้อมูลคำตอบ
           const response = await axios.get(
-            `${apiURL}/api/specialquiz/special-quiz/attempt/${selectedAttemptId}`,
+            `${apiURL}/api/special-quiz/attempt/${selectedAttemptId}`,
             {
               headers: {
                 Authorization: `Bearer ${token}`
@@ -195,7 +197,7 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
       }));
       
       const response = await axios.post(
-        `${apiURL}/api/specialquiz/special-quiz/attempt/${selectedAttemptId}/grade`,
+        `${apiURL}/api/special-quiz/attempt/${selectedAttemptId}/grade`,
         { answers },
         {
           headers: {
@@ -245,206 +247,215 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
   };
 
   // แสดงหน้าตรวจงาน (ใน Popup)
-    // แสดงหน้าตรวจงาน (ใน Popup)
-    if (isPopup) {
-      return (
-        <div className="grading-content">
-          {loading ? (
-            <div className="text-center py-5">
-              <div className="spinner-border text-primary" role="status">
-                <span className="visually-hidden">กำลังโหลด...</span>
-              </div>
-              <p className="mt-3">กำลังโหลดข้อมูล...</p>
+  if (isPopup) {
+    return (
+      <div className="grading-content">
+        {loading ? (
+          <div className="text-center py-5">
+            <div className="spinner-border text-primary" role="status">
+              <span className="visually-hidden">กำลังโหลด...</span>
             </div>
-          ) : (
-            <>
-              {attemptAnswers.length === 0 ? (
-                <div className="alert alert-info">
-                  <i className="fas fa-info-circle me-2"></i>
-                  ไม่พบข้อมูลคำตอบ
-                </div>
-              ) : (
-                <div>
-                  {attemptAnswers.map((answer, index) => {
-                    const question = findQuestion(answer.question_id);
-                    return (
-                      <div key={answer.question_id} className="card mb-4">
-                        <div className="card-header bg-light">
-                          <h5 className="mb-0">
-                            คำถามที่ {index + 1}: {question?.title || 'ไม่พบข้อมูลคำถาม'}
-                          </h5>
-                          <p className="text-muted mb-0">
-                            คะแนนเต็ม: {question?.score || 0} คะแนน
-                          </p>
-                        </div>
-                        <div className="card-body">
-                          <div className="mb-4">
-                            <h6>คำตอบของนักศึกษา:</h6>
-                            <div className="p-3 bg-light rounded">
-                              {answer.text_answer || <em>ไม่มีคำตอบ</em>}
-                            </div>
+            <p className="mt-3">กำลังโหลดข้อมูล...</p>
+          </div>
+        ) : (
+          <>
+            {attemptAnswers.length === 0 ? (
+              <div className="alert alert-info">
+                <i className="fas fa-info-circle me-2"></i>
+                ไม่พบข้อมูลคำตอบ
+              </div>
+            ) : (
+              <div>
+                {attemptAnswers.map((answer, index) => {
+                  const question = findQuestion(answer.question_id);
+                  return (
+                    <div key={answer.question_id} className="card mb-4">
+                      <div className="card-header bg-light">
+                        <h5 className="mb-0">
+                          คำถามที่ {index + 1}: {question?.title || 'ไม่พบข้อมูลคำถาม'}
+                        </h5>
+                        <p className="text-muted mb-0">
+                          คะแนนเต็ม: {question?.score || 0} คะแนน
+                        </p>
+                      </div>
+                      <div className="card-body">
+                        <div className="mb-4">
+                          <h6>คำตอบของนักศึกษา:</h6>
+                          <div className="p-3 bg-light rounded">
+                            {answer.text_answer || <em>ไม่มีคำตอบ</em>}
                           </div>
-                          
-                          {/* แสดงไฟล์แนบ (ถ้ามี) */}
-                          {answer.file_url && (
-                            <div className="mb-4">
-                              <h6>ไฟล์แนบ:</h6>
-                              <div className="p-3 bg-light rounded">
+                        </div>
+                        
+                        {/* แสดงไฟล์แนบพร้อมข้อมูลเพิ่มเติม */}
+                        {answer.file_name && (
+                          <div className="mb-4">
+                            <h6>ไฟล์แนบ:</h6>
+                            <div className="p-3 bg-light rounded">
+                              {answer.file_name && (
+                                <p><strong>ชื่อไฟล์:</strong> {answer.file_name}</p>
+                              )}
+                              {answer.uploaded_by && (
+                                <p><strong>อัปโหลดโดย:</strong> {answer.uploaded_by}</p>
+                              )}
+                              {answer.upload_time && (
+                                <p><strong>เวลา:</strong> {formatDate(answer.upload_time)}</p>
+                              )}
+                              {answer.file_url && (
                                 <a 
                                   href={`${apiURL}${answer.file_url}`} 
                                   target="_blank" 
                                   rel="noopener noreferrer"
-                                  className="d-flex align-items-center"
+                                  className="d-flex align-items-center text-primary"
                                 >
                                   <i className="fas fa-file me-2"></i>
-                                  {answer.file_name || 'ดาวน์โหลดไฟล์'}
+                                  เปิดไฟล์
                                 </a>
-                              </div>
+                              )}
                             </div>
-                          )}
-                          
-                          <div className="row">
-                            <div className="col-md-6 mb-3">
-                              <label className="form-label">ให้คะแนน:</label>
+                          </div>
+                        )}
+                        
+                        <div className="row">
+                          <div className="col-md-6 mb-3">
+                            <label className="form-label">ให้คะแนน:</label>
+                            <input
+                              type="number"
+                              className="form-control"
+                              min="0"
+                              max={question?.score || 0}
+                              value={scores[answer.question_id] || 0}
+                              onChange={(e) => handleScoreChange(
+                                answer.question_id, 
+                                Math.min(parseInt(e.target.value) || 0, question?.score || 0)
+                              )}
+                            />
+                            <small className="text-muted">
+                              คะแนนเต็ม: {question?.score || 0} คะแนน
+                            </small>
+                          </div>
+                          <div className="col-md-6 mb-3">
+                            <label className="form-label">สถานะ:</label>
+                            <div className="form-check">
                               <input
-                                type="number"
-                                className="form-control"
-                                min="0"
-                                max={question?.score || 0}
-                                value={scores[answer.question_id] || 0}
-                                onChange={(e) => handleScoreChange(
+                                className="form-check-input"
+                                type="checkbox"
+                                id={`correct-${answer.question_id}`}
+                                checked={isCorrect[answer.question_id] || false}
+                                onChange={(e) => handleCorrectChange(
                                   answer.question_id, 
-                                  Math.min(parseInt(e.target.value) || 0, question?.score || 0)
+                                  e.target.checked
                                 )}
                               />
-                              <small className="text-muted">
-                                คะแนนเต็ม: {question?.score || 0} คะแนน
-                              </small>
-                            </div>
-                            <div className="col-md-6 mb-3">
-                              <label className="form-label">สถานะ:</label>
-                              <div className="form-check">
-                                <input
-                                  className="form-check-input"
-                                  type="checkbox"
-                                  id={`correct-${answer.question_id}`}
-                                  checked={isCorrect[answer.question_id] || false}
-                                  onChange={(e) => handleCorrectChange(
-                                    answer.question_id, 
-                                    e.target.checked
-                                  )}
-                                />
-                                <label 
-                                  className="form-check-label" 
-                                  htmlFor={`correct-${answer.question_id}`}
-                                >
-                                  ตอบถูก
-                                </label>
-                              </div>
+                              <label 
+                                className="form-check-label" 
+                                htmlFor={`correct-${answer.question_id}`}
+                              >
+                                ตอบถูก
+                              </label>
                             </div>
                           </div>
                         </div>
                       </div>
-                    );
-                  })}
+                    </div>
+                  );
+                })}
   
-                  <div className="d-flex justify-content-end mt-4">
-                    <button
-                      type="button"
-                      className="btn btn-secondary me-2"
-                      onClick={onClose}
-                      disabled={submitting}
-                    >
-                      ยกเลิก
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-primary"
-                      onClick={handleSubmitGrading}
-                      disabled={submitting}
-                    >
-                      {submitting ? (
-                        <>
-                          <span 
-                            className="spinner-border spinner-border-sm me-2" 
-                            role="status" 
-                            aria-hidden="true"
-                          ></span>
-                          กำลังบันทึก...
-                        </>
-                      ) : (
-                        <>
-                          <i className="fas fa-save me-2"></i>
-                          บันทึกผลการตรวจ
-                        </>
-                      )}
-                    </button>
-                  </div>
+                <div className="d-flex justify-content-end mt-4">
+                  <button
+                    type="button"
+                    className="btn btn-secondary me-2"
+                    onClick={onClose}
+                    disabled={submitting}
+                  >
+                    ยกเลิก
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={handleSubmitGrading}
+                    disabled={submitting}
+                  >
+                    {submitting ? (
+                      <>
+                        <span 
+                          className="spinner-border spinner-border-sm me-2" 
+                          role="status" 
+                          aria-hidden="true"
+                        ></span>
+                        กำลังบันทึก...
+                      </>
+                    ) : (
+                      <>
+                        <i className="fas fa-save me-2"></i>
+                        บันทึกผลการตรวจ
+                      </>
+                    )}
+                  </button>
                 </div>
-              )}
-            </>
-          )}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    );
+  }
+
+  // แสดงรายการงานที่รอตรวจ (หน้าหลัก)
+  return (
+    <>
+      {loading ? (
+        <div className="text-center py-5">
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">กำลังโหลด...</span>
+          </div>
+          <p className="mt-3">กำลังโหลดข้อมูล...</p>
         </div>
-      );
-    }
-  
-      // แสดงรายการงานที่รอตรวจ (หน้าหลัก)
-      return (
-         <>
-           {loading ? (
-             <div className="text-center py-5">
-               <div className="spinner-border text-primary" role="status">
-                 <span className="visually-hidden">กำลังโหลด...</span>
-               </div>
-               <p className="mt-3">กำลังโหลดข้อมูล...</p>
-             </div>
-           ) : error ? (
-             <div className="alert alert-danger" role="alert">
-               <i className="fas fa-exclamation-circle me-2"></i>
-               {error}
-             </div>
-           ) : pendingReviews.length === 0 ? (
-             <div className="alert alert-info" role="alert">
-               <i className="fas fa-info-circle me-2"></i>
-               ไม่มีงานที่รอตรวจในขณะนี้
-             </div>
-           ) : (
-             <div className="dashboard__review-table">
-               <table className="table table-hover">
-                 <thead>
-                   <tr>
-                     <th>ลำดับ</th>
-                     <th>ชื่อแบบทดสอบ</th>
-                     <th>ชื่อนักศึกษา</th>
-                     <th>วันที่ส่ง</th>
-                     <th>การจัดการ</th>
-                   </tr>
-                 </thead>
-                 <tbody>
-                   {pendingReviews.map((review, index) => (
-                     <tr key={review.attempt_id}>
-                       <td>{index + 1}</td>
-                       <td>{review.quiz_title}</td>
-                       <td>{review.student_name}</td>
-                       <td>{formatDate(review.submitted_at)}</td>
-                       <td>
-                         <button
-                           className="btn btn-primary btn-sm"
-                           onClick={() => onOpenGrading && onOpenGrading(review.attempt_id)}
-                         >
-                           <i className="fas fa-check-circle me-1"></i>
-                           ตรวจงาน
-                         </button>
-                       </td>
-                     </tr>
-                   ))}
-                 </tbody>
-               </table>
-             </div>
-           )}
-         </>
-       );
-     };
-     
-     export default InstructorGrading;
-   
+      ) : error ? (
+        <div className="alert alert-danger" role="alert">
+          <i className="fas fa-exclamation-circle me-2"></i>
+          {error}
+        </div>
+      ) : pendingReviews.length === 0 ? (
+        <div className="alert alert-info" role="alert">
+          <i className="fas fa-info-circle me-2"></i>
+          ไม่มีงานที่รอตรวจในขณะนี้
+        </div>
+      ) : (
+        <div className="dashboard__review-table">
+          <table className="table table-hover">
+            <thead>
+              <tr>
+                <th>ลำดับ</th>
+                <th>ชื่อแบบทดสอบ</th>
+                <th>ชื่อนักศึกษา</th>
+                <th>วันที่ส่ง</th>
+                <th>การจัดการ</th>
+              </tr>
+            </thead>
+            <tbody>
+              {pendingReviews.map((review, index) => (
+                <tr key={review.attempt_id}>
+                  <td>{index + 1}</td>
+                  <td>{review.quiz_title}</td>
+                  <td>{review.student_name}</td>
+                  <td>{formatDate(review.submitted_at)}</td>
+                  <td>
+                    <button
+                      className="btn btn-primary btn-sm"
+                      onClick={() => onOpenGrading && onOpenGrading(review.attempt_id)}
+                    >
+                      <i className="fas fa-check-circle me-1"></i>
+                      ตรวจงาน
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </>
+  );
+};
+
+export default InstructorGrading;
