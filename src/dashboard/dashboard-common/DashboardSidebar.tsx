@@ -115,6 +115,12 @@ const DashboardSidebar = () => {
                icon: "skillgro-video-tutorial",
                title: "รายวิชาของฉัน",
             },
+            {
+               id: 2,
+               link: "/instructor-grading",
+               icon: "skillgro-video-tutorial",
+               title: "การตรวจงาน",
+            },
          ],
       },
    ];

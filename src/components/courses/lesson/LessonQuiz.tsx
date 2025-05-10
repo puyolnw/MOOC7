@@ -10,6 +10,7 @@ interface LessonQuizProps {
   isCompleted?: boolean;
   quizId: number;
   quizData?: any[];
+  onNextLesson?: () => void;
 }
 
 // Define different question types
@@ -54,14 +55,21 @@ interface Attempt {
   answers: Answer[];
 }
 
-const LessonQuiz = ({ onComplete, isCompleted = false, quizId, quizData = [] }: LessonQuizProps) => {
+interface PassedQuizResult {
+  quizId: number;
+  quizTitle: string;
+  score: number;
+  maxScore: number;
+  passed: boolean;
+  completedAt: string;
+}
+
+const LessonQuiz = ({ onComplete, isCompleted = false, quizId, quizData = [], onNextLesson }: LessonQuizProps) => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [showResult, setShowResult] = useState(false);
   const [score, setScore] = useState(0);
   const [maxScore, setMaxScore] = useState(0);
   const [isPassed, setIsPassed] = useState(false);
-  const [hasAttempted, setHasAttempted] = useState(false);
-  console.log("isCompleted:", hasAttempted);
   const [loading, setLoading] = useState(true);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [isSpecialQuiz, setIsSpecialQuiz] = useState(false);
@@ -84,6 +92,63 @@ const LessonQuiz = ({ onComplete, isCompleted = false, quizId, quizData = [] }: 
 
   // กำหนดเกณฑ์การผ่าน (65%)
   const PASSING_PERCENTAGE = 65;
+// เพิ่มฟังก์ชันสำหรับดึงข้อมูลสถานะแบบทดสอบ
+const fetchQuizStatus = async () => {
+  try {
+    const response = await axios.get(`${API_URL}/api/learn/quiz/${quizId}/status`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('token')}`
+      }
+    });
+    
+    if (response.data.success) {
+      if (response.data.status === 'awaiting_review') {
+        setIsAwaitingReview(true);
+        setShowResult(true);
+        onComplete(); // แจ้งว่าแบบทดสอบนี้เสร็จสิ้นแล้ว (รอตรวจ)
+      }
+    }
+  } catch (error) {
+    console.error("Error fetching quiz status:", error);
+  }
+};
+
+  // เพิ่มฟังก์ชันสำหรับดึงข้อมูลแบบทดสอบที่ผ่านแล้ว
+const fetchPassedQuizResults = async () => {
+  try {
+    const response = await axios.get(`${API_URL}/api/learn/quiz-results/passed`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('token')}`
+      }
+    });
+    
+    if (response.data.success) {
+      // ตรวจสอบว่าแบบทดสอบปัจจุบันอยู่ในรายการที่ผ่านแล้วหรือไม่
+      const currentQuizPassed = response.data.results.some(
+        (result: PassedQuizResult) => result.quizId === quizId && result.passed
+      );
+      
+      if (currentQuizPassed) {
+        const currentResult = response.data.results.find(
+          (result: PassedQuizResult) => result.quizId === quizId
+        );
+        
+        if (currentResult) {
+          setScore(currentResult.score);
+          setMaxScore(currentResult.maxScore);
+          setIsPassed(true);
+          setShowResult(true);
+          
+          // ถ้าเคยผ่านแล้ว ให้เรียก onComplete เพื่อบอกว่าแบบทดสอบนี้เสร็จสิ้นแล้ว
+          onComplete();
+        }
+      }
+    }
+  } catch (error) {
+    console.error("Error fetching passed quiz results:", error);
+  }
+};
+
 
   // โหลดข้อมูลแบบทดสอบเมื่อ quizId เปลี่ยน
   useEffect(() => {
@@ -95,6 +160,12 @@ const LessonQuiz = ({ onComplete, isCompleted = false, quizId, quizData = [] }: 
       
       try {
         setLoading(true);
+        
+        // ดึงข้อมูลแบบทดสอบที่ผ่านแล้ว
+        await fetchPassedQuizResults();
+        
+        // ดึงข้อมูลสถานะแบบทดสอบ (รอตรวจหรือไม่)
+        await fetchQuizStatus();
         
         // ถ้ามีข้อมูล quizData ที่ส่งมาจาก props ให้ใช้ข้อมูลนั้น
         if (quizData && quizData.length > 0) {
@@ -130,6 +201,7 @@ const LessonQuiz = ({ onComplete, isCompleted = false, quizId, quizData = [] }: 
           
           if (response.data.quiz.status === 'awaiting_review') {
             setIsAwaitingReview(true);
+            setShowResult(true);
           }
         }
         
@@ -142,20 +214,43 @@ const LessonQuiz = ({ onComplete, isCompleted = false, quizId, quizData = [] }: 
         
         if (attemptsResponse.data.success && attemptsResponse.data.attempts) {
           setPreviousAttempts(attemptsResponse.data.attempts);
-          setHasAttempted(true);
           
           const latestAttempt = attemptsResponse.data.attempts[0];
           if (latestAttempt) {
             setScore(latestAttempt.score);
             setMaxScore(latestAttempt.max_score);
             setIsPassed(latestAttempt.passed);
-            setShowResult(true);
-            setIsAwaitingReview(latestAttempt.status === 'awaiting_review');
+            
+            // ตรวจสอบสถานะ awaiting_review อย่างชัดเจน
+            if (latestAttempt.status === 'awaiting_review') {
+              setIsAwaitingReview(true);
+              setShowResult(true);
+              onComplete(); // แจ้งว่าแบบทดสอบนี้เสร็จสิ้นแล้ว (รอตรวจ)
+            } else {
+              setShowResult(true);
+            }
+            
             if (latestAttempt.answers.some((ans: Answer) => ans.attachments && ans.attachments.length > 0)) {
               setUploadedAttachments(latestAttempt.answers.flatMap((ans: Answer) => ans.attachments || []));
             }
           }
         }
+        
+        // ตรวจสอบสถานะจาก lesson_progress ด้วย
+        const lessonResponse = await axios.get(`${API_URL}/api/learn/lesson/${quizId}/progress`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        
+        if (lessonResponse.data.success && lessonResponse.data.progress) {
+          if (lessonResponse.data.progress.quiz_awaiting_review) {
+            setIsAwaitingReview(true);
+            setShowResult(true);
+            onComplete(); // แจ้งว่าแบบทดสอบนี้เสร็จสิ้นแล้ว (รอตรวจ)
+          }
+        }
+        
       } catch (error) {
         console.error("Error fetching quiz data:", error);
       } finally {
@@ -170,6 +265,7 @@ const LessonQuiz = ({ onComplete, isCompleted = false, quizId, quizData = [] }: 
       setShowResult(true);
     }
   }, [quizId, quizData, isCompleted]);
+  
 
   // Handle single choice answer selection (SC, TF)
   const handleSingleAnswerSelect = (answerIndex: number) => {
@@ -226,36 +322,40 @@ const LessonQuiz = ({ onComplete, isCompleted = false, quizId, quizData = [] }: 
     try {
       const formData = new FormData();
       
+      // จัดรูปแบบคำตอบตามที่ API คาดหวัง
       const answers = questions.map((question, index) => {
+        // ตรวจสอบว่า question_id มีค่า
+        if (!question.question_id) {
+          console.error("พบคำถามที่ไม่มี question_id:", question);
+          return null; // ข้ามคำถามนี้
+        }
+        
         const answer: any = {
-          questionId: question.question_id,
+          question_id: question.question_id, // เปลี่ยนจาก questionId เป็น question_id
         };
         
         switch (question.type) {
           case 'SC':
           case 'TF':
             if (selectedSingleAnswers[index] !== undefined) {
-              answer.selectedOptionId = question.choices[selectedSingleAnswers[index]]?.choice_id;
+              // เปลี่ยนจาก selectedOptionId เป็น choice_id
+              answer.choice_id = question.choices[selectedSingleAnswers[index]]?.choice_id;
             }
             break;
             
           case 'MC':
             if (selectedMultipleAnswers[index]?.length > 0) {
-              answer.selectedOptionId = selectedMultipleAnswers[index].map(idx => question.choices[idx]?.choice_id);
+              // เปลี่ยนจาก selectedOptionId เป็น choice_ids
+              answer.choice_ids = selectedMultipleAnswers[index].map(idx => 
+                question.choices[idx]?.choice_id
+              );
             }
             break;
             
           case 'FB':
             if (textAnswers[index]) {
-              answer.textAnswer = textAnswers[index];
-            }
-            // เพิ่มไฟล์ที่เกี่ยวข้องกับคำถามนี้
-            const questionFiles = files.filter(f => f.questionIndex === index);
-            if (questionFiles.length > 0) {
-              answer.files = questionFiles.map(f => f.file);
-            }
-            if (uploadedAttachments.length > 0) {
-              answer.attachmentIds = uploadedAttachments.map(attachment => attachment.attachment_id);
+              // เปลี่ยนจาก textAnswer เป็น text_answer
+              answer.text_answer = textAnswers[index];
             }
             break;
             
@@ -266,37 +366,39 @@ const LessonQuiz = ({ onComplete, isCompleted = false, quizId, quizData = [] }: 
         return answer;
       }).filter(a => a !== null);
       
-      // ส่งข้อมูลคำตอบและไฟล์
+      // แปลงคำตอบเป็นรูปแบบที่ API ต้องการ
       answers.forEach((answer, index) => {
-        formData.append(`answers[${index}][questionId]`, answer.questionId.toString());
-        if (answer.selectedOptionId) {
-          if (Array.isArray(answer.selectedOptionId)) {
-            answer.selectedOptionId.forEach((id: number, idx: number) => {
-              formData.append(`answers[${index}][selectedOptionId][${idx}]`, id.toString());
-            });
-          } else {
-            formData.append(`answers[${index}][selectedOptionId]`, answer.selectedOptionId.toString());
-          }
-        }
-        if (answer.textAnswer) {
-          formData.append(`answers[${index}][textAnswer]`, answer.textAnswer);
-        }
-        if (answer.attachmentIds) {
-          formData.append(`answers[${index}][attachmentIds]`, JSON.stringify(answer.attachmentIds));
-        }
-        // เพิ่มไฟล์ที่เกี่ยวข้องกับคำถามนี้
-        if (answer.files && answer.files.length > 0) {
-          answer.files.forEach((file: File) => {
-            formData.append(`answers[${index}][files]`, file);
+        formData.append(`answers[${index}][question_id]`, answer.question_id.toString());
+
+         if (answer.choice_id) {
+    formData.append(`answers[${index}][choice_id]`, answer.choice_id.toString());
+  }
+        
+        if (answer.choice_ids) {
+          answer.choice_ids.forEach((id: number, idx: number) => {
+            formData.append(`answers[${index}][choice_ids][${idx}]`, id.toString()); // เปลี่ยนจาก selectedOptionId เป็น choice_ids
           });
         }
+        
+        if (answer.text_answer) {
+          formData.append(`answers[${index}][text_answer]`, answer.text_answer);
+        }
+      });
+      
+      // จัดการการอัปโหลดไฟล์
+      const allFiles = files.map(f => f.file);
+      allFiles.forEach(file => {
+        formData.append('files', file);
       });
       
       formData.append('startTime', new Date().toISOString());
       formData.append('endTime', new Date().toISOString());
       
+      // ดูข้อมูลที่จะส่ง (เพื่อการดีบัก)
+      console.log("Submitting answers:", answers);
+      
       const response = await axios.post(
-        `${API_URL}/api/courses/quizzes/${quizId}/submit`, 
+        `${API_URL}/api/learn/quiz/${quizId}/submit`, 
         formData,
         {
           headers: {
@@ -306,7 +408,8 @@ const LessonQuiz = ({ onComplete, isCompleted = false, quizId, quizData = [] }: 
         }
       );
       
-      if (response.data.message === 'ส่งแบบทดสอบสำเร็จ') {
+      // ปรับการตรวจสอบการตอบกลับจาก API
+      if (response.data.success) {
         const result = response.data.result;
         setScore(result.totalScore || 0);
         setMaxScore(result.maxScore || 0);
@@ -320,7 +423,7 @@ const LessonQuiz = ({ onComplete, isCompleted = false, quizId, quizData = [] }: 
           })));
         }
         
-        if (isSpecialQuiz) {
+        if (result.isSpecialQuiz) {
           setIsAwaitingReview(true);
         }
         
@@ -342,14 +445,12 @@ const LessonQuiz = ({ onComplete, isCompleted = false, quizId, quizData = [] }: 
       }
       return null;
     }
-  };
-
+  };  
   const handleNext = async () => {
     if (currentQuestion < questions.length - 1) {
       setCurrentQuestion(currentQuestion + 1);
     } else {
       // ส่งคำตอบและแสดงผล
-      setHasAttempted(true);
       
       const result = await submitQuizAnswers();
       
@@ -422,10 +523,14 @@ const LessonQuiz = ({ onComplete, isCompleted = false, quizId, quizData = [] }: 
   const handleFinish = () => {
     if (isPassed || isAwaitingReview) {
       onComplete();
+      if (onNextLesson) {
+        onNextLesson(); // เรียกเมื่อมีค่าเท่านั้น
+      }
     } else {
       resetQuiz();
     }
   };
+  
 
   const resetQuiz = () => {
     setCurrentQuestion(0);
@@ -436,7 +541,6 @@ const LessonQuiz = ({ onComplete, isCompleted = false, quizId, quizData = [] }: 
     setUploadedAttachments([]);
     setShowResult(false);
     setIsAwaitingReview(false);
-    setHasAttempted(false);
   };
 
   const isCurrentQuestionAnswered = () => {
@@ -455,12 +559,16 @@ const LessonQuiz = ({ onComplete, isCompleted = false, quizId, quizData = [] }: 
         return selectedMultipleAnswers[currentQuestion]?.length > 0;
         
       case 'FB':
-        return textAnswers[currentQuestion]?.trim().length > 0 || files.filter(f => f.questionIndex === currentQuestion).length > 0;
+        // อนุญาตให้ตอบด้วยข้อความหรือไฟล์อย่างใดอย่างหนึ่ง
+        const hasTextAnswer = textAnswers[currentQuestion]?.trim().length > 0;
+        const hasFiles = files.filter(f => f.questionIndex === currentQuestion).length > 0;
+        return hasTextAnswer || hasFiles;
         
       default:
         return false;
     }
   };
+  
 
   if (loading) {
     return (
@@ -490,16 +598,23 @@ const LessonQuiz = ({ onComplete, isCompleted = false, quizId, quizData = [] }: 
     return (
       <div className="quiz-container">
         <div className="result-container">
-          <div className="awaiting-review">
-            <div className="icon-container">
-              <i className="fas fa-hourglass-half text-warning"></i>
+          <div className="awaiting-review card shadow-sm p-4 text-center">
+            <div className="icon-container mb-3">
+              <span className="icon-circle bg-warning-light">
+                <i className="fas fa-hourglass-half text-warning fa-2x"></i>
+              </span>
             </div>
-            <h2>รอการตรวจจากอาจารย์</h2>
-            <p>แบบทดสอบนี้เป็นแบบทดสอบที่ต้องรอการตรวจจากอาจารย์</p>
-            <p>คุณจะได้รับการแจ้งเตือนเมื่ออาจารย์ตรวจแบบทดสอบเสร็จแล้ว</p>
-            <button className="btn btn-primary" onClick={onComplete}>
-              กลับไปยังบทเรียน
-            </button>
+            <h2 className="mb-3 fw-bold">รอการตรวจจากอาจารย์</h2>
+            <div className="message-box bg-light p-3 mb-4 rounded">
+              <p className="mb-2">แบบทดสอบนี้เป็นแบบทดสอบที่ต้องรอการตรวจจากอาจารย์</p>
+              <p className="mb-0">คุณจะได้รับการแจ้งเตือนเมื่ออาจารย์ตรวจแบบทดสอบเสร็จแล้ว</p>
+            </div>
+            <div className="d-grid gap-2 col-md-6 mx-auto">
+              <button className="btn btn-primary btn-lg" onClick={onComplete}>
+                <i className="fas fa-arrow-left me-2"></i>
+                กลับไปยังบทเรียน
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -512,58 +627,168 @@ const LessonQuiz = ({ onComplete, isCompleted = false, quizId, quizData = [] }: 
     return (
       <div className="quiz-container">
         <div className="result-container">
-          <div className={`result ${isPassed ? 'passed' : 'failed'}`}>
-            <div className="icon-container">
-              {isPassed ? (
-                <i className="fas fa-check-circle text-success"></i>
-              ) : (
-                <i className="fas fa-times-circle text-danger"></i>
-              )}
+          <div className={`result card shadow-sm p-4 ${isPassed ? 'passed border-success' : 'failed border-danger'}`}>
+            <div className="icon-container mb-3">
+              <span className={`icon-circle ${isPassed ? 'bg-success-light' : 'bg-danger-light'}`}>
+                {isPassed ? (
+                  <i className="fas fa-check-circle text-success fa-3x"></i>
+                ) : (
+                  <i className="fas fa-times-circle text-danger fa-3x"></i>
+                )}
+              </span>
             </div>
-            <h2>{isPassed ? 'ยินดีด้วย! คุณผ่านแบบทดสอบนี้' : 'คุณไม่ผ่านแบบทดสอบนี้'}</h2>
-            <div className="score-info">
-              <p>คะแนนของคุณ: <span className="score">{score}</span> / {maxScore}</p>
-              <p>คิดเป็น: <span className="percentage">{percentage}%</span></p>
-              <p>เกณฑ์ผ่าน: {PASSING_PERCENTAGE}%</p>
-            </div>
-            {previousAttempts.length > 0 && (
-              <div className="previous-attempts mt-4">
-                <h4>การส่งครั้งก่อนหน้า</h4>
-                {previousAttempts.map((attempt, index) => (
-                  <div key={index} className="attempt-summary mb-3">
-                    <p><strong>ครั้งที่ {previousAttempts.length - index}</strong></p>
-                    <p>วันที่ส่ง: {new Date(attempt.end_time).toLocaleString()}</p>
-                    <p>คะแนน: {attempt.score} / {attempt.max_score}</p>
-                    <p>สถานะ: {attempt.passed ? 'ผ่าน' : 'ไม่ผ่าน'}</p>
-                    {attempt.answers.some(ans => ans.attachments && ans.attachments.length > 0) && (
-                      <div className="attached-files">
-                        <p><strong>ไฟล์แนบ:</strong></p>
-                        {attempt.answers.map((answer, ansIndex) => (
-                          answer.attachments && answer.attachments.length > 0 && (
-                            <div key={ansIndex} className="answer-attachments mb-2">
-                              <p>คำถามที่ {ansIndex + 1}:</p>
-                              <ul className="list-group">
-                                {answer.attachments.map((attachment) => (
-                                  <li key={attachment.attachment_id} className="list-group-item">
-                                    <a href={attachment.file_url} target="_blank" rel="noopener noreferrer">
-                                      <i className="fas fa-file me-2"></i>
-                                      {attachment.file_name}
-                                    </a>
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          )
-                        ))}
+            
+            <h2 className="mb-4 fw-bold">
+              {isPassed ? 'ยินดีด้วย! คุณผ่านแบบทดสอบนี้' : 'คุณไม่ผ่านแบบทดสอบนี้'}
+            </h2>
+            
+            <div className="score-info card mb-4">
+              <div className="card-body">
+                <div className="row align-items-center">
+                  <div className="col-md-4 text-center mb-3 mb-md-0">
+                    <div className="score-circle position-relative">
+                      <svg viewBox="0 0 36 36" className="circular-chart">
+                        <path className="circle-bg" d="M18 2.0845
+                          a 15.9155 15.9155 0 0 1 0 31.831
+                          a 15.9155 15.9155 0 0 1 0 -31.831" />
+                        <path className={`circle ${isPassed ? 'stroke-success' : 'stroke-danger'}`}
+                          strokeDasharray={`${percentage}, 100`}
+                          d="M18 2.0845
+                          a 15.9155 15.9155 0 0 1 0 31.831
+                          a 15.9155 15.9155 0 0 1 0 -31.831" />
+                      </svg>
+                      <div className="percentage-text">
+                        <span className="percentage-value">{percentage}%</span>
                       </div>
-                    )}
+                    </div>
                   </div>
-                ))}
+                  <div className="col-md-8">
+                    <div className="score-details">
+                      <div className="score-item d-flex justify-content-between align-items-center mb-2">
+                        <span>คะแนนของคุณ:</span>
+                        <span className="score fw-bold">{score} / {maxScore}</span>
+                      </div>
+                      <div className="score-item d-flex justify-content-between align-items-center mb-2">
+                        <span>เกณฑ์ผ่าน:</span>
+                        <span className="fw-bold">{PASSING_PERCENTAGE}%</span>
+                      </div>
+                      <div className="score-item d-flex justify-content-between align-items-center">
+                        <span>สถานะ:</span>
+                        <span className={`badge ${isPassed ? 'bg-success' : 'bg-danger'}`}>
+                          {isPassed ? 'ผ่าน' : 'ไม่ผ่าน'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {previousAttempts.length > 0 && (
+              <div className="previous-attempts card mb-4">
+                <div className="card-header bg-light">
+                  <h5 className="mb-0">
+                    <i className="fas fa-history me-2"></i>
+                    การส่งครั้งก่อนหน้า
+                  </h5>
+                </div>
+                <div className="card-body">
+                  <div className="accordion" id="attemptAccordion">
+                    {previousAttempts.map((attempt, index) => (
+                      <div key={index} className="accordion-item">
+                        <h2 className="accordion-header" id={`heading${index}`}>
+                          <button 
+                            className="accordion-button collapsed" 
+                            type="button" 
+                            data-bs-toggle="collapse" 
+                            data-bs-target={`#collapse${index}`} 
+                            aria-expanded="false" 
+                            aria-controls={`collapse${index}`}
+                          >
+                            <div className="d-flex justify-content-between align-items-center w-100">
+                              <span><strong>ครั้งที่ {previousAttempts.length - index}</strong></span>
+                              <span className={`badge ${attempt.passed ? 'bg-success' : 'bg-danger'} ms-2`}>
+                                {attempt.passed ? 'ผ่าน' : 'ไม่ผ่าน'}
+                              </span>
+                            </div>
+                          </button>
+                        </h2>
+                        <div 
+                          id={`collapse${index}`} 
+                          className="accordion-collapse collapse" 
+                          aria-labelledby={`heading${index}`} 
+                          data-bs-parent="#attemptAccordion"
+                        >
+                          <div className="accordion-body">
+                            <div className="attempt-details">
+                              <div className="row mb-2">
+                                <div className="col-md-6">
+                                  <p className="mb-1"><i className="far fa-calendar-alt me-2"></i>วันที่ส่ง:</p>
+                                  <p className="fw-bold">{new Date(attempt.end_time).toLocaleString()}</p>
+                                </div>
+                                <div className="col-md-6">
+                                  <p className="mb-1"><i className="fas fa-chart-pie me-2"></i>คะแนน:</p>
+                                  <p className="fw-bold">{attempt.score} / {attempt.max_score} ({Math.round((attempt.score / attempt.max_score) * 100)}%)</p>
+                                </div>
+                              </div>
+                              
+                              {attempt.answers.some(ans => ans.attachments && ans.attachments.length > 0) && (
+                                <div className="attached-files mt-3">
+                                  <h6 className="mb-3"><i className="fas fa-paperclip me-2"></i>ไฟล์แนบ:</h6>
+                                  {attempt.answers.map((answer, ansIndex) => (
+                                    answer.attachments && answer.attachments.length > 0 && (
+                                      <div key={ansIndex} className="answer-attachments mb-3">
+                                        <div className="file-header bg-light p-2 rounded">
+                                          <span>คำถามที่ {ansIndex + 1}</span>
+                                        </div>
+                                        <ul className="list-group mt-2">
+                                          {answer.attachments.map((attachment) => (
+                                            <li key={attachment.attachment_id} className="list-group-item d-flex align-items-center">
+                                              <i className="fas fa-file me-3 text-primary"></i>
+                                              <a href={attachment.file_url} target="_blank" rel="noopener noreferrer" className="text-decoration-none">
+                                                {attachment.file_name}
+                                              </a>
+                                              <span className="ms-auto">
+                                                <a href={attachment.file_url} download className="btn btn-sm btn-outline-primary">
+                                                  <i className="fas fa-download"></i>
+                                                </a>
+                                              </span>
+                                            </li>
+                                          ))}
+                                        </ul>
+                                      </div>
+                                    )
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
-            <button className="btn btn-primary" onClick={handleFinish}>
-              {isPassed ? 'ไปยังบทเรียนถัดไป' : 'ลองทำอีกครั้ง'}
-            </button>
+            
+            <div className="d-grid gap-2 col-md-6 mx-auto">
+              <button 
+                className={`btn btn-lg ${isPassed ? 'btn-success' : 'btn-primary'}`} 
+                onClick={handleFinish}
+              >
+                {isPassed ? (
+                  <>
+                    <i className="fas fa-arrow-right me-2"></i>
+                    ไปยังบทเรียนถัดไป
+                  </>
+                ) : (
+                  <>
+                    <i className="fas fa-redo me-2"></i>
+                    ลองทำอีกครั้ง
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div>

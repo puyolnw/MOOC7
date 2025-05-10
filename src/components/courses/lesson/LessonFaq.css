@@ -94,3 +94,35 @@
  .status-not-passed {
    color: gray;
  }
+ /* เพิ่ม CSS สำหรับสถานะ "รอตรวจ" */
+.status-awaiting {
+   color: #ffc107; /* สีเหลือง */
+   background-color: rgba(255, 193, 7, 0.1);
+   border: 1px solid #ffc107;
+   padding: 2px 8px;
+   border-radius: 4px;
+   font-size: 0.8rem;
+   font-weight: 500;
+ }
+ 
+ /* ปรับแต่ง CSS สำหรับสถานะอื่นๆ ให้สอดคล้องกัน */
+ .status-passed {
+   color: #28a745; /* สีเขียว */
+   background-color: rgba(40, 167, 69, 0.1);
+   border: 1px solid #28a745;
+   padding: 2px 8px;
+   border-radius: 4px;
+   font-size: 0.8rem;
+   font-weight: 500;
+ }
+ 
+ .status-not-passed {
+   color: #dc3545; /* สีแดง */
+   background-color: rgba(220, 53, 69, 0.1);
+   border: 1px solid #dc3545;
+   padding: 2px 8px;
+   border-radius: 4px;
+   font-size: 0.8rem;
+   font-weight: 500;
+ }
+ 
