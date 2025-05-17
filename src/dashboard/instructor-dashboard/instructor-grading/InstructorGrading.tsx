@@ -105,7 +105,7 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
           
           // ดึงข้อมูลคำตอบ
           const response = await axios.get(
-            `${apiURL}/api/special-quiz/attempt/${selectedAttemptId}`,
+            `${apiURL}/api/special-quiz/attempts/all`,
             {
               headers: {
                 Authorization: `Bearer ${token}`
