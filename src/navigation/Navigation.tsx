@@ -159,6 +159,7 @@ const AppNavigation = () => {
         <Route path="/admin-account/instructors/create-new" element={< CreateAccountInstructorspage />} />
         <Route path="/admin-account/instructors/edit-instructor/:id" element={< EditAccountInstructorspage />} />
         <Route path="/admin-account/students/create-new" element={< CreateAccountStudentspage />} />
+        
 
         </Route>
 

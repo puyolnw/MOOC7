@@ -63,7 +63,7 @@ const LessonsArea = () => {
             quizTitle: lesson.quiz_title || (lesson.quiz_id ? `แบบทดสอบ ID: ${lesson.quiz_id}` : "ไม่มีแบบทดสอบ"),
             quiz_id: lesson.quiz_id || null
           }));
-          
+
 
           setLessons(formattedLessons);
         } else {
@@ -273,19 +273,23 @@ const LessonsArea = () => {
                                     <FileBadge />
                                   </td>
                                   <td>{lesson.creator}</td>
-                                  <td><StatusBadge status={lesson.status} /></td>
+                                  <td className="text-center" ><StatusBadge status={lesson.status} /></td>
                                   <td>
                                     <div className="d-flex justify-content-center gap-3">
                                       {lesson.lesson_id ? (
-                                        <Link to={`/admin-lessons/edit-lessons/${lesson.lesson_id}`} className="text-primary" style={{ display: "inline-flex", alignItems: "center" }} >
+                                        <Link to={`/admin-lessons/edit-lessons/${lesson.lesson_id}`}
+                                          className="text-primary"
+                                          style={{ display: "inline-flex", alignItems: "center" }}
+                                        >
                                           <i className="fas fa-edit icon-action" style={{ cursor: "pointer", lineHeight: 1 }}></i>
                                         </Link>
                                       ) : (
-                                        <span className="text-muted" title="ไม่มี ID บทเรียน">
+                                        <span className="text-muted" title="ไม่มี ID บทเรียน"
+                                          style={{ display: "inline-flex", alignItems: "center" }}>
                                           <i className="fas fa-edit icon-action" style={{ cursor: "pointer", lineHeight: 1 }}></i>
-
                                         </span>
                                       )}
+                                      <div className="d-flex justify-content-center gap-3"></div>
                                       <i
                                         className="fas fa-trash-alt text-danger icon-action"
                                         style={{ cursor: "pointer", lineHeight: 1 }}
@@ -320,7 +324,7 @@ const LessonsArea = () => {
                                 </button>
                               </li>
                             ))}
-                                                        <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
+                            <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
                               <button className="page-link" onClick={() => setCurrentPage(currentPage + 1)} disabled={currentPage === totalPages}>
                                 <i className="fas fa-chevron-right"></i>
                               </button>

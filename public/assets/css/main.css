@@ -117,7 +117,7 @@ img,
 
 a,
 button {
-  color: #4CAF50;
+  color: var(--tg-theme-primary);
   outline: none;
   text-decoration: none;
   -webkit-transition: all 0.3s ease-out 0s;
