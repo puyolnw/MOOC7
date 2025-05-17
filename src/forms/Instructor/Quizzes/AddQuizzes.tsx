@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
-import AddQuestions from "../AddQuestions";
+import AddQuestions from "../Questions/AddQuestions";
 import QuizInfoSection from "./QuizInfoSection";
 import QuestionsSection from "./QuestionsSection";
 import LessonsSection from "./LessonsSection";
