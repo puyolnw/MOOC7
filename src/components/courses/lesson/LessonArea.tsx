@@ -600,5 +600,5 @@ if (loading) {
         );
       };
       
-      export default LessonArea;
+export default LessonArea;
       
