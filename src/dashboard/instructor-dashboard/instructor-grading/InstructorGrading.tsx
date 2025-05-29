@@ -107,7 +107,7 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
           console.log("Fetching attempt data from:", `${apiURL}/api/special-quiz/attempt/${selectedAttemptId}`);
           
           const response = await axios.get(
-            `${apiURL}/api/special-quiz/attempt/${selectedAttemptId}`,
+            `${apiURL}/api/special-quiz/attempts/all`,
             {
               headers: {
                 Authorization: `Bearer ${token}`

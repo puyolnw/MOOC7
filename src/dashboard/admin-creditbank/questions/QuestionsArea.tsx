@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import DashboardSidebar from "../../dashboard-common/AdminSidebar";
 import DashboardBanner from "../../dashboard-common/AdminBanner";
@@ -28,6 +28,7 @@ const QuestionsArea = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const questionsPerPage = 10;
+  const navigate = useNavigate();
 
   // Fetch questions from API
   useEffect(() => {
@@ -377,9 +378,11 @@ const QuestionsArea = () => {
                                     <td data-label="สถานะ:" className="text-center"><StatusBadge status={question.status} /></td>
                                     <td data-label="จัดการ:">
                                       <div className="d-flex justify-content-center gap-3 action-icons">
-                                        <Link to={`/admin-questions/edit-question/${question.id}`} className="text-primary" style={{ display: "inline-flex", alignItems: "center" }}>
-                                          <i className="fas fa-edit icon-action" style={{ cursor: "pointer", lineHeight: 1 }}></i>
-                                        </Link>
+                                        <i
+  className="fas fa-edit text-primary icon-action"
+  style={{ cursor: "pointer", lineHeight: 1 }}
+  onClick={() => navigate(`/admin-questions/edit-question/${question.id}`)}
+></i>
                                         <i
                                           className="fas fa-trash-alt text-danger icon-action"
                                           style={{ cursor: "pointer", lineHeight: 1 }}
