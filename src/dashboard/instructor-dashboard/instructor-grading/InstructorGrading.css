@@ -163,4 +163,243 @@
     padding: 0.25rem 0.5rem;
     font-size: 0.875rem;
   }
+  .grading-container {
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+  }
   
+  .grading-container.popup-mode {
+    background-color: #fff;
+    border-radius: 0;
+    padding: 0;
+    height: 100%;
+    overflow-y: auto;
+  }
+  
+  .popup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    border-bottom: 1px solid #dee2e6;
+    background-color: #f8f9fa;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  
+  .grading-content {
+    padding: 20px;
+  }
+  
+  .student-info {
+    background-color: #fff;
+    border-left: 4px solid #007bff;
+  }
+  
+  .score-summary {
+    background-color: #fff;
+    border-left: 4px solid #28a745;
+  }
+  
+  .question-item {
+    background-color: #fff;
+    border: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+  
+  .question-item .card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+  }
+  
+  .answer-text .bg-light {
+    background-color: #f8f9fa !important;
+  }
+  
+  .grading-section {
+    border-top: 1px solid #dee2e6;
+    padding-top: 15px;
+    margin-top: 15px;
+  }
+  
+  .grading-actions {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #dee2e6;
+  }
+  
+  .progress {
+    height: 10px;
+  }
+  
+  .progress-bar {
+    background-color: #28a745;
+  }
+  
+  .icon-circle {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: rgba(40, 167, 69, 0.1);
+    color: #28a745;
+    margin-right: 10px;
+  }
+  
+  .attachments .list-group-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .feedback-section {
+    margin-top: 15px;
+  }
+  
+  @media (max-width: 768px) {
+    .grading-container {
+      padding: 10px;
+    }
+    
+    .grading-content {
+      padding: 15px;
+    }
+    
+    .popup-header {
+      padding: 10px 15px;
+    }
+    
+    .score-summary .progress {
+      width: 100%;
+      margin-top: 10px;
+    }
+    
+    .score-summary .d-flex {
+      flex-direction: column;
+      align-items: flex-start !important;
+    }
+  }
+  .grading-container {
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+  }
+  
+  .grading-container.popup-mode {
+    background-color: #fff;
+    border-radius: 0;
+    padding: 0;
+    height: 100%;
+    overflow-y: auto;
+  }
+  
+  .popup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    border-bottom: 1px solid #dee2e6;
+    background-color: #f8f9fa;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  
+  .grading-content {
+    padding: 20px;
+  }
+  
+  .student-info {
+    background-color: #fff;
+    border-left: 4px solid #007bff;
+  }
+  
+  .score-summary {
+    background-color: #fff;
+    border-left: 4px solid #28a745;
+  }
+  
+  .question-item {
+    background-color: #fff;
+    border: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+  
+  .question-item .card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+  }
+  
+  .answer-text .bg-light {
+    background-color: #f8f9fa !important;
+  }
+  
+  .grading-section {
+    border-top: 1px solid #dee2e6;
+    padding-top: 15px;
+    margin-top: 15px;
+  }
+  
+  .grading-actions {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #dee2e6;
+  }
+  
+  .progress {
+    height: 10px;
+  }
+  
+  .progress-bar {
+    background-color: #28a745;
+  }
+  
+  .icon-circle {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: rgba(40, 167, 69, 0.1);
+    color: #28a745;
+    margin-right: 10px;
+  }
+  
+  .attachments .list-group-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .feedback-section {
+    margin-top: 15px;
+  }
+  
+  @media (max-width: 768px) {
+    .grading-container {
+      padding: 10px;
+    }
+    
+    .grading-content {
+      padding: 15px;
+    }
+    
+    .popup-header {
+      padding: 10px 15px;
+    }
+    
+    .score-summary .progress {
+      width: 100%;
+      margin-top: 10px;
+    }
+    
+    .score-summary .d-flex {
+      flex-direction: column;
+      align-items: flex-start !important;
+    }
+  }
