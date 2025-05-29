@@ -49,7 +49,7 @@ interface Attempt {
 
 interface InstructorGradingProps {
   isPopup?: boolean;
-  selectedAttemptId?: number;
+  selectedAttemptId?: number | null;
   onClose?: () => void;
   onGraded?: (attemptId: number, passed: boolean) => void;
   onOpenGrading?: (attemptId: number) => void; // Add this line
@@ -211,7 +211,7 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
       
       return () => clearTimeout(timeoutId);
     }
-  }, [apiURL, isPopup, selectedAttemptId]);
+}, [apiURL, isPopup, selectedAttemptId, loading]);
 
   // ฟังก์ชันจัดการการเปลี่ยนแปลงคะแนน
   const handleScoreChange = (questionId: number, score: number) => {
@@ -291,10 +291,10 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
         toast.success("บันทึกการให้คะแนนเรียบร้อยแล้ว");
         
         // เรียกใช้ callback เมื่อให้คะแนนเสร็จ
-        if (onGraded && selectedAttemptId !== undefined) {
-          const passed = response.data.attempt.passed;
-          onGraded(selectedAttemptId, passed);
-        }
+       if (onGraded && selectedAttemptId !== null && selectedAttemptId !== undefined) {
+  const passed = response.data.attempt.passed;
+  onGraded(selectedAttemptId, passed);
+}
         
         // ปิดหน้าต่าง popup (ถ้ามี)
         if (onClose) {
