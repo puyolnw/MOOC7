@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
 import DashboardSidebar from "../../dashboard-common/AdminSidebar";
@@ -29,7 +29,7 @@ const LessonsArea = () => {
   const [error, setError] = useState("");
   const lessonsPerPage = 10;
   const apiUrl = import.meta.env.VITE_API_URL;
-
+  const navigate = useNavigate();
   useEffect(() => {
     const fetchLessons = async () => {
       setIsLoading(true);
@@ -277,19 +277,17 @@ const LessonsArea = () => {
                                   <td>
                                     <div className="d-flex justify-content-center gap-3">
                                       {lesson.lesson_id ? (
-                                        <Link to={`/admin-lessons/edit-lessons/${lesson.lesson_id}`}
-                                          className="text-primary"
-                                          style={{ display: "inline-flex", alignItems: "center" }}
-                                        >
-                                          <i className="fas fa-edit icon-action" style={{ cursor: "pointer", lineHeight: 1 }}></i>
-                                        </Link>
+                                        <i
+                                          className="fas fa-edit icon-action text-primary"
+                                          style={{ cursor: "pointer", lineHeight: 1 }}
+                                          onClick={() => navigate(`/admin-lessons/edit-lessons/${lesson.lesson_id}`)}
+                                        ></i>
                                       ) : (
                                         <span className="text-muted" title="ไม่มี ID บทเรียน"
                                           style={{ display: "inline-flex", alignItems: "center" }}>
                                           <i className="fas fa-edit icon-action" style={{ cursor: "pointer", lineHeight: 1 }}></i>
                                         </span>
                                       )}
-                                      <div className="d-flex justify-content-center gap-3"></div>
                                       <i
                                         className="fas fa-trash-alt text-danger icon-action"
                                         style={{ cursor: "pointer", lineHeight: 1 }}

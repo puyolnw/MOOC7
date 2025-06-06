@@ -1,4 +1,5 @@
 import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
+import { FacultyProvider } from '../hooks/useFaculty';
 import PrivateRoute from '../hooks/PrivateRoute';
 import AdminCreditbankpage from '../pages/Admin/AdminCreditbank';
 import AdminLessonsbankpage from '../pages/Admin/AdminLessons';
@@ -96,6 +97,7 @@ import Personelpage from '../pages/Personel';
 
 const AppNavigation = () => {
   return (
+    <FacultyProvider>
     <Router>
       <Routes>
         <Route path="/" element={<Home />} />
@@ -188,7 +190,7 @@ const AppNavigation = () => {
         </Route>
 
         <Route element={<PrivateRoute allowedRoles={["student"]} />}>
-          <Route path="/student-dashboard" element={<StudentDashboard />} />
+        <Route path="/student-dashboard" element={<StudentDashboard />} />
         <Route path="/student-profile" element={<StudentProfile />} />
         <Route path="/student-enrolled-courses" element={<StudentEnrollCourse />} />
         <Route path="/student-wishlist" element={<StudentWishlist />} />
@@ -202,6 +204,7 @@ const AppNavigation = () => {
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Router>
+    </FacultyProvider>
   );
 };
 

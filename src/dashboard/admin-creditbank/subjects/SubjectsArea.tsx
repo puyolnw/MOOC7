@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
 import DashboardSidebar from "../../dashboard-common/AdminSidebar";
@@ -27,7 +27,7 @@ const SubjectsArea = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const apiUrl = import.meta.env.VITE_API_URL;
-
+  const navigate = useNavigate();
   const closeModal = () => setModalImage(null);
   const subjectsPerPage = 10;
 
@@ -294,20 +294,18 @@ const SubjectsArea = () => {
                                     <StatusBadge status={subject.status} />
                                   </td>
                                   <td>
-                                    <div className="d-flex justify-content-center gap-3">
-                                      <Link
-                                        to={`/admin-subjects/edit-subject/${subject.subject_id}`}
-                                        className="text-primary"
-                                        style={{ display: "inline-flex", alignItems: "center" }}
-                                      >
-                                        <i className="fas fa-edit icon-action" style={{ lineHeight: 1 }}></i>
-                                      </Link>
-                                      <i
-                                        className="fas fa-trash-alt text-danger icon-action"
-                                        style={{ cursor: "pointer", lineHeight: 1 }}
-                                        onClick={() => handleDeleteSubject(subject.subject_id)}
-                                      ></i>
-                                    </div>
+                                    <div className="d-flex justify-content-center gap-3 action-icons">
+                                        <i
+                                          className="fas fa-edit text-primary icon-action"
+                                          style={{ cursor: "pointer", lineHeight: 1 }}
+                                          onClick={() => navigate(`/admin-subjects/edit-subject/${subject.subject_id}`)}
+                                        ></i>
+                                        <i
+                                          className="fas fa-trash-alt text-danger icon-action"
+                                          style={{ cursor: "pointer", lineHeight: 1 }}
+                                          onClick={() => handleDeleteSubject(subject.subject_id)}
+                                        ></i>
+                                      </div>
                                   </td>
                                 </tr>
                               ))

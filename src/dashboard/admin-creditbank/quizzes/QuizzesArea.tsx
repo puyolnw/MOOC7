@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import DashboardSidebar from "../../dashboard-common/AdminSidebar";
 import DashboardBanner from "../../dashboard-common/AdminBanner";
@@ -30,7 +30,7 @@ const QuizzesArea = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const quizzesPerPage = 10;
-
+  const navigate = useNavigate();
   // Fetch quizzes from API
   useEffect(() => {
     const fetchQuizzes = async () => {
@@ -38,13 +38,13 @@ const QuizzesArea = () => {
         setLoading(true);
         const apiUrl = import.meta.env.VITE_API_URL;
         const token = localStorage.getItem("token");
-        
+
         if (!token) {
           setError("ไม่พบข้อมูลการเข้าสู่ระบบ กรุณาเข้าสู่ระบบใหม่");
           setLoading(false);
           return;
         }
-        
+
         const response = await axios.get(`${apiUrl}/api/courses/quizzes`, {
           headers: {
             Authorization: `Bearer ${token}`
@@ -53,7 +53,7 @@ const QuizzesArea = () => {
             search: searchTerm !== "" ? searchTerm : undefined
           }
         });
-        
+
         if (response.data && response.data.quizzes) {
           // Transform API response to match our Quiz interface
           const transformedQuizzes: Quiz[] = response.data.quizzes.map((quiz: any) => ({
@@ -69,7 +69,7 @@ const QuizzesArea = () => {
             isUsed: !!quiz.used_in_lesson,
             usedInLesson: quiz.used_in_lesson || ""
           }));
-          
+
           setQuizzes(transformedQuizzes);
           setError("");
         } else {
@@ -84,7 +84,7 @@ const QuizzesArea = () => {
         setLoading(false);
       }
     };
-    
+
     fetchQuizzes();
   }, [searchTerm]); // Re-fetch when search term changes
 
@@ -107,18 +107,18 @@ const QuizzesArea = () => {
       try {
         const apiUrl = import.meta.env.VITE_API_URL;
         const token = localStorage.getItem("token");
-        
+
         if (!token) {
           toast.error("ไม่พบข้อมูลการเข้าสู่ระบบ กรุณาเข้าสู่ระบบใหม่");
           return;
         }
-        
+
         await axios.delete(`${apiUrl}/api/courses/quizzes/${id}`, {
           headers: {
             Authorization: `Bearer ${token}`
           }
         });
-        
+
         // Remove the deleted quiz from state
         setQuizzes(quizzes.filter(quiz => quiz.id !== id));
         toast.success("ลบแบบทดสอบสำเร็จ");
@@ -196,7 +196,7 @@ const QuizzesArea = () => {
                         <h5 className="mb-0">{countByStatus.active} ชุด</h5>
                       </div>
                     </div>
-                    
+
                     <div className="col-md-3">
                       <div className="bg-secondary-subtle rounded p-3 text-center">
                         <h6 className="mb-1 text-secondary">ฉบับร่าง</h6>
@@ -255,8 +255,8 @@ const QuizzesArea = () => {
                               <th style={{ width: "35%" }}>ชื่อแบบทดสอบ</th>
                               <th className="text-center" style={{ width: "15%" }}>จำนวนคำถาม</th>
                               <th className="text-center" style={{ width: "15%" }}>คะแนนรวม</th>
-                              <th style={{ width: "15%" }}>สถานะ</th>
-                              <th style={{ width: "20%" }}>จัดการ</th>
+                              <th className="text-center" style={{ width: "15%" }}>สถานะ</th>
+                              <th className="text-center">จัดการ</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -269,7 +269,7 @@ const QuizzesArea = () => {
                                       <UsageBadge isUsed={quiz.isUsed} lesson={quiz.usedInLesson} />
                                     </div>
                                   </td>
-    
+
                                   <td className="text-center">
                                     {quiz.questionCount > 0 ? (
                                       <span className="fw-medium">{quiz.questionCount} ข้อ</span>
@@ -282,12 +282,14 @@ const QuizzesArea = () => {
                                     <span className="fw-medium">{quiz.totalScore} คะแนน</span>
                                   </td>
 
-                                  <td><StatusBadge status={quiz.status} /></td>
+                                  <td className="text-center"><StatusBadge status={quiz.status} /></td>
                                   <td>
-                                    <div className="d-flex justify-content-center gap-3">
-                                      <Link to={`/admin-quizzes/edit-quiz/${quiz.id}`} className="text-primary" style={{ display: "inline-flex", alignItems: "center" }}>
-                                        <i className="fas fa-edit icon-action" style={{ cursor: "pointer", lineHeight: 1 }}></i>
-                                      </Link>
+                                    <div className="d-flex justify-content-center gap-3 action-icons">
+                                      <i
+                                        className="fas fa-edit icon-action text-primary"
+                                        style={{ cursor: "pointer", lineHeight: 1 }}
+                                        onClick={() => navigate(`/admin-quizzes/edit-quiz/${quiz.id}`)}
+                                      ></i>
                                       <i
                                         className="fas fa-trash-alt text-danger icon-action"
                                         style={{ cursor: "pointer", lineHeight: 1 }}
@@ -326,30 +328,30 @@ const QuizzesArea = () => {
                                 </button>
                               </li>
                             ))}                            <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
-                            <button
-                              className="page-link"
-                              onClick={() => setCurrentPage(currentPage + 1)}
-                              disabled={currentPage === totalPages}
-                            >
-                              <i className="fas fa-chevron-right"></i>
-                            </button>
-                          </li>
-                        </ul>
-                        <p className="mt-2 mb-0 small text-muted">
-                          แสดง {indexOfFirstQuiz + 1} ถึง {Math.min(indexOfLastQuiz, filteredQuizzes.length)} จากทั้งหมด {filteredQuizzes.length} รายการ
-                        </p>
-                      </nav>
-                    </div>
-                  )}
-                </div>
-              )}
+                              <button
+                                className="page-link"
+                                onClick={() => setCurrentPage(currentPage + 1)}
+                                disabled={currentPage === totalPages}
+                              >
+                                <i className="fas fa-chevron-right"></i>
+                              </button>
+                            </li>
+                          </ul>
+                          <p className="mt-2 mb-0 small text-muted">
+                            แสดง {indexOfFirstQuiz + 1} ถึง {Math.min(indexOfLastQuiz, filteredQuizzes.length)} จากทั้งหมด {filteredQuizzes.length} รายการ
+                          </p>
+                        </nav>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-  </section>
-);
+    </section>
+  );
 };
 
 export default QuizzesArea;
