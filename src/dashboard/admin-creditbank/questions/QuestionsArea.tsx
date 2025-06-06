@@ -379,10 +379,10 @@ const QuestionsArea = () => {
                                     <td data-label="จัดการ:">
                                       <div className="d-flex justify-content-center gap-3 action-icons">
                                         <i
-  className="fas fa-edit text-primary icon-action"
-  style={{ cursor: "pointer", lineHeight: 1 }}
-  onClick={() => navigate(`/admin-questions/edit-question/${question.id}`)}
-></i>
+                                          className="fas fa-edit text-primary icon-action"
+                                          style={{ cursor: "pointer", lineHeight: 1 }}
+                                          onClick={() => navigate(`/admin-questions/edit-question/${question.id}`)}
+                                        ></i>
                                         <i
                                           className="fas fa-trash-alt text-danger icon-action"
                                           style={{ cursor: "pointer", lineHeight: 1 }}

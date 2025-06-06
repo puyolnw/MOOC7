@@ -3,8 +3,9 @@ import ReactPaginate from "react-paginate";
 import CourseSidebar from "./CourseSidebar";
 import CourseTop from "./CourseTop";
 import UseCourses from "../../../hooks/UseCourses";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import axios from "axios";
+import { useFaculty } from "../../../hooks/useFaculty";
 
 interface ApiCourse {
   course_id: number;
@@ -29,6 +30,17 @@ const CourseArea = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [courseExtraInfo, setCourseExtraInfo] = useState<Record<number, CourseExtraInfo>>({});
+  const [searchParams] = useSearchParams();
+  const { selectedFaculty, setSelectedFaculty } = useFaculty();
+
+  useEffect(() => {
+    const facultyFromQuery = searchParams.get('faculty');
+    if (facultyFromQuery) {
+      setSelectedFaculty(decodeURIComponent(facultyFromQuery));
+    } else {
+      setSelectedFaculty(null);
+    }
+  }, [searchParams, setSelectedFaculty]);
 
   useEffect(() => {
     const fetchCourses = async () => {
@@ -36,26 +48,33 @@ const CourseArea = () => {
         setIsLoading(true);
         setError(null);
         const response = await axios.get(`${apiURL}/api/courses`);
-        
+
         if (response.data.success) {
           const extraInfo: Record<number, CourseExtraInfo> = {};
-          const formattedCourses = response.data.courses.map((course: ApiCourse) => {
+          let formattedCourses = response.data.courses.map((course: ApiCourse) => {
             extraInfo[course.course_id] = {
               description: course.description || "",
               departmentName: course.department_name || "ไม่พบข้อมูลสาขา",
-              faculty: course.faculty || "ไม่พบข้อมูลคณะ"
+              faculty: course.faculty || "ไม่พบข้อมูลคณะ",
             };
             return {
               id: course.course_id,
               title: course.title,
               department_name: course.department_name,
               faculty: course.faculty,
-              thumb: course.cover_image_file_id 
+              thumb: course.cover_image_file_id
                 ? `${apiURL}/api/courses/image/${course.cover_image_file_id}`
                 : "/assets/img/courses/course_thumb01.jpg",
             };
           });
-          
+
+          // Filter by selected faculty
+          if (selectedFaculty) {
+            formattedCourses = formattedCourses.filter(
+              (course: any) => course.faculty === selectedFaculty
+            );
+          }
+
           setCourseExtraInfo(extraInfo);
           setCourses(formattedCourses);
         } else {
@@ -69,7 +88,7 @@ const CourseArea = () => {
       }
     };
     fetchCourses();
-  }, [apiURL, setCourses]);
+  }, [apiURL, setCourses, selectedFaculty]);
 
   const itemsPerPage = 12;
   const [itemOffset, setItemOffset] = useState(0);
@@ -86,15 +105,17 @@ const CourseArea = () => {
 
   const [activeTab, setActiveTab] = useState(0);
 
+  const [searchQuery, setSearchQuery] = useState<string>("");
+
   const handleTabClick = (index: number) => {
     setActiveTab(index);
   };
 
   const getExtraInfo = (courseId: number): CourseExtraInfo => {
-    return courseExtraInfo[courseId] || { 
-      description: "", 
+    return courseExtraInfo[courseId] || {
+      description: "",
       departmentName: "ไม่พบข้อมูลสาขา",
-      faculty: "ไม่พบข้อมูลคณะ"
+      faculty: "ไม่พบข้อมูลคณะ",
     };
   };
 
@@ -103,7 +124,7 @@ const CourseArea = () => {
       <div className="container">
         <div className="row">
           <CourseSidebar setCourses={setCourses} />
-          <div className="col-xl-9 col-lg-8">
+          <div className="col-xl-9 col-lg-8 ">
             <CourseTop
               startOffset={startOffset}
               endOffset={Math.min(endOffset, totalItems)}
@@ -111,8 +132,9 @@ const CourseArea = () => {
               setCourses={setCourses}
               handleTabClick={handleTabClick}
               activeTab={activeTab}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
             />
-
             {isLoading ? (
               <div className="text-center py-5">
                 <div className="spinner-border text-primary" role="status">
@@ -190,7 +212,6 @@ const CourseArea = () => {
                     />
                   </nav>
                 </div>
-
                 <div
                   className={`tab-pane fade ${activeTab === 1 ? "show active" : ""}`}
                   id="list"

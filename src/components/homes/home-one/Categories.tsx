@@ -1,42 +1,40 @@
 import { useState, useEffect } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation } from 'swiper/modules';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { useFaculty } from '../../../hooks/useFaculty';
 
 interface Faculty {
   faculty: string;
   course_count: number;
 }
 
-// กำหนดไอคอนสำหรับแต่ละคณะ
-// กำหนดไอคอนสำหรับแต่ละคณะที่เหมาะสมจากไฟล์ flaticon-skillgro-new.css
 const facultyIcons: { [key: string]: string } = {
-  'คณะวิทยาศาสตร์': 'skillgro-atom', // ไอคอนอะตอม เหมาะกับวิทยาศาสตร์
-  'คณะเทคโนโลยีสารสนเทศ': 'skillgro-web-programming', // ไอคอนเว็บโปรแกรมมิ่ง เหมาะกับ IT
-  'คณะวิทยาการจัดการ': 'skillgro-investment', // ไอคอนการลงทุน เหมาะกับการจัดการ
-  'คณะรัฐศาสตร์และรัฐประศาสนศาสตร์': 'skillgro-law', // ไอคอนกฎหมาย เหมาะกับรัฐศาสตร์
-  'คณะนิติศาสตร์': 'skillgro-text-file', // ไอคอนไฟล์ข้อความ เหมาะกับนิติศาสตร์
-  'คณะมนุษยศาสตร์และสังคมศาสตร์': 'skillgro-book-2', // ไอคอนหนังสือ เหมาะกับมนุษยศาสตร์
-  'คณะเทคโนโลยีการเกษตร': 'skillgro-lotus-flower', // ไอคอนดอกบัว ใกล้เคียงกับการเกษตร
-  'คณะวิศวกรรมศาสตร์': 'skillgro-development', // ไอคอนการพัฒนา เหมาะกับวิศวกรรม
-  'คณะวิทยาศาสตร์และเทคโนโลยี': 'skillgro-bulb', // ไอคอนหลอดไฟ เหมาะกับวิทยาศาสตร์และเทคโนโลยี
-  'ศูนย์สหกิจศึกษา': 'skillgro-development-plan', // ไอคอนแผนการพัฒนา เหมาะกับสหกิจศึกษา
-  'คณะครุศาสตร์': 'skillgro-mortarboard', // ไอคอนหมวกรับปริญญา เหมาะกับครุศาสตร์
-  'คณะพยาบาลศาสตร์': 'skillgro-heart-2', // ไอคอนหัวใจ เหมาะกับพยาบาล
-  'คณะสัตวแพทยศาสตร์': 'skillgro-tooth', // ไอคอนฟัน ใกล้เคียงกับสัตวแพทย์
-  'คณะเภสัชศาสตร์': 'skillgro-stone', // ไอคอนหิน ใกล้เคียงกับเภสัชศาสตร์
-  'คณะสาธารณสุขศาสตร์': 'skillgro-heart', // ไอคอนหัวใจ เหมาะกับสาธารณสุข
-  'คณะทันตแพทยศาสตร์': 'skillgro-tooth', // ไอคอนฟัน เหมาะกับทันตแพทย์
-  'คณะแพทยศาสตร์': 'skillgro-brain', // ไอคอนสมอง เหมาะกับแพทย์
-  'คณะศิลปกรรมศาสตร์': 'skillgro-vector', // ไอคอนเวกเตอร์ เหมาะกับศิลปกรรม
-  'คณะสถาปัตยกรรมศาสตร์': 'skillgro-customize', // ไอคอนการปรับแต่ง เหมาะกับสถาปัตยกรรม
-  'คณะบริหารธุรกิจ': 'skillgro-profit', // ไอคอนกำไร เหมาะกับบริหารธุรกิจ
-  'คณะบัญชี': 'skillgro-taxes', // ไอคอนภาษี เหมาะกับบัญชี
-  'คณะนิเทศศาสตร์': 'skillgro-marketing', // ไอคอนการตลาด เหมาะกับนิเทศศาสตร์
-  'คณะเศรษฐศาสตร์': 'skillgro-financial-profit', // ไอคอนกำไรทางการเงิน เหมาะกับเศรษฐศาสตร์
+  'คณะวิทยาศาสตร์': 'skillgro-atom',
+  'คณะเทคโนโลยีสารสนเทศ': 'skillgro-web-programming',
+  'คณะวิทยาการจัดการ': 'skillgro-investment',
+  'คณะรัฐศาสตร์และรัฐประศาสนศาสตร์': 'skillgro-law',
+  'คณะนิติศาสตร์': 'skillgro-text-file',
+  'คณะมนุษยศาสตร์และสังคมศาสตร์': 'skillgro-book-2',
+  'คณะเทคโนโลยีการเกษตร': 'skillgro-lotus-flower',
+  'คณะวิศวกรรมศาสตร์': 'skillgro-development',
+  'คณะวิทยาศาสตร์และเทคโนโลยี': 'skillgro-bulb',
+  'ศูนย์สหกิจศึกษา': 'skillgro-development-plan',
+  'คณะครุศาสตร์': 'skillgro-mortarboard',
+  'คณะพยาบาลศาสตร์': 'skillgro-heart-2',
+  'คณะสัตวแพทยศาสตร์': 'skillgro-tooth',
+  'คณะเภสัชศาสตร์': 'skillgro-stone',
+  'คณะสาธารณสุขศาสตร์': 'skillgro-heart',
+  'คณะทันตแพทยศาสตร์': 'skillgro-tooth',
+  'คณะแพทยศาสตร์': 'skillgro-brain',
+  'คณะศิลปกรรมศาสตร์': 'skillgro-vector',
+  'คณะสถาปัตยกรรมศาสตร์': 'skillgro-customize',
+  'คณะบริหารธุรกิจ': 'skillgro-profit',
+  'คณะบัญชี': 'skillgro-taxes',
+  'คณะนิเทศศาสตร์': 'skillgro-marketing',
+  'คณะเศรษฐศาสตร์': 'skillgro-financial-profit',
 };
-
 
 const setting = {
   slidesPerView: 6,
@@ -59,6 +57,8 @@ const setting = {
 const Categories = () => {
   const [faculties, setFaculties] = useState<Faculty[]>([]);
   const apiURL = import.meta.env.VITE_API_URL;
+  const navigate = useNavigate();
+  const { setSelectedFaculty } = useFaculty();
 
   useEffect(() => {
     const fetchFaculties = async () => {
@@ -66,24 +66,20 @@ const Categories = () => {
         const response = await axios.get(`${apiURL}/api/courses/subjects/departments/list`);
         if (response.data.success) {
           const allDepartments = response.data.departments;
-
-          // รวมภาควิชาในคณะเดียวกันให้เหลือคณะเดียว และรวม course_count
           const facultiesMap: { [faculty: string]: Faculty } = {};
           
           allDepartments.forEach((dept: any) => {
             if (!facultiesMap[dept.faculty]) {
               facultiesMap[dept.faculty] = {
                 faculty: dept.faculty,
-                course_count: dept.course_count || 0
+                course_count: dept.course_count || 0,
               };
             } else {
               facultiesMap[dept.faculty].course_count += (dept.course_count || 0);
             }
           });
           
-          // แปลงเป็น array
           const uniqueFaculties = Object.values(facultiesMap);
-          
           setFaculties(uniqueFaculties);
         }
       } catch (error) {
@@ -93,6 +89,11 @@ const Categories = () => {
 
     fetchFaculties();
   }, [apiURL]);
+
+  const handleFacultyClick = (faculty: string) => {
+    setSelectedFaculty(faculty);
+    navigate(`/courses?faculty=${encodeURIComponent(faculty)}`);
+  };
 
   return (
     <section className="categories-area section-py-120">
@@ -112,12 +113,16 @@ const Categories = () => {
                 {faculties.map((faculty) => (
                   <SwiperSlide key={faculty.faculty} className="swiper-slide">
                     <div className="categories__item">
-                      <Link to="/courses">
+                      <div
+                        className="shine__animate-link"
+                        onClick={() => handleFacultyClick(faculty.faculty)}
+                        style={{ cursor: 'pointer' }}
+                      >
                         <div className="icon">
                           <i className={facultyIcons[faculty.faculty] || 'flaticon-education'}></i>
                         </div>
                         <span className="name">{faculty.faculty}</span>
-                      </Link>
+                      </div>
                     </div>
                   </SwiperSlide>
                 ))}
