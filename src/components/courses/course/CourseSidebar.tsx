@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from 'axios';
-import { useFaculty } from '../../../hooks/useFaculty'; // Adjust path as needed
+import { useFaculty } from '../../../hooks/useFaculty';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 
 interface ApiCourse {
@@ -32,25 +32,21 @@ const CourseSidebar = ({ setCourses }: CourseSidebarProps) => {
   const [filterType, setFilterType] = useState<'faculty' | 'department'>('faculty');
   const [faculties, setFaculties] = useState<string[]>(['ทั้งหมด']);
   const [departments, setDepartments] = useState<string[]>(['ทั้งหมด']);
-  const [facultySelected, setFacultySelected] = useState('');
   const [departmentSelected, setDepartmentSelected] = useState('');
   const { selectedFaculty, setSelectedFaculty } = useFaculty();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  // Sync facultySelected with query parameter and context on mount
+  // Sync selectedFaculty with query parameter on mount
   useEffect(() => {
     const facultyFromQuery = searchParams.get('faculty');
     if (facultyFromQuery) {
       const decodedFaculty = decodeURIComponent(facultyFromQuery);
       setSelectedFaculty(decodedFaculty);
-      setFacultySelected(decodedFaculty);
-    } else if (selectedFaculty) {
-      setFacultySelected(selectedFaculty);
-    } else {
-      setFacultySelected('');
+    } else if (!selectedFaculty) {
+      setSelectedFaculty(null);
     }
-  }, [searchParams, selectedFaculty, setSelectedFaculty]);
+  }, [searchParams, setSelectedFaculty]);
 
   // Fetch faculties and departments
   useEffect(() => {
@@ -76,21 +72,23 @@ const CourseSidebar = ({ setCourses }: CourseSidebarProps) => {
 
   const handleFilterTypeChange = (type: 'faculty' | 'department') => {
     setFilterType(type);
-    setFacultySelected('');
-    setDepartmentSelected('');
     setSelectedFaculty(null);
+    setDepartmentSelected('');
     filterCourses({ faculty: '', department: '' });
     navigate('/courses'); // Clear query params
   };
 
-  const handleSelection = (value: string) => {
+  const handleSelection = (value: string, e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    console.log(`Selected ${filterType}:`, value);
     if (filterType === 'faculty') {
-      const newValue = value === facultySelected ? '' : value;
-      setFacultySelected(newValue);
-      const facultyToSet = newValue === 'ทั้งหมด' ? null : newValue;
-      setSelectedFaculty(facultyToSet);
-      filterCourses({ faculty: facultyToSet || '' });
-      navigate(`/courses${facultyToSet ? `?faculty=${encodeURIComponent(facultyToSet)}` : ''}`);
+      const newValue = value === selectedFaculty ? null : value === 'ทั้งหมด' ? null : value;
+      setSelectedFaculty(newValue);
+      filterCourses({ faculty: newValue || '' });
+      navigate(`/courses${newValue ? `?faculty=${encodeURIComponent(newValue)}` : ''}`);
     } else {
       const newValue = value === departmentSelected ? '' : value;
       setDepartmentSelected(newValue);
@@ -160,16 +158,19 @@ const CourseSidebar = ({ setCourses }: CourseSidebarProps) => {
             <ul className="list-wrap">
               {itemsToShow.map((item, i) => (
                 <li key={i}>
-                  <div onClick={() => handleSelection(item)} className="form-check">
+                  <div className="form-check">
                     <input
                       className="form-check-input"
                       type="checkbox"
-                      checked={item === (filterType === 'faculty' ? facultySelected : departmentSelected) || 
-                              (item === 'ทั้งหมด' && !(filterType === 'faculty' ? facultySelected : departmentSelected))}
-                      readOnly
+                      checked={filterType === 'faculty' ? item === selectedFaculty || (item === 'ทั้งหมด' && !selectedFaculty) : item === departmentSelected || (item === 'ทั้งหมด' && !departmentSelected)}
+                      onChange={() => handleSelection(item)}
                       id={`filter_${i}`}
                     />
-                    <label className="form-check-label" htmlFor={`filter_${i}`}>
+                    <label
+                      className="form-check-label"
+                      onClick={(e) => handleSelection(item, e)}
+                      style={{ cursor: 'pointer' }}
+                    >
                       {item}
                     </label>
                   </div>

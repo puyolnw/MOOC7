@@ -32,6 +32,17 @@ const CourseArea = () => {
   const [courseExtraInfo, setCourseExtraInfo] = useState<Record<number, CourseExtraInfo>>({});
   const [searchParams] = useSearchParams();
   const { selectedFaculty, setSelectedFaculty } = useFaculty();
+  const [searchQuery, setSearchQuery] = useState<string>(searchParams.get('search') || "");
+
+  // Debug: Log searchQuery
+  console.log("CourseArea: searchQuery:", searchQuery);
+
+  // Sync searchQuery with URL
+  useEffect(() => {
+    const searchFromQuery = searchParams.get('search') || "";
+    console.log("URL Search Param:", searchFromQuery);
+    setSearchQuery(searchFromQuery);
+  }, [searchParams]);
 
   useEffect(() => {
     const facultyFromQuery = searchParams.get('faculty');
@@ -47,7 +58,12 @@ const CourseArea = () => {
       try {
         setIsLoading(true);
         setError(null);
-        const response = await axios.get(`${apiURL}/api/courses`);
+        const params = new URLSearchParams();
+        if (searchQuery) {
+          params.append('search', searchQuery);
+        }
+        const response = await axios.get(`${apiURL}/api/courses${params.toString() ? `?${params}` : ''}`);
+        console.log("API Response:", response.data.courses);
 
         if (response.data.success) {
           const extraInfo: Record<number, CourseExtraInfo> = {};
@@ -60,6 +76,7 @@ const CourseArea = () => {
             return {
               id: course.course_id,
               title: course.title,
+              description: course.description || "", // Ensure description for search
               department_name: course.department_name,
               faculty: course.faculty,
               thumb: course.cover_image_file_id
@@ -88,24 +105,40 @@ const CourseArea = () => {
       }
     };
     fetchCourses();
-  }, [apiURL, setCourses, selectedFaculty]);
+  }, [apiURL, setCourses, selectedFaculty, searchQuery]);
+
+  // Reset pagination when courses change
+  useEffect(() => {
+    console.log("Courses length changed:", courses.length);
+    setItemOffset(0); // Reset to first page
+  }, [courses.length]);
+
+  // Filter courses by search query
+  const filteredCourses = searchQuery
+    ? courses.filter((course: any) =>
+        (course.title?.toLowerCase() || "").includes(searchQuery.toLowerCase()) ||
+        (course.description?.toLowerCase() || "").includes(searchQuery.toLowerCase())
+      )
+    : courses;
+
+  // Debug: Log courses
+  console.log("All Courses:", courses.map(c => ({ id: c.id, title: c.title })));
+  console.log("Filtered Courses:", filteredCourses.map(c => ({ id: c.id, title: c.title })));
 
   const itemsPerPage = 12;
   const [itemOffset, setItemOffset] = useState(0);
   const endOffset = itemOffset + itemsPerPage;
-  const currentItems = courses.slice(itemOffset, endOffset);
-  const pageCount = Math.ceil(courses.length / itemsPerPage);
+  const currentItems = filteredCourses.slice(itemOffset, endOffset);
+  const pageCount = Math.ceil(filteredCourses.length / itemsPerPage);
   const startOffset = itemOffset + 1;
-  const totalItems = courses.length;
+  const totalItems = filteredCourses.length;
 
   const handlePageClick = (event: { selected: number }) => {
-    const newOffset = (event.selected * itemsPerPage) % courses.length;
+    const newOffset = (event.selected * itemsPerPage) % filteredCourses.length;
     setItemOffset(newOffset);
   };
 
   const [activeTab, setActiveTab] = useState(0);
-
-  const [searchQuery, setSearchQuery] = useState<string>("");
 
   const handleTabClick = (index: number) => {
     setActiveTab(index);
@@ -124,7 +157,7 @@ const CourseArea = () => {
       <div className="container">
         <div className="row">
           <CourseSidebar setCourses={setCourses} />
-          <div className="col-xl-9 col-lg-8 ">
+          <div className="col-xl-9 col-lg-8">
             <CourseTop
               startOffset={startOffset}
               endOffset={Math.min(endOffset, totalItems)}
@@ -168,7 +201,7 @@ const CourseArea = () => {
                             <Link to={`/course-details/${item.id}`} className="shine__animate-link">
                               <img
                                 src={item.thumb}
-                                alt={item.title}
+                                alt={item.title || "Course"}
                                 onError={(e) => {
                                   (e.target as HTMLImageElement).src =
                                     "/assets/img/courses/course_thumb01.jpg";
@@ -183,7 +216,7 @@ const CourseArea = () => {
                               </li>
                             </ul>
                             <h5 className="title">
-                              <Link to={`/course-details/${item.id}`}>{item.title}</Link>
+                              <Link to={`/course-details/${item.id}`}>{item.title || "Untitled"}</Link>
                             </h5>
                             <p className="author text-truncate" style={{ maxWidth: '90%' }}>
                               คณะ <Link to="#">{getExtraInfo(item.id).faculty}</Link>
@@ -226,7 +259,7 @@ const CourseArea = () => {
                             <Link to={`/course-details/${item.id}`} className="shine__animate-link">
                               <img
                                 src={item.thumb}
-                                alt={item.title}
+                                alt={item.title || "Course"}
                                 onError={(e) => {
                                   (e.target as HTMLImageElement).src =
                                     "/assets/img/courses/course_thumb01.jpg";
@@ -241,7 +274,7 @@ const CourseArea = () => {
                               </li>
                             </ul>
                             <h5 className="title">
-                              <Link to={`/course-details/${item.id}`}>{item.title}</Link>
+                              <Link to={`/course-details/${item.id}`}>{item.title || "Untitled"}</Link>
                             </h5>
                             <p className="author text-truncate" style={{ maxWidth: '90%' }}>
                               คณะ <Link to="#">{getExtraInfo(item.id).faculty}</Link>
