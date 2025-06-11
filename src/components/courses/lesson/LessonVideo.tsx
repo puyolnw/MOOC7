@@ -38,10 +38,13 @@ const LessonVideo = ({
 
   // บันทึกความก้าวหน้าการดูวิดีโอ
   const saveVideoProgress = async (position: number, duration: number) => {
+    console.log("NEW POSITION", position)
+    console.log("NEW DURATION", duration)
     try {
       // ถ้าเคย complete แล้ว และไม่ได้อยู่ใกล้จุดจบ ไม่ต้องส่ง API อีก
       if (hasCompletedRef.current && position < duration * 0.9) {
         console.log("Video already completed, not sending progress update");
+        console.log("TEST COMPLETE VIDEO")
         return;
       }
       
@@ -66,6 +69,7 @@ const LessonVideo = ({
         if (position >= duration * 0.9 && !hasCompletedRef.current) {
           console.log("วิดีโอดูจบแล้ว (>90%)");
           setIsCompleted(true);
+          setShowCompletionModal(true);
           hasCompletedRef.current = true;
           onComplete();
         }
@@ -107,11 +111,19 @@ const LessonVideo = ({
         }
 
         // ถ้าวิดีโอดูจบแล้ว
-        if (video_completed) {
-          console.log("วิดีโอนี้ดูจบแล้ว (จากข้อมูลในฐานข้อมูล)");
+        if (video_completed && !hasCompletedRef.current) {
+          console.log("วิดีโอนี้ดูจบแล้ว (จากข้อมูลในฐานข้อมูล) และยังไม่เคย complete");
           setIsCompleted(true);
           hasCompletedRef.current = true;
           onComplete();
+        } else if (last_position_seconds && duration_seconds) {
+          const progressPercentage = (last_position_seconds / duration_seconds) * 100;
+          console.log("Progress from API:", progressPercentage);
+          if (progressPercentage >= 90 && !hasCompletedRef.current) {
+            setIsCompleted(true);
+            hasCompletedRef.current = true;
+            onComplete();
+          }
         }
       }
     } catch (error) {
@@ -136,6 +148,7 @@ const LessonVideo = ({
     if (onNextLesson) {
       onNextLesson();
     }
+    setIsCompleted(false)
   };
 
   // ฟังก์ชันสำหรับไปทำแบบทดสอบ
@@ -144,24 +157,37 @@ const LessonVideo = ({
     if (onGoToQuiz) {
       onGoToQuiz();
     }
+    setIsCompleted(false)
   };
 
   // เมื่อ lessonId เปลี่ยน
   useEffect(() => {
     console.log(`โหลดวิดีโอบทเรียน ID: ${lessonId}`);
-    fetchVideoProgress();
     
-    // Reset refs when lessonId changes
-    hasCompletedRef.current = false;
-    lastSavedPositionRef.current = 0;
-    setIsCompleted(false);
-    setProgress(0);
+    const loadProgress = async () => {
+      // รีเซ็ต refs และ state เมื่อ lessonId เปลี่ยน
+      hasCompletedRef.current = false;
+      lastSavedPositionRef.current = 0;
+      setProgress(0);
+      setShowCompletionModal(false);
+      setIsCompleted(false);
+      console.log("After reset - lastSavedPositionRef:", lastSavedPositionRef.current);
+      
+      // ดึงความก้าวหน้าก่อน
+      await fetchVideoProgress();
+    };
+    
+    loadProgress();
     
     // ยกเลิก interval เมื่อ component unmount หรือ lessonId เปลี่ยน
     return () => {
       hasCompletedRef.current = false;
     };
-  }, [lessonId]);
+  }, [lessonId, youtubeId]);
+
+  useEffect(() => {
+    console.log("isCompleted state updated to:", isCompleted);
+  }, [isCompleted]);
 
   // สร้าง player เมื่อ component โหลดหรือ lessonId เปลี่ยน
   useEffect(() => {
@@ -223,6 +249,7 @@ const LessonVideo = ({
           if (currentProgress >= 90 && !hasCompletedRef.current) {
             console.log("วิดีโอดูถึง 90% แล้ว - ถือว่าดูจบ");
             setIsCompleted(true);
+            setShowCompletionModal(true);
             hasCompletedRef.current = true;
             
             // บันทึกความก้าวหน้า
@@ -279,11 +306,11 @@ const LessonVideo = ({
     // ยกเลิก interval และบันทึกความก้าวหน้าเมื่อ component unmount
     return () => {
       if (playerRef.current) {
-        console.log("Component unmount - บันทึกความก้าวหน้าครั้งสุดท้าย");
-        saveVideoProgress(
-          playerRef.current.currentTime,
-          playerRef.current.duration
-        );
+        // console.log("Component unmount - บันทึกความก้าวหน้าครั้งสุดท้าย");
+        // saveVideoProgress(
+        //   playerRef.current.currentTime,
+        //   playerRef.current.duration
+        // );
         playerRef.current.destroy();
       }
     };

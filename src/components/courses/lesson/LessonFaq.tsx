@@ -39,6 +39,7 @@ const LessonFaq = ({ lessonData, onSelectLesson }: LessonFaqProps) => {
 
    // เมื่อโหลดหน้า ให้เปิดแอคคอร์เดียนที่มีบทเรียนปัจจุบัน (บทแรกที่ยังไม่เสร็จ)
    useEffect(() => {
+    console.log("lessonData", lessonData)
      for (const section of lessonData) {
        for (const item of section.items) {
          if (!item.completed) {
