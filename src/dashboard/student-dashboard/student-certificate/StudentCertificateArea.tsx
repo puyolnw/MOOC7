@@ -276,12 +276,9 @@ const StudentCertificateArea = () => {
                                     {enrolledCourses.map((course) => (
                                        <tr key={course.courseId}>
                                           <td>
-                                                <strong>{course.title}</strong>
-                                                <p className="text-muted small mb-0">{course.departmentName || 'ไม่ระบุภาควิชา'}</p>
-                                                {course.description && (
-                                                   <p className="text-muted small mb-0" style={{fontSize: '0.8rem'}}>{course.description}</p>
-                                                )}
-                                          </td>
+   <strong>{course.title}</strong>
+   <p className="text-muted small mb-0">{course.departmentName || 'ไม่ระบุภาควิชา'}</p>
+</td>
                                           <td>
                                                 <div className="progress" style={{height: '20px', fontSize: '0.8rem'}}>
                                                    <div 
