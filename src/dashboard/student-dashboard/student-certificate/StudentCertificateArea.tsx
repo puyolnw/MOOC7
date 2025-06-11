@@ -214,7 +214,7 @@ const StudentCertificateArea = () => {
             return <EmptyState />;
       }
 
-      const { statistics, enrolledCourses } = certificateData;
+      const {  enrolledCourses } = certificateData;
       console.log("Final enrolled courses to render:", enrolledCourses);
 
       return (
@@ -224,41 +224,7 @@ const StudentCertificateArea = () => {
                   <p className="text-muted">คอร์สที่คุณเรียนจบแล้วและสามารถดาวน์โหลดใบรับรองได้</p>
                </div>
 
-               {/* สถิติสรุป */}
-               <div className="row mb-4">
-                  <div className="col-md-3 mb-3">
-                     <div className="card bg-success text-white">
-                        <div className="card-body text-center">
-                           <h3 className="card-title">{enrolledCourses.length}</h3>
-                           <p className="card-text">คอร์สที่จบแล้ว</p>
-                        </div>
-                     </div>
-                  </div>
-                  <div className="col-md-3 mb-3">
-                     <div className="card bg-info text-white">
-                        <div className="card-body text-center">
-                           <h3 className="card-title">{statistics.totalCompletedSubjects}</h3>
-                           <p className="card-text">วิชาที่จบแล้ว</p>
-                        </div>
-                     </div>
-                  </div>
-                  <div className="col-md-3 mb-3">
-                     <div className="card bg-warning text-white">
-                        <div className="card-body text-center">
-                           <h3 className="card-title">{statistics.totalCreditsEarned}</h3>
-                           <p className="card-text">หน่วยกิตที่ได้</p>
-                        </div>
-                     </div>
-                  </div>
-                  <div className="col-md-3 mb-3">
-                     <div className="card bg-primary text-white">
-                        <div className="card-body text-center">
-                           <h3 className="card-title">{enrolledCourses.length}</h3>
-                           <p className="card-text">ใบรับรองที่ได้</p>
-                        </div>
-                     </div>
-                  </div>
-               </div>
+
                
                <div className="card">
                   <div className="card-body p-0">
