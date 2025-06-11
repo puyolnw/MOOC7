@@ -479,7 +479,7 @@ const AddQuizzes: React.FC<AddQuizzesProps> = ({ onSubmit, onCancel }) => {
             allow_file_upload: quizData.allowFileUpload,
           };
 
-          response = await axios.post(`${apiUrl}/api/specialquiz/special-quiz`, apiData, {
+          response = await axios.post(`${apiUrl}/api/specialquiz/`, apiData, {
             headers: {
               "Content-Type": "application/json",
               "Authorization": `Bearer ${token}`,
