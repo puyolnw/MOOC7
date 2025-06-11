@@ -76,6 +76,7 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
     const [currentLesson, setCurrentLesson] = useState<string>("");
     const [currentLessonId, setCurrentLessonId] = useState<string>("");
     const [completedCount, setCompletedCount] = useState(0);
+    console.log("completedCount:", completedCount)
     const [currentSubjectId, setCurrentSubjectId] = useState<number | null>(null);
     const [currentSubjectTitle, setCurrentSubjectTitle] = useState<string>("");
     const [currentLessonData, setCurrentLessonData] = useState<any>(null);
