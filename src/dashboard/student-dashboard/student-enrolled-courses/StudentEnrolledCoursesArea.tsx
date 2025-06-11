@@ -255,7 +255,7 @@ const StudentEnrolledCoursesArea = () => {
                                     <div key={item.id} className="col-xl-4 col-md-6">
                                        <div className="courses__item courses__item-two shine__animate-item">
                                           <div className="courses__item-thumb courses__item-thumb-two">
-                                             <a href={`/course/${item.course_id}`} className="shine__animate-link">
+                                             <a href={`/course-details/${item.course_id}`} className="shine__animate-link">
                                                 <img 
                                                    src={getImageUrl(item)} 
                                                    alt={item.title}
@@ -272,7 +272,7 @@ const StudentEnrolledCoursesArea = () => {
                                                    <a href="/courses">{item.tag}</a>
                                                 </li>
                                              </ul>
-                                             <h5 className="title"><a href={`/course/${item.course_id}`}>{item.title}</a></h5>
+                                             <h5 className="title"><a href={`/course-details/${item.course_id}`}>{item.title}</a></h5>
                                              <div className="courses__item-content-bottom">
                                                 <div className="author-two">
                                                    <a href="/instructor-details"><img src={item.avatar_thumb} alt="img" />{item.avatar_name}</a>

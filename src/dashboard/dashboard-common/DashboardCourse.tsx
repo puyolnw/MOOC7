@@ -226,7 +226,7 @@ const DashboardCourse = () => {
                   <div key={item.id} className="col-xl-4 col-md-6">
                      <div className="courses__item courses__item-two shine__animate-item">
                         <div className="courses__item-thumb courses__item-thumb-two">
-                           <Link to={`/course/${item.course_id}`} className="shine__animate-link">
+                           <Link to={`/course-details/${item.course_id}`} className="shine__animate-link">
                               <img 
                                  src={getImageUrl(item)} 
                                  alt={item.title}
@@ -250,7 +250,7 @@ const DashboardCourse = () => {
                                  <Link to="/courses">{item.tag}</Link>
                               </li>
                            </ul>
-                           <h5 className="title"><Link to={`/course/${item.course_id}`}>{item.title}</Link></h5>
+                           <h5 className="title"><Link to={`/course-details/${item.course_id}`}>{item.title}</Link></h5>
                            <div className="courses__item-content-bottom">
                               <div className="author-two">
                                  <Link to="/instructor-details"><img src={item.avatar_thumb} alt="img" />{item.avatar_name}</Link>
