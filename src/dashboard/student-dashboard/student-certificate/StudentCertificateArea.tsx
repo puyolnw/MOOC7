@@ -158,25 +158,46 @@ const StudentCertificateArea = () => {
       fetchCertificateData();
    }, []);
 
-   const handleDownloadCertificate = async (courseId: number, title: string) => {
-      const downloadKey = `course-${courseId}`;
-      setDownloadingId(downloadKey);
-      try {
-            const apiClient = getApiClient();
-            const response = await apiClient.post('/api/data/certificate/generate', { type: 'course', id: courseId });
-            if (response.data.success) {
-               const certInfo = response.data.certificateData;
-               alert(`สร้างใบรับรองสำเร็จ!\nสำหรับ: ${title}\nรหัส: ${certInfo.certificateId}`);
-            } else {
-               throw new Error(response.data.message);
-            }
-      } catch (err) {
-            const message = err instanceof Error ? err.message : "ไม่สามารถดาวน์โหลดได้";
-            alert(`เกิดข้อผิดพลาด: ${message}`);
-      } finally {
-            setDownloadingId(null);
-      }
-   };
+  const handleDownloadCertificate = async (courseId: number, title: string) => {
+   const downloadKey = `course-${courseId}`;
+   setDownloadingId(downloadKey);
+   try {
+         const apiClient = getApiClient();
+         
+         const requestData = {
+            courseId: courseId,
+            courseTitle: title
+         };
+         
+         console.log("Sending request data:", requestData);
+         
+         // ส่ง request และรับ response เป็น blob
+         const response = await apiClient.post('/api/data/certificate/generate', requestData, {
+            responseType: 'blob' // สำคัญ: ต้องระบุเป็น blob สำหรับไฟล์ PDF
+         });
+         
+         // สร้าง blob และดาวน์โหลด
+         const blob = new Blob([response.data], { type: 'application/pdf' });
+         const url = window.URL.createObjectURL(blob);
+         const link = document.createElement('a');
+         link.href = url;
+         link.download = `Certificate-${title}-${new Date().toISOString().slice(0, 10)}.pdf`;
+         document.body.appendChild(link);
+         link.click();
+         document.body.removeChild(link);
+         window.URL.revokeObjectURL(url);
+         
+         console.log("Certificate downloaded successfully");
+         
+   } catch (err) {
+         console.error("Download error:", err);
+         const message = err instanceof Error ? err.message : "ไม่สามารถดาวน์โหลดได้";
+         alert(`เกิดข้อผิดพลาด: ${message}`);
+   } finally {
+         setDownloadingId(null);
+   }
+};
+
    
  
    
