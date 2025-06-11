@@ -88,6 +88,7 @@ import InsAddlessonspage from '../pages/Instructor/create/AddLessons';
 import InsAddQuizzespage from '../pages/Instructor/create/AddQuizzes';
 import InsAddSubjectspage from '../pages/Instructor/create/AddSubjects';
 import InsGradingpage from '../pages/Instructor/InsSpecialQuiz';
+import InstructorSubjectOverviewPage from '../pages/InstructorSubjectOverview';
 
 import Personelpage from '../pages/Personel';
 {/* ลองเพิ่ม */}
@@ -187,6 +188,7 @@ const AppNavigation = () => {
         <Route path="/instructor-lessons/create-new" element={<InsAddlessonspage />} />
         <Route path="/instructor-subjects/create-new" element={<InsAddSubjectspage />} />
         <Route path="/instructor-grading" element={<InsGradingpage />} />
+         <Route path="/instructor/subject/:subjectId/overview" element={<InstructorSubjectOverviewPage />} />
         </Route>
 
         <Route element={<PrivateRoute allowedRoles={["student"]} />}>
@@ -199,6 +201,7 @@ const AppNavigation = () => {
         <Route path="/student-history" element={<StudentHistory />} />
         <Route path="/student-setting" element={<StudentSetting />} />
         <Route path="/student-certificate" element={<StudentCertificate />} />
+       
         </Route>
         {/* <Route path="/blog-details/:id" element={<DynamicBlogDeatils />} /> */}
         <Route path="*" element={<NotFound />} />

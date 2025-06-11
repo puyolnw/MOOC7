@@ -1,20 +1,307 @@
+import { useEffect, useState, FC } from "react";
 import { Link } from "react-router-dom";
+import axios from "axios";
 import DashboardBannerTwo from "../../dashboard-common/DashboardBannerTwo";
 import DashboardSidebarTwo from "../../dashboard-common/DashboardSidebarTwo";
-import "./StudentCertificate.css"; // ไฟล์ CSS สำหรับตกแต่งหน้า
+import "./StudentCertificate.css";
 
+// --- Interfaces ---
+interface Statistics {
+totalCompletedCourses: number;
+totalInProgressCourses: number;
+totalCompletedSubjects: number;
+totalInProgressSubjects: number;
+totalCreditsEarned: number;
+}
+
+interface CompletedCourse {
+courseId: number;
+title: string;
+description: string;
+enrollmentDate: string;
+departmentName: string;
+totalSubjects: number;
+completedSubjects: number;
+totalLessons: number;
+completedLessons: number;
+progressPercentage: number;
+status: string;
+}
+
+interface CertificateData {
+success: boolean;
+message?: string;
+statistics: Statistics;
+enrolledCourses: CompletedCourse[];
+}
+
+// --- Utility Functions ---
+const getApiClient = () => {
+   const token = localStorage.getItem('token');
+   if (!token) { throw new Error("ไม่พบข้อมูลการเข้าสู่ระบบ"); }
+   const apiURL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+   return axios.create({ baseURL: apiURL, headers: { 'Authorization': `Bearer ${token}` } });
+};
+
+
+// --- Child Components ---
+const LoadingIndicator: FC = () => (
+   <div className="text-center p-5" style={{ minHeight: '400px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+      <div className="spinner-border" role="status" style={{ width: '3rem', height: '3rem' }}><span className="visually-hidden">Loading...</span></div>
+      <p className="mt-3 text-muted">กำลังโหลดข้อมูล...</p>
+   </div>
+);
+
+const ErrorDisplay: FC<{ message: string }> = ({ message }) => (
+   <div className="alert alert-danger"><h4 className="alert-heading">เกิดข้อผิดพลาด!</h4><p className="mb-0">{message}</p></div>
+);
+
+const EmptyState: FC = () => (
+   <div className="card text-center" style={{ padding: '3rem' }}>
+      <div style={{ fontSize: '5rem', color: '#e9ecef', marginBottom: '1.5rem' }}><i className="fas fa-graduation-cap"></i></div>
+      <h5 className="text-muted mb-3">คุณยังไม่มีคอร์สที่เรียนจบแล้ว</h5>
+      <p className="text-muted mb-4">เมื่อคุณเรียนคอร์สใดคอร์สหนึ่งจนครบ 100% แล้ว คุณจะสามารถดาวน์โหลดใบรับรองได้ที่นี่</p>
+      <Link to="/courses" className="btn btn-primary"><i className="fas fa-search me-2"></i>ค้นหาคอร์สเรียน</Link>
+   </div>
+);
+
+// --- Main Component ---
 const StudentCertificateArea = () => {
-   // ตัวอย่างข้อมูลหลักสูตรที่เรียนสำเร็จ
-   const completedCourses = [
-      { id: 1, name: "การพัฒนาเว็บด้วย React", date: "15 มีนาคม 2025" },
-      { id: 2, name: "การออกแบบ UX/UI เบื้องต้น", date: "10 กุมภาพันธ์ 2025" },
-      { id: 3, name: "การเขียนโปรแกรมด้วย Python", date: "5 มกราคม 2025" },
-   ];
+   const [loading, setLoading] = useState(true);
+   const [error, setError] = useState<string | null>(null);
+   const [certificateData, setCertificateData] = useState<CertificateData | null>(null);
+   const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
-   // ฟังก์ชันสำหรับดาวน์โหลดใบรับรอง
-   const handleDownload = (courseName: string) => {
-      alert(`กำลังดาวน์โหลดใบรับรองสำหรับหลักสูตร: ${courseName}`);
-      // ที่นี่คุณสามารถเพิ่ม logic สำหรับการดาวน์โหลดไฟล์จริง
+   useEffect(() => {
+      const fetchCertificateData = async () => {
+            try {
+               setLoading(true);
+               const apiClient = getApiClient();
+               const response = await apiClient.get<any>('/api/data/student/certificates');
+               
+               console.log("=== API Response ===");
+               console.log("Full response:", response.data);
+               
+               if (response.data.success) {
+                  const rawData = response.data;
+                  console.log("Raw data from API:", rawData);
+                  
+                  const toCamelCase = (str: string) => str.replace(/_([a-z])/g, g => g[1].toUpperCase());
+                  const transformKeys = (obj: any): any => {
+                        if (Array.isArray(obj)) return obj.map(v => transformKeys(v));
+                        if (obj !== null && obj.constructor === Object) {
+                           return Object.keys(obj).reduce((result, key) => {
+                              result[toCamelCase(key)] = transformKeys(obj[key]);
+                              return result;
+                           }, {} as any);
+                        }
+                        return obj;
+                  };
+                  
+                  const transformedData = transformKeys(rawData);
+                  console.log("Transformed data:", transformedData);
+                  
+                  // ตรวจสอบข้อมูลคอร์สที่ลงทะเบียน
+                  const allCourses = transformedData.enrolledCourses || [];
+                  console.log("=== จำนวนคอร์สทั้งหมดที่ลงทะเบียน ===");
+                  console.log("Total enrolled courses:", allCourses.length);
+                  
+                  // ตรวจสอบแต่ละคอร์สและเปอร์เซ็นต์
+                  console.log("=== รายละเอียดแต่ละคอร์ส ===");
+                  allCourses.forEach((course: any, index: number) => {
+                     console.log(`Course ${index + 1}:`);
+                     console.log(`  - ID: ${course.courseId}`);
+                     console.log(`  - Title: ${course.title}`);
+                     console.log(`  - Progress: ${course.progressPercentage}%`);
+                     console.log(`  - Status: ${course.status}`);
+                     console.log(`  - Department: ${course.departmentName}`);
+                     console.log("  - Full course object:", course);
+                  });
+                  
+                  // กรองเฉพาะคอร์สที่มีความคืบหน้า 100%
+                  const completedCourses = allCourses.filter((course: any) => {
+                     console.log(`Course "${course.title}"`);
+                     console.log(`  - Progress value:`, course.progressPercentage);
+                     console.log(`  - Progress type:`, typeof course.progressPercentage);
+                     
+                     // แปลงเป็น number เพื่อเปรียบเทียบ
+                     const progressNum = Number(course.progressPercentage);
+                     console.log(`  - Progress as number:`, progressNum);
+                     
+                     const isCompleted = progressNum === 100;
+                     console.log(`  - Is 100%?:`, isCompleted);
+                     
+                     return isCompleted;
+                  });
+                  
+                  console.log("=== คอร์สที่ครบ 100% ===");
+                  console.log("Completed courses count:", completedCourses.length);
+                  console.log("Completed courses:", completedCourses);
+
+                  setCertificateData({
+                     ...transformedData,
+                     enrolledCourses: completedCourses
+                  });
+               } else {
+                  console.log("API returned success: false");
+                  console.log("Error message:", response.data.message);
+                  throw new Error(response.data.message || "ไม่สามารถดึงข้อมูลได้");
+               }
+            } catch (err) {
+               console.error("Error in fetchCertificateData:", err);
+               const message = err instanceof Error ? err.message : "เกิดข้อผิดพลาดในการเชื่อมต่อ";
+               setError(message);
+            } finally {
+               setLoading(false);
+            }
+      };
+      fetchCertificateData();
+   }, []);
+
+   const handleDownloadCertificate = async (courseId: number, title: string) => {
+      const downloadKey = `course-${courseId}`;
+      setDownloadingId(downloadKey);
+      try {
+            const apiClient = getApiClient();
+            const response = await apiClient.post('/api/data/certificate/generate', { type: 'course', id: courseId });
+            if (response.data.success) {
+               const certInfo = response.data.certificateData;
+               alert(`สร้างใบรับรองสำเร็จ!\nสำหรับ: ${title}\nรหัส: ${certInfo.certificateId}`);
+            } else {
+               throw new Error(response.data.message);
+            }
+      } catch (err) {
+            const message = err instanceof Error ? err.message : "ไม่สามารถดาวน์โหลดได้";
+            alert(`เกิดข้อผิดพลาด: ${message}`);
+      } finally {
+            setDownloadingId(null);
+      }
+   };
+   
+ 
+   
+   const renderContent = () => {
+      console.log("=== Rendering Content ===");
+      console.log("Loading:", loading);
+      console.log("Error:", error);
+      console.log("Certificate data:", certificateData);
+      
+      if (loading) return <LoadingIndicator />;
+      if (error) return <ErrorDisplay message={error} />;
+      if (!certificateData || !certificateData.enrolledCourses || certificateData.enrolledCourses.length === 0) {
+            console.log("No certificate data or empty enrolled courses");
+            return <EmptyState />;
+      }
+
+      const { statistics, enrolledCourses } = certificateData;
+      console.log("Final enrolled courses to render:", enrolledCourses);
+
+      return (
+            <>
+               <div className="dashboard__content-title mb-4">
+                  <h4 className="title"><i className="fas fa-certificate me-3"></i>ใบรับรองของฉัน</h4>
+                  <p className="text-muted">คอร์สที่คุณเรียนจบแล้วและสามารถดาวน์โหลดใบรับรองได้</p>
+               </div>
+
+               {/* สถิติสรุป */}
+               <div className="row mb-4">
+                  <div className="col-md-3 mb-3">
+                     <div className="card bg-success text-white">
+                        <div className="card-body text-center">
+                           <h3 className="card-title">{enrolledCourses.length}</h3>
+                           <p className="card-text">คอร์สที่จบแล้ว</p>
+                        </div>
+                     </div>
+                  </div>
+                  <div className="col-md-3 mb-3">
+                     <div className="card bg-info text-white">
+                        <div className="card-body text-center">
+                           <h3 className="card-title">{statistics.totalCompletedSubjects}</h3>
+                           <p className="card-text">วิชาที่จบแล้ว</p>
+                        </div>
+                     </div>
+                  </div>
+                  <div className="col-md-3 mb-3">
+                     <div className="card bg-warning text-white">
+                        <div className="card-body text-center">
+                           <h3 className="card-title">{statistics.totalCreditsEarned}</h3>
+                           <p className="card-text">หน่วยกิตที่ได้</p>
+                        </div>
+                     </div>
+                  </div>
+                  <div className="col-md-3 mb-3">
+                     <div className="card bg-primary text-white">
+                        <div className="card-body text-center">
+                           <h3 className="card-title">{enrolledCourses.length}</h3>
+                           <p className="card-text">ใบรับรองที่ได้</p>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+               
+               <div className="card">
+                  <div className="card-body p-0">
+                        <div className="table-responsive">
+                           <table className="table table-hover mb-0 align-middle">
+                                                           <thead className="table-light">
+                                    <tr>
+                                       <th>ชื่อคอร์ส</th>
+                                       <th style={{width: '35%'}}>ความคืบหน้า</th>
+                                       <th className="text-center">สถานะ</th>
+                                       <th className="text-center">ใบรับรอง</th>
+                                    </tr>
+                              </thead>
+                              <tbody>
+                                    {enrolledCourses.map((course) => (
+                                       <tr key={course.courseId}>
+                                          <td>
+                                                <strong>{course.title}</strong>
+                                                <p className="text-muted small mb-0">{course.departmentName || 'ไม่ระบุภาควิชา'}</p>
+                                                {course.description && (
+                                                   <p className="text-muted small mb-0" style={{fontSize: '0.8rem'}}>{course.description}</p>
+                                                )}
+                                          </td>
+                                          <td>
+                                                <div className="progress" style={{height: '20px', fontSize: '0.8rem'}}>
+                                                   <div 
+                                                      className="progress-bar bg-success"
+                                                      role="progressbar" 
+                                                      style={{ width: '100%' }}
+                                                   >
+                                                      100%
+                                                   </div>
+                                                </div>
+                                                <small className="text-success">
+                                                   <i className="fas fa-check-circle me-1"></i>
+                                                   เรียนจบครบ {course.completedLessons || course.totalLessons || course.completedSubjects} หน่วย
+                                                </small>
+                                          </td>
+                                          <td className="text-center">
+                                                <span className="badge bg-success">
+                                                   <i className="fas fa-graduation-cap me-1"></i>เรียนจบแล้ว
+                                                </span>
+                                          </td>
+                                          <td className="text-center">
+                                                <button 
+                                                   className="btn btn-success btn-sm" 
+                                                   onClick={() => handleDownloadCertificate(course.courseId, course.title)}
+                                                   disabled={downloadingId === `course-${course.courseId}`}
+                                                >
+                                                   {downloadingId === `course-${course.courseId}` 
+                                                         ? <><i className="fas fa-spinner fa-spin me-1"></i>กำลังสร้าง...</>
+                                                         : <><i className="fas fa-download me-1"></i>ดาวน์โหลด</>
+                                                   }
+                                                </button>
+                                          </td>
+                                       </tr>
+                                    ))}
+                              </tbody>
+                           </table>
+                        </div>
+                  </div>
+               </div>
+            </>
+      );
    };
 
    return (
@@ -26,56 +313,15 @@ const StudentCertificateArea = () => {
                   <DashboardSidebarTwo />
                   <div className="col-lg-9">
                      <div className="dashboard__content-wrap">
-                        <div className="dashboard__content-title">
-                           <h4 className="title">ใบรับรองความสำเร็จ</h4>
-                        </div>
-                        <div className="row">
-                           <div className="col-12">
-                              <div className="dashboard__review-table">
-                                 <p className="mb-4">
-                                    ด้านล่างนี้คือรายวิชาที่คุณได้เรียนสำเร็จแล้ว คุณสามารถดาวน์โหลดใบรับรองได้โดยคลิกที่ปุ่ม "ดาวน์โหลด"
-                                 </p>
-                                 <table className="table table-borderless">
-                                    <thead>
-                                       <tr>
-                                          <th>#</th>
-                                          <th>ชื่อวิชา</th>
-                                          <th>วันที่สำเร็จ</th>
-                                          <th>ใบรับรอง</th>
-                                       </tr>
-                                    </thead>
-                                    <tbody>
-                                       {completedCourses.map((course, index) => (
-                                          <tr key={course.id}>
-                                             <td>{index + 1}</td>
-                                             <td>
-                                                <Link to="/course-details">{course.name}</Link>
-                                             </td>
-                                             <td>{course.date}</td>
-                                             <td>
-                                                <div className="dashboard__review-action">
-                                                   <button
-                                                      className="btn btn-primary btn-sm"
-                                                      onClick={() => handleDownload(course.name)}
-                                                   >
-                                                      ดาวน์โหลด
-                                                   </button>
-                                                </div>
-                                             </td>
-                                          </tr>
-                                       ))}
-                                    </tbody>
-                                 </table>
-                              </div>
-                           </div>
-                        </div>
+                        {renderContent()}
                      </div>
                   </div>
                </div>
             </div>
          </div>
       </section>
-   )
-}
+   );
+};
 
-export default StudentCertificateArea
+export default StudentCertificateArea;
+
