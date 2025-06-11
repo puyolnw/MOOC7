@@ -186,16 +186,16 @@ const InstructorEnrolledCourseContent = () => {
                            <SwiperSlide key={item.id} className="swiper-slide">
                               <div className="courses__item courses__item-two shine__animate-item">
                                  <div className="courses__item-thumb courses__item-thumb-two">
-                                    <Link to={`/subject-details/${item.subject_id}`} className="shine__animate-link">
-                                       <img 
-                                          src={item.thumb}
-                                          alt={item.title}
-                                          onError={(e) => {
-                                             console.log("Image failed to load:", item.thumb);
-                                             (e.target as HTMLImageElement).src = "/assets/img/courses/course_thumb01.jpg";
-                                          }}
-                                       />
-                                    </Link>
+                                   <Link to={`/instructor/subject/${item.subject_id}/overview`} className="shine__animate-link">
+  <img 
+    src={item.thumb}
+    alt={item.title}
+    onError={(e) => {
+      console.log("Image failed to load:", item.thumb);
+      (e.target as HTMLImageElement).src = "/assets/img/courses/course_thumb01.jpg";
+    }}
+  />
+</Link>
                                  </div>
                                  <div className="courses__item-content courses__item-content-two">
                                     <ul className="courses__item-meta list-wrap">
@@ -203,7 +203,11 @@ const InstructorEnrolledCourseContent = () => {
                                           <Link to={`/course/${item.subject_id}`}>{item.tag}</Link>
                                        </li>
                                     </ul>
-                                    <h5 className="title"><Link to={`/subject-details/${item.subject_id}`}>{item.title}</Link></h5>
+                                   <h5 className="title">
+  <Link to={`/instructor/subject/${item.subject_id}/overview`}>
+    {item.title}
+  </Link>
+</h5>
                                     <div className="courses__item-content-bottom">
                                        <div className="author-two">
                                           <Link to="/instructor-details"><img src={item.avatar_thumb} alt="img" />{item.avatar_name}</Link>

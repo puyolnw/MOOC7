@@ -1,4 +1,5 @@
 import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
+import { FacultyProvider } from '../hooks/useFaculty';
 import PrivateRoute from '../hooks/PrivateRoute';
 import AdminCreditbankpage from '../pages/Admin/AdminCreditbank';
 import AdminLessonsbankpage from '../pages/Admin/AdminLessons';
@@ -87,6 +88,7 @@ import InsAddlessonspage from '../pages/Instructor/create/AddLessons';
 import InsAddQuizzespage from '../pages/Instructor/create/AddQuizzes';
 import InsAddSubjectspage from '../pages/Instructor/create/AddSubjects';
 import InsGradingpage from '../pages/Instructor/InsSpecialQuiz';
+import InstructorSubjectOverviewPage from '../pages/InstructorSubjectOverview';
 
 import Personelpage from '../pages/Personel';
 {/* ลองเพิ่ม */}
@@ -96,6 +98,7 @@ import Personelpage from '../pages/Personel';
 
 const AppNavigation = () => {
   return (
+    <FacultyProvider>
     <Router>
       <Routes>
         <Route path="/" element={<Home />} />
@@ -185,10 +188,11 @@ const AppNavigation = () => {
         <Route path="/instructor-lessons/create-new" element={<InsAddlessonspage />} />
         <Route path="/instructor-subjects/create-new" element={<InsAddSubjectspage />} />
         <Route path="/instructor-grading" element={<InsGradingpage />} />
+         <Route path="/instructor/subject/:subjectId/overview" element={<InstructorSubjectOverviewPage />} />
         </Route>
 
         <Route element={<PrivateRoute allowedRoles={["student"]} />}>
-          <Route path="/student-dashboard" element={<StudentDashboard />} />
+        <Route path="/student-dashboard" element={<StudentDashboard />} />
         <Route path="/student-profile" element={<StudentProfile />} />
         <Route path="/student-enrolled-courses" element={<StudentEnrollCourse />} />
         <Route path="/student-wishlist" element={<StudentWishlist />} />
@@ -197,11 +201,13 @@ const AppNavigation = () => {
         <Route path="/student-history" element={<StudentHistory />} />
         <Route path="/student-setting" element={<StudentSetting />} />
         <Route path="/student-certificate" element={<StudentCertificate />} />
+       
         </Route>
         {/* <Route path="/blog-details/:id" element={<DynamicBlogDeatils />} /> */}
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Router>
+    </FacultyProvider>
   );
 };
 
