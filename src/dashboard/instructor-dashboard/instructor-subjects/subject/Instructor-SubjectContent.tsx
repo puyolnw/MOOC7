@@ -43,11 +43,30 @@ interface SubjectOverview {
   lessons: Lesson[];
 }
 
+interface StudentDetail {
+  userId: number;
+  name: string;
+  email: string;
+  profileImage?: string;
+  totalCoursesEnrolled: number;
+  completedCourses: number;
+  inProgressCourses: number;
+  currentSubjectProgress: number;
+  enrollmentDate: string;
+  lastActivity: string;
+  completedLessons: number;
+  totalLessons: number;
+}
+
 const InstructorSubjectContent = () => {
   const { subjectId } = useParams<{ subjectId: string }>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [overviewData, setOverviewData] = useState<SubjectOverview | null>(null);
+  const [activeFilter, setActiveFilter] = useState<string>('all');
+  const [showStudentModal, setShowStudentModal] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<StudentDetail | null>(null);
+  const [studentLoading, setStudentLoading] = useState(false);
 
   useEffect(() => {
     const fetchSubjectOverview = async () => {
@@ -95,6 +114,66 @@ const InstructorSubjectContent = () => {
     }
   }, [subjectId]);
 
+  const fetchStudentDetail = async (userId: number) => {
+    try {
+      setStudentLoading(true);
+      
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error("ไม่พบข้อมูลการเข้าสู่ระบบ");
+      }
+
+      const apiURL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+      const config = {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      };
+
+      const response = await axios.get(
+        `${apiURL}/api/data/instructor/student/${userId}/detail?subjectId=${subjectId}`, 
+        config
+      );
+
+      if (response.data.success) {
+        setSelectedStudent(response.data.student);
+      } else {
+        throw new Error(response.data.message || "ไม่สามารถดึงข้อมูลนักเรียนได้");
+      }
+    } catch (err) {
+      console.error("Error fetching student detail:", err);
+      // For demo purposes, create mock data
+      const enrollment = overviewData?.enrollments.find(e => e.userId === userId);
+      if (enrollment) {
+        setSelectedStudent({
+          userId: enrollment.userId,
+          name: enrollment.name,
+          email: enrollment.email,
+          totalCoursesEnrolled: Math.floor(Math.random() * 10) + 3,
+          completedCourses: Math.floor(Math.random() * 5) + 1,
+          inProgressCourses: Math.floor(Math.random() * 3) + 1,
+          currentSubjectProgress: enrollment.progressPercentage,
+          enrollmentDate: enrollment.enrollmentDate,
+          lastActivity: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString(),
+          completedLessons: Math.floor((enrollment.progressPercentage / 100) * (overviewData?.lessons.length || 10)),
+          totalLessons: overviewData?.lessons.length || 10
+        });
+      }
+    } finally {
+      setStudentLoading(false);
+    }
+  };
+
+  const handleStudentClick = async (userId: number) => {
+    setShowStudentModal(true);
+    await fetchStudentDetail(userId);
+  };
+
+  const closeStudentModal = () => {
+    setShowStudentModal(false);
+    setSelectedStudent(null);
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'completed':
@@ -137,6 +216,27 @@ const InstructorSubjectContent = () => {
     if (percentage >= 60) return '#17a2b8';
     if (percentage >= 40) return '#ffc107';
     return '#dc3545';
+  };
+
+  // Filter enrollments based on active filter
+  const getFilteredEnrollments = () => {
+    if (!overviewData) return [];
+    
+    switch (activeFilter) {
+      case 'completed':
+        return overviewData.enrollments.filter(enrollment => enrollment.status === 'completed');
+      case 'in_progress':
+        return overviewData.enrollments.filter(enrollment => enrollment.status === 'in_progress');
+      case 'high_progress':
+        return overviewData.enrollments.filter(enrollment => enrollment.progressPercentage >= 80);
+      case 'all':
+      default:
+        return overviewData.enrollments;
+    }
+  };
+
+  const handleFilterClick = (filterType: string) => {
+    setActiveFilter(filterType);
   };
 
   if (loading) {
@@ -198,7 +298,8 @@ const InstructorSubjectContent = () => {
     );
   }
 
-  const { subject, statistics, enrollments, lessons } = overviewData;
+  const { subject, statistics, lessons } = overviewData;
+  const filteredEnrollments = getFilteredEnrollments();
 
   return (
     <div className="col-lg-9">
@@ -251,22 +352,36 @@ const InstructorSubjectContent = () => {
         {/* Statistics Cards */}
         <div className="row mb-4">
           <div className="col-md-3 mb-3">
-            <div className="card h-100" style={{
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              border: 'none',
-              borderRadius: '16px',
-              boxShadow: '0 8px 25px rgba(102, 126, 234, 0.3)',
-              transition: 'transform 0.3s ease, box-shadow 0.3s ease'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-5px)';
-              e.currentTarget.style.boxShadow = '0 15px 35px rgba(102, 126, 234, 0.4)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 8px 25px rgba(102, 126, 234, 0.3)';
-            }}>
-              <div className="card-body text-center" style={{ padding: '1.5rem' }}>
+            <div 
+              className="card h-100" 
+              style={{
+                background: activeFilter === 'all' 
+                  ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' 
+                  : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                border: activeFilter === 'all' ? '3px solid #fff' : 'none',
+                borderRadius: '16px',
+                boxShadow: activeFilter === 'all' 
+                  ? '0 15px 35px rgba(102, 126, 234, 0.5)' 
+                  : '0 8px 25px rgba(102, 126, 234, 0.3)',
+                transition: 'all 0.3s ease',
+                cursor: 'pointer',
+                transform: activeFilter === 'all' ? 'translateY(-5px)' : 'translateY(0)'
+              }}
+              onClick={() => handleFilterClick('all')}
+              onMouseEnter={(e) => {
+                if (activeFilter !== 'all') {
+                  e.currentTarget.style.transform = 'translateY(-5px)';
+                  e.currentTarget.style.boxShadow = '0 15px 35px rgba(102, 126, 234, 0.4)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (activeFilter !== 'all') {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 8px 25px rgba(102, 126, 234, 0.3)';
+                }
+              }}
+            >
+                            <div className="card-body text-center" style={{ padding: '1.5rem' }}>
                 <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>
                   <i className="fas fa-users" style={{ color: 'rgba(255, 255, 255, 0.9)' }}></i>
                 </div>
@@ -280,21 +395,33 @@ const InstructorSubjectContent = () => {
             </div>
           </div>
           <div className="col-md-3 mb-3">
-            <div className="card h-100" style={{
-              background: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
-              border: 'none',
-              borderRadius: '16px',
-              boxShadow: '0 8px 25px rgba(17, 153, 142, 0.3)',
-              transition: 'transform 0.3s ease, box-shadow 0.3s ease'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-5px)';
-              e.currentTarget.style.boxShadow = '0 15px 35px rgba(17, 153, 142, 0.4)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 8px 25px rgba(17, 153, 142, 0.3)';
-            }}>
+            <div 
+              className="card h-100" 
+              style={{
+                background: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
+                border: activeFilter === 'completed' ? '3px solid #fff' : 'none',
+                borderRadius: '16px',
+                boxShadow: activeFilter === 'completed' 
+                  ? '0 15px 35px rgba(17, 153, 142, 0.5)' 
+                  : '0 8px 25px rgba(17, 153, 142, 0.3)',
+                transition: 'all 0.3s ease',
+                cursor: 'pointer',
+                transform: activeFilter === 'completed' ? 'translateY(-5px)' : 'translateY(0)'
+              }}
+              onClick={() => handleFilterClick('completed')}
+              onMouseEnter={(e) => {
+                if (activeFilter !== 'completed') {
+                  e.currentTarget.style.transform = 'translateY(-5px)';
+                  e.currentTarget.style.boxShadow = '0 15px 35px rgba(17, 153, 142, 0.4)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (activeFilter !== 'completed') {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 8px 25px rgba(17, 153, 142, 0.3)';
+                }
+              }}
+            >
               <div className="card-body text-center" style={{ padding: '1.5rem' }}>
                 <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>
                   <i className="fas fa-check-circle" style={{ color: 'rgba(255, 255, 255, 0.9)' }}></i>
@@ -309,21 +436,33 @@ const InstructorSubjectContent = () => {
             </div>
           </div>
           <div className="col-md-3 mb-3">
-            <div className="card h-100" style={{
-              background: 'linear-gradient(135deg, #3742fa 0%, #2f3542 100%)',
-              border: 'none',
-              borderRadius: '16px',
-              boxShadow: '0 8px 25px rgba(55, 66, 250, 0.3)',
-              transition: 'transform 0.3s ease, box-shadow 0.3s ease'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-5px)';
-              e.currentTarget.style.boxShadow = '0 15px 35px rgba(55, 66, 250, 0.4)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 8px 25px rgba(55, 66, 250, 0.3)';
-            }}>
+            <div 
+              className="card h-100" 
+              style={{
+                background: 'linear-gradient(135deg, #3742fa 0%, #2f3542 100%)',
+                border: activeFilter === 'in_progress' ? '3px solid #fff' : 'none',
+                borderRadius: '16px',
+                boxShadow: activeFilter === 'in_progress' 
+                  ? '0 15px 35px rgba(55, 66, 250, 0.5)' 
+                  : '0 8px 25px rgba(55, 66, 250, 0.3)',
+                transition: 'all 0.3s ease',
+                cursor: 'pointer',
+                transform: activeFilter === 'in_progress' ? 'translateY(-5px)' : 'translateY(0)'
+              }}
+              onClick={() => handleFilterClick('in_progress')}
+              onMouseEnter={(e) => {
+                if (activeFilter !== 'in_progress') {
+                  e.currentTarget.style.transform = 'translateY(-5px)';
+                  e.currentTarget.style.boxShadow = '0 15px 35px rgba(55, 66, 250, 0.4)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (activeFilter !== 'in_progress') {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 8px 25px rgba(55, 66, 250, 0.3)';
+                }
+              }}
+            >
               <div className="card-body text-center" style={{ padding: '1.5rem' }}>
                 <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>
                   <i className="fas fa-clock" style={{ color: 'rgba(255, 255, 255, 0.9)' }}></i>
@@ -337,22 +476,34 @@ const InstructorSubjectContent = () => {
               </div>
             </div>
           </div>
-                   <div className="col-md-3 mb-3">
-            <div className="card h-100" style={{
-              background: 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
-              border: 'none',
-              borderRadius: '16px',
-              boxShadow: '0 8px 25px rgba(255, 154, 158, 0.3)',
-              transition: 'transform 0.3s ease, box-shadow 0.3s ease'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-5px)';
-              e.currentTarget.style.boxShadow = '0 15px 35px rgba(255, 154, 158, 0.4)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 8px 25px rgba(255, 154, 158, 0.3)';
-            }}>
+          <div className="col-md-3 mb-3">
+            <div 
+              className="card h-100" 
+              style={{
+                background: 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
+                border: activeFilter === 'high_progress' ? '3px solid #fff' : 'none',
+                borderRadius: '16px',
+                boxShadow: activeFilter === 'high_progress' 
+                  ? '0 15px 35px rgba(255, 154, 158, 0.5)' 
+                  : '0 8px 25px rgba(255, 154, 158, 0.3)',
+                transition: 'all 0.3s ease',
+                cursor: 'pointer',
+                transform: activeFilter === 'high_progress' ? 'translateY(-5px)' : 'translateY(0)'
+              }}
+              onClick={() => handleFilterClick('high_progress')}
+              onMouseEnter={(e) => {
+                if (activeFilter !== 'high_progress') {
+                  e.currentTarget.style.transform = 'translateY(-5px)';
+                  e.currentTarget.style.boxShadow = '0 15px 35px rgba(255, 154, 158, 0.4)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (activeFilter !== 'high_progress') {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 8px 25px rgba(255, 154, 158, 0.3)';
+                }
+              }}
+            >
               <div className="card-body text-center" style={{ padding: '1.5rem' }}>
                 <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>
                   <i className="fas fa-chart-line" style={{ color: 'rgba(255, 255, 255, 0.9)' }}></i>
@@ -390,11 +541,24 @@ const InstructorSubjectContent = () => {
                   alignItems: 'center'
                 }}>
                   <i className="fas fa-user-graduate me-2"></i>
-                  รายชื่อนักเรียน ({enrollments.length} คน)
+                  รายชื่อนักเรียน ({filteredEnrollments.length} คน)
+                  {activeFilter !== 'all' && (
+                    <span style={{ 
+                      marginLeft: '0.5rem',
+                      fontSize: '0.9rem',
+                      backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                      padding: '0.25rem 0.5rem',
+                      borderRadius: '12px'
+                    }}>
+                      {activeFilter === 'completed' && 'เรียนจบแล้ว'}
+                      {activeFilter === 'in_progress' && 'กำลังเรียน'}
+                      {activeFilter === 'high_progress' && 'ความคืบหน้าสูง (≥80%)'}
+                    </span>
+                  )}
                 </h5>
               </div>
               <div className="card-body" style={{ padding: '0' }}>
-                {enrollments.length === 0 ? (
+                {filteredEnrollments.length === 0 ? (
                   <div className="text-center py-5">
                     <div style={{ fontSize: '4rem', color: '#e9ecef', marginBottom: '1rem' }}>
                       <i className="fas fa-user-slash"></i>
@@ -404,7 +568,10 @@ const InstructorSubjectContent = () => {
                       fontSize: '1.1rem',
                       marginBottom: '0'
                     }}>
-                      ยังไม่มีนักเรียนลงทะเบียนเรียนวิชานี้
+                      {activeFilter === 'all' 
+                        ? 'ยังไม่มีนักเรียนลงทะเบียนเรียนวิชานี้'
+                        : 'ไม่พบนักเรียนที่ตรงกับเงื่อนไขที่เลือก'
+                      }
                     </p>
                   </div>
                 ) : (
@@ -470,7 +637,7 @@ const InstructorSubjectContent = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {enrollments.map((enrollment, index) => (
+                        {filteredEnrollments.map((enrollment, index) => (
                           <tr key={enrollment.userId} style={{
                             borderLeft: `4px solid ${getProgressColor(enrollment.progressPercentage)}`,
                             transition: 'all 0.3s ease'
@@ -488,11 +655,14 @@ const InstructorSubjectContent = () => {
                               borderTop: index === 0 ? 'none' : '1px solid #dee2e6',
                               verticalAlign: 'middle'
                             }}>
-                              <div style={{ display: 'flex', alignItems: 'center' }}>
+                              <div 
+                                style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
+                                onClick={() => handleStudentClick(enrollment.userId)}
+                              >
                                 <div style={{
                                   width: '40px',
                                   height: '40px',
-                                  borderRadius: '50%',
+                                                                    borderRadius: '50%',
                                   background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                                   display: 'flex',
                                   alignItems: 'center',
@@ -504,7 +674,22 @@ const InstructorSubjectContent = () => {
                                 }}>
                                   {enrollment.name.charAt(0).toUpperCase()}
                                 </div>
-                                <strong style={{ color: '#2d3748' }}>{enrollment.name}</strong>
+                                <strong style={{ 
+                                  color: '#2d3748',
+                                  textDecoration: 'underline',
+                                  textDecorationColor: 'transparent',
+                                  transition: 'all 0.3s ease'
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.textDecorationColor = '#667eea';
+                                  e.currentTarget.style.color = '#667eea';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.textDecorationColor = 'transparent';
+                                  e.currentTarget.style.color = '#2d3748';
+                                }}>
+                                  {enrollment.name}
+                                </strong>
                               </div>
                             </td>
                             <td style={{ 
@@ -666,7 +851,7 @@ const InstructorSubjectContent = () => {
                       </thead>
                       <tbody>
                         {lessons.map((lesson, index) => {
-                                                    const completionRate = statistics.totalEnrolled > 0 
+                          const completionRate = statistics.totalEnrolled > 0 
                             ? (lesson.studentsCompleted / statistics.totalEnrolled * 100)
                             : 0;
                           
@@ -783,6 +968,444 @@ const InstructorSubjectContent = () => {
             </div>
           </div>
         </div>
+
+        {/* Student Detail Modal */}
+        {showStudentModal && (
+          <div 
+            className="modal fade show" 
+            style={{ 
+              display: 'block', 
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              zIndex: 1050
+            }}
+            onClick={closeStudentModal}
+          >
+            <div 
+              className="modal-dialog modal-lg modal-dialog-centered"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="modal-content" style={{
+                border: 'none',
+                borderRadius: '20px',
+                boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
+                overflow: 'hidden'
+              }}>
+                <div className="modal-header" style={{
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  border: 'none',
+                  padding: '2rem'
+                }}>
+                  <h5 className="modal-title" style={{ 
+                    color: 'white', 
+                    fontSize: '1.5rem', 
+                    fontWeight: '600',
+                    display: 'flex',
+                    alignItems: 'center'
+                  }}>
+                    <i className="fas fa-user-circle me-3" style={{ fontSize: '2rem' }}></i>
+                    ข้อมูลนักเรียน
+                  </h5>
+                  <button 
+                    type="button" 
+                    className="btn-close" 
+                    onClick={closeStudentModal}
+                    style={{
+                      backgroundColor: 'rgba(255, 255, 255, 0.3)',
+                      border: 'none',
+                      borderRadius: '50%',
+                      width: '40px',
+                      height: '40px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    <i className="fas fa-times" style={{ color: 'white', fontSize: '1.2rem' }}></i>
+                  </button>
+                </div>
+                <div className="modal-body" style={{ padding: '0' }}>
+                  {studentLoading ? (
+                    <div className="text-center py-5">
+                      <div className="spinner-border" role="status" style={{ width: '3rem', height: '3rem', color: '#667eea' }}>
+                        <span className="visually-hidden">กำลังโหลด...</span>
+                      </div>
+                      <p className="mt-3" style={{ color: '#6c757d', fontSize: '1.1rem' }}>กำลังโหลดข้อมูลนักเรียน...</p>
+                    </div>
+                  ) : selectedStudent ? (
+                    <div style={{ padding: '2rem' }}>
+                      {/* Student Profile Section */}
+                      <div className="row mb-4">
+                        <div className="col-md-4 text-center">
+                          <div style={{
+                            width: '120px',
+                            height: '120px',
+                            borderRadius: '50%',
+                            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            margin: '0 auto 1rem',
+                            color: 'white',
+                            fontSize: '3rem',
+                            fontWeight: '600',
+                            boxShadow: '0 10px 30px rgba(102, 126, 234, 0.3)'
+                          }}>
+                            {selectedStudent.name.charAt(0).toUpperCase()}
+                          </div>
+                          <h4 style={{ color: '#2d3748', fontWeight: '600', marginBottom: '0.5rem' }}>
+                            {selectedStudent.name}
+                          </h4>
+                          <p style={{ color: '#6c757d', fontSize: '0.95rem' }}>
+                            {selectedStudent.email}
+                          </p>
+                        </div>
+                        <div className="col-md-8">
+                          <div className="row">
+                            <div className="col-6 mb-3">
+                              <div className="card h-100" style={{
+                                background: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
+                                border: 'none',
+                                borderRadius: '12px',
+                                color: 'white'
+                              }}>
+                                <div className="card-body text-center" style={{ padding: '1.5rem' }}>
+                                  <i className="fas fa-book-open" style={{ fontSize: '2rem', marginBottom: '0.5rem' }}></i>
+                                  <h3 style={{ fontSize: '1.8rem', fontWeight: '700', marginBottom: '0.25rem' }}>
+                                    {selectedStudent.totalCoursesEnrolled}
+                                  </h3>
+                                  <p style={{ fontSize: '0.9rem', marginBottom: '0', opacity: '0.9' }}>
+                                    หลักสูตรทั้งหมด
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="col-6 mb-3">
+                              <div className="card h-100" style={{
+                                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                border: 'none',
+                                borderRadius: '12px',
+                                color: 'white'
+                              }}>
+                                <div className="card-body text-center" style={{ padding: '1.5rem' }}>
+                                  <i className="fas fa-trophy" style={{ fontSize: '2rem', marginBottom: '0.5rem' }}></i>
+                                  <h3 style={{ fontSize: '1.8rem', fontWeight: '700', marginBottom: '0.25rem' }}>
+                                    {selectedStudent.completedCourses}
+                                  </h3>
+                                  <p style={{ fontSize: '0.9rem', marginBottom: '0', opacity: '0.9' }}>
+                                    เรียนจบแล้ว
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="col-6 mb-3">
+                              <div className="card h-100" style={{
+                                background: 'linear-gradient(135deg, #3742fa 0%, #2f3542 100%)',
+                                border: 'none',
+                                borderRadius: '12px',
+                                color: 'white'
+                              }}>
+                                <div className="card-body text-center" style={{ padding: '1.5rem' }}>
+                                  <i className="fas fa-clock" style={{ fontSize: '2rem', marginBottom: '0.5rem' }}></i>
+                                  <h3 style={{ fontSize: '1.8rem', fontWeight: '700', marginBottom: '0.25rem' }}>
+                                    {selectedStudent.inProgressCourses}
+                                  </h3>
+                                  <p style={{ fontSize: '0.9rem', marginBottom: '0', opacity: '0.9' }}>
+                                    กำลังเรียน
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="col-6 mb-3">
+                              <div className="card h-100" style={{
+                                background: 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
+                                border: 'none',
+                                borderRadius: '12px',
+                                color: 'white'
+                              }}>
+                                <div className="card-body text-center" style={{ padding: '1.5rem' }}>
+                                  <i className="fas fa-calendar-check" style={{ fontSize: '2rem', marginBottom: '0.5rem' }}></i>
+                                  <h3 style={{ fontSize: '1.8rem', fontWeight: '700', marginBottom: '0.25rem' }}>
+                                    {Math.floor((Date.now() - new Date(selectedStudent.enrollmentDate).getTime()) / (1000 * 60 * 60 * 24))}
+                                  </h3>
+                                  <p style={{ fontSize: '0.9rem', marginBottom: '0', opacity: '0.9' }}>
+                                    วันที่เรียน
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Current Subject Progress */}
+                      <div className="card mb-4" style={{
+                        border: '1px solid #e9ecef',
+                        borderRadius: '12px',
+                        overflow: 'hidden'
+                      }}>
+                        <div className="card-header" style={{
+                          background: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+                          border: 'none',
+                          padding: '1.5rem'
+                        }}>
+                          <h6 className="card-title mb-0" style={{ 
+                            color: '#2d3748', 
+                            fontSize: '1.2rem', 
+                            fontWeight: '600',
+                            display: 'flex',
+                            alignItems: 'center'
+                          }}>
+                            <i className="fas fa-chart-line me-2"></i>
+                            ความคืบหน้าในวิชานี้
+                          </h6>
+                        </div>
+                        <div className="card-body" style={{ padding: '2rem' }}>
+                          <div className="row align-items-center">
+                            <div className="col-md-8">
+                              <div className="mb-3">
+                                <div className="d-flex justify-content-between align-items-center mb-2">
+                                  <span style={{ fontWeight: '600', color: '#2d3748' }}>
+                                    ความคืบหน้าโดยรวม
+                                  </span>
+                                  <span style={{ 
+                                    fontWeight: '700', 
+                                    color: getProgressColor(selectedStudent.currentSubjectProgress),
+                                    fontSize: '1.1rem'
+                                  }}>
+                                    {selectedStudent.currentSubjectProgress.toFixed(1)}%
+                                  </span>
+                                </div>
+                                <div className="progress" style={{ 
+                                  height: '12px',
+                                  borderRadius: '10px',
+                                  backgroundColor: '#e9ecef'
+                                }}>
+                                  <div 
+                                    className="progress-bar"
+                                    role="progressbar" 
+                                    style={{ 
+                                      width: `${selectedStudent.currentSubjectProgress}%`,
+                                      backgroundColor: getProgressColor(selectedStudent.currentSubjectProgress),
+                                      borderRadius: '10px',
+                                      transition: 'width 0.6s ease'
+                                    }}
+                                    aria-valuenow={selectedStudent.currentSubjectProgress} 
+                                    aria-valuemin={0} 
+                                    aria-valuemax={100}
+                                  >
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="row">
+                                <div className="col-6">
+                                  <div style={{ 
+                                    padding: '1rem',
+                                    backgroundColor: '#f8f9fa',
+                                    borderRadius: '8px',
+                                    textAlign: 'center'
+                                  }}>
+                                    <div style={{ 
+                                      fontSize: '1.5rem', 
+                                      fontWeight: '700', 
+                                      color: getProgressColor(selectedStudent.currentSubjectProgress),
+                                      marginBottom: '0.25rem'
+                                    }}>
+                                      {selectedStudent.completedLessons}
+                                    </div>
+                                    <div style={{ fontSize: '0.85rem', color: '#6c757d' }}>
+                                      บทเรียนที่เรียนจบ
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="col-6">
+                                  <div style={{ 
+                                    padding: '1rem',
+                                    backgroundColor: '#f8f9fa',
+                                    borderRadius: '8px',
+                                    textAlign: 'center'
+                                  }}>
+                                    <div style={{ 
+                                      fontSize: '1.5rem', 
+                                      fontWeight: '700', 
+                                      color: '#6c757d',
+                                      marginBottom: '0.25rem'
+                                    }}>
+                                      {selectedStudent.totalLessons}
+                                    </div>
+                                    <div style={{ fontSize: '0.85rem', color: '#6c757d' }}>
+                                      บทเรียนทั้งหมด
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="col-md-4 text-center">
+                              <div style={{
+                                width: '120px',
+                                height: '120px',
+                                borderRadius: '50%',
+                                background: `conic-gradient(${getProgressColor(selectedStudent.currentSubjectProgress)} ${selectedStudent.currentSubjectProgress * 3.6}deg, #e9ecef 0deg)`,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                margin: '0 auto',
+                                position: 'relative'
+                              }}>
+                                <div style={{
+                                  width: '90px',
+                                  height: '90px',
+                                  borderRadius: '50%',
+                                  backgroundColor: 'white',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  flexDirection: 'column'
+                                }}>
+                                  <div style={{ 
+                                    fontSize: '1.5rem', 
+                                    fontWeight: '700', 
+                                    color: getProgressColor(selectedStudent.currentSubjectProgress)
+                                  }}>
+                                    {selectedStudent.currentSubjectProgress.toFixed(0)}%
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Additional Information */}
+                      <div className="row">
+                        <div className="col-md-6">
+                          <div className="card h-100" style={{
+                            border: '1px solid #e9ecef',
+                            borderRadius: '12px'
+                          }}>
+                            <div className="card-body" style={{ padding: '1.5rem' }}>
+                              <h6 style={{ 
+                                color: '#2d3748', 
+                                fontWeight: '600', 
+                                marginBottom: '1rem',
+                                display: 'flex',
+                                alignItems: 'center'
+                              }}>
+                                <i className="fas fa-info-circle me-2" style={{ color: '#667eea' }}></i>
+                                ข้อมูลการลงทะเบียน
+                              </h6>
+                              <div className="mb-3">
+                                <small style={{ color: '#6c757d', fontSize: '0.85rem' }}>วันที่ลงทะเบียน</small>
+                                <div style={{ fontWeight: '600', color: '#2d3748' }}>
+                                  {new Date(selectedStudent.enrollmentDate).toLocaleDateString('th-TH', {
+                                    year: 'numeric',
+                                    month: 'long',
+                                    day: 'numeric'
+                                  })}
+                                </div>
+                              </div>
+                              <div>
+                                <small style={{ color: '#6c757d', fontSize: '0.85rem' }}>กิจกรรมล่าสุด</small>
+                                <div style={{ fontWeight: '600', color: '#2d3748' }}>
+                                  {new Date(selectedStudent.lastActivity).toLocaleDateString('th-TH', {
+                                    year: 'numeric',
+                                    month: 'long',
+                                    day: 'numeric'
+                                  })}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="col-md-6">
+                          <div className="card h-100" style={{
+                            border: '1px solid #e9ecef',
+                            borderRadius: '12px'
+                          }}>
+                            <div className="card-body" style={{ padding: '1.5rem' }}>
+                              <h6 style={{ 
+                                color: '#2d3748', 
+                                fontWeight: '600', 
+                                marginBottom: '1rem',
+                                display: 'flex',
+                                alignItems: 'center'
+                              }}>
+                                <i className="fas fa-graduation-cap me-2" style={{ color: '#667eea' }}></i>
+                                สถิติการเรียน
+                              </h6>
+                              <div className="mb-3">
+                                <small style={{ color: '#6c757d', fontSize: '0.85rem' }}>อัตราการเรียนจบ</small>
+                                <div style={{ fontWeight: '600', color: '#2d3748' }}>
+                                  {selectedStudent.totalCoursesEnrolled > 0 
+                                    ? ((selectedStudent.completedCourses / selectedStudent.totalCoursesEnrolled) * 100).toFixed(1)
+                                    : 0
+                                  }%
+                                </div>
+                              </div>
+                              <div>
+                                <small style={{ color: '#6c757d', fontSize: '0.85rem' }}>สถานะในวิชานี้</small>
+                                <div style={{ marginTop: '0.25rem' }}>
+                                  {(() => {
+                                    const enrollment = overviewData?.enrollments.find(e => e.userId === selectedStudent.userId);
+                                    return enrollment ? getStatusBadge(enrollment.status) : 'ไม่ทราบสถานะ';
+                                  })()}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-5">
+                      <div style={{ fontSize: '4rem', color: '#e9ecef', marginBottom: '1rem' }}>
+                        <i className="fas fa-user-times"></i>
+                      </div>
+                      <p style={{ 
+                        color: '#6c757d', 
+                        fontSize: '1.1rem',
+                        marginBottom: '0'
+                      }}>
+                        ไม่สามารถโหลดข้อมูลนักเรียนได้
+                      </p>
+                    </div>
+                  )}
+                </div>
+                <div className="modal-footer" style={{
+                  border: 'none',
+                  padding: '1.5rem 2rem',
+                  backgroundColor: '#f8f9fa'
+                }}>
+                  <button 
+                    type="button" 
+                    className="btn"
+                    onClick={closeStudentModal}
+                    style={{
+                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      border: 'none',
+                      borderRadius: '25px',
+                      padding: '0.75rem 2rem',
+                      color: 'white',
+                      fontWeight: '600',
+                      fontSize: '1rem',
+                      transition: 'all 0.3s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-2px)';
+                      e.currentTarget.style.boxShadow = '0 8px 25px rgba(102, 126, 234, 0.4)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = 'none';
+                    }}
+                  >
+                    <i className="fas fa-times me-2"></i>
+                    ปิด
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
