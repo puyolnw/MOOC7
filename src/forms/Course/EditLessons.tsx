@@ -4,8 +4,12 @@ import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import Select, { MultiValue, SingleValue } from "react-select";
 
+
 // Define test type
 type TestType = "MC" | "TF" | "SC" | "FB" | null;
+
+
+
 
 interface LessonData {
   lesson_id: number;
@@ -18,7 +22,9 @@ interface LessonData {
   quizId: number | null;
   subjects: number[];
   testType: TestType;
+   status: 'draft' | 'active'; ///////////
 }
+
 
 interface Quiz {
   id: number;
@@ -27,6 +33,7 @@ interface Quiz {
   description?: string;
   type?: TestType;
 }
+
 
 interface Subject {
   id: number;
@@ -39,11 +46,13 @@ interface Subject {
   department?: string;
 }
 
+
 interface AddLessonsProps {
   onSubmit?: (lessonData: LessonData) => void;
   onCancel?: () => void;
   lessonToEdit?: LessonData;
 }
+
 
 const EditLesson: React.FC<AddLessonsProps> = ({ onCancel }) => {
   const { lessonId } = useParams<{ lessonId: string }>();
@@ -51,18 +60,19 @@ const EditLesson: React.FC<AddLessonsProps> = ({ onCancel }) => {
   const apiUrl = import.meta.env.VITE_API_URL;
   const fileInputRef = useRef<HTMLInputElement>(null);
   console.log("handleRemoveFile called with index:", fileInputRef);
-  const [lessonData, setLessonData] = useState<LessonData>({
-    lesson_id: 0,
-    title: "",
-    description: "",
-    files: [],
-    videoUrl: "",
-    canPreview: false,
-    hasQuiz: false,
-    quizId: null,
-    subjects: [],
-    testType: null,
-  });
+const [lessonData, setLessonData] = useState<LessonData>({
+  lesson_id: 0,
+  title: "",
+  description: "",
+  files: [],
+  videoUrl: "",
+  canPreview: false,
+  hasQuiz: false,
+  quizId: null,
+  subjects: [],
+  testType: null,
+  status: 'draft', // เริ่มต้นเป็น draft
+});
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
@@ -72,6 +82,7 @@ const EditLesson: React.FC<AddLessonsProps> = ({ onCancel }) => {
     description: "",
   });
 
+
   const [subjectsOptions, setSubjectsOptions] = useState<
     { value: number; label: string }[]
   >([]);
@@ -79,11 +90,13 @@ const EditLesson: React.FC<AddLessonsProps> = ({ onCancel }) => {
     { value: number; label: string }[]
   >([]);
 
+
   useEffect(() => {
     const fetchData = async () => {
       // เพิ่มการ log เพื่อ debug
       console.log("Current lessonId from useParams:", lessonId);
       console.log("Current URL:", window.location.href);
+
 
       // ตรวจสอบ lessonId
       if (!lessonId || isNaN(Number(lessonId))) {
@@ -93,14 +106,17 @@ const EditLesson: React.FC<AddLessonsProps> = ({ onCancel }) => {
         return;
       }
 
+
       try {
         setIsLoading(true);
         setApiError(null);
+
 
         const token = localStorage.getItem("token");
         if (!token) {
           throw new Error("ไม่พบข้อมูลการเข้าสู่ระบบ กรุณาเข้าสู่ระบบใหม่");
         }
+
 
         // โหลดข้อมูลบทเรียน
         console.log("Fetching lesson data for lessonId:", lessonId);
@@ -113,7 +129,9 @@ const EditLesson: React.FC<AddLessonsProps> = ({ onCancel }) => {
           }
         );
 
+
         console.log("Lesson API response:", lessonResponse.data);
+
 
         if (!lessonResponse.data.success) {
           throw new Error(
@@ -121,23 +139,26 @@ const EditLesson: React.FC<AddLessonsProps> = ({ onCancel }) => {
           );
         }
 
+
         const lesson = lessonResponse.data.lesson;
-        
+       
         // แปลงข้อมูลให้ตรงกับโครงสร้างที่ต้องการ
-        setLessonData({
-          lesson_id: Number(lesson.lesson_id),
-          title: lesson.title || "",
-          description: lesson.description || "",
-          files: [], // ไม่โหลดไฟล์เดิม
-          videoUrl: lesson.video_url || "",
-          canPreview: Boolean(lesson.can_preview),
-          hasQuiz: Boolean(lesson.quiz_id),
-          quizId: lesson.quiz_id ? Number(lesson.quiz_id) : null,
-          subjects: Array.isArray(lesson.subjects) 
-            ? lesson.subjects.map((s: any) => Number(s.subject_id)) 
-            : [],
-          testType: lesson.quiz_type || null,
-        });
+setLessonData({
+  lesson_id: Number(lesson.lesson_id),
+  title: lesson.title || "",
+  description: lesson.description || "",
+  files: [],
+  videoUrl: lesson.video_url || "",
+  canPreview: Boolean(lesson.can_preview),
+  hasQuiz: Boolean(lesson.quiz_id),
+  quizId: lesson.quiz_id ? Number(lesson.quiz_id) : null,
+  subjects: Array.isArray(lesson.subjects)
+    ? lesson.subjects.map((s: any) => Number(s.subject_id))
+    : [],
+  testType: lesson.quiz_type || null,
+  status: lesson.status === 'draft' ? 'draft' : 'active', // เพิ่มบรรทัดนี้
+});
+
 
         // โหลดข้อมูลวิชา
         const subjectsResponse = await axios.get(
@@ -149,6 +170,7 @@ const EditLesson: React.FC<AddLessonsProps> = ({ onCancel }) => {
           }
         );
 
+
         if (subjectsResponse.data.success) {
           setSubjectsOptions(
             subjectsResponse.data.subjects.map((s: Subject) => ({
@@ -157,6 +179,7 @@ const EditLesson: React.FC<AddLessonsProps> = ({ onCancel }) => {
             }))
           );
         }
+
 
         // โหลดข้อมูลแบบทดสอบ
         const quizzesResponse = await axios.get(
@@ -167,6 +190,7 @@ const EditLesson: React.FC<AddLessonsProps> = ({ onCancel }) => {
             },
           }
         );
+
 
         if (quizzesResponse.data.success) {
           setQuizzesOptions(
@@ -187,8 +211,10 @@ const EditLesson: React.FC<AddLessonsProps> = ({ onCancel }) => {
       }
     };
 
+
     fetchData();
   }, [lessonId, apiUrl, navigate]);
+
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -199,6 +225,7 @@ const EditLesson: React.FC<AddLessonsProps> = ({ onCancel }) => {
       [name]: value,
     }));
 
+
     if (name in errors) {
       setErrors((prev) => ({
         ...prev,
@@ -207,10 +234,12 @@ const EditLesson: React.FC<AddLessonsProps> = ({ onCancel }) => {
     }
   };
 
+
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     console.log("handleRemoveFile called with index:", handleFileUpload);
     const files = e.target.files;
     if (!files || files.length === 0) return;
+
 
     const newFiles = Array.from(files);
     const maxSize = 10 * 1024 * 1024;
@@ -220,11 +249,13 @@ const EditLesson: React.FC<AddLessonsProps> = ({ onCancel }) => {
       return;
     }
 
+
     setLessonData((prev) => ({
       ...prev,
       files: [...prev.files, ...newFiles],
     }));
   };
+
 
   const handleRemoveFile = (index: number) => { console.log("handleRemoveFile called with index:", handleRemoveFile);
     setLessonData((prev) => ({
@@ -232,7 +263,7 @@ const EditLesson: React.FC<AddLessonsProps> = ({ onCancel }) => {
       files: prev.files.filter((_, i) => i !== index),
     }));
   };
-  
+ 
   const handleSubjectsChange = (
     selected: MultiValue<{ value: number; label: string }>
   ) => {
@@ -241,6 +272,7 @@ const EditLesson: React.FC<AddLessonsProps> = ({ onCancel }) => {
       subjects: selected.map((opt) => opt.value),
     }));
   };
+
 
   const handleQuizChange = (
     selected: SingleValue<{ value: number; label: string }>
@@ -251,6 +283,7 @@ const EditLesson: React.FC<AddLessonsProps> = ({ onCancel }) => {
     }));
   };
 
+
   const handleToggleChange = (field: "canPreview" | "hasQuiz") => {
     setLessonData((prev) => ({
       ...prev,
@@ -259,6 +292,7 @@ const EditLesson: React.FC<AddLessonsProps> = ({ onCancel }) => {
     }));
   };
 
+
   const validateForm = () => {
     let isValid = true;
     const newErrors = {
@@ -266,31 +300,38 @@ const EditLesson: React.FC<AddLessonsProps> = ({ onCancel }) => {
       description: "",
     };
 
+
     if (!lessonData.title.trim()) {
       newErrors.title = "กรุณาระบุชื่อบทเรียน";
       isValid = false;
     }
+
 
     if (!lessonData.description.trim()) {
       newErrors.description = "กรุณาระบุคำอธิบายบทเรียน";
       isValid = false;
     }
 
+
     setErrors(newErrors);
     return isValid;
   };
 
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
 
     if (!validateForm()) {
       return;
     }
 
+
     try {
       setIsSubmitting(true);
       setApiError(null);
       setApiSuccess(null);
+
 
       const token = localStorage.getItem("token");
       if (!token) {
@@ -299,6 +340,7 @@ const EditLesson: React.FC<AddLessonsProps> = ({ onCancel }) => {
         setIsSubmitting(false);
         return;
       }
+
 
       // สร้างข้อมูลที่จะส่งไป API โดยไม่รวมไฟล์
       const requestData = {
@@ -309,10 +351,13 @@ const EditLesson: React.FC<AddLessonsProps> = ({ onCancel }) => {
         canPreview: lessonData.canPreview,
         hasQuiz: lessonData.hasQuiz,
         quizId: lessonData.quizId || null,
-        subjects: lessonData.subjects
+        subjects: lessonData.subjects ,
+         status: lessonData.status,
       };
 
+
       console.log("Sending update request with data:", requestData);
+
 
       const response = await axios.put(
         `${apiUrl}/api/courses/lessons/${lessonId}`,
@@ -325,7 +370,9 @@ const EditLesson: React.FC<AddLessonsProps> = ({ onCancel }) => {
         }
       );
 
+
       console.log("Update response:", response.data);
+
 
       if (response.data.success) {
         setApiSuccess("แก้ไขบทเรียนสำเร็จ");
@@ -349,6 +396,7 @@ const EditLesson: React.FC<AddLessonsProps> = ({ onCancel }) => {
     }
   };
 
+
   const handleCancel = () => {
     if (onCancel) {
       onCancel();
@@ -356,6 +404,7 @@ const EditLesson: React.FC<AddLessonsProps> = ({ onCancel }) => {
       navigate("/admin-lessons");
     }
   };
+
 
   if (isLoading) {
     return (
@@ -367,6 +416,7 @@ const EditLesson: React.FC<AddLessonsProps> = ({ onCancel }) => {
       </div>
     );
   }
+
 
   if (apiError && !isSubmitting && !apiSuccess) {
     return (
@@ -385,6 +435,7 @@ const EditLesson: React.FC<AddLessonsProps> = ({ onCancel }) => {
     );
   }
 
+
   return (
     <form onSubmit={handleSubmit} className="max-w-3xl mx-auto p-4">
       {apiSuccess && (
@@ -394,6 +445,7 @@ const EditLesson: React.FC<AddLessonsProps> = ({ onCancel }) => {
         </div>
       )}
 
+
       {apiError && (
         <div className="alert alert-danger mb-4">
           <i className="fas fa-exclamation-circle me-2"></i>
@@ -401,9 +453,11 @@ const EditLesson: React.FC<AddLessonsProps> = ({ onCancel }) => {
         </div>
       )}
 
+
 <div className="card shadow-sm border-0 mb-4">
         <div className="card-body">
           <h5 className="card-title mb-3">1. ข้อมูลบทเรียน</h5>
+
 
           <div className="mb-3">
             <label htmlFor="title" className="form-label">
@@ -423,6 +477,7 @@ const EditLesson: React.FC<AddLessonsProps> = ({ onCancel }) => {
             )}
           </div>
 
+
           <div className="mb-3">
             <label htmlFor="description" className="form-label">
               คำอธิบายบทเรียน <span className="text-danger">*</span>
@@ -440,6 +495,7 @@ const EditLesson: React.FC<AddLessonsProps> = ({ onCancel }) => {
               <div className="invalid-feedback">{errors.description}</div>
             )}
           </div>
+
 
           <div className="mb-3">
             <label htmlFor="videoUrl" className="form-label">
@@ -459,6 +515,7 @@ const EditLesson: React.FC<AddLessonsProps> = ({ onCancel }) => {
             </small>
           </div>
 
+
           <div className="form-check mb-3">
             <input
               className="form-check-input"
@@ -474,6 +531,7 @@ const EditLesson: React.FC<AddLessonsProps> = ({ onCancel }) => {
         </div>
       </div>
 
+
       <div className="card shadow-sm border-0 mb-4">
         <div className="card-body">
           <h5 className="card-title mb-3">2. วิชาที่เกี่ยวข้อง</h5>
@@ -488,7 +546,7 @@ const EditLesson: React.FC<AddLessonsProps> = ({ onCancel }) => {
               className="basic-multi-select"
               classNamePrefix="select"
               placeholder="เลือกวิชาที่เกี่ยวข้อง..."
-              value={subjectsOptions.filter(option => 
+              value={subjectsOptions.filter(option =>
                 lessonData.subjects.includes(option.value)
               )}
               onChange={handleSubjectsChange}
@@ -499,6 +557,7 @@ const EditLesson: React.FC<AddLessonsProps> = ({ onCancel }) => {
           </div>
         </div>
       </div>
+
 
       <div className="card shadow-sm border-0 mb-4">
         <div className="card-body">
@@ -515,6 +574,7 @@ const EditLesson: React.FC<AddLessonsProps> = ({ onCancel }) => {
               มีแบบทดสอบท้ายบทเรียน
             </label>
           </div>
+
 
           {lessonData.hasQuiz && (
             <div className="mb-3">
@@ -540,6 +600,38 @@ const EditLesson: React.FC<AddLessonsProps> = ({ onCancel }) => {
           )}
         </div>
       </div>
+
+
+      {/* Section 4: Status */}
+<div className="card shadow-sm border-0 mb-4">
+  <div className="card-body">
+    <h5 className="card-title mb-3">4. สถานะ</h5>
+    <div className="mb-3">
+      <label htmlFor="status" className="form-label">
+        เลือกสถานะบทเรียน
+      </label>
+      <select
+        id="status"
+        name="status"
+        className="form-select"
+        value={lessonData.status}
+        onChange={(e) =>
+          setLessonData((prev) => ({
+            ...prev,
+            status: e.target.value as 'draft' | 'active',
+          }))
+        }
+      >
+        <option value="draft">ฉบับร่าง</option>
+        <option value="active">เปิดใช้งาน</option>
+      </select>
+      <small className="form-text text-muted">
+        เลือกว่าบทเรียนนี้อยู่ในสถานะ "ฉบับร่าง" หรือ "เปิดใช้งาน"
+      </small>
+    </div>
+  </div>
+</div>
+
 
       <div className="d-flex justify-content-between mt-4">
         <button
@@ -568,9 +660,17 @@ const EditLesson: React.FC<AddLessonsProps> = ({ onCancel }) => {
             </>
           )}
         </button>
+
+
       </div>
+
+
     </form>
   );
 };
 
+
 export default EditLesson;
+
+
+

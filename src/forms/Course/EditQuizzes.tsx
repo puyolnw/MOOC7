@@ -548,11 +548,11 @@ const EditQuiz: React.FC<EditQuizProps> = ({ onCancel }) => {
               value={quiz.type}
               onChange={handleInputChange}
             >
-              <option value="MIX">MIX</option>
-              <option value="TF">True/False</option>
-              <option value="MC">Multiple Choice</option>
-              <option value="SC">Short Answer</option>
-              <option value="FB">Fill in the Blank</option>
+              <option value="MIX">รวมทั้งหมด</option>
+              <option value="TF">ถูก/ผิด</option>
+              <option value="MC">แบบปรนัย</option>
+              <option value="SC">คำตอบสั้น</option>
+              <option value="FB">แบบเติมคำ</option>
             </select>
           </div>
 
@@ -564,9 +564,9 @@ const EditQuiz: React.FC<EditQuizProps> = ({ onCancel }) => {
               value={quiz.status}
               onChange={handleInputChange}
             >
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-              <option value="draft">Draft</option>
+              <option value="active">เปิดใช้งาน</option>
+              <option value="inactive">ปิดใช้งาน</option>
+              <option value="draft">ฉบับร่าง</option>
             </select>
           </div>
         </div>

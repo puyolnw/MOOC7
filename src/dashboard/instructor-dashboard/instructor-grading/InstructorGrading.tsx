@@ -534,50 +534,44 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
                                         </div>
                                     </div>
 
-                                    {answer.attachments &&
-                                        answer.attachments.length > 0 && (
-                                            <div className="attachments mb-3">
-                                                <h6>ไฟล์แนบ:</h6>
-                                                <ul className="list-group">
-                                                    {answer.attachments.map(
-                                                        (attachment) => (
-                                                            <li
-                                                                key={
-                                                                    attachment.attachment_id
-                                                                }
-                                                                className="list-group-item d-flex justify-content-between align-items-center"
-                                                            >
-                                                                <span>
-                                                                    <i className="fas fa-file me-2"></i>
-                                                                    {
-                                                                        attachment.file_name
-                                                                    }
-                                                                </span>
-                                                                <div>
-                                                                    <a
-                                                                        href={`${apiURL}${attachment.file_url}`}
-                                                                        target="_blank"
-                                                                        rel="noopener noreferrer"
-                                                                        className="btn btn-sm btn-outline-primary me-2"
-                                                                    >
-                                                                        <i className="fas fa-eye me-1"></i>
-                                                                        ดู
-                                                                    </a>
-                                                                    <a
-                                                                        href={`${apiURL}${attachment.file_url}`}
-                                                                        download
-                                                                        className="btn btn-sm btn-outline-success"
-                                                                    >
-                                                                        <i className="fas fa-download me-1"></i>
-                                                                        ดาวน์โหลด
-                                                                    </a>
-                                                                </div>
-                                                            </li>
-                                                        )
-                                                    )}
-                                                </ul>
-                                            </div>
-                                        )}
+{answer.attachments &&
+  answer.attachments.length > 0 && (
+    <div className="attachments mb-3">
+      <h6>ไฟล์แนบ:</h6>
+      <ul className="list-group">
+        {answer.attachments.map((attachment) => (
+          <li
+            key={attachment.attachment_id}
+            className="list-group-item d-flex justify-content-between align-items-center"
+          >
+            <span>
+              <i className="fas fa-file me-2 text-white"></i>
+              {attachment.file_name}
+            </span>
+            <div className="d-flex align-items-center gap-2">
+              <a
+                href={`${apiURL}${attachment.file_url}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-sm btn-outline-light d-flex align-items-center text-white"
+              >
+                <i className="fas fa-eye me-1 text-white"></i>
+                ดู
+              </a>
+              <a
+                href={`${apiURL}${attachment.file_url}`}
+                download
+                className="btn btn-sm btn-outline-light d-flex align-items-center text-white"
+              >
+                <i className="fas fa-download me-1 text-white"></i>
+                ดาวน์โหลด
+              </a>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )}
 
                                     <div className="grading-section">
                                         <h6>การให้คะแนน:</h6>

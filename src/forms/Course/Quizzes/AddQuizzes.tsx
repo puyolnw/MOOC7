@@ -576,37 +576,38 @@ const AddQuizzes: React.FC<AddQuizzesProps> = ({ onSubmit, onCancel }) => {
       )}
 
       {/* ปุ่มเลือกประเภทแบบทดสอบ */}
-      <div className="card shadow-sm border-0 mb-4">
-        <div className="card-body">
-          <h5 className="mb-3">เลือกประเภทแบบทดสอบ</h5>
-          <div className="d-flex gap-3">
-            <button
-              type="button"
-              className={`btn ${quizType === "normal" ? "btn-primary" : "btn-outline-primary"} px-4 py-3 d-flex flex-column align-items-center`}
-              onClick={() => setQuizType("normal")}
-            >
-              <i className="fas fa-tasks fs-3 mb-2"></i>
-              <span>แบบทดสอบปกติ</span>
-              <small className="text-center mt-1">
-                {quizType === "normal" ? "เลือกแล้ว" : "คลิกเพื่อเลือก"}
-              </small>
-            </button>
-            <button
-              type="button"
-              className={`btn ${quizType === "special" ? "btn-primary" : "btn-outline-primary"} px-4 py-3 d-flex flex-column align-items-center`}
-              onClick={() => setQuizType("special")}
-            >
-              <i className="fas fa-file-alt fs-3 mb-2"></i>
-              <span>แบบทดสอบพิเศษ</span>
-              <small className="text-center mt-1">
-                {quizType === "special" ? "เลือกแล้ว" : "คลิกเพื่อเลือก"}
-              </small>
-            </button>
-          </div>
-          <div className="mt-3">
-          </div>
-        </div>
-      </div>
+<div className="card shadow-sm border-0 mb-4">
+  <div className="card-body">
+    <h5 className="mb-3">เลือกประเภทแบบทดสอบ</h5>
+    <div className="d-flex gap-3 flex-wrap">
+      <button
+        type="button"
+        className={`btn ${quizType === "normal" ? "btn-primary" : "btn-outline-primary"} px-4 py-3 d-flex align-items-center`}
+        onClick={() => setQuizType("normal")}
+      >
+        <i className="fas fa-tasks fs-5 me-2"></i>
+        <span>แบบทดสอบปกติ</span>
+        <small className="ms-2">
+          {quizType === "normal" ? "✓ เลือกแล้ว" : ""}
+        </small>
+      </button>
+      <button
+        type="button"
+        className={`btn ${quizType === "special" ? "btn-primary" : "btn-outline-primary"} px-4 py-3 d-flex align-items-center`}
+        onClick={() => setQuizType("special")}
+      >
+        <i className="fas fa-file-alt fs-5 me-2"></i>
+        <span>แบบทดสอบพิเศษ</span>
+        <small className="ms-2">
+          {quizType === "special" ? "✓ เลือกแล้ว" : ""}
+        </small>
+      </button>
+    </div>
+    <div className="mt-3">
+      {/* Optional: แสดงคำอธิบายหรือ validation */}
+    </div>
+  </div>
+</div>
 
       {isLoading ? (
         <div className="text-center py-5">

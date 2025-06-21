@@ -1111,21 +1111,23 @@ const EditSubject: React.FC = () => {
             </div>
           </div>
 
-          <div className="mb-3">
-            <label htmlFor="status" className="form-label">
-              สถานะ
-            </label>
-            <select
-              className="form-control"
-              id="status"
-              name="status"
-              value={subjectData.status}
-              onChange={handleInputChange}
-            >
-              <option value="active">active</option>
-              <option value="inactive">inactive</option>
-            </select>
-          </div>
+<div className="mb-3">
+  <label htmlFor="status" className="form-label">
+    สถานะ
+  </label>
+  <select
+    className="form-control"
+    id="status"
+    name="status"
+    value={subjectData.status}
+    onChange={handleInputChange}
+  >
+    <option value="active">เปิดใช้งาน</option>
+    <option value="inactive">ปิดการใช้งาน</option>
+    <option value="draft">ฉบับร่าง</option> {/* เพิ่มตัวเลือกฉบับร่าง */}
+  </select>
+</div>
+
         </div>
       </div>
 
