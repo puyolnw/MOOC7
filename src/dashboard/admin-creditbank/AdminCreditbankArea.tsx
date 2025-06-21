@@ -222,6 +222,12 @@ const AdminCreditbankArea: React.FC = () => {
     return <span className={badgeClass}>{statusText}</span>;
   };
 
+  // คำนวณจำนวนหลักสูตรตามสถานะ
+  const totalCourses = courses.length;
+  const activeCourses = courses.filter(course => course.status === 'active').length;
+  const inactiveCourses = courses.filter(course => course.status === 'inactive').length;
+  const draftCourses = courses.filter(course => course.status === 'draft').length;
+
   return (
     <section className="dashboard__area section-pb-120">
       <div className="container">
@@ -238,6 +244,35 @@ const AdminCreditbankArea: React.FC = () => {
                   </Link>
                 </div>
 
+                {/* การ์ดแสดงข้อมูลหลักสูตร */}
+                <div className="row mb-4">
+                  <div className="col-md-3">
+                    <div className="bg-light rounded p-3 text-center">
+                      <h6 className="mb-1 text-muted">หลักสูตรทั้งหมด</h6>
+                      <h5 className="mb-0">{totalCourses} หลักสูตร</h5>
+                    </div>
+                  </div>
+                  <div className="col-md-3">
+                    <div className="bg-success-subtle rounded p-3 text-center">
+                      <h6 className="mb-1 text-success">เปิดใช้งาน</h6>
+                      <h5 className="mb-0">{activeCourses} หลักสูตร</h5>
+                    </div>
+                  </div>
+                  <div className="col-md-3">
+                    <div className="bg-danger-subtle rounded p-3 text-center">
+                      <h6 className="mb-1 text-danger">ปิดใช้งาน</h6>
+                      <h5 className="mb-0">{inactiveCourses} หลักสูตร</h5>
+                    </div>
+                  </div>
+                  <div className="col-md-3">
+                    <div className="bg-secondary-subtle rounded p-3 text-center">
+                      <h6 className="mb-1 text-secondary">ฉบับร่าง</h6>
+                      <h5 className="mb-0">{draftCourses} หลักสูตร</h5>
+                    </div>
+                  </div>
+                </div>
+
+                {/* ฟิลเตอร์การค้นหา */}
                 <div className="row mb-4">
                   <div className="col-md-6 mb-3 mb-md-0">
                     <div className="input-group">
@@ -298,9 +333,9 @@ const AdminCreditbankArea: React.FC = () => {
                             <th scope="col" style={{ width: '30px' }}>#</th>
                             <th scope="col">ชื่อหลักสูตร</th>
                             <th scope="col">สาขาวิชา</th>
-                            <th scope="col"style={{ width: '130px' }}>จำนวนรายวิชา</th>
+                            <th scope="col" style={{ width: '130px' }}>จำนวนรายวิชา</th>
                             <th scope='col' className='text-center'>สถานะ</th>
-                            <th scope='col'style={{ width: '100px' }} className='text-center'>จัดการ</th>
+                            <th scope='col' style={{ width: '100px' }} className='text-center'>จัดการ</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -311,7 +346,7 @@ const AdminCreditbankArea: React.FC = () => {
                               <td>{course.department_name}</td>
                               <td>{course.subject_count} วิชา</td>
                               <td className='text-center'>
-                                <StatusBadge status={course.status}/>
+                                <StatusBadge status={course.status} />
                               </td>
                               <td>
                                 <div className="d-flex justify-content-center text-center gap-3">

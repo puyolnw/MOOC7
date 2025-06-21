@@ -31,6 +31,7 @@ const SpecialQuizSection: React.FC<SpecialQuizSectionProps> = ({
   errors
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const filteredFbQuestions = fbQuestions.filter((question) =>
     question.title.toLowerCase().includes(searchTerm.toLowerCase())
@@ -83,67 +84,19 @@ const SpecialQuizSection: React.FC<SpecialQuizSectionProps> = ({
             </div>
           </div>
 
+          {/* ปุ่มกดเพื่อเปิด Modal */}
           <div className="mb-3">
-            <div className="input-group">
-              <input
-                type="text"
-                className="form-control"
-                placeholder="ค้นหาคำถามแบบเติมคำตอบ..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-              <button className="btn btn-outline-secondary" type="button">
-                <i className="fas fa-search"></i>
-              </button>
-            </div>
+            <button
+              type="button"
+              className="btn btn-outline-primary w-100"
+              onClick={() => setIsModalOpen(true)}
+            >
+              <i className="fas fa-plus me-2"></i>
+              เลือกคำถาม
+            </button>
           </div>
 
-          {fbQuestions.length === 0 ? (
-  <div className="alert alert-warning" role="alert">
-    <i className="fas fa-exclamation-triangle me-2"></i>
-    ไม่พบคำถามแบบเติมคำตอบในระบบ กรุณาสร้างคำถามแบบเติมคำตอบก่อน
-  </div>
-) : (
-            <div className="table-responsive">
-              <table className="table table-hover table-sm align-middle">
-                <thead className="table-light">
-                  <tr>
-                    <th style={{ width: "50px" }}></th>
-                    <th>คำถาม</th>
-                    <th style={{ width: "80px" }}>คะแนน</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredFbQuestions.length > 0 ? (
-                    filteredFbQuestions.map((question) => (
-                      <tr key={question.id}>
-                        <td>
-                          <div className="form-check">
-                            <input
-                              className="form-check-input"
-                              type="checkbox"
-                              id={`select-${question.id}`}
-                              checked={selectedExistingQuestions.includes(question.id)}
-                              onChange={() => handleSelectQuestion(question.id)}
-                            />
-                          </div>
-                        </td>
-                        <td>{question.title}</td>
-                        <td>{question.score}</td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={3} className="text-center py-3">
-                        ไม่พบคำถามที่ตรงกับคำค้นหา
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          )}
-
+          {/* แสดงคำถามที่เลือก */}
           {selectedExistingQuestions.length > 0 && (
             <div className="mt-3 p-3 bg-light rounded">
               <h6>คำถามที่เลือก ({selectedExistingQuestions.length}):</h6>
@@ -168,6 +121,103 @@ const SpecialQuizSection: React.FC<SpecialQuizSectionProps> = ({
           )}
         </div>
       </div>
+
+      {/* Modal สำหรับเลือกคำถาม */}
+      {isModalOpen && (
+        <div className="modal fade show d-block" tabIndex={-1} style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-lg modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">เลือกคำถามแบบเติมคำตอบ</h5>
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={() => setIsModalOpen(false)}
+                  aria-label="Close"
+                ></button>
+              </div>
+              <div className="modal-body">
+                <div className="mb-3">
+                  <div className="input-group">
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="ค้นหาคำถามแบบเติมคำตอบ..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                    <button className="btn btn-outline-secondary" type="button">
+                      <i className="fas fa-search"></i>
+                    </button>
+                  </div>
+                </div>
+
+                {fbQuestions.length === 0 ? (
+                  <div className="alert alert-warning" role="alert">
+                    <i className="fas fa-exclamation-triangle me-2"></i>
+                    ไม่พบคำถามแบบเติมคำตอบในระบบ กรุณาสร้างคำถามแบบเติมคำตอบก่อน
+                  </div>
+                ) : (
+                  <div className="table-responsive">
+                    <table className="table table-hover table-sm align-middle">
+                      <thead className="table-light">
+                        <tr>
+                          <th style={{ width: "50px" }}></th>
+                          <th>คำถาม</th>
+                          <th style={{ width: "80px" }}>คะแนน</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredFbQuestions.length > 0 ? (
+                          filteredFbQuestions.map((question) => (
+                            <tr key={question.id}>
+                              <td>
+                                <div className="form-check">
+                                  <input
+                                    className="form-check-input"
+                                    type="checkbox"
+                                    id={`select-${question.id}`}
+                                    checked={selectedExistingQuestions.includes(question.id)}
+                                    onChange={() => handleSelectQuestion(question.id)}
+                                  />
+                                </div>
+                              </td>
+                              <td>{question.title}</td>
+                              <td>{question.score}</td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan={3} className="text-center py-3">
+                              ไม่พบคำถามที่ตรงกับคำค้นหา
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setIsModalOpen(false)}
+                >
+                  ยกเลิก
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => setIsModalOpen(false)}
+                >
+                  ยืนยัน
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* คำอธิบายเพิ่มเติม */}
       <div className="card shadow-sm border-0 mb-4">
