@@ -8,7 +8,7 @@ import BtnArrow from "../svg/BtnArrow";
 import { Link } from "react-router-dom";
 import { jwtDecode } from "jwt-decode"; // ✅ ใช้ jwt-decode สำหรับตรวจสอบ Token
 interface FormData {
-  email: string;
+  emailOrUsername: string;
   password: string;
 }
 
@@ -16,8 +16,8 @@ const LoginForm = () => {
   const navigate = useNavigate(); // ✅ ใช้ Navigate
   const schema = yup
     .object({
-      email: yup.string().required().email().label("Email"),
-      password: yup.string().required().label("Password"),
+      emailOrUsername: yup.string().required('กรุณากรอกอีเมลหรือชื่อผู้ใช้').label("Email or Username"),
+      password: yup.string().required('กรุณากรอกรหัสผ่าน').label("Password"),
     })
     .required();
   const {
@@ -39,7 +39,16 @@ const LoginForm = () => {
   const onSubmit = async (data: FormData) => {
     try {
       const apiUrl = import.meta.env.VITE_API_URL;
-      const response = await axios.post(`${apiUrl}/api/auth/login`, data, {
+      
+      // ตรวจสอบว่าเป็น email หรือ username ด้วย regex pattern
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      const isEmail = emailRegex.test(data.emailOrUsername);
+      const requestData = {
+        password: data.password,
+        ...(isEmail ? { email: data.emailOrUsername } : { username: data.emailOrUsername })
+      };
+
+      const response = await axios.post(`${apiUrl}/api/auth/login`, requestData, {
         headers: { "Content-Type": "application/json" },
       });
 
@@ -101,13 +110,13 @@ const LoginForm = () => {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="account__form">
       <div className="form-grp">
-        <label htmlFor="email">อีเมล</label>
-        <input id="email" {...register("email")} type="text" placeholder="email" />
-        <p className="form_error">{errors.email?.message}</p>
+        <label htmlFor="emailOrUsername">อีเมลหรือชื่อผู้ใช้</label>
+        <input id="emailOrUsername" {...register("emailOrUsername")} type="text" placeholder="อีเมลหรือชื่อผู้ใช้" />
+        <p className="form_error">{errors.emailOrUsername?.message}</p>
       </div>
       <div className="form-grp">
         <label htmlFor="password">รหัสผ่าน</label>
-        <input id="password" {...register("password")} type="password" placeholder="password" />
+        <input id="password" {...register("password")} type="password" placeholder="รหัสผ่าน" />
         <p className="form_error">{errors.password?.message}</p>
       </div>
       <div className="account__check">

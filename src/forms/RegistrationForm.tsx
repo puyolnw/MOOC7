@@ -19,6 +19,7 @@ interface FormData {
    student_code: string;
    department_id?: string | null;
    education_level?: string | null;
+   academic_year: number;
 }
 
 interface Department {
@@ -49,6 +50,11 @@ const schema = yup
       student_code: yup.string().required('กรุณากรอกรหัสนักศึกษา'),
       department_id: yup.string().optional().nullable(),
       education_level: yup.string().optional().nullable(),
+      academic_year: yup
+         .number()
+         .required('กรุณาเลือกชั้นปีการศึกษา')
+         .min(1, 'ชั้นปีต้องมากกว่า 0')
+         .max(4, 'ชั้นปีต้องไม่เกิน 4'),
    })
    .required();
 
@@ -91,6 +97,7 @@ const RegistrationForm = () => {
             student_code: data.student_code,
             department_id: data.department_id || null,
             education_level: data.education_level || null,
+            academic_year: data.academic_year,
          };
 
          const response = await axios.post(`${apiURL}/api/auth/register`, payload);
@@ -100,22 +107,65 @@ const RegistrationForm = () => {
                position: 'top-center',
                theme: 'light',
                onClose: () => {
-                  window.location.href = '/login'; // Redirect to login page after successful registration
+                  window.location.href = '/login';
                }
             });
             reset();
          } else {
-            toast.error(response.data.message || 'เกิดข้อผิดพลาดในการสมัครสมาชิก', {
+            // ตรวจสอบข้อความ error เพื่อแสดงคำเตือนที่เฉพาะเจาะจง
+            if (response.data.message === 'อีเมลนี้มีในระบบแล้ว') {
+               toast.error('อีเมลนี้ได้มีการลงทะเบียนในระบบแล้ว กรุณาใช้อีเมลอื่น', {
+                  position: 'top-center',
+                  theme: 'light',
+               });
+            } else if (response.data.message === 'รหัสนักศึกษานี้มีในระบบแล้ว') {
+               toast.error('รหัสนักศึกษานี้ได้มีการลงทะเบียนในระบบแล้ว', {
+                  position: 'top-center',
+                  theme: 'light',
+               });
+            } else if (response.data.message === 'ชื่อผู้ใช้นี้มีในระบบแล้ว') {
+               toast.error('ชื่อผู้ใช้นี้ได้มีการลงทะเบียนในระบบแล้ว กรุณาใช้ชื่อผู้ใช้อื่น', {
+                  position: 'top-center',
+                  theme: 'light',
+               });
+            } else {
+               toast.error(response.data.message || 'เกิดข้อผิดพลาดในการสมัครสมาชิก', {
+                  position: 'top-center',
+                  theme: 'light',
+               });
+            }
+         }
+      } catch (error) {
+         console.error('เกิดข้อผิดพลาดในการสมัครสมาชิก:', error);
+         if (axios.isAxiosError(error) && error.response) {
+            const errorMessage = error.response.data.message;
+            if (errorMessage === 'อีเมลนี้มีในระบบแล้ว') {
+               toast.error('อีเมลนี้มีในระบบแล้ว กรุณาใช้อีเมลอื่น', {
+                  position: 'top-center',
+                  theme: 'light',
+               });
+            } else if (errorMessage === 'รหัสนักศึกษานี้มีในระบบแล้ว') {
+               toast.error('รหัสนักศึกษานี้มีในระบบแล้ว กรุณาใช้รหัสอื่น', {
+                  position: 'top-center',
+                  theme: 'light',
+               });
+            } else if (errorMessage === 'ชื่อผู้ใช้นี้มีในระบบแล้ว') {
+               toast.error('ชื่อผู้ใช้นี้ได้มีการลงทะเบียนในระบบแล้ว กรุณาใช้ชื่อผู้ใช้อื่น', {
+                  position: 'top-center',
+                  theme: 'light',
+               });
+            } else {
+               toast.error('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์', {
+                  position: 'top-center',
+                  theme: 'light',
+               });
+            }
+         } else {
+            toast.error('เกิดข้อผิดพลาดที่ไม่คาดคิด', {
                position: 'top-center',
                theme: 'light',
             });
          }
-      } catch (error) {
-         console.error('เกิดข้อผิดพลาดในการสมัครสมาชิก:', error);
-         toast.error('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์', {
-            position: 'top-center',
-            theme: 'light',
-         });
       }
    };
 
@@ -179,6 +229,22 @@ const RegistrationForm = () => {
                placeholder="รหัสนักศึกษา"
             />
             <p className="form_error">{errors.student_code?.message}</p>
+         </div>
+
+         <div className="form-grp">
+            <label htmlFor="academic-year">ชั้นปีการศึกษา</label>
+            <select
+               {...register('academic_year', { valueAsNumber: true })}
+               id="academic-year"
+               className="input-like-select"
+            >
+               <option value="">เลือกชั้นปี</option>
+               <option value="1">1</option>
+               <option value="2">2</option>
+               <option value="3">3</option>
+               <option value="4">4</option>
+            </select>
+            <p className="form_error">{errors.academic_year?.message}</p>
          </div>
 
          <div className="form-grp">
