@@ -72,13 +72,13 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
     selectedAttemptId,
     onClose,
     onGraded,
-    onOpenGrading,
+
 }) => {
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
     const [questions, setQuestions] = useState<Question[]>([]);
     const [attemptAnswers, setAttemptAnswers] = useState<Answer[]>([]);
-    const [attempts, setAttempts] = useState<Attempt[]>([]);
+
     const [subjectSummaries, setSubjectSummaries] = useState<SubjectSummary[]>([]);
     const [selectedSubjectId, setSelectedSubjectId] = useState<number | null>(null);
     const [scores, setScores] = useState<{ [key: number]: number }>({});
@@ -221,7 +221,7 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
 
                 if (response.data.success) {
                     const allAttempts = response.data.attempts || [];
-                    setAttempts(allAttempts);
+                 
                     
                     // จัดกลุ่มตามรายวิชา
                     const grouped = groupAttemptsBySubject(allAttempts);
