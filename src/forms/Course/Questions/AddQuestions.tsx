@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import axios from "axios";
 
 // ===== TYPES & INTERFACES =====
@@ -84,6 +84,14 @@ const AddQuestions: React.FC<AddQuestionsProps> = ({ onSubmit, onCancel }) => {
   // Form helpers
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [newChoiceText, setNewChoiceText] = useState("");
+<<<<<<< HEAD
+=======
+  const [blankAnswer, setBlankAnswer] = useState("");
+  const [quizSearchTerm, setQuizSearchTerm] = useState("");
+  const [showQuizModal, setShowQuizModal] = useState(false);
+  const [currentQuizPage, setCurrentQuizPage] = useState<number>(1);
+  const itemsPerPage = 10;
+>>>>>>> f9b3309 (23/06/2568)
 
   // ===== EFFECTS =====
   useEffect(() => {
@@ -107,7 +115,22 @@ const AddQuestions: React.FC<AddQuestionsProps> = ({ onSubmit, onCancel }) => {
     fetchQuizzes();
   }, []);
 
+<<<<<<< HEAD
   // Filter quizzes based on filter term
+=======
+  const filteredQuizzes = useMemo(() => {
+    return availableQuizzes.filter(quiz => 
+      quiz.title.toLowerCase().includes(quizSearchTerm.toLowerCase())
+    );
+  }, [availableQuizzes, quizSearchTerm]);
+
+  const totalQuizPages = Math.ceil(filteredQuizzes.length / itemsPerPage);
+  const paginatedQuizzes = useMemo(() => {
+    const start = (currentQuizPage - 1) * itemsPerPage;
+    return filteredQuizzes.slice(start, start + itemsPerPage);
+  }, [filteredQuizzes, currentQuizPage]);
+
+>>>>>>> f9b3309 (23/06/2568)
   useEffect(() => {
     if (quizFilterTerm.trim() === "") {
       setFilteredQuizzes([]);
@@ -909,6 +932,7 @@ const AddQuestions: React.FC<AddQuestionsProps> = ({ onSubmit, onCancel }) => {
         </div>
       )}
 
+<<<<<<< HEAD
       {/* Progress Steps */}
       <div className="card shadow-sm border-0 mb-4">
         <div className="card-body py-2">
@@ -927,6 +951,123 @@ const AddQuestions: React.FC<AddQuestionsProps> = ({ onSubmit, onCancel }) => {
               <div className={`step-item ${currentStep === 'preview' ? 'active' : ''}`}>
                 <div className="step-number">3</div>
                 <div className="step-label">ตัวอย่างและบันทึก</div>
+=======
+      <div className="d-flex justify-content-end gap-2 mt-4">
+        <button type="button" className="btn btn-outline-secondary" onClick={handleCancel}>
+          ยกเลิก
+        </button>
+        <button 
+          type="submit" 
+          className="btn btn-primary"
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? (
+            <>
+              <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+              กำลังบันทึก...
+            </>
+          ) : (
+            <>
+              <i className="fas fa-save me-2"></i>บันทึกคำถาม
+            </>
+          )}
+        </button>
+      </div>
+      
+      {showQuizModal && (
+        <div className="modal fade show" style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}>
+          <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div className="modal-content border-0 shadow-lg">
+              <div className="modal-header bg-primary">
+                <h5 className="modal-title text-white">เลือกแบบทดสอบ</h5>
+                <button 
+                  type="button" 
+                  className="btn-close btn-close-white" 
+                  onClick={() => setShowQuizModal(false)}
+                ></button>
+              </div>
+              <div className="modal-body">
+                <div className="mb-3">
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="ค้นหาแบบทดสอบ..."
+                    value={quizSearchTerm}
+                    onChange={(e) => {
+                      setQuizSearchTerm(e.target.value);
+                      setCurrentQuizPage(1); // reset page when searching
+                    }}
+                  />
+                </div>
+                {paginatedQuizzes.length > 0 ? (
+                  <>
+                    <div className="list-group list-group-flush mb-3">
+                      {paginatedQuizzes.map((quiz) => {
+                        const isSelected = questionData.quizzes.includes(quiz.id);
+                        return (
+                          <div
+                            key={quiz.id}
+                            className={`list-group-item d-flex justify-content-between align-items-center ${
+                              isSelected ? "bg-light" : ""
+                            }`}
+                          >
+                            <div>
+                              <h6 className="mb-1">{quiz.title}</h6>
+                              <p className="mb-0 small text-muted">จำนวนคำถาม: {quiz.questions} ข้อ</p>
+                            </div>
+                            <button
+                              type="button"
+                              className={`btn btn-sm ${isSelected ? "btn-success disabled" : "btn-outline-primary"}`}
+                              onClick={() => handleToggleQuiz(quiz.id)}
+                              disabled={isSelected}
+                            >
+                              {isSelected ? (
+                                <>
+                                  <i className="fas fa-check me-1"></i> เลือกแล้ว
+                                </>
+                              ) : (
+                                <>เลือก</>
+                              )}
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {totalQuizPages > 1 && (
+                      <nav aria-label="Page navigation" className="mt-4">
+                        <ul className="pagination justify-content-center">
+                          {Array.from({ length: totalQuizPages }, (_, i) => (
+                            <li key={i + 1} className={`page-item ${currentQuizPage === i + 1 ? "active" : ""}`}>
+                              <button 
+                                className="page-link" 
+                                onClick={() => setCurrentQuizPage(i + 1)}
+                              >
+                                {i + 1}
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      </nav>
+                    )}
+                    <div className="text-center text-muted small mt-2">
+                      แสดง {paginatedQuizzes.length} จากทั้งหมด {filteredQuizzes.length} แบบทดสอบ
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-center py-4">
+                    <p className="text-muted">ไม่พบแบบทดสอบที่ตรงกับคำค้นหา</p>
+                  </div>
+                )}
+              </div>
+              <div className="modal-footer">
+                <button 
+                  type="button" 
+                  className="btn btn-secondary" 
+                  onClick={() => setShowQuizModal(false)}
+                >
+                  ปิด
+                </button>
+>>>>>>> f9b3309 (23/06/2568)
               </div>
             </div>
           </div>
@@ -1074,5 +1215,9 @@ const AddQuestions: React.FC<AddQuestionsProps> = ({ onSubmit, onCancel }) => {
   );
 };
 
+<<<<<<< HEAD
 export default AddQuestions;
 
+=======
+export default AddQuestions;
+>>>>>>> f9b3309 (23/06/2568)

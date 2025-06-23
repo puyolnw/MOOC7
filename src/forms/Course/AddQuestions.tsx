@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import axios from "axios"; // Make sure axios is installed
 
 // ประเภทของคำถาม
@@ -33,7 +33,6 @@ interface AddQuestionsProps {
   onSubmit?: (questionData: any) => void;
   onCancel?: () => void;
 }
-
 
 const AddQuestions: React.FC<AddQuestionsProps> = ({ onSubmit, onCancel }) => {
   // สร้าง ID สำหรับตัวเลือก
@@ -83,13 +82,30 @@ const AddQuestions: React.FC<AddQuestionsProps> = ({ onSubmit, onCancel }) => {
   // สถานะสำหรับการแสดง Modal เลือกแบบทดสอบ
   const [showQuizModal, setShowQuizModal] = useState(false);
   
+  // สถานะสำหรับการจัดการหน้าใน Modal
+  const [currentQuizPage, setCurrentQuizPage] = useState<number>(1);
+  const itemsPerPage = 10;
+
+  // กรองแบบทดสอบตามคำค้นหาและทำ Pagination
+  const filteredQuizzes = useMemo(() => {
+    return availableQuizzes.filter(quiz => 
+      quiz.title.toLowerCase().includes(quizSearchTerm.toLowerCase())
+    );
+  }, [availableQuizzes, quizSearchTerm]);
+
+  const totalQuizPages = Math.ceil(filteredQuizzes.length / itemsPerPage);
+  const paginatedQuizzes = useMemo(() => {
+    const start = (currentQuizPage - 1) * itemsPerPage;
+    return filteredQuizzes.slice(start, start + itemsPerPage);
+  }, [filteredQuizzes, currentQuizPage]);
+  
   // Load quizzes from API
   useEffect(() => {
     const fetchQuizzes = async () => {
       try {
         const apiUrl = import.meta.env.VITE_API_URL;
         const response = await axios.get(`${apiUrl}/api/courses/quizzes`);
-         if (response.data && response.data.quizzes) {
+        if (response.data && response.data.quizzes) {
           // Transform the data to match our Quiz interface
           const quizzes = response.data.quizzes.map((quiz: any) => ({
             id: quiz.quiz_id,
@@ -98,18 +114,13 @@ const AddQuestions: React.FC<AddQuestionsProps> = ({ onSubmit, onCancel }) => {
           }));
           setAvailableQuizzes(quizzes);
         }
-    } catch (error) {
+      } catch (error) {
         console.error("Error fetching quizzes:", error);
       }
     };
     
     fetchQuizzes();
   }, []);
-  
-  // กรองแบบทดสอบตามคำค้นหา
-  const filteredQuizzes = availableQuizzes.filter(quiz => 
-    quiz.title.toLowerCase().includes(quizSearchTerm.toLowerCase())
-  );
   
   // เมื่อเลือกประเภทคำถาม ให้สร้างตัวเลือกเริ่มต้น
   useEffect(() => {
@@ -742,12 +753,23 @@ const AddQuestions: React.FC<AddQuestionsProps> = ({ onSubmit, onCancel }) => {
       
       {/* Modal เลือกแบบทดสอบ */}
       {showQuizModal && (
-        <div className="modal fade show" style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog modal-lg">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">เลือกแบบทดสอบ</h5>
-                <button type="button" className="btn-close" onClick={() => setShowQuizModal(false)}></button>
+        <div
+          className="modal fade show"
+          style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}
+          tabIndex={-1}
+        >
+          <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div className="modal-content border-0 shadow-lg">
+              <div className="modal-header bg-primary">
+                <h5 className="modal-title text-white">เลือกแบบทดสอบ</h5>
+                <button
+                  type="button"
+                  className="btn-close btn-close-white"
+                  onClick={() => {
+                    setShowQuizModal(false);
+                    setCurrentQuizPage(1);
+                  }}
+                ></button>
               </div>
               <div className="modal-body">
                 <div className="mb-3">
@@ -756,44 +778,89 @@ const AddQuestions: React.FC<AddQuestionsProps> = ({ onSubmit, onCancel }) => {
                     className="form-control"
                     placeholder="ค้นหาแบบทดสอบ..."
                     value={quizSearchTerm}
-                    onChange={(e) => setQuizSearchTerm(e.target.value)}
+                    onChange={(e) => {
+                      setQuizSearchTerm(e.target.value);
+                      setCurrentQuizPage(1);
+                    }}
                   />
                 </div>
-                
-                <div className="quiz-list">
-                  {filteredQuizzes.length > 0 ? (
-                    <div className="list-group">
-                      {filteredQuizzes.map((quiz) => (
-                        <div
-                          key={quiz.id}
-                          className="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
-                        >
-                          <div>
-                            <h6 className="mb-1">{quiz.title}</h6>
-                            <p className="mb-0 small text-muted">จำนวนคำถาม: {quiz.questions} ข้อ</p>
+                {paginatedQuizzes.length > 0 ? (
+                  <>
+                    <div className="list-group list-group-flush mb-3">
+                      {paginatedQuizzes.map((quiz) => {
+                        const isSelected = questionData.quizzes.includes(quiz.id);
+                        return (
+                          <div
+                            key={quiz.id}
+                            className={`list-group-item d-flex justify-content-between align-items-center ${
+                              isSelected ? "bg-light" : ""
+                            }`}
+                          >
+                            <div className="d-flex flex-column">
+                              <span className="h6 mb-1">{quiz.title}</span>
+                              <p className="mb-0 small text-muted">
+                                จำนวนคำถาม: {quiz.questions} ข้อ
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              className={`btn btn-sm ${
+                                isSelected ? "btn-success disabled" : "btn-outline-primary"
+                              }`}
+                              onClick={() => handleToggleQuiz(quiz.id)}
+                              disabled={isSelected}
+                            >
+                              {isSelected ? (
+                                <>
+                                  <i className="fas fa-check me-1"></i>เลือกแล้ว
+                                </>
+                              ) : (
+                                <>เลือก</>
+                              )}
+                            </button>
                           </div>
-                          <div className="form-check">
-                            <input
-                              className="form-check-input"
-                              type="checkbox"
-                              id={`select-quiz-${quiz.id}`}
-                              checked={questionData.quizzes.includes(quiz.id)}
-                              onChange={() => handleToggleQuiz(quiz.id)}
-                            />
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
-                  ) : (
-                    <div className="text-center py-4">
-                      <p className="text-muted">ไม่พบแบบทดสอบที่ตรงกับคำค้นหา</p>
+                    {totalQuizPages > 1 && (
+                      <nav aria-label="Page navigation" className="mt-4">
+                        <ul className="pagination justify-content-center">
+                          {Array.from({ length: totalQuizPages }, (_, i) => (
+                            <li
+                              key={i + 1}
+                              className={`page-item ${currentQuizPage === i + 1 ? "active" : ""}`}
+                            >
+                              <button
+                                className="page-link"
+                                onClick={() => setCurrentQuizPage(i + 1)}
+                              >
+                                {i + 1}
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      </nav>
+                    )}
+                    <div className="text-center text-muted small mt-2">
+                      แสดง {paginatedQuizzes.length} จากทั้งหมด {filteredQuizzes.length} แบบทดสอบ
                     </div>
-                  )}
-                </div>
+                  </>
+                ) : (
+                  <div className="text-center py-4">
+                    <p className="text-muted">ไม่พบแบบทดสอบที่ตรงกับคำค้นหา</p>
+                  </div>
+                )}
               </div>
               <div className="modal-footer">
-                <button type="button" className="btn btn-primary" onClick={() => setShowQuizModal(false)}>
-                  เสร็จสิ้น
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    setShowQuizModal(false);
+                    setCurrentQuizPage(1);
+                  }}
+                >
+                  ปิด
                 </button>
               </div>
             </div>
