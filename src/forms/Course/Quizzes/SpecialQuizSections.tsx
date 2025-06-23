@@ -28,13 +28,23 @@ const SpecialQuizSection: React.FC<SpecialQuizSectionProps> = ({
   selectedExistingQuestions,
   setSelectedExistingQuestions,
   handleCheckboxChange,
-  errors
+  errors,
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
+  const itemsPerPage = 6;
+
+  // Filter and pagination
   const filteredFbQuestions = fbQuestions.filter((question) =>
     question.title.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const totalPages = Math.ceil(filteredFbQuestions.length / itemsPerPage);
+  const paginatedQuestions = filteredFbQuestions.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
   );
 
   const handleSelectQuestion = (id: string) => {
@@ -124,78 +134,120 @@ const SpecialQuizSection: React.FC<SpecialQuizSectionProps> = ({
 
       {/* Modal สำหรับเลือกคำถาม */}
       {isModalOpen && (
-        <div className="modal fade show d-block" tabIndex={-1} style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog modal-lg modal-dialog-centered">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">เลือกคำถามแบบเติมคำตอบ</h5>
+        <div className="modal fade show" style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }} tabIndex={-1}>
+          <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div className="modal-content border-0 shadow-lg">
+              <div className="modal-header bg-primary">
+                <h5 className="modal-title text-white">
+                  <i className="fas fa-edit me-2"></i>
+                  เลือกคำถามแบบเติมคำตอบ
+                </h5>
                 <button
                   type="button"
-                  className="btn-close"
+                  className="btn-close btn-close-white"
                   onClick={() => setIsModalOpen(false)}
                   aria-label="Close"
                 ></button>
               </div>
               <div className="modal-body">
                 <div className="mb-3">
-                  <div className="input-group">
-                    <input
-                      type="text"
-                      className="form-control"
-                      placeholder="ค้นหาคำถามแบบเติมคำตอบ..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                    <button className="btn btn-outline-secondary" type="button">
-                      <i className="fas fa-search"></i>
-                    </button>
-                  </div>
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="ค้นหาคำถามแบบเติมคำตอบ..."
+                    value={searchTerm}
+                    onChange={(e) => {
+                      setSearchTerm(e.target.value);
+                      setCurrentPage(1); // reset page when searching
+                    }}
+                  />
                 </div>
 
                 {fbQuestions.length === 0 ? (
                   <div className="alert alert-warning" role="alert">
                     <i className="fas fa-exclamation-triangle me-2"></i>
-                    ไม่พบคำถามแบบเติมคำตอบในระบบ กรุณาสร้างคำถามแบบเติมคำตอบก่อน
+                    ไม่พบคำถามแบบเติมคำตอบในระบบ กรุณาสร้างคำถามก่อน
                   </div>
                 ) : (
-                  <div className="table-responsive">
-                    <table className="table table-hover table-sm align-middle">
-                      <thead className="table-light">
-                        <tr>
-                          <th style={{ width: "50px" }}></th>
-                          <th>คำถาม</th>
-                          <th style={{ width: "80px" }}>คะแนน</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filteredFbQuestions.length > 0 ? (
-                          filteredFbQuestions.map((question) => (
-                            <tr key={question.id}>
-                              <td>
-                                <div className="form-check">
-                                  <input
-                                    className="form-check-input"
-                                    type="checkbox"
-                                    id={`select-${question.id}`}
-                                    checked={selectedExistingQuestions.includes(question.id)}
-                                    onChange={() => handleSelectQuestion(question.id)}
-                                  />
-                                </div>
-                              </td>
-                              <td>{question.title}</td>
-                              <td>{question.score}</td>
-                            </tr>
-                          ))
-                        ) : (
+                  <>
+                    <div className="table-responsive">
+                      <table className="table table-hover align-middle mb-0">
+                        <thead className="bg-primary text-white">
                           <tr>
-                            <td colSpan={3} className="text-center py-3">
-                              ไม่พบคำถามที่ตรงกับคำค้นหา
-                            </td>
+                            <th>คำถาม</th>
+                            <th style={{ width: "80px" }}>คะแนน</th>
+                            <th style={{ width: "100px" }} className="text-end">เลือก</th>
                           </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
+                        </thead>
+                        <tbody>
+                          {paginatedQuestions.length > 0 ? (
+                            paginatedQuestions.map((question) => {
+                              const isSelected = selectedExistingQuestions.includes(question.id);
+                              return (
+                                <tr key={question.id}>
+                                  <td>{question.title}</td>
+                                  <td>{question.score}</td>
+                                  <td className="text-end">
+                                    <button
+                                      type="button"
+                                      className={`btn btn-sm ${isSelected ? "btn-success disabled" : "btn-outline-primary"}`}
+                                      onClick={() => handleSelectQuestion(question.id)}
+                                      disabled={isSelected}
+                                    >
+                                      {isSelected ? (
+                                        <>
+                                          <i className="fas fa-check me-1"></i> เลือกแล้ว
+                                        </>
+                                      ) : (
+                                        <>เลือก</>
+                                      )}
+                                    </button>
+                                  </td>
+                                </tr>
+                              );
+                            })
+                          ) : (
+                            <tr>
+                              <td colSpan={3} className="text-center py-4">
+                                <p className="text-muted mb-0">ไม่พบคำถามที่ตรงกับคำค้นหา</p>
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                      <nav aria-label="Page navigation" className="mt-3">
+                        <ul className="pagination justify-content-center mb-0">
+                          <li className={`page-item ${currentPage === 1 ? "disabled" : ""}`}>
+                            <button
+                              className="page-link"
+                              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                            >
+                              <i className="fas fa-chevron-left small"></i>
+                            </button>
+                          </li>
+                          {Array.from({ length: totalPages }, (_, i) => (
+                            <li key={i + 1} className={`page-item ${currentPage === i + 1 ? "active" : ""}`}>
+                              <button className="page-link" onClick={() => setCurrentPage(i + 1)}>
+                                {i + 1}
+                              </button>
+                            </li>
+                          ))}
+                          <li className={`page-item ${currentPage === totalPages ? "disabled" : ""}`}>
+                            <button
+                              className="page-link"
+                              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                            >
+                              <i className="fas fa-chevron-right small"></i>
+                            </button>
+                          </li>
+                        </ul>
+                      </nav>
+                    )}
+                  </>
                 )}
               </div>
               <div className="modal-footer">
@@ -204,14 +256,7 @@ const SpecialQuizSection: React.FC<SpecialQuizSectionProps> = ({
                   className="btn btn-secondary"
                   onClick={() => setIsModalOpen(false)}
                 >
-                  ยกเลิก
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  onClick={() => setIsModalOpen(false)}
-                >
-                  ยืนยัน
+                  ปิด
                 </button>
               </div>
             </div>
@@ -219,14 +264,16 @@ const SpecialQuizSection: React.FC<SpecialQuizSectionProps> = ({
         </div>
       )}
 
-      {/* คำอธิบายเพิ่มเติม */}
+      {/* ข้อมูลเพิ่มเติม */}
       <div className="card shadow-sm border-0 mb-4">
         <div className="card-header bg-light">
           <h5 className="mb-0">3. ข้อมูลเพิ่มเติม</h5>
         </div>
         <div className="card-body">
           <div className="alert alert-info" role="alert">
-            <h6 className="alert-heading"><i className="fas fa-info-circle me-2"></i>การตรวจแบบทดสอบพิเศษ</h6>
+            <h6 className="alert-heading">
+              <i className="fas fa-info-circle me-2"></i> การตรวจแบบทดสอบพิเศษ
+            </h6>
             <p className="mb-0">
               แบบทดสอบพิเศษจะไม่ตรวจอัตโนมัติ เมื่อนักเรียนส่งคำตอบแล้ว อาจารย์จะต้องเข้าไปตรวจและให้คะแนนด้วยตนเอง
               ในหน้า "งานที่รอตรวจ" ในเมนูแดชบอร์ดของอาจารย์
