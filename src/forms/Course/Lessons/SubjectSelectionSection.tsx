@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 
 interface SubjectSelectionSectionProps {
   lessonData: {
@@ -15,7 +15,9 @@ const SubjectSelectionSection: React.FC<SubjectSelectionSectionProps> = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [showSubjectModal, setShowSubjectModal] = useState(false);
-  
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const itemsPerPage = 10;
+
   // ฟังก์ชันค้นหาอย่างง่าย
   const filteredSubjects = availableSubjects.filter(subject => {
     const term = searchTerm.toLowerCase();
@@ -24,6 +26,19 @@ const SubjectSelectionSection: React.FC<SubjectSelectionSectionProps> = ({
     
     return title.includes(term) || code.includes(term);
   });
+
+  // Pagination วิชา
+  const totalPages = Math.ceil(filteredSubjects.length / itemsPerPage);
+  const paginatedSubjects = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredSubjects.slice(start, start + itemsPerPage);
+  }, [filteredSubjects, currentPage]);
+
+  const handleAddSubject = (subjectId: string) => {
+    if (!lessonData.subjects.includes(subjectId)) {
+      handleToggleSubject(subjectId);
+    }
+  };
 
   return (
     <div className="card shadow-sm border-0 mb-4">
@@ -53,7 +68,7 @@ const SubjectSelectionSection: React.FC<SubjectSelectionSectionProps> = ({
             onClick={() => setShowSubjectModal(true)}
             disabled={availableSubjects.length === 0}
           >
-            <i className="fas fa-book me-2"></i>เลือกวิชา
+            <i className="fas fa-book me-1"></i>เลือกวิชา
           </button>
         </div>
         
@@ -92,60 +107,86 @@ const SubjectSelectionSection: React.FC<SubjectSelectionSectionProps> = ({
         )}
         
         {showSubjectModal && (
-          <div className="modal fade show"
+          <div
+            className="modal fade show"
             style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}
             tabIndex={-1}
           >
-            <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-              <div className="modal-content">
-                <div className="modal-header">
-                  <h5 className="modal-title">เลือกวิชาที่เกี่ยวข้อง</h5>
+            <div className="modal-dialog modal-lg modal-dialog-centered">
+              <div className="modal-content border-0 shadow-lg">
+                <div className="modal-header bg-primary">
+                  <h5 className="modal-title text-white">เลือกวิชาที่เกี่ยวข้อง</h5>
                   <button
                     type="button"
-                    className="btn-close"
+                    className="btn-close btn-close-white"
                     onClick={() => setShowSubjectModal(false)}
                   ></button>
                 </div>
                 <div className="modal-body">
                   <div className="mb-3">
-                    <div className="input-group">
-                      <input
-                        type="text"
-                        className="form-control"
-                        placeholder="ค้นหาด้วยรหัสวิชาหรือชื่อวิชา..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                      />
-                      <button className="btn btn-outline-secondary" type="button">
-                        <i className="fas fa-search"></i>
-                      </button>
-                    </div>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="ค้นหาวิชา..."
+                      value={searchTerm}
+                      onChange={(e) => {
+                        setSearchTerm(e.target.value);
+                        setCurrentPage(1);
+                      }}
+                    />
                   </div>
-                  
-                  <div className="list-group">
-                    {filteredSubjects.length > 0 ? (
-                      filteredSubjects.map((subject) => (
-                        <div
-                          key={subject.id}
-                          className="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
-                        >
-                          <div>
-                            <h6 className="mb-1">{subject.title}</h6>
-                            <p className="mb-0 small text-muted">
-                              {subject.subject_code && `รหัสวิชา: ${subject.subject_code}`}
-                            </p>
-                          </div>
-                          <div className="form-check">
-                            <input
-                              className="form-check-input"
-                              type="checkbox"
-                              id={`select-subject-${subject.id}`}
-                              checked={lessonData.subjects.includes(subject.id)}
-                              onChange={() => handleToggleSubject(subject.id)}
-                            />
-                          </div>
+                  <div className="subject-list">
+                    {paginatedSubjects.length > 0 ? (
+                      <>
+                        <div className="list-group list-group-flush mb-3">
+                          {paginatedSubjects.map((subject) => {
+                            const isSelected = lessonData.subjects.includes(subject.id);
+                            return (
+                              <div
+                                key={subject.id}
+                                className={`list-group-item d-flex justify-content-between align-items-center ${isSelected ? "bg-light" : ""}`}
+                              >
+                                <div>
+                                  <span>{subject.title}</span>
+                                  <p className="mb-0 small text-muted">
+                                    {subject.subject_code && `รหัสวิชา: ${subject.subject_code}`}
+                                  </p>
+                                </div>
+                                <button
+                                  type="button"
+                                  className={`btn btn-sm ${isSelected ? "btn-success disabled" : "btn-outline-primary"}`}
+                                  onClick={() => handleAddSubject(subject.id)}
+                                  disabled={isSelected}
+                                >
+                                  {isSelected ? (
+                                    <>
+                                      <i className="fas fa-check me-1"></i>เลือกแล้ว
+                                    </>
+                                  ) : (
+                                    <>เลือก</>
+                                  )}
+                                </button>
+                              </div>
+                            );
+                          })}
                         </div>
-                      ))
+                        {totalPages > 1 && (
+                          <nav aria-label="Page navigation" className="mt-4">
+                            <ul className="pagination justify-content-center">
+                              {Array.from({ length: totalPages }, (_, i) => (
+                                <li key={i + 1} className={`page-item ${currentPage === i + 1 ? "active" : ""}`}>
+                                  <button className="page-link" onClick={() => setCurrentPage(i + 1)}>
+                                    {i + 1}
+                                  </button>
+                                </li>
+                              ))}
+                            </ul>
+                          </nav>
+                        )}
+                        <div className="text-center text-muted small mt-2">
+                          แสดง {paginatedSubjects.length} จากทั้งหมด {filteredSubjects.length} วิชา
+                        </div>
+                      </>
                     ) : (
                       <div className="text-center py-4">
                         <p className="text-muted">ไม่พบวิชาที่ตรงกับคำค้นหา</p>
@@ -154,8 +195,12 @@ const SubjectSelectionSection: React.FC<SubjectSelectionSectionProps> = ({
                   </div>
                 </div>
                 <div className="modal-footer">
-                  <button type="button" className="btn btn-primary" onClick={() => setShowSubjectModal(false)}>
-                    เสร็จสิ้น
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => setShowSubjectModal(false)}
+                  >
+                    ปิด
                   </button>
                 </div>
               </div>
