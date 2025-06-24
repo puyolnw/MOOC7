@@ -60,7 +60,7 @@ const ModalSubjectSelection: React.FC<ModalSubjectSelectionProps> = ({
                   <input
                     type="text"
                     className="form-control"
-                    placeholder="ค้นหารายวิชา..."
+                    placeholder="ค้นหารายวิชา..หห."
                     value={searchTerm}
                     onChange={(e) => {
                       setSearchTerm(e.target.value);

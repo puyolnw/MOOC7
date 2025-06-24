@@ -15,7 +15,6 @@ interface Subject {
   instructor_count: number;
   lesson_count: number;
   course_count: number;
-  status: "active" | "inactive" | "draft";
   created_at: string;
 }
 
@@ -70,7 +69,6 @@ const SubjectsArea = () => {
             instructor_count: subject.instructor_count || 0,
             lesson_count: subject.lesson_count || 0,
             course_count: subject.course_count || 0,
-            status: subject.status,
             created_at: subject.created_at,
           }));
           setSubjects(formattedSubjects);
@@ -142,37 +140,6 @@ const SubjectsArea = () => {
     setShowDetailModal(true);
   };
 
-  // Status badge component
-  const StatusBadge = ({ status }: { status: Subject["status"] }) => {
-    let badgeClass = "";
-    let statusText = "";
-
-    switch (status) {
-      case "active":
-        badgeClass = "badge bg-success-subtle text-success rounded-pill px-3 py-1 small";
-        statusText = "เปิดใช้งาน";
-        break;
-      case "inactive":
-        badgeClass = "badge bg-danger-subtle text-danger rounded-pill px-3 py-1 small";
-        statusText = "ปิดใช้งาน";
-        break;
-      case "draft":
-        badgeClass = "badge bg-secondary-subtle text-secondary rounded-pill px-3 py-1 small";
-        statusText = "ฉบับร่าง";
-        break;
-    }
-
-    return <span className={badgeClass}>{statusText}</span>;
-  };
-
-  // Statistics
-  const totalSubjects = subjects.length;
-  const countByStatus = {
-    active: subjects.filter((s) => s.status === "active").length,
-    inactive: subjects.filter((s) => s.status === "inactive").length,
-    draft: subjects.filter((s) => s.status === "draft").length,
-  };
-
   return (
     <section className="dashboard__area section-pb-120">
       <div className="container">
@@ -185,36 +152,6 @@ const SubjectsArea = () => {
                 <div className="dashboard__content-header mb-4">
                   <h2 className="title text-muted">รายการวิชา</h2>
                   <p className="desc">จัดการรายวิชาทั้งหมดในระบบ</p>
-                </div>
-
-                {/* Statistics */}
-                <div className="mb-4">
-                  <div className="row g-3">
-                    <div className="col-md-3">
-                      <div className="bg-light rounded p-3 text-center">
-                        <h6 className="mb-1 text-muted">วิชาทั้งหมด</h6>
-                        <h5 className="mb-0">{totalSubjects} วิชา</h5>
-                      </div>
-                    </div>
-                    <div className="col-md-3">
-                      <div className="bg-success-subtle rounded p-3 text-center">
-                        <h6 className="mb-1 text-success">เปิดใช้งาน</h6>
-                        <h5 className="mb-0">{countByStatus.active} วิชา</h5>
-                      </div>
-                    </div>
-                    <div className="col-md-3">
-                      <div className="bg-danger-subtle rounded p-3 text-center">
-                        <h6 className="mb-1 text-danger">ปิดใช้งาน</h6>
-                        <h5 className="mb-0">{countByStatus.inactive} วิชา</h5>
-                      </div>
-                    </div>
-                    <div className="col-md-3">
-                      <div className="bg-secondary-subtle rounded p-3 text-center">
-                        <h6 className="mb-1 text-secondary">ฉบับร่าง</h6>
-                        <h5 className="mb-0">{countByStatus.draft} วิชา</h5>
-                      </div>
-                    </div>
-                  </div>
                 </div>
 
                 {/* Search and Add button */}
@@ -266,7 +203,6 @@ const SubjectsArea = () => {
                               <th>ผู้สอน</th>
                               <th>บทเรียน</th>
                               <th>หมวดหมู่</th>
-                              <th className="text-center">สถานะ</th>
                               <th style={{ width: "100px" }} className="text-center">จัดการ</th>
                             </tr>
                           </thead>
@@ -303,34 +239,31 @@ const SubjectsArea = () => {
                                     </span>
                                   </td>
                                   <td onClick={() => handleRowClick(subject)}>{subject.department_name || "ไม่ระบุ"}</td>
-                                  <td className="text-center" onClick={() => handleRowClick(subject)}>
-                                    <StatusBadge status={subject.status} />
-                                  </td>
                                   <td>
                                     <div className="d-flex justify-content-center gap-3 action-icons">
-                                        <i
-                                          className="fas fa-edit text-primary icon-action"
-                                          style={{ cursor: "pointer", lineHeight: 1 }}
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            navigate(`/admin-subjects/edit-subject/${subject.subject_id}`);
-                                          }}
-                                        ></i>
-                                        <i
-                                          className="fas fa-trash-alt text-danger icon-action"
-                                          style={{ cursor: "pointer", lineHeight: 1 }}
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleDeleteSubject(subject.subject_id);
-                                          }}
-                                        ></i>
-                                      </div>
+                                      <i
+                                        className="fas fa-edit text-primary icon-action"
+                                        style={{ cursor: "pointer", lineHeight: 1 }}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          navigate(`/admin-subjects/edit-subject/${subject.subject_id}`);
+                                        }}
+                                      ></i>
+                                      <i
+                                        className="fas fa-trash-alt text-danger icon-action"
+                                        style={{ cursor: "pointer", lineHeight: 1 }}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleDeleteSubject(subject.subject_id);
+                                        }}
+                                      ></i>
+                                    </div>
                                   </td>
                                 </tr>
                               ))
                             ) : (
                               <tr>
-                                <td colSpan={8} className="text-center py-4">
+                                <td colSpan={7} className="text-center py-4">
                                   ไม่พบข้อมูลรายวิชา
                                 </td>
                               </tr>
@@ -413,7 +346,7 @@ const SubjectsArea = () => {
           aria-labelledby="subjectDetailModalLabel"
           aria-hidden="false"
         >
-          <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+          <div className="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
             <div className="modal-content border-0 shadow-lg rounded-3 overflow-hidden">
               <div className="modal-header bg-gradient-primary border-0 py-3">
                 <h5 className="modal-title text-white fw-bold" id="subjectDetailModalLabel">
@@ -431,13 +364,13 @@ const SubjectsArea = () => {
                 />
               </div>
               <div className="modal-body p-4 bg-light">
-                <div className="card shadow-sm border-0 mb-4 bg-white rounded-3">
-                  <div className="card-body p-4">
-                    <h6 className="card-title mb-3 fw-bold text-primary border-bottom pb-2">
-                      ข้อมูลรายวิชา
-                    </h6>
-                    <div className="row g-3">
-                      <div className="col-md-6">
+                <div className="row g-4">
+                  <div className="col-lg-6">
+                    <div className="card shadow-sm border-0 bg-white rounded-3 h-100">
+                      <div className="card-body p-4">
+                        <h6 className="card-title mb-3 fw-bold text-primary border-bottom pb-2">
+                          ข้อมูลรายวิชา
+                        </h6>
                         <table className="table table-borderless">
                           <tbody>
                             <tr>
@@ -449,17 +382,7 @@ const SubjectsArea = () => {
                               <td>{selectedSubject.subject_name}</td>
                             </tr>
                             <tr>
-                              <td className="fw-medium text-muted">สถานะ:</td>
-                              <td><StatusBadge status={selectedSubject.status} /></td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      </div>
-                      <div className="col-md-6">
-                        <table className="table table-borderless">
-                          <tbody>
-                            <tr>
-                              <td className="fw-medium text-muted" style={{ width: '120px' }}>หมวดหมู่:</td>
+                              <td className="fw-medium text-muted">หมวดหมู่:</td>
                               <td>{selectedSubject.department_name || 'ไม่ระบุ'}</td>
                             </tr>
                             <tr>
@@ -475,21 +398,27 @@ const SubjectsArea = () => {
                       </div>
                     </div>
                   </div>
-                </div>
-                <div className="card shadow-sm border-0 bg-white rounded-3">
-                  <div className="card-body p-4">
-                    <h6 className="card-title mb-3 fw-bold text-primary border-bottom pb-2">
-                      รูปภาพหน้าปก
-                    </h6>
-                    <img
-                      src={getImageUrl(selectedSubject.cover_image)}
-                      alt={selectedSubject.subject_name}
-                      className="img-fluid rounded-2 shadow-sm"
-                      style={{ maxWidth: '300px', maxHeight: '200px', objectFit: 'cover' }}
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = "/assets/img/courses/default-course.jpg";
-                      }}
-                    />
+                  <div className="col-lg-6">
+                    <div className="card shadow-sm border-0 bg-white rounded-3">
+                      <div className="card-body p-4">
+                        <h6 className="card-title mb-3 fw-bold text-primary border-bottom pb-2">
+                          รูปภาพหน้าปก
+                        </h6>
+                        <div className="card-img-container">
+                          <img
+                            src={getImageUrl(selectedSubject.cover_image)}
+                            alt={selectedSubject.subject_name}
+                            className="img-fluid rounded-2 shadow-sm cursor-pointer"
+                            style={{ maxWidth: '100%', maxHeight: '200px', objectFit: 'cover' }}
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = "/assets/img/courses/default-course.jpg";
+                            }}
+                            onClick={() => setModalImage(getImageUrl(selectedSubject.cover_image))}
+                            aria-label={`ดูภาพหน้าปกของ ${selectedSubject.subject_name} ขนาดเต็ม`}
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -540,6 +469,8 @@ const SubjectsArea = () => {
           .modal-dialog {
             transition: transform 0.3s ease-out;
             transform: translateY(0);
+            max-width: 90vw;
+            width: 1200px;
           }
 
           .modal-content {
@@ -616,7 +547,7 @@ const SubjectsArea = () => {
           }
 
           .action-icon:hover {
-            color: #0056b3;
+            color: #007bff;
             transform: scale(1.2);
           }
 
@@ -624,15 +555,40 @@ const SubjectsArea = () => {
             color: #a52834;
           }
 
-          @media (max-width: 768px) {
+          .card-img-container {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 150px;
+          }
+
+          .card-img-container img {
+            transition: opacity 0.3s ease;
+            opacity: 1;
+          }
+
+          .cursor-pointer {
+            cursor: pointer;
+          }
+
+          @media (max-width: 991px) {
             .modal-dialog {
               margin: 1rem;
+              max-width: 95vw;
             }
             .modal-body {
               padding: 1.5rem !important;
             }
             .card-body {
-              padding: 1.5rem !important;
+              padding: 1rem !important;
+            }
+            .card-img-container {
+              min-height: 100px;
+            }
+            .card-img-container img {
+              max-width: 100%;
+              max-height: 150px;
             }
           }
         `}
