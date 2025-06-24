@@ -24,8 +24,6 @@ const AddSubjectsArea: React.FC<AddSubjectsAreaProps> = ({ isEmbedded = false, o
     // แสดงข้อความสำเร็จ
     alert("บันทึกข้อมูลสำเร็จ");
     
-    // กลับไปยังหน้ารายการรายวิชา
-    navigate("/admin-subjects");
   };
   
   // จัดการเมื่อมีการยกเลิก

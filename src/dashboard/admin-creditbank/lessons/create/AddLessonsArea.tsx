@@ -23,9 +23,7 @@ const AddLessonsArea: React.FC<AddLessonsAreaProps> = ({ isEmbedded = false, onS
     
     // แสดงข้อความสำเร็จ
     alert("บันทึกข้อมูลสำเร็จ");
-    
-    // กลับไปยังหน้ารายการบทเรียน
-    navigate("/admin-lessons");
+
   };
   
   // จัดการเมื่อมีการยกเลิก

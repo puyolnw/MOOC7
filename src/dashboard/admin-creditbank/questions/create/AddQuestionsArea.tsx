@@ -21,9 +21,7 @@ const AddQuestionsArea: React.FC<AddQuestionsAreaProps> = ({ isEmbedded = false 
     
     // แสดงข้อความสำเร็จ
     alert("บันทึกข้อมูลสำเร็จ");
-    
-    // กลับไปยังหน้ารายการคำถาม
-    navigate("/admin-questions");
+
   };
   
   // จัดการเมื่อมีการยกเลิก

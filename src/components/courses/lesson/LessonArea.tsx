@@ -575,6 +575,7 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
                                 onViewChange={setCurrentView}
                                 lessonData={lessonData}
                                 onSelectLesson={handleSelectLesson}
+                                 subjectId={currentSubjectId || undefined} // เพิ่มบรรทัดนี้
                             />
                             <div className="lesson__progress">
                                 <h4>ความคืบหน้า</h4>

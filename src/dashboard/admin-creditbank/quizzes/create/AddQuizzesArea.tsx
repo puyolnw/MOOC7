@@ -24,8 +24,6 @@ const AddQuizzesArea: React.FC<AddQuizzesAreaProps> = ({ isEmbedded = false, onS
     // แสดงข้อความสำเร็จ
     alert("บันทึกข้อมูลสำเร็จ");
     
-    // กลับไปยังหน้ารายการแบบทดสอบ
-    navigate("/admin-quizzes");
   };
   
   // จัดการเมื่อมีการยกเลิก
