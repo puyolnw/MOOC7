@@ -1,5 +1,5 @@
 import React from "react";
-import AddQuestions from "./AddQuizzes";
+import AddQuestions from "../AddQuestions";
 
 interface Question {
   id: string;
@@ -271,4 +271,3 @@ const QuestionsSection: React.FC<QuestionsSectionProps> = ({
 );
 
 export default QuestionsSection;
-
