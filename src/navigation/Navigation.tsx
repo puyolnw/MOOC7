@@ -199,7 +199,7 @@ const AppNavigation = () => {
         <Route path="/student-review" element={<StudentReview />} />
         <Route path="/student-attempts" element={<StudentAttempt />} />
         <Route path="/student-history" element={<StudentHistory />} />
-        <Route path="/student-setting" element={<StudentSetting />} />
+        <Route path="/student-setting/:id" element={<StudentSetting />} />
         <Route path="/student-certificate" element={<StudentCertificate />} />
        
         </Route>

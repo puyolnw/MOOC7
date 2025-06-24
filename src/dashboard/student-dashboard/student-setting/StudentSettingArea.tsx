@@ -1,6 +1,6 @@
 import DashboardBannerTwo from "../../dashboard-common/DashboardBannerTwo"
 import DashboardSidebarTwo from "../../dashboard-common/DashboardSidebarTwo"
-import InstructorSettingContent from "../../instructor-dashboard/instructor-setting/InstructorSettingContent"
+import StudentSettingContent from "./StudentSettingContent"
 
 const StudentSettingArea = () => {
    return (
@@ -10,7 +10,7 @@ const StudentSettingArea = () => {
             <div className="dashboard__inner-wrap">
                <div className="row">
                   <DashboardSidebarTwo />
-                  <InstructorSettingContent style={true} />
+                  <StudentSettingContent/>
                </div>
             </div>
          </div>
