@@ -24,7 +24,7 @@ const DashboardHomeArea = () => {
                      </div>
                      <div className="dashboard__content-wrap">
                         <div className="dashboard__content-title">
-                           <h4 className="title">My Courses</h4>
+                           <h4 className="title">หลักสูตรของฉัน</h4>
                         </div>
                         <div className="row">
                            <div className="col-12">
@@ -34,7 +34,7 @@ const DashboardHomeArea = () => {
                            </div>
                         </div>
                         <div className="load-more-btn text-center mt-20">
-                           <Link to="#" className="link-btn">Browse All Course <BtnArrow /></Link>
+                           <Link to="#" className="link-btn">หลักสูตรทั้งหมด <BtnArrow /></Link>
                         </div>
                      </div>
                   </div>

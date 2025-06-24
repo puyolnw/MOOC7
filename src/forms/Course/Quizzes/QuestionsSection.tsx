@@ -1,5 +1,5 @@
 import React from "react";
-import AddQuestions from "./AddQuizzes";
+import AddQuestions from "../AddQuestions";
 
 interface Question {
   id: string;
@@ -137,15 +137,18 @@ const QuestionsSection: React.FC<QuestionsSectionProps> = ({
         tabIndex={-1}
       >
         <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h5 className="modal-title">เพิ่มคำถามใหม่</h5>
+          <div className="modal-content border-0 shadow-lg">
+            <div className="modal-header bg-primary">
+              <h5 className="modal-title text-white">
+                <i className="fas fa-plus-circle me-2"></i>
+                เพิ่มคำถามใหม่
+              </h5>
               <button
                 type="button"
-                className="btn-close"
+                className="btn-close btn-close-white"
                 onClick={() => setShowAddQuestionForm(false)}
               ></button>
-                       </div>
+            </div>
             <div className="modal-body">
               {/* ใช้ฟอร์มเพิ่มคำถามที่มีอยู่แล้ว */}
               <AddQuestions onSubmit={handleAddNewQuestion} onCancel={() => setShowAddQuestionForm(false)} />
@@ -162,12 +165,15 @@ const QuestionsSection: React.FC<QuestionsSectionProps> = ({
         tabIndex={-1}
       >
         <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h5 className="modal-title">เลือกคำถามที่มีอยู่แล้ว</h5>
+          <div className="modal-content border-0 shadow-lg">
+            <div className="modal-header bg-primary">
+              <h5 className="modal-title text-white">
+                <i className="fas fa-list me-2"></i>
+                เลือกคำถามที่มีอยู่แล้ว
+              </h5>
               <button
                 type="button"
-                className="btn-close"
+                className="btn-close btn-close-white"
                 onClick={() => {
                   setShowExistingQuestions(false);
                   setSelectedExistingQuestions([]);
@@ -246,7 +252,7 @@ const QuestionsSection: React.FC<QuestionsSectionProps> = ({
                   setSelectedExistingQuestions([]);
                 }}
               >
-                ยกเลิก
+                ปิด
               </button>
               <button
                 type="button"
@@ -265,4 +271,3 @@ const QuestionsSection: React.FC<QuestionsSectionProps> = ({
 );
 
 export default QuestionsSection;
-
