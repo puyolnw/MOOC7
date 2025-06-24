@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+
 
 // Interface for subject data
 interface Subject {
@@ -66,9 +66,13 @@ const CourseContentSection: React.FC<CourseContentSectionProps> = ({
             >
               <i className="fas fa-plus-circle me-2"></i>เพิ่มรายวิชาที่มีอยู่
             </button>
-            <Link to="/admin-subjects/create-new" className="btn btn-outline-success">
+            <button
+              type="button"
+              className="btn btn-outline-primary"
+              onClick={() => window.location.href = '/admin-subjects/create-new'}
+            >
               <i className="fas fa-file-medical me-2"></i>สร้างรายวิชาใหม่
-            </Link>
+            </button>
           </div>
         </div>
 

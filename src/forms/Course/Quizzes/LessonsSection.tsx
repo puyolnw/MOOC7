@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useMemo } from "react";
 
 interface Subject {
   subject_id: string;
@@ -36,7 +36,17 @@ const LessonsSection: React.FC<LessonsSectionProps> = ({
   filteredLessons,
   handleToggleLesson,
 }) => {
-  // ฟังก์ชันช่วยแปลง subject เป็น string สำหรับแสดงผล
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const itemsPerPage = 10;
+
+  // Pagination for lessons
+  const totalPages = Math.ceil(filteredLessons.length / itemsPerPage);
+  const paginatedLessons = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredLessons.slice(start, start + itemsPerPage);
+  }, [filteredLessons, currentPage]);
+
+  // Function to render subject as string
   const renderSubject = (subject: string | Subject | Subject[]): string => {
     if (Array.isArray(subject)) {
       return subject.map((s) => s.subject_name).join(", ") || "ไม่มีวิชา";
@@ -123,70 +133,109 @@ const LessonsSection: React.FC<LessonsSectionProps> = ({
           tabIndex={-1}
         >
           <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">เลือกบทเรียน</h5>
+            <div className="modal-content border-0 shadow-lg">
+              <div className="modal-header bg-primary">
+                <h5 className="modal-title text-white">เลือกบทเรียน</h5>
                 <button
                   type="button"
-                  className="btn-close"
-                  onClick={() => setShowLessonModal(false)}
+                  className="btn-close btn-close-white"
+                  onClick={() => {
+                    setShowLessonModal(false);
+                    setCurrentPage(1);
+                  }}
                 ></button>
               </div>
               <div className="modal-body">
                 <div className="mb-3">
-                  <div className="input-group">
-                    <input
-                      type="text"
-                      className="form-control"
-                      placeholder="ค้นหาบทเรียน..."
-                      value={lessonSearchTerm}
-                      onChange={(e) => setLessonSearchTerm(e.target.value)}
-                    />
-                    <button className="btn btn-outline-secondary" type="button">
-                      <i className="fas fa-search"></i>
-                    </button>
-                  </div>
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="ค้นหาบทเรียน..."
+                    value={lessonSearchTerm}
+                    onChange={(e) => {
+                      setLessonSearchTerm(e.target.value);
+                      setCurrentPage(1); // Reset page when searching
+                    }}
+                  />
                 </div>
-
-                <div className="list-group">
-                  {filteredLessons.length > 0 ? (
-                    filteredLessons.map((lesson) => (
-                      <div
-                        key={lesson.id}
-                        className="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
-                      >
-                        <div>
-                          <h6 className="mb-1">{lesson.title}</h6>
-                          <p className="mb-0 small text-muted">
-                            วิชา: {renderSubject(lesson.subject)} | ระยะเวลา:{" "}
-                            {lesson.duration || "ไม่ระบุ"}
-                          </p>
-                        </div>
-                        <div className="form-check">
-                          <input
-                            className="form-check-input"
-                            type="checkbox"
-                            id={`select-lesson-${lesson.id}`}
-                            checked={quizData.lessons.includes(lesson.id)}
-                            onChange={() => handleToggleLesson(lesson.id)}
-                          />
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-center py-4">
-                      <p className="text-muted">ไม่พบบทเรียนที่ตรงกับคำค้นหา</p>
+                {paginatedLessons.length > 0 ? (
+                  <>
+                    <div className="list-group list-group-flush mb-3">
+                      {paginatedLessons.map((lesson) => {
+                        const isSelected = quizData.lessons.includes(lesson.id);
+                        return (
+                          <div
+                            key={lesson.id}
+                            className={`list-group-item d-flex justify-content-between align-items-center ${
+                              isSelected ? "bg-light" : ""
+                            }`}
+                          >
+                            <div className="d-flex flex-column">
+                              <span className="h6 mb-1">{lesson.title}</span>
+                              <p className="mb-0 small text-muted">
+                                วิชา: {renderSubject(lesson.subject)} | ระยะเวลา:{" "}
+                                {lesson.duration || "ไม่ระบุ"}
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              className={`btn btn-sm ${
+                                isSelected ? "btn-success disabled" : "btn-outline-primary"
+                              }`}
+                              onClick={() => handleToggleLesson(lesson.id)}
+                              disabled={isSelected}
+                            >
+                              {isSelected ? (
+                                <>
+                                  <i className="fas fa-check me-1"></i>เลือกแล้ว
+                                </>
+                              ) : (
+                                <>เลือก</>
+                              )}
+                            </button>
+                          </div>
+                        );
+                      })}
                     </div>
-                  )}
-                </div>
+                    {totalPages > 1 && (
+                      <nav aria-label="Page navigation" className="mt-4">
+                        <ul className="pagination justify-content-center">
+                          {Array.from({ length: totalPages }, (_, i) => (
+                            <li
+                              key={i + 1}
+                              className={`page-item ${currentPage === i + 1 ? "active" : ""}`}
+                            >
+                              <button
+                                className="page-link"
+                                onClick={() => setCurrentPage(i + 1)}
+                              >
+                                {i + 1}
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      </nav>
+                    )}
+                    <div className="text-center text-muted small mt-2">
+                      แสดง {paginatedLessons.length} จากทั้งหมด {filteredLessons.length} บทเรียน
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-center py-4">
+                    <p className="text-muted">ไม่พบบทเรียนที่ตรงกับคำค้นหา</p>
+                  </div>
+                )}
               </div>
               <div className="modal-footer">
                 <button
                   type="button"
-                  className="btn btn-primary"
-                  onClick={() => setShowLessonModal(false)}
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    setShowLessonModal(false);
+                    setCurrentPage(1);
+                  }}
                 >
-                  เสร็จสิ้น
+                  ปิด
                 </button>
               </div>
             </div>

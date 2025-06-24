@@ -41,17 +41,14 @@ const ModalSubjectSelection: React.FC<ModalSubjectSelectionProps> = ({
   return (
     <>
       {showSubjectModal && (
-        <div
-          className="modal fade show"
-          style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}
-        >
-          <div className="modal-dialog modal-lg modal-dialog-scrollable">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">เลือกรายวิชา</h5>
-                <button
+        <div className="modal fade show" style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div className="modal-content border-0 shadow-lg">
+              <div className="modal-header bg-primary">
+  <h5 className="modal-title" style={{ color: 'white' }}>เลือกรายวิชา</h5>
+  <button
                   type="button"
-                  className="btn-close"
+                  className="btn-close btn-close-white"
                   onClick={() => setShowSubjectModal(false)}
                 ></button>
               </div>
@@ -118,7 +115,12 @@ const ModalSubjectSelection: React.FC<ModalSubjectSelectionProps> = ({
                                   </p>
                                   <p
                                     className="card-text small mb-2"
-                                    style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
+                                    style={{
+                                      display: '-webkit-box',
+                                      WebkitLineClamp: 2,
+                                      WebkitBoxOrient: 'vertical',
+                                      overflow: 'hidden'
+                                    }}
                                     title={subject.description}
                                   >
                                     {subject.description.length > 60
@@ -140,11 +142,11 @@ const ModalSubjectSelection: React.FC<ModalSubjectSelectionProps> = ({
                                   >
                                     {courseData.subjects.includes(subject.id) ? (
                                       <>
-                                        <i className="fas fa-check me-1"></i>เพิ่มแล้ว
+                                        <i className="fas fa-check me-1"></i> เพิ่มแล้ว
                                       </>
                                     ) : (
                                       <>
-                                        <i className="fas fa-plus me-1"></i>เพิ่มรายวิชา
+                                        <i className="fas fa-plus me-1"></i> เพิ่มรายวิชา
                                       </>
                                     )}
                                   </button>
