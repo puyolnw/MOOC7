@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import Curriculum from "./Curriculum";
 import Overview from "./Overview";
 import Instructors from "./Instructors";
-import Reviews from "./Reviews";
+import Reviews from "./CourseAttachments";
 import Sidebar from "./Sidebar";
 
 interface CourseDetailsAreaProps {
@@ -14,11 +14,15 @@ interface CourseDetailsAreaProps {
 const CourseDetailsArea = ({ single_course, onEnroll }: CourseDetailsAreaProps) => {
   const [activeTab, setActiveTab] = useState(0);
 
+  // Debug logging
+  console.log('CourseDetailsArea: single_course:', single_course);
+  console.log('CourseDetailsArea: single_course.id:', single_course?.id);
+
   const handleTabClick = (index: number) => {
     setActiveTab(index);
   };
 
-  const tab_titles = ["ภาพรวม", "รายวิชา", "อาจารย์ผู้สอน", "รีวิว"];
+  const tab_titles = ["ภาพรวม", "รายวิชา", "อาจารย์ผู้สอน", "ไฟล์ประกอบหลักสูตร"];
 
   return (
     <section className="courses__details-area section-py-120">
@@ -65,14 +69,14 @@ const CourseDetailsArea = ({ single_course, onEnroll }: CourseDetailsAreaProps) 
                 <div className={`tab-pane fade ${activeTab === 1 ? 'show active' : ''}`} id="curriculum-tab-pane" role="tabpanel" aria-labelledby="curriculum-tab">
                   <Curriculum
                     subjects={single_course.subjects}
-                    courseId={single_course.id} // Add courseId prop
+                    courseId={single_course.id}
                   />
                 </div>
                 <div className={`tab-pane fade ${activeTab === 2 ? 'show active' : ''}`} id="instructors-tab-pane" role="tabpanel" aria-labelledby="instructors-tab">
                   <Instructors instructors={single_course.instructors} />
                 </div>
                 <div className={`tab-pane fade ${activeTab === 3 ? 'show active' : ''}`} id="reviews-tab-pane" role="tabpanel" aria-labelledby="reviews-tab">
-                  <Reviews />
+                  <Reviews courseId={single_course.id} />
                 </div>
               </div>
             </div>
