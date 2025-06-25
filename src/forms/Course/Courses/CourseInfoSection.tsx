@@ -5,20 +5,21 @@ import axios from 'axios';
 interface Department {
   department_id: string;
   department_name: string;
+  faculty: string;
 }
 
 interface CourseInfoSectionProps {
   courseData: {
     title: string;
-    category: string;
     department_id: string;
     description: string;
+    study_result: string;
   };
   errors: {
     title: string;
-    category: string; 
     department_id: string;
     description: string;
+    study_result: string;
   };
   handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
 }
@@ -26,12 +27,11 @@ interface CourseInfoSectionProps {
 const apiURL = import.meta.env.VITE_API_URL;
 
 const CourseInfoSection: React.FC<CourseInfoSectionProps> = ({ courseData, errors, handleInputChange }) => {
-  // State for departments
   const [departments, setDepartments] = useState<Department[]>([]);
   const [isLoadingDepartments, setIsLoadingDepartments] = useState(false);
   const [departmentError, setDepartmentError] = useState<string | null>(null);
+  const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
 
-  // Fetch departments from API
   useEffect(() => {
     const fetchDepartments = async () => {
       try {
@@ -44,7 +44,7 @@ const CourseInfoSection: React.FC<CourseInfoSectionProps> = ({ courseData, error
           return;
         }
 
-        const response = await axios.get(`${apiURL}/api/courses/subjects/departments/list`, {
+        const response = await axios.get(`${apiURL}/api/auth/departments`, {
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
@@ -52,14 +52,22 @@ const CourseInfoSection: React.FC<CourseInfoSectionProps> = ({ courseData, error
         });
 
         if (response.data.success) {
-          setDepartments(response.data.departments);
-          console.log("Departments fetched:", response.data.departments); // Debug
+          const deptList = response.data.departments.map((d: Department) => ({
+            department_id: d.department_id.toString(), // แปลงเป็น string ให้ชัดเจน
+            department_name: d.department_name,
+            faculty: d.faculty
+          }));
+          setDepartments(deptList);
+          // ตั้งค่าเริ่มต้นจาก courseData.department_id
+          const initialDept = deptList.find((d: Department) => d.department_id === courseData.department_id);
+          setSelectedDepartment(initialDept || null);
+          console.log("Departments:", deptList); // ตรวจสอบข้อมูลทั้งหมด
         } else {
-          setDepartmentError(response.data.message || "ไม่สามารถดึงข้อมูลคณะได้");
+          setDepartmentError(response.data.message || "ไม่สามารถดึงข้อมูลสาขาวิชาได้");
         }
       } catch (error: any) {
         console.error("Error fetching departments:", error);
-        setDepartmentError(error.response?.data?.message || "เกิดข้อผิดพลาดในการดึงข้อมูลคณะ");
+        setDepartmentError(error.response?.data?.message || "เกิดข้อผิดพลาดในการดึงข้อมูลสาขาวิชา");
       } finally {
         setIsLoadingDepartments(false);
       }
@@ -68,9 +76,12 @@ const CourseInfoSection: React.FC<CourseInfoSectionProps> = ({ courseData, error
     fetchDepartments();
   }, []);
 
-  // Debug ค่าที่เลือก
-  console.log("Selected Category:", courseData.category);
-  console.log("Selected Department ID:", courseData.department_id);
+  // อัปเดต selectedDepartment เมื่อ courseData.department_id เปลี่ยน
+  useEffect(() => {
+    const dept = departments.find(d => d.department_id === courseData.department_id);
+    setSelectedDepartment(dept || null);
+    console.log("Selected Department ID:", courseData.department_id, "Faculty:", dept?.faculty, "Departments:", departments); // Debug เพิ่มเติม
+  }, [courseData.department_id, departments]);
 
   return (
     <div className="card shadow-sm border-0 mb-4">
@@ -101,47 +112,26 @@ const CourseInfoSection: React.FC<CourseInfoSectionProps> = ({ courseData, error
         </div>
 
         <div className="mb-3">
-          <label htmlFor="category" className="form-label">
-            หมวดหมู่หลักสูตร <span className="text-danger">*</span>
-          </label>
-          <select
-            className={`form-control ${errors.category ? "is-invalid" : ""}`}
-            id="category"
-            name="category"
-            value={courseData.category}
-            onChange={handleInputChange}
-          >
-            <option value="">เลือกหมวดหมู่</option>
-            <option value="technology">เทคโนโลยี</option>
-            <option value="business">ธุรกิจ</option>
-            <option value="science">วิทยาศาสตร์</option>
-            <option value="arts">ศิลปะ</option>
-            <option value="others">อื่นๆ</option>
-          </select>
-          {errors.category && <div className="invalid-feedback">{errors.category}</div>}
-        </div>
-
-        <div className="mb-3">
           <label htmlFor="department_id" className="form-label">
-            คณะ/สาขาวิชา <span className="text-danger">*</span>
+            สาขาวิชา <span className="text-danger">*</span>
           </label>
           {isLoadingDepartments ? (
             <div className="text-center">
               <div className="spinner-border spinner-border-sm text-primary" role="status">
                 <span className="visually-hidden">Loading...</span>
               </div>
-              <span className="ms-2">กำลังโหลดข้อมูลคณะ...</span>
+              <span className="ms-2">กำลังโหลดข้อมูลสาขาวิชา...</span>
             </div>
           ) : (
             <select
               className={`form-control ${errors.department_id ? "is-invalid" : ""}`}
               id="department_id"
               name="department_id"
-              value={courseData.department_id}
+              value={courseData.department_id || ""}
               onChange={handleInputChange}
               disabled={isLoadingDepartments || !!departmentError}
             >
-              <option value="">เลือกคณะ/สาขาวิชา</option>
+              <option value="">เลือกสาขาวิชา</option>
               {departments.map((dept) => (
                 <option key={dept.department_id} value={dept.department_id}>
                   {dept.department_name}
@@ -150,6 +140,17 @@ const CourseInfoSection: React.FC<CourseInfoSectionProps> = ({ courseData, error
             </select>
           )}
           {errors.department_id && <div className="invalid-feedback">{errors.department_id}</div>}
+        </div>
+
+        <div className="mb-3">
+          <label className="form-label">คณะ</label>
+          <input
+            type="text"
+            className="form-control"
+            value={selectedDepartment ? selectedDepartment.faculty : ""}
+            readOnly
+            disabled
+          />
         </div>
 
         <div className="mb-3">
@@ -166,6 +167,21 @@ const CourseInfoSection: React.FC<CourseInfoSectionProps> = ({ courseData, error
             placeholder="เช่น หลักสูตรนี้สอนพื้นฐานการเขียนโปรแกรมด้วย Python เหมาะสำหรับผู้เริ่มต้น"
           ></textarea>
           {errors.description && <div className="invalid-feedback">{errors.description}</div>}
+        </div>
+
+        <div className="mb-3">
+          <label htmlFor="study_result" className="form-label">
+            ผลลัพธ์การศึกษา
+          </label>
+          <textarea
+            className="form-control"
+            id="study_result"
+            name="study_result"
+            value={courseData.study_result}
+            onChange={handleInputChange}
+            rows={3}
+            placeholder="ระบุผลลัพธ์การเรียนรู้ที่คาดหวัง เช่น ผู้เรียนสามารถเขียนโปรแกรมเบื้องต้นได้ ฯลฯ"
+          ></textarea>
         </div>
       </div>
     </div>

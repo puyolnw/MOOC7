@@ -5,11 +5,15 @@ interface CourseSettingsSectionProps {
     coverImage: File | null;
     coverImagePreview: string;
     video_url: string; // เปลี่ยนจาก videoUrl เป็น video_url เพื่อให้สอดคล้องกับ backend
+    study_result: string; // เพิ่ม study_result
+    attachments: File[]; // เพิ่ม attachments
   };
   errors: { videoUrl: string };
-  handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+  handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
   handleCoverImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleRemoveCoverImage: () => void;
+  handleAttachmentUpload: (e: React.ChangeEvent<HTMLInputElement>) => void; // เพิ่ม
+  handleRemoveAttachment: (index: number) => void; // เพิ่ม
   fileInputRef: RefObject<HTMLInputElement>; // เพิ่ม fileInputRef
 }
 
@@ -19,12 +23,16 @@ const CourseSettingsSection: React.FC<CourseSettingsSectionProps> = ({
   handleInputChange,
   handleCoverImageUpload,
   handleRemoveCoverImage,
+  handleAttachmentUpload,
+  handleRemoveAttachment,
   fileInputRef,
 }) => {
   // Debug ข้อมูล coverImage, coverImagePreview, และ video_url
   console.log("Cover Image:", courseData.coverImage);
   console.log("Cover Image Preview:", courseData.coverImagePreview);
   console.log("Video URL:", courseData.video_url);
+  console.log("Study Result:", courseData.study_result);
+  console.log("Attachments:", courseData.attachments);
 
   // ฟังก์ชันสำหรับดึง YouTube video ID จาก URL
   const extractYouTubeId = (url: string): string | null => {
@@ -144,6 +152,58 @@ const CourseSettingsSection: React.FC<CourseSettingsSectionProps> = ({
             ไม่สามารถแสดงตัวอย่างวิดีโอได้ กรุณาตรวจสอบ URL
           </div>
         ) : null}
+
+        <div className="mb-4">
+          <label className="form-label">ไฟล์แนบ</label>
+          <p className="text-muted small mb-2">อัปโหลดไฟล์แนบสำหรับหลักสูตร (ไม่เกิน 10MB ต่อไฟล์)</p>
+
+          <div className="d-flex gap-2 mb-3">
+            <input
+              type="file"
+              className="form-control"
+              id="attachments"
+              onChange={handleAttachmentUpload}
+              multiple
+              accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar"
+              style={{ display: "none" }}
+            />
+            <button
+              type="button"
+              className="btn btn-outline-primary"
+              onClick={() => document.getElementById('attachments')?.click()}
+            >
+              <i className="fas fa-paperclip me-2"></i>เพิ่มไฟล์แนบ
+            </button>
+          </div>
+
+          {courseData.attachments.length > 0 && (
+            <div className="attachments-list">
+              <h6>ไฟล์แนบที่เลือก:</h6>
+              <div className="list-group">
+                {courseData.attachments.map((file, index) => (
+                  <div key={index} className="list-group-item d-flex justify-content-between align-items-center">
+                    <div className="d-flex align-items-center">
+                      <i className="fas fa-file me-2 text-primary"></i>
+                      <span>{file.name}</span>
+                      <small className="text-muted ms-2">({(file.size / 1024 / 1024).toFixed(2)} MB)</small>
+                    </div>
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-danger"
+                      onClick={() => handleRemoveAttachment(index)}
+                    >
+                      <i className="fas fa-times"></i>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <small className="text-muted">
+            รองรับไฟล์ PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, TXT, ZIP, RAR
+          </small>
+        </div>
       </div>
     </div>
   );

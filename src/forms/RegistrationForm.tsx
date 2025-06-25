@@ -16,9 +16,9 @@ interface FormData {
    email: string;
    password: string;
    cpassword: string;
-   student_code: string;
-   department_id?: string | null;
-   education_level?: string | null;
+   student_code: number;
+   department_id: string;
+   education_level: string;
    academic_year: number;
 }
 
@@ -47,9 +47,9 @@ const schema = yup
          .string()
          .required('กรุณายืนยันรหัสผ่าน')
          .oneOf([yup.ref('password')], 'รหัสผ่านไม่ตรงกัน'),
-      student_code: yup.string().required('กรุณากรอกรหัสนักศึกษา'),
-      department_id: yup.string().optional().nullable(),
-      education_level: yup.string().optional().nullable(),
+      student_code: yup.number().required('กรุณากรอกรหัสนักศึกษา'),
+      department_id: yup.string().required('กรุณาเลือกภาควิชา'),
+      education_level: yup.string().required('กรุณาเลือกระดับการศึกษา'),
       academic_year: yup
          .number()
          .required('กรุณาเลือกชั้นปีการศึกษา')
@@ -95,8 +95,8 @@ const RegistrationForm = () => {
             password: data.password,
             role_id: 1,
             student_code: data.student_code,
-            department_id: data.department_id || null,
-            education_level: data.education_level || null,
+            department_id: data.department_id,
+            education_level: data.education_level,
             academic_year: data.academic_year,
          };
 
@@ -248,7 +248,7 @@ const RegistrationForm = () => {
          </div>
 
          <div className="form-grp">
-            <label htmlFor="department-id">ภาควิชา (ไม่บังคับ)</label>
+            <label htmlFor="department-id">ภาควิชา <span className="text-danger">*</span></label>
             <select
                {...register('department_id')}
                id="department-id"
@@ -265,15 +265,13 @@ const RegistrationForm = () => {
          </div>
 
          <div className="form-grp">
-            <label htmlFor="education-level">ระดับการศึกษา (ไม่บังคับ)</label>
+            <label htmlFor="education-level">ระดับการศึกษา <span className="text-danger">*</span></label>
             <select
                {...register('education_level')}
                id="education-level"
                className="input-like-select"
             >
                <option value="">เลือกระดับการศึกษา</option>
-               <option value="มัธยมต้น">มัธยมต้น</option>
-               <option value="มัธยมปลาย">มัธยมปลาย</option>
                <option value="ปริญญาตรี">ปริญญาตรี</option>
                <option value="ปริญญาโท">ปริญญาโท</option>
                <option value="ปริญญาเอก">ปริญญาเอก</option>

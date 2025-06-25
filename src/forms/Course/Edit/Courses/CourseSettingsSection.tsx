@@ -5,13 +5,17 @@ interface CourseSettingsSectionProps {
     coverImage: File | null;
     coverImagePreview: string;
     video_url: string;
-    status: "active" | "inactive" | "draft";
+    study_result: string;
+    attachments: File[];
   };
-  errors: { video_url: string };
+  errors: { videoUrl: string };
   handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
   handleCoverImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleRemoveCoverImage: () => void;
+  handleAttachmentUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  handleRemoveAttachment: (index: number) => void;
   fileInputRef: RefObject<HTMLInputElement>;
+  children?: React.ReactNode;
 }
 
 const CourseSettingsSection: React.FC<CourseSettingsSectionProps> = ({
@@ -20,7 +24,10 @@ const CourseSettingsSection: React.FC<CourseSettingsSectionProps> = ({
   handleInputChange,
   handleCoverImageUpload,
   handleRemoveCoverImage,
+  handleAttachmentUpload,
+  handleRemoveAttachment,
   fileInputRef,
+  children,
 }) => {
   const extractYouTubeId = (url: string): string | null => {
     const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
@@ -62,10 +69,7 @@ const CourseSettingsSection: React.FC<CourseSettingsSectionProps> = ({
                 className="form-control"
                 id="coverImage"
                 ref={fileInputRef}
-                onChange={(e) => {
-                  handleCoverImageUpload(e);
-                  console.log("File selected:", e.target.files?.[0]);
-                }}
+                onChange={handleCoverImageUpload}
                 accept="image/jpeg,image/png,image/gif,image/webp"
                 style={{ display: "none" }}
               />
@@ -84,10 +88,7 @@ const CourseSettingsSection: React.FC<CourseSettingsSectionProps> = ({
                   <button
                     type="button"
                     className="btn btn-outline-danger"
-                    onClick={() => {
-                      handleRemoveCoverImage();
-                      console.log("Cover image removed");
-                    }}
+                    onClick={handleRemoveCoverImage}
                   >
                     <i className="fas fa-trash-alt me-2"></i>ลบภาพ
                   </button>
@@ -105,23 +106,20 @@ const CourseSettingsSection: React.FC<CourseSettingsSectionProps> = ({
           </label>
           <input
             type="text"
-            className={`form-control ${errors.video_url ? "is-invalid" : ""}`}
+            className={`form-control ${errors.videoUrl ? "is-invalid" : ""}`}
             id="video_url"
             name="video_url"
             value={courseData.video_url}
-            onChange={(e) => {
-              handleInputChange(e);
-              console.log("Video URL updated:", e.target.value);
-            }}
+            onChange={handleInputChange}
             placeholder="เช่น https://www.youtube.com/watch?v=abcdefghijk"
           />
-          {errors.video_url && <div className="invalid-feedback">{errors.video_url}</div>}
+          {errors.videoUrl && <div className="invalid-feedback">{errors.videoUrl}</div>}
           <small className="form-text text-muted">
             ตัวอย่างลิงก์ที่ถูกต้อง: https://www.youtube.com/watch?v=abcdefghijk หรือ https://youtu.be/abcdefghijk
           </small>
         </div>
 
-        {courseData.video_url && !errors.video_url && videoId ? (
+        {courseData.video_url && !errors.videoUrl && videoId ? (
           <div className="video-preview mb-4">
             <h6>ตัวอย่างวิดีโอ:</h6>
             <div className="ratio ratio-16x9">
@@ -133,28 +131,64 @@ const CourseSettingsSection: React.FC<CourseSettingsSectionProps> = ({
               ></iframe>
             </div>
           </div>
-        ) : courseData.video_url && !errors.video_url ? (
+        ) : courseData.video_url && !errors.videoUrl ? (
           <div className="alert alert-warning mb-4">
             <i className="fas fa-exclamation-circle me-2"></i>
             ไม่สามารถแสดงตัวอย่างวิดีโอได้ กรุณาตรวจสอบ URL
           </div>
         ) : null}
+        <div className="mb-4">
+          <label className="form-label">ไฟล์แนบ</label>
+          <p className="text-muted small mb-2">อัปโหลดไฟล์แนบสำหรับหลักสูตร (ไม่เกิน 10MB ต่อไฟล์)</p>
 
-        <div className="mb-3">
-          <label htmlFor="status" className="form-label">
-            สถานะ
-          </label>
-          <select
-            className="form-control"
-            id="status"
-            name="status"
-            value={courseData.status}
-            onChange={(e) => handleInputChange(e as React.ChangeEvent<HTMLSelectElement>)}
-          >
-            <option value="active">เปิดใช้งาน</option>
-            <option value="inactive">ปิดใช้งาน</option>
-            <option value="draft">ฉบับร่าง</option>
-          </select>
+          {children}
+
+          <div className="d-flex gap-2 mb-3">
+            <input
+              type="file"
+              className="form-control"
+              id="attachments"
+              onChange={handleAttachmentUpload}
+              multiple
+              accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar"
+              style={{ display: "none" }}
+            />
+            <button
+              type="button"
+              className="btn btn-outline-primary"
+              onClick={() => document.getElementById('attachments')?.click()}
+            >
+              <i className="fas fa-paperclip me-2"></i>เพิ่มไฟล์แนบ
+            </button>
+          </div>
+
+          {courseData.attachments.length > 0 && (
+            <div className="attachments-list">
+              <h6>ไฟล์แนบที่เลือก:</h6>
+              <div className="list-group">
+                {courseData.attachments.map((file, index) => (
+                  <div key={index} className="list-group-item d-flex justify-content-between align-items-center">
+                    <div className="d-flex align-items-center">
+                      <i className="fas fa-file me-2 text-primary"></i>
+                      <span>{file.name}</span>
+                      <small className="text-muted ms-2">({(file.size / 1024 / 1024).toFixed(2)} MB)</small>
+                    </div>
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-danger"
+                      onClick={() => handleRemoveAttachment(index)}
+                    >
+                      <i className="fas fa-times"></i>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <small className="text-muted">
+            รองรับไฟล์ PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, TXT, ZIP, RAR
+          </small>
         </div>
       </div>
     </div>

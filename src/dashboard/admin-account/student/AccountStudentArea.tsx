@@ -217,7 +217,7 @@ const AccountStudentArea: React.FC = () => {
     setCurrentPage(pageNumber);
   };
 
-  const handleDeleteStudent = async (userId: number) => {
+  const handleDeleteStudent = async (studentId: number) => {
     if (window.confirm("คุณต้องการลบนักศึกษาคนนี้ใช่หรือไม่?")) {
       try {
         const token = localStorage.getItem("token");
@@ -226,15 +226,15 @@ const AccountStudentArea: React.FC = () => {
           return;
         }
 
-        const response = await axios.delete(`${apiURL}/api/accounts/students/${userId}`, {
+        const response = await axios.delete(`${apiURL}/api/accounts/students/${studentId}`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
 
         if (response.data.success) {
-          setStudents(prev => prev.filter(student => student.user_id !== userId));
-          setFilteredStudents(prev => prev.filter(student => student.user_id !== userId));
+          setStudents(prev => prev.filter(student => student.user_id !== studentId));
+          setFilteredStudents(prev => prev.filter(student => student.user_id !== studentId));
           toast.success("ลบนักศึกษาสำเร็จ");
         } else {
           toast.error(response.data.message || "เกิดข้อผิดพลาดในการลบนักศึกษา");
@@ -242,7 +242,7 @@ const AccountStudentArea: React.FC = () => {
       } catch (error) {
         console.error("Error deleting student:", error);
         toast.error("เกิดข้อผิดพลาดในการลบนักศึกษา");
-        console.log("Deleting user_id:", userId);
+        console.log("Deleting user_id:", studentId);
       }
     }
   };
