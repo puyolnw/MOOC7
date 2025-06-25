@@ -66,7 +66,7 @@ const CourseContentSection: React.FC<CourseContentSectionProps> = ({
             >
               <i className="fas fa-plus-circle me-2"></i>เพิ่มรายวิชาที่มีอยู่
             </button>
-            <Link to="/admin-subjects/create-new" className="btn btn-outline-success">
+            <Link to="/instructor-subjects/create-new" className="btn btn-outline-success">
               <i className="fas fa-file-medical me-2"></i>สร้างรายวิชาใหม่
             </Link>
           </div>

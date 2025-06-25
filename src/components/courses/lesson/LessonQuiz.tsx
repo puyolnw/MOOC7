@@ -236,7 +236,7 @@ const LessonQuiz = ({
 
                 // ดึงข้อมูลการส่งครั้งก่อนหน้า
                 const attemptsResponse = await axios.get(
-                    `${API_URL}/api/courses/quizzes/${quizId}/attempts`,
+                    `${API_URL}/api/learn/quizzes/${quizId}/attempts`,
                     {
                         headers: {
                             Authorization: `Bearer ${localStorage.getItem("token")}`,

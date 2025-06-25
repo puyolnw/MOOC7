@@ -1,606 +1,781 @@
-import React, { useState, useRef, useEffect } from "react";
-import { toast } from "react-toastify";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
-import AddQuizzes from "./AddQuizzes";
+import { toast } from "react-toastify";
 
-// ข้อมูลบทเรียน
-interface LessonData {
+// ===== TYPES & INTERFACES =====
+type QuestionType = "TF" | "MC" | "SC" | "FB";
+type QuizType = "normal" | "special";
+
+interface Question {
+  id: string;
+  title: string;
+  type: QuestionType;
+  score: number;
+  isExisting?: boolean;
+}
+
+interface Subject {
+  subject_id: string;
+  subject_name: string;
+  subject_code: string;
+}
+
+interface Lesson {
+  id: string;
+  title: string;
+  subject: string | Subject | Subject[];
+  duration: string;
+}
+
+interface QuizData {
   title: string;
   description: string;
-  files: File[];
-  videoUrl: string;
-  canPreview: boolean;
-  hasQuiz: boolean;
-  quizId: string | null;
-  subjects: string[]; // เพิ่มฟิลด์สำหรับเก็บรายการวิชาที่เลือก
+  questions: Question[];
+  lessons: string[];
+  status: string;
 }
 
-// ข้อมูลแบบทดสอบ
-interface Quiz {
-  id: string;
-  title: string;
-  questions: number;
-  description?: string;
-  type?: string;
-}
-
-// ข้อมูลวิชา
-interface Subject {
-  id: string;
-  title: string;
-  category: string;
-  credits: number;
-  subject_id?: string;
-  subject_name?: string;
-  subject_code?: string;
-  department?: string;
-}
-
-interface AddLessonsProps {
-  onSubmit?: (lessonData: any) => void;
+interface AddQuizzesProps {
+  onSubmit?: (quizData: any) => void;
   onCancel?: () => void;
-  lessonToEdit?: any; // เพิ่ม prop สำหรับการแก้ไขบทเรียน
 }
 
-const AddLessons: React.FC<AddLessonsProps> = ({ onSubmit, onCancel, lessonToEdit }) => {
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const apiUrl = import.meta.env.VITE_API_URL;
+// ===== QUIZ INFO SECTION COMPONENT =====
+interface QuizInfoSectionProps {
+  quizData: {
+    title: string;
+    description: string;
+  };
+  handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+  errors: {
+    title: string;
+  };
+}
+
+const QuizInfoSection: React.FC<QuizInfoSectionProps> = ({ quizData, handleInputChange, errors }) => (
+  <div className="card shadow-sm border-0 mb-4">
+    <div className="card-header bg-light">
+      <h5 className="mb-0">1. ข้อมูลแบบทดสอบ</h5>
+    </div>
+    <div className="card-body">
+      <div className="mb-3">
+        <label htmlFor="title" className="form-label">ชื่อแบบทดสอบ <span className="text-danger">*</span></label>
+        <input
+          type="text"
+          className={`form-control ${errors.title ? 'is-invalid' : ''}`}
+          id="title"
+          name="title"
+          value={quizData.title}
+          onChange={handleInputChange}
+          placeholder="ระบุชื่อแบบทดสอบ"
+        />
+        {errors.title && <div className="invalid-feedback">{errors.title}</div>}
+      </div>
+      <div className="mb-3">
+        <label htmlFor="description" className="form-label">คำอธิบายแบบทดสอบ</label>
+        <textarea
+          className="form-control"
+          id="description"
+          name="description"
+          value={quizData.description}
+          onChange={handleInputChange}
+          rows={3}
+          placeholder="ระบุคำอธิบายเพิ่มเติม (ถ้ามี)"
+        ></textarea>
+      </div>
+    </div>
+  </div>
+);
+
+// ===== QUESTIONS SECTION COMPONENT =====
+interface QuestionsSectionProps {
+  quizData: {
+    questions: Question[];
+  };
+  errors: {
+    questions: string;
+  };
+  handleDeleteQuestion: (id: string) => void;
+  handleAddNewQuestion: (questionData: any) => void;
+  existingQuestions: Question[];
+  showAddQuestionForm: boolean;
+  setShowAddQuestionForm: React.Dispatch<React.SetStateAction<boolean>>;
+  showExistingQuestions: boolean;
+  setShowExistingQuestions: React.Dispatch<React.SetStateAction<boolean>>;
+  quizType: QuizType;
+}
+
+const QuestionsSection: React.FC<QuestionsSectionProps> = ({
+  quizData,
+  errors,
+  handleDeleteQuestion,
+  existingQuestions,
+  setShowAddQuestionForm,
+  setShowExistingQuestions,
+  quizType,
+}) => {
   
-  // สถานะสำหรับการโหลดข้อมูล
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const [apiError, setApiError] = useState<string>("");
-  const [apiSuccess, setApiSuccess] = useState<string>("");
+  const getQuestionTypeText = (type: QuestionType) => {
+    switch (type) {
+      case "TF": return "ถูก/ผิด";
+      case "MC": return "หลายตัวเลือก";
+      case "SC": return "ตัวเลือกเดียว";
+      case "FB": return "เติมคำ";
+      default: return "";
+    }
+  };
+
+  // Filter questions based on quiz type
+  const getAvailableQuestionsCount = () => {
+    return existingQuestions.filter(question => {
+      return quizType === "normal" 
+        ? question.type !== "FB" 
+        : question.type === "FB";
+    }).length;
+  };
+
+  return (
+    <div className="card shadow-sm border-0 mb-4">
+      <div className="card-header bg-light d-flex justify-content-between align-items-center">
+        <h5 className="mb-0">3. คำถามประจำแบบทดสอบ</h5>
+        <div>
+          <span className="badge bg-primary rounded-pill me-2">
+            {quizData.questions.length} / 100 คำถาม
+          </span>
+        </div>
+      </div>
+      <div className="card-body">
+        {errors.questions && (
+          <div className="alert alert-danger" role="alert">
+            {errors.questions}
+          </div>
+        )}
+        
+        {quizData.questions.length > 0 ? (
+          <div className="table-responsive mb-4">
+            <table className="table table-hover table-sm align-middle">
+              <thead className="table-light">
+                <tr>
+                  <th style={{ width: "50px" }}>ลำดับ</th>
+                  <th>คำถาม</th>
+                  <th style={{ width: "120px" }}>ประเภท</th>
+                  <th style={{ width: "80px" }}>คะแนน</th>
+                  <th style={{ width: "80px" }}>จัดการ</th>
+                </tr>
+              </thead>
+              <tbody>
+                {quizData.questions.map((question, index) => (
+                  <tr key={question.id}>
+                    <td>{index + 1}</td>
+                    <td>{question.title}</td>
+                    <td>
+                      <span className="badge bg-info rounded-pill">
+                        {getQuestionTypeText(question.type)}
+                      </span>
+                    </td>
+                    <td>{question.score}</td>
+                    <td>
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline-danger"
+                        onClick={() => handleDeleteQuestion(question.id)}
+                      >
+                        <i className="fas fa-trash-alt"></i>
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="alert alert-info" role="alert">
+            ยังไม่มีคำถามในแบบทดสอบนี้ กรุณาเพิ่มคำถามอย่างน้อย 1 ข้อ
+          </div>
+        )}
+        
+        <div className="d-flex gap-2">
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => setShowAddQuestionForm(true)}
+            disabled={quizData.questions.length >= 100}
+          >
+            <i className="fas fa-plus-circle me-2"></i>สร้างคำถามใหม่
+          </button>
+          <button
+            type="button"
+            className="btn btn-outline-primary"
+            onClick={() => setShowExistingQuestions(true)}
+            disabled={quizData.questions.length >= 100 || getAvailableQuestionsCount() === 0}
+          >
+            <i className="fas fa-list me-2"></i>เลือกจากคำถามที่มีอยู่ ({getAvailableQuestionsCount()})
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ===== LESSONS SECTION COMPONENT =====
+interface LessonsSectionProps {
+  quizData: {
+    lessons: string[];
+  };
+  availableLessons: Lesson[];
+  showLessonModal: boolean;
+  setShowLessonModal: React.Dispatch<React.SetStateAction<boolean>>;
+  lessonSearchTerm: string;
+  setLessonSearchTerm: React.Dispatch<React.SetStateAction<string>>;
+  handleToggleLesson: (lessonId: string) => void;
+}
+
+const LessonsSection: React.FC<LessonsSectionProps> = ({
+  quizData,
+  availableLessons,
+  showLessonModal,
+  setShowLessonModal,
+  lessonSearchTerm,
+  setLessonSearchTerm,
+  handleToggleLesson,
+}) => {
+  const renderSubject = (subject: string | Subject | Subject[]): string => {
+    if (Array.isArray(subject)) {
+      return subject.map((s) => s.subject_name).join(", ") || "ไม่มีวิชา";
+    }
+    if (typeof subject === "object" && subject?.subject_name) {
+      return subject.subject_name;
+    }
+    return (typeof subject === "string" ? subject : "") || "ไม่มีวิชา";
+  };
+
+  // Filter lessons based on search term
+  const filteredLessons = availableLessons.filter(lesson =>
+    lesson.title.toLowerCase().includes(lessonSearchTerm.toLowerCase())
+  );
+
+  // Limit to 6 results
+  const displayedLessons = filteredLessons.slice(0, 6);
+
+  return (
+    <div className="card shadow-sm border-0 mb-4">
+      <div className="card-header bg-light">
+        <h5 className="mb-0">4. เลือกบทเรียนที่จะใช้แบบทดสอบนี้</h5>
+      </div>
+      <div className="card-body">
+        <p className="text-muted mb-3">
+          คุณสามารถเลือกบทเรียนที่ต้องการใช้แบบทดสอบนี้ได้ (ไม่บังคับ) และสามารถเลือกได้มากกว่า 1 บทเรียน
+        </p>
+
+        <div className="d-flex justify-content-between align-items-center mb-3">
+          <div>
+            {quizData.lessons.length > 0 ? (
+              <span className="badge bg-success rounded-pill">
+                เลือกแล้ว {quizData.lessons.length} บทเรียน
+              </span>
+            ) : (
+              <span className="badge bg-secondary rounded-pill">
+                ยังไม่ได้เลือกบทเรียน
+              </span>
+            )}
+          </div>
+          <button
+            type="button"
+            className="btn btn-outline-primary btn-sm"
+            onClick={() => setShowLessonModal(true)}
+            disabled={availableLessons.length === 0}
+          >
+            <i className="fas fa-book me-2"></i>เลือกบทเรียน
+          </button>
+        </div>
+
+        {quizData.lessons.length > 0 && (
+          <div className="selected-lessons">
+            <h6 className="mb-2">บทเรียนที่เลือก:</h6>
+            <div className="row g-2">
+              {quizData.lessons.map((lessonId) => {
+                const lesson = availableLessons.find((l) => l.id === lessonId);
+                return lesson ? (
+                  <div key={lesson.id} className="col-md-6">
+                    <div className="card border h-100">
+                      <div className="card-body py-2 px-3">
+                        <div className="d-flex justify-content-between align-items-center">
+                          <div>
+                            <h6 className="mb-1">{lesson.title}</h6>
+                            <p className="mb-0 small text-muted">
+                              วิชา: {renderSubject(lesson.subject)} | ระยะเวลา: {lesson.duration || "ไม่ระบุ"}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            className="btn btn-sm text-danger"
+                            onClick={() => handleToggleLesson(lesson.id)}
+                          >
+                            <i className="fas fa-times-circle"></i>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : null;
+              })}
+            </div>
+          </div>
+        )}
+
+        {showLessonModal && (
+          <div
+            className="modal fade show"
+            style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}
+            tabIndex={-1}
+          >
+            <div className="modal-dialog modal-xl modal-dialog-centered">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title">เลือกบทเรียน</h5>
+                  <button
+                    type="button"
+                    className="btn-close"
+                    onClick={() => setShowLessonModal(false)}
+                  ></button>
+                </div>
+                <div className="modal-body">
+                  <div className="mb-3">
+                    <div className="input-group">
+                      <input
+                        type="text"
+                        className="form-control"
+                        placeholder="ค้นหาบทเรียน..."
+                        value={lessonSearchTerm}
+                        onChange={(e) => setLessonSearchTerm(e.target.value)}
+                      />
+                      <button className="btn btn-outline-secondary" type="button">
+                        <i className="fas fa-search"></i>
+                      </button>
+                    </div>
+                    <small className="text-muted">
+                      แสดงผลสูงสุด 6 รายการ - พิมพ์ต่อเพื่อผลลัพธ์ที่แม่นยำ
+                    </small>
+                  </div>
+
+                  {lessonSearchTerm.trim() === "" ? (
+                    <div className="text-center py-4">
+                      <i className="fas fa-search fa-3x text-muted mb-3"></i>
+                      <p className="text-muted">กรุณากรอกชื่อบทเรียนเพื่อค้นหา</p>
+                    </div>
+                  ) : displayedLessons.length > 0 ? (
+                    <>
+                      <div className="row g-3">
+                        {displayedLessons.map((lesson) => (
+                                                    <div key={lesson.id} className="col-md-6 col-lg-4">
+                            <div className="card h-100 border">
+                              <div className="card-body">
+                                <div className="d-flex justify-content-between align-items-start mb-2">
+                                  <h6 className="card-title mb-1">{lesson.title}</h6>
+                                  <div className="form-check">
+                                    <input
+                                      className="form-check-input"
+                                      type="checkbox"
+                                      id={`lesson-${lesson.id}`}
+                                      checked={quizData.lessons.includes(lesson.id)}
+                                      onChange={() => handleToggleLesson(lesson.id)}
+                                    />
+                                  </div>
+                                </div>
+                                <p className="card-text small text-muted mb-0">
+                                  วิชา: {renderSubject(lesson.subject)}
+                                </p>
+                                <p className="card-text small text-muted">
+                                  ระยะเวลา: {lesson.duration || "ไม่ระบุ"}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      {filteredLessons.length > 6 && (
+                        <div className="alert alert-info mt-3">
+                          <i className="fas fa-info-circle me-2"></i>
+                          พบ {filteredLessons.length} รายการ แสดงเฉพาะ 6 รายการแรก - พิมพ์ต่อเพื่อผลลัพธ์ที่แม่นยำ
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="text-center py-4">
+                      <i className="fas fa-exclamation-circle fa-2x text-muted mb-3"></i>
+                      <p className="text-muted">ไม่พบบทเรียนที่ตรงกับคำค้นหา "{lessonSearchTerm}"</p>
+                    </div>
+                  )}
+                </div>
+                <div className="modal-footer">
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => setShowLessonModal(false)}
+                  >
+                    ปิด
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ===== SPECIAL QUIZ SECTIONS COMPONENT =====
+interface SpecialQuizSectionsProps {
+  quizType: QuizType;
+  setQuizType: React.Dispatch<React.SetStateAction<QuizType>>;
+}
+
+const SpecialQuizSections: React.FC<SpecialQuizSectionsProps> = ({
+  quizType,
+  setQuizType,
+}) => (
+  <div className="card shadow-sm border-0 mb-4">
+    <div className="card-header bg-warning text-dark">
+      <h5 className="mb-0">
+        <i className="fas fa-star me-2"></i>2. ประเภทแบบทดสอบ
+      </h5>
+    </div>
+    <div className="card-body">
+      <div className="mb-4">
+        <h6 className="mb-3">เลือกประเภทแบบทดสอบ</h6>
+        <div className="form-check mb-2">
+          <input
+            className="form-check-input"
+            type="radio"
+            name="quizType"
+            id="normalQuiz"
+            checked={quizType === "normal"}
+            onChange={() => setQuizType("normal")}
+          />
+          <label className="form-check-label" htmlFor="normalQuiz">
+            <strong>แบบทดสอบปกติ</strong>
+            <br />
+            <small className="text-muted">แบบทดสอบที่ตรวจให้คะแนนอัตโนมัติ (ตัวเลือกเดียว, หลายตัวเลือก, ถูก/ผิด)</small>
+          </label>
+        </div>
+        <div className="form-check">
+          <input
+            className="form-check-input"
+            type="radio"
+            name="quizType"
+            id="specialQuiz"
+            checked={quizType === "special"}
+            onChange={() => setQuizType("special")}
+          />
+          <label className="form-check-label" htmlFor="specialQuiz">
+            <strong>แบบทดสอบพิเศษ</strong>
+            <br />
+            <small className="text-muted">แบบทดสอบที่ต้องให้อาจารย์ตรวจให้คะแนนเอง (เติมคำ)</small>
+          </label>
+        </div>
+      </div>
+
+      {quizType === "special" && (
+        <div className="alert alert-info">
+          <h6 className="alert-heading">
+            <i className="fas fa-info-circle me-2"></i>คุณสมบัติแบบทดสอบพิเศษ
+          </h6>
+          <ul className="mb-0">
+            <li>สามารถมีคำถามประเภท "เติมคำ" ได้</li>
+            <li>อาจารย์ต้องตรวจให้คะแนนด้วยตนเอง</li>
+            <li>นักเรียนสามารถแนบไฟล์ได้</li>
+            <li>ผลคะแนนจะแสดงหลังจากอาจารย์ตรวจเสร็จ</li>
+          </ul>
+        </div>
+      )}
+    </div>
+  </div>
+);
+
+// ===== MAIN COMPONENT =====
+const AddQuizzes: React.FC<AddQuizzesProps> = ({ onSubmit, onCancel }) => {
+  // ===== STATE MANAGEMENT =====
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [apiError, setApiError] = useState("");
+  const [apiSuccess, setApiSuccess] = useState("");
+  const [quizType, setQuizType] = useState<QuizType>("normal");
   
-  // สถานะสำหรับข้อมูลวิชาและแบบทดสอบ
-  const [availableSubjects, setAvailableSubjects] = useState<Subject[]>([]);
-  const [availableQuizzes, setAvailableQuizzes] = useState<Quiz[]>([]);
-  
-  // สถานะสำหรับข้อมูลบทเรียน
-  const [lessonData, setLessonData] = useState<LessonData>({
+  // Quiz data
+  const [quizData, setQuizData] = useState<QuizData>({
     title: "",
     description: "",
-    files: [],
-    videoUrl: "",
-    canPreview: false,
-    hasQuiz: false,
-    quizId: null,
-    subjects: [] // เริ่มต้นด้วยอาร์เรย์ว่าง
+    questions: [],
+    lessons: [],
+    status: "draft"
   });
   
-  // สถานะสำหรับการตรวจสอบความถูกต้อง
+  // Form validation
   const [errors, setErrors] = useState({
     title: "",
-    content: "",
-    videoUrl: "",
-    files: "",
-    quiz: ""
+    questions: ""
   });
   
-  // สถานะสำหรับการแสดงไฟล์ที่อัปโหลด
-  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
-  const [existingFiles, setExistingFiles] = useState<any[]>([]);
-  const [filesToRemove, setFilesToRemove] = useState<string[]>([]);
-  
-  // สถานะสำหรับการแสดง Modal เลือกแบบทดสอบ
-  const [showQuizModal, setShowQuizModal] = useState(false);
-  
-  // สถานะสำหรับการแสดง Modal สร้างแบบทดสอบ
-  const [showCreateQuizModal, setShowCreateQuizModal] = useState(false);
-  
-  // สถานะสำหรับการแสดง Modal เลือกวิชา
-  const [showSubjectModal, setShowSubjectModal] = useState(false);
-  
-  // สถานะสำหรับการค้นหาวิชา
-  const [subjectSearchTerm, setSubjectSearchTerm] = useState("");
-  
-  // สถานะสำหรับการค้นหาแบบทดสอบ
+  // Questions management
+  const [existingQuestions, setExistingQuestions] = useState<Question[]>([]);
+  const [showAddQuestionForm, setShowAddQuestionForm] = useState(false);
+  const [showExistingQuestions, setShowExistingQuestions] = useState(false);
+  const [selectedExistingQuestions, setSelectedExistingQuestions] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   
-  // สถานะสำหรับแบบทดสอบที่เลือก
-  const [selectedQuiz, setSelectedQuiz] = useState<Quiz | null>(null);
-  
-  // โหลดข้อมูลวิชาและแบบทดสอบเมื่อคอมโพเนนต์ถูกโหลด
+  // Lessons management
+  const [availableLessons, setAvailableLessons] = useState<Lesson[]>([]);
+  const [showLessonModal, setShowLessonModal] = useState(false);
+  const [lessonSearchTerm, setLessonSearchTerm] = useState("");
+
+  // ===== EFFECTS =====
   useEffect(() => {
     const fetchData = async () => {
-      setIsLoading(true);
       try {
+        const apiUrl = import.meta.env.VITE_API_URL;
         const token = localStorage.getItem("token");
+        
         if (!token) {
-          toast.error("กรุณาเข้าสู่ระบบก่อนใช้งาน");
+          setApiError("ไม่พบข้อมูลการเข้าสู่ระบบ กรุณาเข้าสู่ระบบใหม่");
           return;
         }
-        
-        // โหลดข้อมูลวิชา
-        const subjectsResponse = await axios.get(`${apiUrl}/api/courses/lessons/subjects/all`, {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
+
+        // Fetch existing questions
+        const questionsResponse = await axios.get(`${apiUrl}/api/courses/questions`, {
+          headers: { Authorization: `Bearer ${token}` }
         });
         
-        if (subjectsResponse.data.success) {
-          // แปลงข้อมูลให้ตรงกับ interface
-          const subjects = subjectsResponse.data.subjects.map((subject: any) => ({
-            id: subject.subject_id,
-            title: subject.subject_name,
-            category: subject.department || "ไม่ระบุ",
-            credits: subject.credits || 0,
-            subject_id: subject.subject_id,
-            subject_name: subject.subject_name,
-            subject_code: subject.subject_code,
-            department: subject.department
+        if (questionsResponse.data.success) {
+          const questions = questionsResponse.data.questions.map((q: any) => ({
+            id: q.question_id.toString(),
+            title: q.title,
+            type: q.type,
+            score: q.score || 1,
+            isExisting: true
           }));
-          setAvailableSubjects(subjects);
+          setExistingQuestions(questions);
         }
-        
-        // โหลดข้อมูลแบบทดสอบ
-        const quizzesResponse = await axios.get(`${apiUrl}/api/courses/lessons/quizzes/all`, {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
+
+        // Fetch available lessons
+        const lessonsResponse = await axios.get(`${apiUrl}/api/courses/lessons`, {
+          headers: { Authorization: `Bearer ${token}` }
         });
         
-        if (quizzesResponse.data.success) {
-          // แปลงข้อมูลให้ตรงกับ interface
-          const quizzes = quizzesResponse.data.quizzes.map((quiz: any) => ({
-            id: quiz.quiz_id,
-            title: quiz.title,
-            description: quiz.description,
-            questions: quiz.question_count,
-            type: quiz.type
+        if (lessonsResponse.data.success) {
+          const lessons = lessonsResponse.data.lessons.map((l: any) => ({
+            id: l.lesson_id.toString(),
+            title: l.title,
+            subject: l.subject || "ไม่มีวิชา",
+            duration: l.duration || "ไม่ระบุ"
           }));
-          setAvailableQuizzes(quizzes);
+          setAvailableLessons(lessons);
         }
         
-        // ถ้ามีข้อมูลบทเรียนที่ต้องการแก้ไข
-        if (lessonToEdit) {
-          loadLessonData(lessonToEdit);
-        }
       } catch (error) {
         console.error("Error fetching data:", error);
-        toast.error("เกิดข้อผิดพลาดในการโหลดข้อมูล");
-      } finally {
-        setIsLoading(false);
+        setApiError("เกิดข้อผิดพลาดในการโหลดข้อมูล");
       }
     };
-    
+
     fetchData();
-  }, [apiUrl, lessonToEdit]);
-  
-  // โหลดข้อมูลบทเรียนที่ต้องการแก้ไข
-  const loadLessonData = async (lessonId: string) => {
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        toast.error("กรุณาเข้าสู่ระบบก่อนใช้งาน");
-        return;
-      }
-      
-      const response = await axios.get(`${apiUrl}/api/courses/lessons/${lessonId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-      
-      if (response.data.success) {
-        const lesson = response.data.lesson;
-        
-        // ตั้งค่าข้อมูลแบบทดสอบที่เลือก (ถ้ามี)
-        if (lesson.quiz) {
-          setSelectedQuiz({
-            id: lesson.quiz.quiz_id,
-            title: lesson.quiz.title,
-            questions: lesson.quiz.questions,
-            description: lesson.quiz.description,
-            type: lesson.quiz.type
-          });
-        }
-        
-        // ตั้งค่าไฟล์ที่มีอยู่
-        if (lesson.files && lesson.files.length > 0) {
-          setExistingFiles(lesson.files);
-        }
-        
-        // ตั้งค่าข้อมูลบทเรียน
-        setLessonData({
-          title: lesson.title || "",
-          description: lesson.description || "",
-          files: [],
-          videoUrl: lesson.video_url || "",
-          canPreview: lesson.can_preview || false,
-          hasQuiz: lesson.has_quiz || false,  // ควรใช้ค่า has_quiz จาก API
-          quizId: lesson.quiz_id || null,
-          subjects: lesson.subjects ? lesson.subjects.map((s: any) => s.subject_id) : []
-        });
-      }
-    } catch (error) {
-      console.error("Error loading lesson data:", error);
-      toast.error("เกิดข้อผิดพลาดในการโหลดข้อมูลบทเรียน");
-    }
-  };
-  
-  // เปลี่ยนแปลงข้อมูลบทเรียน
+  }, []);
+
+  // ===== EVENT HANDLERS =====
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setLessonData({
-      ...lessonData,
+    
+    setQuizData(prev => ({
+      ...prev,
       [name]: value
-    });
+    }));
     
-    // ล้างข้อผิดพลาด
-    if (name === "title" || name === "videoUrl") {
-      setErrors({
-        ...errors,
-        [name]: ""
-      });
-    }
-    
-    // ตรวจสอบ URL วิดีโอ
-    if (name === "videoUrl" && value) {
-      validateYoutubeUrl(value);
+    // Clear related errors
+    if (errors[name as keyof typeof errors]) {
+      setErrors(prev => ({ ...prev, [name]: "" }));
     }
   };
-  
-  // เปลี่ยนแปลงการตั้งค่า
-  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, checked } = e.target;
-    
-    if (name === "hasQuiz" && !checked) {
-      // ถ้ายกเลิกการมีแบบทดสอบ ให้ล้างข้อมูลแบบทดสอบที่เลือกไว้
-      setLessonData({
-        ...lessonData,
-        hasQuiz: checked,
-        quizId: null
-      });
-      setSelectedQuiz(null);
-    } else {
-      setLessonData({
-        ...lessonData,
-        [name]: checked
-      });
-    }
+
+  const handleDeleteQuestion = (id: string) => {
+    setQuizData(prev => ({
+      ...prev,
+      questions: prev.questions.filter(q => q.id !== id)
+    }));
+    setErrors(prev => ({ ...prev, questions: "" }));
   };
-  
-  // ตรวจสอบ URL วิดีโอ YouTube
-  const validateYoutubeUrl = (url: string) => {
-    if (url === "") {
-      setErrors({
-        ...errors,
-        videoUrl: ""
-      });
-      return;
-    }
-    
-    // ตรวจสอบรูปแบบ URL ของ YouTube
-    const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})(?!.*&list=.*)(?!.*&index=.*)/;
-    const match = url.match(youtubeRegex);
-    
-    if (!match) {
-      setErrors({
-        ...errors,
-        videoUrl: "URL วิดีโอไม่ถูกต้อง ต้องเป็น URL ของ YouTube ที่มีรูปแบบถูกต้อง (ไม่มีพารามิเตอร์ list หรือ index)"
-      });
-    } else {
-      setErrors({
-        ...errors,
-        videoUrl: ""
-      });
-    }
-  };
-  
-  // อัปโหลดไฟล์
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files) return;
-    
-    // ตรวจสอบจำนวนไฟล์
-    if (uploadedFiles.length + existingFiles.length - filesToRemove.length + files.length > 2) {
-      setErrors({
-        ...errors,
-        files: "สามารถอัปโหลดไฟล์ได้สูงสุด 2 ไฟล์"
-      });
-      return;
-    }
-    
-    // ตรวจสอบขนาดและประเภทไฟล์
-    const newFiles: File[] = [];
-    let hasError = false;
-    
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      
-      // ตรวจสอบขนาดไฟล์ (2 MB = 2 * 1024 * 1024 bytes)
-      if (file.size > 2 * 1024 * 1024) {
-        setErrors({
-          ...errors,
-          files: "ขนาดไฟล์ต้องไม่เกิน 2 MB"
-        });
-        hasError = true;
-        break;
-      }
-      
-      // ตรวจสอบประเภทไฟล์
-      const fileType = file.name.split('.').pop()?.toLowerCase();
-      if (fileType !== 'pdf' && fileType !== 'txt') {
-        setErrors({
-          ...errors,
-          files: "รองรับเฉพาะไฟล์ PDF และ TXT เท่านั้น"
-        });
-        hasError = true;
-        break;
-      }
-      
-      newFiles.push(file);
-    }
-    
-    if (!hasError) {
-      setUploadedFiles([...uploadedFiles, ...newFiles]);
-      setLessonData({
-        ...lessonData,
-        files: [...uploadedFiles, ...newFiles]
-      });
-      setErrors({
-        ...errors,
-        files: "",
-        content: "" // ล้างข้อผิดพลาดเกี่ยวกับเนื้อหา
-      });
-    }
-    
-    // รีเซ็ต input file
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-  };
-  
-  // ลบไฟล์ที่อัปโหลด
-  const handleRemoveFile = (index: number) => {
-    const newFiles = [...uploadedFiles];
-    newFiles.splice(index, 1);
-    setUploadedFiles(newFiles);
-    setLessonData({
-      ...lessonData,
-      files: newFiles
-    });
-  };
-  
-  // ลบไฟล์ที่มีอยู่แล้ว
-  const handleRemoveExistingFile = (fileId: string) => {
-    setFilesToRemove([...filesToRemove, fileId]);
-    setExistingFiles(existingFiles.filter(file => file.file_id !== fileId));
-  };
-  
-  // เลือกแบบทดสอบ
-  const handleSelectQuiz = (quiz: Quiz) => {
-    setSelectedQuiz(quiz);
-    setLessonData({
-      ...lessonData,
-      quizId: quiz.id
-    });
-    setShowQuizModal(false);
-    
-    // ล้างข้อผิดพลาด
-    setErrors({
-      ...errors,
-      quiz: ""
-    });
-  };
-  
-  // เลือกหรือยกเลิกการเลือกวิชา
-  const handleToggleSubject = (subjectId: string) => {
-    if (lessonData.subjects.includes(subjectId)) {
-      // ถ้ามีอยู่แล้ว ให้ลบออก
-      setLessonData({
-        ...lessonData,
-        subjects: lessonData.subjects.filter(id => id !== subjectId)
-      });
-    } else {
-      // ถ้ายังไม่มี ให้เพิ่มเข้าไป
-      setLessonData({
-        ...lessonData,
-        subjects: [...lessonData.subjects, subjectId]
-      });
-    }
-  };
-  
-  // กรองวิชาตามคำค้นหา
-  const filteredSubjects = availableSubjects.filter(subject => 
-    subject.title.toLowerCase().includes(subjectSearchTerm.toLowerCase()) ||
-    subject.category.toLowerCase().includes(subjectSearchTerm.toLowerCase()) ||
-    (subject.subject_code && subject.subject_code.toLowerCase().includes(subjectSearchTerm.toLowerCase()))
-  );
-  
-  // กรองแบบทดสอบตามคำค้นหา
-  const filteredQuizzes = availableQuizzes.filter(quiz => 
-    quiz.title.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-  
-  // ตรวจสอบความถูกต้องของข้อมูล
-  const validateForm = () => {
-    let isValid = true;
-    const newErrors = {
-      title: "",
-      content: "",
-      videoUrl: "",
-      files: "",
-      quiz: ""
+
+  const handleAddNewQuestion = (questionData: any) => {
+    const newQuestion: Question = {
+      id: `new_${Date.now()}`,
+      title: questionData.title,
+      type: questionData.type,
+      score: questionData.score || 1,
+      isExisting: false
     };
     
-    // ตรวจสอบชื่อบทเรียน
-    if (lessonData.title.trim() === "") {
-      newErrors.title = "กรุณาระบุชื่อบทเรียน";
-      isValid = false;
-    }
+    setQuizData(prev => ({
+      ...prev,
+      questions: [...prev.questions, newQuestion]
+    }));
     
-    // ตรวจสอบเนื้อหา (ต้องมีอย่างน้อยวิดีโอหรือไฟล์)
-    if (lessonData.videoUrl === "" && uploadedFiles.length === 0 && existingFiles.length - filesToRemove.length === 0) {
-      newErrors.content = "กรุณาเพิ่มวิดีโอหรืออัปโหลดไฟล์อย่างน้อย 1 รายการ";
-      isValid = false;
-    }
-    
-    // ตรวจสอบ URL วิดีโอ
-    if (lessonData.videoUrl !== "") {
-      const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})(?!.*&list=.*)(?!.*&index=.*)/;
-      if (!youtubeRegex.test(lessonData.videoUrl)) {
-        newErrors.videoUrl = "URL วิดีโอไม่ถูกต้อง ต้องเป็น URL ของ YouTube ที่มีรูปแบบถูกต้อง";
-        isValid = false;
+    setShowAddQuestionForm(false);
+    setErrors(prev => ({ ...prev, questions: "" }));
+  };
+
+  const handleSelectExistingQuestion = (id: string) => {
+    setSelectedExistingQuestions(prev => {
+      if (prev.includes(id)) {
+        return prev.filter(qId => qId !== id);
+      } else {
+        return [...prev, id];
       }
-    }
+    });
+  };
+
+  const handleAddSelectedQuestions = () => {
+    const questionsToAdd = existingQuestions.filter(q => 
+      selectedExistingQuestions.includes(q.id) &&
+      !quizData.questions.some(existing => existing.id === q.id)
+    );
     
-    // ตรวจสอบแบบทดสอบ
-    if (lessonData.hasQuiz && !lessonData.quizId) {
-      newErrors.quiz = "กรุณาเลือกแบบทดสอบ";
+    setQuizData(prev => ({
+      ...prev,
+      questions: [...prev.questions, ...questionsToAdd]
+    }));
+    
+    setSelectedExistingQuestions([]);
+    setShowExistingQuestions(false);
+    setErrors(prev => ({ ...prev, questions: "" }));
+  };
+
+  const handleToggleLesson = (lessonId: string) => {
+    setQuizData(prev => ({
+      ...prev,
+      lessons: prev.lessons.includes(lessonId)
+        ? prev.lessons.filter(id => id !== lessonId)
+        : [...prev.lessons, lessonId]
+    }));
+  };
+
+  // ===== VALIDATION =====
+  const validateForm = (): boolean => {
+    const newErrors = {
+      title: "",
+      questions: ""
+    };
+    let isValid = true;
+
+    if (!quizData.title.trim()) {
+      newErrors.title = "กรุณาระบุชื่อแบบทดสอบ";
       isValid = false;
     }
-    
+
+    if (quizData.questions.length === 0) {
+      newErrors.questions = "กรุณาเพิ่มคำถามอย่างน้อย 1 ข้อ";
+      isValid = false;
+    }
+
     setErrors(newErrors);
     return isValid;
   };
-  
-  // บันทึกข้อมูล
+
+  // ===== FORM SUBMISSION =====
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (validateForm()) {
-      setIsSubmitting(true);
-      setApiError("");
-      setApiSuccess("");
+    if (!validateForm()) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    setApiError("");
+    setApiSuccess("");
+
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL;
+      const token = localStorage.getItem("token");
       
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) {
-          setApiError("กรุณาเข้าสู่ระบบก่อนใช้งาน");
-          setIsSubmitting(false);
-          return;
-        }
-        
-        // สร้าง FormData สำหรับส่งไฟล์
-        const formData = new FormData();
-        formData.append("title", lessonData.title);
-        formData.append("description", lessonData.description);
-        formData.append("videoUrl", lessonData.videoUrl);
-        formData.append("canPreview", lessonData.canPreview.toString());
-        formData.append("hasQuiz", lessonData.hasQuiz.toString());
-        
-        if (lessonData.hasQuiz && lessonData.quizId) {
-          formData.append("quizId", lessonData.quizId);
-        }
-        
-        // เพิ่มรายการวิชา
-        lessonData.subjects.forEach(subjectId => {
-          formData.append("subjects[]", subjectId);
-        });
-        
-        // เพิ่มไฟล์ที่อัปโหลด
-        uploadedFiles.forEach(file => {
-          formData.append("files", file);
-        });
-        
-        // เพิ่มรายการไฟล์ที่ต้องการลบ (กรณีแก้ไข)
-        if (filesToRemove.length > 0) {
-          filesToRemove.forEach(fileId => {
-            formData.append("filesToRemove[]", fileId);
-          });
-        }
-        
-        let response;
-        
-        // ถ้ามีการแก้ไขบทเรียน
-        if (lessonToEdit) {
-          response = await axios.put(`${apiUrl}/api/courses/lessons/${lessonToEdit}`, formData, {
-            headers: {
-              "Content-Type": "multipart/form-data",
-              "Authorization": `Bearer ${token}`
-            }
-          });
-          
-          setApiSuccess("แก้ไขบทเรียนสำเร็จ");
-          toast.success("แก้ไขบทเรียนสำเร็จ");
-        } else {
-          // สร้างบทเรียนใหม่
-          response = await axios.post(`${apiUrl}/api/courses/lessons`, formData, {
-            headers: {
-              "Content-Type": "multipart/form-data",
-              "Authorization": `Bearer ${token}`
-            }
-          });
-          
-          setApiSuccess("สร้างบทเรียนสำเร็จ");
-          toast.success("สร้างบทเรียนสำเร็จ");
-        }
-        
-        // ถ้ามีการส่ง onSubmit props มา ให้เรียกใช้ฟังก์ชันนั้น
-        if (onSubmit) {
-          onSubmit(response.data.lesson);
-        } else {
-          // รีเซ็ตฟอร์มหลังจากบันทึกสำเร็จ
-          setLessonData({
-            title: "",
-            description: "",
-            files: [],
-            videoUrl: "",
-            canPreview: false,
-            hasQuiz: false,
-            quizId: null,
-            subjects: []
-          });
-          setUploadedFiles([]);
-          setExistingFiles([]);
-          setFilesToRemove([]);
-          setSelectedQuiz(null);
-        }
-      } catch (error) {
-        console.error("Error submitting lesson:", error);
-        
-        // จัดการกับข้อผิดพลาดจาก API
-        if (axios.isAxiosError(error) && error.response) {
-          setApiError(error.response.data.message || "เกิดข้อผิดพลาดในการสร้างบทเรียน");
-          toast.error(error.response.data.message || "เกิดข้อผิดพลาดในการสร้างบทเรียน");
-        } else {
-          setApiError("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้");
-          toast.error("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้");
-        }
-      } finally {
-        setIsSubmitting(false);
+      if (!token) {
+        throw new Error("ไม่พบข้อมูลการเข้าสู่ระบบ");
       }
+
+      // Prepare API data
+      const apiData = {
+        title: quizData.title,
+        description: quizData.description,
+        questions: quizData.questions.map(q => ({
+          question_id: q.isExisting ? parseInt(q.id) : null,
+          title: q.title,
+          type: q.type,
+          score: q.score,
+          isNew: !q.isExisting
+        })),
+        lessons: quizData.lessons.map(id => parseInt(id)),
+        status: quizData.status,
+        type: quizType
+      };
+
+      const response = await axios.post(`${apiUrl}/api/courses/quizzes`, apiData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.data.success) {
+        setApiSuccess("สร้างแบบทดสอบสำเร็จ");
+        toast.success("สร้างแบบทดสอบสำเร็จ");
+        
+        if (onSubmit) {
+          onSubmit(response.data.quiz);
+        }
+        
+        // Reset form
+        setQuizData({
+          title: "",
+          description: "",
+          questions: [],
+          lessons: [],
+          status: "draft"
+        });
+        setQuizType("normal");
+        setErrors({ title: "", questions: "" });
+      }
+      
+    } catch (error) {
+      console.error("Error creating quiz:", error);
+      if (axios.isAxiosError(error) && error.response) {
+        setApiError(error.response.data.message || "เกิดข้อผิดพลาดในการสร้างแบบทดสอบ");
+                toast.error(error.response.data.message || "เกิดข้อผิดพลาดในการสร้างแบบทดสอบ");
+      } else {
+        setApiError("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้");
+        toast.error("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้");
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
-  
-  // ยกเลิก
+
   const handleCancel = () => {
     if (onCancel) {
       onCancel();
     }
   };
-  
-  // จัดการเมื่อสร้างแบบทดสอบใหม่
-  const handleCreateQuiz = (quizData: any) => {
-    if (quizData && quizData.id) {
-      // เพิ่มแบบทดสอบใหม่เข้าไปในรายการ
-      const newQuiz: Quiz = {
-        id: quizData.id,
-        title: quizData.title,
-        questions: quizData.questions?.length || 0,
-        description: quizData.description,
-        type: quizData.type || "general"
-      };
-      
-      setAvailableQuizzes([...availableQuizzes, newQuiz]);
-      
-      // เลือกแบบทดสอบที่สร้างใหม่
-      setSelectedQuiz(newQuiz);
-      setLessonData({
-        ...lessonData,
-        hasQuiz: true,
-        quizId: newQuiz.id
-      });
-    }
-    
-    setShowCreateQuizModal(false);
+
+  // Filter questions based on quiz type and search term
+  const getFilteredExistingQuestions = () => {
+    return existingQuestions.filter(question => {
+      const typeFilter = quizType === "normal" 
+        ? question.type !== "FB" 
+        : question.type === "FB";
+      const searchFilter = question.title.toLowerCase().includes(searchTerm.toLowerCase());
+      return typeFilter && searchFilter;
+    });
   };
-  
+
+  // ===== RENDER =====
   return (
-    <form onSubmit={handleSubmit}>
-      {/* API Status Messages */}
+    <div className="container-fluid">
+      {/* Success/Error Messages */}
       {apiSuccess && (
         <div className="alert alert-success alert-dismissible fade show" role="alert">
           <i className="fas fa-check-circle me-2"></i>
@@ -626,550 +801,487 @@ const AddLessons: React.FC<AddLessonsProps> = ({ onSubmit, onCancel, lessonToEdi
           ></button>
         </div>
       )}
-      
-      {isLoading ? (
-        <div className="text-center py-5">
-          <div className="spinner-border text-primary" role="status">
-            <span className="visually-hidden">กำลังโหลด...</span>
-          </div>
-          <p className="mt-3">กำลังโหลดข้อมูล...</p>
+
+      <form onSubmit={handleSubmit}>
+        {/* Quiz Info Section */}
+        <QuizInfoSection
+          quizData={quizData}
+          handleInputChange={handleInputChange}
+          errors={errors}
+        />
+
+        {/* Special Quiz Type Selection */}
+        <SpecialQuizSections
+          quizType={quizType}
+          setQuizType={setQuizType}
+        />
+
+        {/* Questions Section */}
+        <QuestionsSection
+          quizData={quizData}
+          errors={errors}
+          handleDeleteQuestion={handleDeleteQuestion}
+          handleAddNewQuestion={handleAddNewQuestion}
+          existingQuestions={existingQuestions}
+          showAddQuestionForm={showAddQuestionForm}
+          setShowAddQuestionForm={setShowAddQuestionForm}
+          showExistingQuestions={showExistingQuestions}
+          setShowExistingQuestions={setShowExistingQuestions}
+          quizType={quizType}
+        />
+
+        {/* Lessons Section */}
+        <LessonsSection
+          quizData={quizData}
+          availableLessons={availableLessons}
+          showLessonModal={showLessonModal}
+          setShowLessonModal={setShowLessonModal}
+          lessonSearchTerm={lessonSearchTerm}
+          setLessonSearchTerm={setLessonSearchTerm}
+          handleToggleLesson={handleToggleLesson}
+        />
+
+        {/* Action Buttons */}
+        <div className="d-flex justify-content-end gap-2 mt-4">
+          <button 
+            type="button" 
+            className="btn btn-outline-secondary"
+            onClick={handleCancel}
+          >
+            ยกเลิก
+          </button>
+          <button 
+            type="submit" 
+            className="btn btn-primary"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <>
+                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                กำลังบันทึก...
+              </>
+            ) : (
+              <>
+                <i className="fas fa-save me-2"></i>
+                บันทึกแบบทดสอบ
+              </>
+            )}
+          </button>
         </div>
-      ) : (
-        <>
-          {/* ส่วนที่ 1: ข้อมูลบทเรียน */}
-          <div className="card shadow-sm border-0 mb-4">
-            <div className="card-header bg-light">
-              <h5 className="mb-0">1. ข้อมูลบทเรียน</h5>
-            </div>
-            <div className="card-body">
-              <div className="mb-3">
-                <label htmlFor="title" className="form-label">ชื่อบทเรียน <span className="text-danger">*</span></label>
-                <input
-                  type="text"
-                  className={`form-control ${errors.title ? 'is-invalid' : ''}`}
-                  id="title"
-                  name="title"
-                  value={lessonData.title}
-                  onChange={handleInputChange}
-                  placeholder="ระบุชื่อบทเรียน"
-                />
-                {errors.title && <div className="invalid-feedback">{errors.title}</div>}
-              </div>
-              <div className="mb-3">
-                <label htmlFor="description" className="form-label">คำอธิบายบทเรียน</label>
-                <textarea
-                  className="form-control"
-                  id="description"
-                  name="description"
-                  value={lessonData.description}
-                  onChange={handleInputChange}
-                  rows={3}
-                  placeholder="ระบุคำอธิบายเพิ่มเติม (ถ้ามี)"
-                ></textarea>
-              </div>
-              <div className="form-check mb-3">
-                <input
-                  className="form-check-input"
-                  type="checkbox"
-                  id="canPreview"
-                  name="canPreview"
-                  checked={lessonData.canPreview}
-                  onChange={handleCheckboxChange}
-                />
-                <label className="form-check-label" htmlFor="canPreview">
-                  อนุญาตให้ผู้เรียนดูตัวอย่างบทเรียนนี้ได้โดยไม่ต้องลงทะเบียน
-                </label>
-              </div>
-              </div>
-          </div>
-          
-          {/* ส่วนที่ 2: เนื้อหาบทเรียน */}
-          <div className="card shadow-sm border-0 mb-4">
-            <div className="card-header bg-light">
-              <h5 className="mb-0">2. เนื้อหาบทเรียน</h5>
-            </div>
-            <div className="card-body">
-              {errors.content && (
-                <div className="alert alert-danger" role="alert">
-                  {errors.content}
-                </div>
-              )}
-              
-              {/* วิดีโอ */}
-              <div className="mb-4">
-                <label htmlFor="videoUrl" className="form-label">URL วิดีโอ YouTube</label>
-                <input
-                  type="text"
-                  className={`form-control ${errors.videoUrl ? 'is-invalid' : ''}`}
-                  id="videoUrl"
-                  name="videoUrl"
-                  value={lessonData.videoUrl}
-                  onChange={handleInputChange}
-                  placeholder="เช่น https://www.youtube.com/watch?v=abcdefghijk"
-                />
-                {errors.videoUrl && <div className="invalid-feedback">{errors.videoUrl}</div>}
-                <small className="text-muted mt-1 d-block">
-                  ใส่ URL ของวิดีโอ YouTube ที่ต้องการใช้ในบทเรียน (ถ้ามี)
-                </small>
-                
-                {/* แสดงตัวอย่างวิดีโอ */}
-                {lessonData.videoUrl && !errors.videoUrl && (
-                  <div className="mt-3">
-                    <h6>ตัวอย่างวิดีโอ:</h6>
-                    <div className="ratio ratio-16x9">
-                      <iframe
-                        src={lessonData.videoUrl.replace('watch?v=', 'embed/').split('&')[0]}
-                        title="YouTube video"
-                        allowFullScreen
-                      ></iframe>
-                    </div>
-                  </div>
-                )}
-              </div>
-              
-              {/* อัปโหลดไฟล์ */}
-              <div className="mb-3">
-                <label className="form-label">ไฟล์ประกอบบทเรียน</label>
-                <div className="input-group mb-3">
-                  <input
-                    type="file"
-                    className={`form-control ${errors.files ? 'is-invalid' : ''}`}
-                    id="files"
-                    ref={fileInputRef}
-                    onChange={handleFileUpload}
-                    accept=".pdf,.txt"
-                    multiple
-                  />
-                  <label className="input-group-text" htmlFor="files">อัปโหลด</label>
-                  {errors.files && <div className="invalid-feedback">{errors.files}</div>}
-                </div>
-                <small className="text-muted d-block">
-                  รองรับไฟล์ PDF และ TXT ขนาดไม่เกิน 2 MB (สูงสุด 2 ไฟล์)
-                </small>
-                
-                {/* แสดงไฟล์ที่อัปโหลด */}
-                {uploadedFiles.length > 0 && (
-                  <div className="mt-3">
-                    <h6>ไฟล์ที่อัปโหลด:</h6>
-                    <ul className="list-group">
-                      {uploadedFiles.map((file, index) => (
-                        <li key={index} className="list-group-item d-flex justify-content-between align-items-center">
-                          <div>
-                            <i className={`fas ${file.name.endsWith('.pdf') ? 'fa-file-pdf' : 'fa-file-alt'} me-2 text-danger`}></i>
-                            {file.name} ({(file.size / 1024).toFixed(2)} KB)
-                          </div>
-                          <button
-                            type="button"
-                            className="btn btn-sm btn-outline-danger"
-                            onClick={() => handleRemoveFile(index)}
-                          >
-                            <i className="fas fa-times"></i>
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                
-                {/* แสดงไฟล์ที่มีอยู่แล้ว (กรณีแก้ไข) */}
-                {existingFiles.length > 0 && filesToRemove.length < existingFiles.length && (
-                  <div className="mt-3">
-                    <h6>ไฟล์ที่มีอยู่แล้ว:</h6>
-                    <ul className="list-group">
-                      {existingFiles.map((file) => {
-                        if (filesToRemove.includes(file.file_id)) return null;
-                        return (
-                          <li key={file.file_id} className="list-group-item d-flex justify-content-between align-items-center">
-                            <div>
-                              <i className={`fas ${file.file_name.endsWith('.pdf') ? 'fa-file-pdf' : 'fa-file-alt'} me-2 text-danger`}></i>
-                              {file.file_name} ({(file.file_size / 1024).toFixed(2)} KB)
-                            </div>
-                            <button
-                              type="button"
-                              className="btn btn-sm btn-outline-danger"
-                              onClick={() => handleRemoveExistingFile(file.file_id)}
-                            >
-                              <i className="fas fa-times"></i>
-                            </button>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-          
-          {/* ส่วนที่ 3: เลือกวิชาที่เกี่ยวข้อง */}
-          <div className="card shadow-sm border-0 mb-4">
-            <div className="card-header bg-light">
-              <h5 className="mb-0">3. เลือกวิชาที่เกี่ยวข้อง</h5>
-            </div>
-            <div className="card-body">
-              <p className="text-muted mb-3">
-                คุณสามารถเลือกวิชาที่เกี่ยวข้องกับบทเรียนนี้ได้ (ไม่บังคับ) และสามารถเลือกได้มากกว่า 1 วิชา
-              </p>
-              
-              <div className="d-flex justify-content-between align-items-center mb-3">
-                <div>
-                  {lessonData.subjects.length > 0 ? (
-                    <span className="badge bg-success rounded-pill">
-                      เลือกแล้ว {lessonData.subjects.length} วิชา
-                    </span>
-                  ) : (
-                    <span className="badge bg-secondary rounded-pill">
-                      ยังไม่ได้เลือกวิชา
-                    </span>
-                  )}
-                </div>
+      </form>
+
+      {/* Add Question Form Modal */}
+      {showAddQuestionForm && (
+        <div
+          className="modal fade show"
+          style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}
+          tabIndex={-1}
+        >
+          <div className="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">สร้างคำถามใหม่</h5>
                 <button
                   type="button"
-                  className="btn btn-outline-primary btn-sm"
-                  onClick={() => setShowSubjectModal(true)}
-                  disabled={availableSubjects.length === 0}
-                >
-                  <i className="fas fa-book me-2"></i>เลือกวิชา
-                </button>
+                  className="btn-close"
+                  onClick={() => setShowAddQuestionForm(false)}
+                ></button>
               </div>
-              
-              {lessonData.subjects.length > 0 && (
-                <div className="selected-subjects">
-                  <h6 className="mb-2">วิชาที่เลือก:</h6>
-                  <div className="row g-2">
-                    {lessonData.subjects.map(subjectId => {
-                      const subject = availableSubjects.find(s => s.id === subjectId);
-                      return subject ? (
-                        <div key={subject.id} className="col-md-6">
-                          <div className="card border h-100">
-                            <div className="card-body py-2 px-3">
-                              <div className="d-flex justify-content-between align-items-center">
-                                <div>
-                                  <h6 className="mb-1">{subject.title}</h6>
-                                  <p className="mb-0 small text-muted">
-                                    {subject.subject_code && `รหัสวิชา: ${subject.subject_code} | `}
-                                    ภาควิชา: {subject.category || "ไม่ระบุ"}
-                                  </p>
-                                </div>
-                                <button
-                                  type="button"
-                                  className="btn btn-sm text-danger"
-                                  onClick={() => handleToggleSubject(subject.id)}
-                                >
-                                  <i className="fas fa-times-circle"></i>
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ) : null;
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-          
-          {/* ส่วนที่ 4: แบบทดสอบประจำบทเรียน */}
-          <div className="card shadow-sm border-0 mb-4">
-            <div className="card-header bg-light">
-              <h5 className="mb-0">4. แบบทดสอบประจำบทเรียน</h5>
-            </div>
-            <div className="card-body">
-              <div className="form-check mb-3">
-                <input
-                  className="form-check-input"
-                  type="checkbox"
-                  id="hasQuiz"
-                  name="hasQuiz"
-                  checked={lessonData.hasQuiz}
-                  onChange={handleCheckboxChange}
+              <div className="modal-body">
+                {/* Simple Question Form */}
+                <SimpleQuestionForm
+                  onSubmit={handleAddNewQuestion}
+                  onCancel={() => setShowAddQuestionForm(false)}
+                  quizType={quizType}
                 />
-                <label className="form-check-label" htmlFor="hasQuiz">
-                  บทเรียนนี้มีแบบทดสอบ
-                </label>
               </div>
-              
-              {lessonData.hasQuiz && (
-                <div className="quiz-selection mt-3">
-                  {errors.quiz && (
-                    <div className="alert alert-danger" role="alert">
-                      {errors.quiz}
-                    </div>
-                  )}
-                  
-                  {selectedQuiz ? (
-                    <div className="selected-quiz">
-                      <div className="card border">
-                        <div className="card-body">
-                          <div className="d-flex justify-content-between align-items-center">
-                            <div>
-                              <h6 className="mb-1">{selectedQuiz.title}</h6>
-                              <p className="mb-0 small text-muted">
-                                จำนวนคำถาม: {selectedQuiz.questions} ข้อ
-                                {selectedQuiz.description && ` | ${selectedQuiz.description}`}
-                              </p>
-                            </div>
-                            <button
-                              type="button"
-                              className="btn btn-sm text-danger"
-                              onClick={() => {
-                                setSelectedQuiz(null);
-                                setLessonData({
-                                  ...lessonData,
-                                  quizId: null
-                                });
-                              }}
-                            >
-                              <i className="fas fa-times-circle"></i>
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="d-flex gap-2">
-                      <button
-                        type="button"
-                        className="btn btn-primary"
-                        onClick={() => setShowQuizModal(true)}
-                      >
-                        <i className="fas fa-list-ul me-2"></i>เลือกแบบทดสอบที่มีอยู่
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-outline-primary"
-                        onClick={() => setShowCreateQuizModal(true)}
-                      >
-                        <i className="fas fa-plus-circle me-2"></i>สร้างแบบทดสอบใหม่
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
           </div>
-          
-          {/* ปุ่มบันทึกและยกเลิก */}
-          <div className="d-flex justify-content-end gap-2 mt-4">
-            <button 
-              type="button" 
-              className="btn btn-outline-secondary" 
-              onClick={handleCancel}
-              disabled={isSubmitting}
-            >
-              ยกเลิก
-            </button>
-            <button 
-              type="submit" 
-              className="btn btn-primary"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? (
-                <>
-                  <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                  กำลังบันทึก...
-                </>
-              ) : (
-                <>
-                  <i className="fas fa-save me-2"></i>บันทึกบทเรียน
-                </>
-              )}
-            </button>
-          </div>
-        </>
+        </div>
       )}
-      
-      {/* Modal สำหรับเลือกแบบทดสอบ */}
-      {showQuizModal && (
-        <div className="modal fade show"
-          style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}
+
+      {/* Existing Questions Modal */}
+      {showExistingQuestions && (
+        <div
+          className="modal fade show"
+          style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}
           tabIndex={-1}
         >
           <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
             <div className="modal-content">
               <div className="modal-header">
-                <h5 className="modal-title">เลือกแบบทดสอบ</h5>
+                <h5 className="modal-title">
+                  เลือกคำถามที่มีอยู่ - {quizType === "normal" ? "แบบทดสอบปกติ" : "แบบทดสอบพิเศษ"}
+                </h5>
                 <button
                   type="button"
                   className="btn-close"
-                  onClick={() => setShowQuizModal(false)}
+                  onClick={() => setShowExistingQuestions(false)}
                 ></button>
               </div>
               <div className="modal-body">
-                {/* ค้นหาแบบทดสอบ */}
                 <div className="mb-3">
                   <div className="input-group">
                     <input
                       type="text"
                       className="form-control"
-                      placeholder="ค้นหาแบบทดสอบ..."
+                      placeholder="ค้นหาคำถาม..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                     />
                     <button className="btn btn-outline-secondary" type="button">
                       <i className="fas fa-search"></i>
                     </button>
-                    </div>
+                  </div>
+                  <small className="text-muted">
+                    แสดงผลสูงสุด 6 รายการ - พิมพ์ต่อเพื่อผลลัพธ์ที่แม่นยำ
+                  </small>
                 </div>
-                
-                {/* รายการแบบทดสอบ */}
-                <div className="quiz-list">
-                  {filteredQuizzes.length > 0 ? (
-                    <div className="list-group">
-                      {filteredQuizzes.map((quiz) => (
-                        <div
-                          key={quiz.id}
-                          className="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
-                          onClick={() => handleSelectQuiz(quiz)}
-                          style={{ cursor: 'pointer' }}
-                        >
-                          <div>
-                            <h6 className="mb-1">{quiz.title}</h6>
-                            <p className="mb-0 small text-muted">
-                              จำนวนคำถาม: {quiz.questions} ข้อ
-                              {quiz.description && ` | ${quiz.description}`}
-                            </p>
+
+                <div className="mb-3">
+                  <small className="text-muted">
+                    เลือกแล้ว: {selectedExistingQuestions.length} คำถาม
+                    {quizType === "normal" && " (แสดงเฉพาะคำถามประเภท: ตัวเลือกเดียว, หลายตัวเลือก, ถูก/ผิด)"}
+                    {quizType === "special" && " (แสดงเฉพาะคำถามประเภท: เติมคำ)"}
+                  </small>
+                </div>
+
+                {searchTerm.trim() === "" ? (
+                  <div className="text-center py-4">
+                    <i className="fas fa-search fa-3x text-muted mb-3"></i>
+                    <p className="text-muted">กรุณากรอกชื่อคำถามเพื่อค้นหา</p>
+                  </div>
+                ) : (() => {
+                  const filteredQuestions = getFilteredExistingQuestions();
+                  const displayedQuestions = filteredQuestions.slice(0, 6);
+
+                  return displayedQuestions.length > 0 ? (
+                    <>
+                      <div className="list-group" style={{ maxHeight: "400px", overflowY: "auto" }}>
+                        {displayedQuestions.map((question) => (
+                          <div
+                            key={question.id}
+                            className={`list-group-item list-group-item-action d-flex justify-content-between align-items-center ${
+                              quizData.questions.some(q => q.id === question.id) ? 'list-group-item-secondary' : ''
+                            }`}
+                          >
+                            <div className="flex-grow-1">
+                              <h6 className="mb-1">{question.title}</h6>
+                              <div className="d-flex align-items-center gap-2">
+                                <span className="badge bg-info rounded-pill">
+                                  {question.type === "TF" && "ถูก/ผิด"}
+                                  {question.type === "MC" && "หลายตัวเลือก"}
+                                  {question.type === "SC" && "ตัวเลือกเดียว"}
+                                  {question.type === "FB" && "เติมคำ"}
+                                </span>
+                                <small className="text-muted">{question.score} คะแนน</small>
+                              </div>
+                              {quizData.questions.some(q => q.id === question.id) && (
+                                <small className="text-success">
+                                  <i className="fas fa-check me-1"></i>เพิ่มแล้ว
+                                </small>
+                              )}
+                            </div>
+                            <div className="form-check">
+                              <input
+                                className="form-check-input"
+                                type="checkbox"
+                                id={`question-${question.id}`}
+                                checked={selectedExistingQuestions.includes(question.id)}
+                                onChange={() => handleSelectExistingQuestion(question.id)}
+                                disabled={quizData.questions.some(q => q.id === question.id)}
+                              />
+                            </div>
                           </div>
-                          <div className="form-check">
-                            <input
-                              className="form-check-input"
-                              type="radio"
-                              name="selectedQuiz"
-                              checked={selectedQuiz?.id === quiz.id}
-                              onChange={() => handleSelectQuiz(quiz)}
-                              onClick={(e) => e.stopPropagation()}
-                            />
-                          </div>
+                        ))}
+                      </div>
+                      {filteredQuestions.length > 6 && (
+                        <div className="alert alert-info mt-3">
+                          <i className="fas fa-info-circle me-2"></i>
+                          พบ {filteredQuestions.length} รายการ แสดงเฉพาะ 6 รายการแรก - พิมพ์ต่อเพื่อผลลัพธ์ที่แม่นยำ
                         </div>
-                      ))}
-                    </div>
+                      )}
+                    </>
                   ) : (
                     <div className="text-center py-4">
-                      <p className="text-muted">ไม่พบแบบทดสอบที่ตรงกับคำค้นหา</p>
+                      <i className="fas fa-exclamation-circle fa-2x text-muted mb-3"></i>
+                      <p className="text-muted">ไม่พบคำถามที่ตรงกับคำค้นหา "{searchTerm}"</p>
                     </div>
-                  )}
-                </div>
+                  );
+                })()}
               </div>
               <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={() => setShowQuizModal(false)}>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setShowExistingQuestions(false)}
+                >
                   ยกเลิก
                 </button>
                 <button
                   type="button"
                   className="btn btn-primary"
-                  onClick={() => setShowQuizModal(false)}
-                  disabled={!selectedQuiz}
+                  onClick={handleAddSelectedQuestions}
+                  disabled={selectedExistingQuestions.length === 0}
                 >
-                  เลือกแบบทดสอบนี้
+                  เพิ่มคำถามที่เลือก ({selectedExistingQuestions.length})
                 </button>
               </div>
             </div>
           </div>
         </div>
       )}
+    </div>
+  );
+};
+
+// ===== SIMPLE QUESTION FORM COMPONENT =====
+interface SimpleQuestionFormProps {
+  onSubmit: (questionData: any) => void;
+  onCancel: () => void;
+  quizType: QuizType;
+}
+
+const SimpleQuestionForm: React.FC<SimpleQuestionFormProps> = ({ onSubmit, onCancel, quizType }) => {
+  const [questionData, setQuestionData] = useState({
+    title: "",
+    type: (quizType === "normal" ? "SC" : "FB") as QuestionType,
+    score: 1,
+    choices: quizType === "normal" ? [
+      { id: "1", text: "ตัวเลือกที่ 1", isCorrect: false },
+      { id: "2", text: "ตัวเลือกที่ 2", isCorrect: false },
+      { id: "3", text: "ตัวเลือกที่ 3", isCorrect: false }
+    ] : []
+  });
+
+  const [errors, setErrors] = useState({
+    title: "",
+    choices: "",
+    correctAnswers: ""
+  });
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setQuestionData(prev => ({
+      ...prev,
+      [name]: name === "score" ? parseInt(value) || 1 : value
+    }));
+    
+    if (errors[name as keyof typeof errors]) {
+      setErrors(prev => ({ ...prev, [name]: "" }));
+    }
+  };
+
+  const handleTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newType = e.target.value as QuestionType;
+    let newChoices = questionData.choices;
+
+    if (newType === "TF") {
+      newChoices = [
+        { id: "1", text: "True", isCorrect: false },
+        { id: "2", text: "False", isCorrect: false }
+      ];
+    } else if (newType === "FB") {
+      newChoices = [];
+    } else if (newChoices.length < 3) {
+      newChoices = [
+        { id: "1", text: "ตัวเลือกที่ 1", isCorrect: false },
+        { id: "2", text: "ตัวเลือกที่ 2", isCorrect: false },
+        { id: "3", text: "ตัวเลือกที่ 3", isCorrect: false }
+      ];
+    }
+
+    setQuestionData(prev => ({
+      ...prev,
+      type: newType,
+      choices: newChoices
+    }));
+  };
+
+  const handleChoiceChange = (id: string, text: string) => {
+    setQuestionData(prev => ({
+      ...prev,
+      choices: prev.choices.map(choice =>
+        choice.id === id ? { ...choice, text } : choice
+      )
+    }));
+  };
+
+  const handleCorrectAnswerChange = (id: string) => {
+    setQuestionData(prev => ({
+      ...prev,
+      choices: prev.choices.map(choice => {
+        if (questionData.type === "SC" || questionData.type === "TF") {
+          return { ...choice, isCorrect: choice.id === id };
+        } else {
+          return choice.id === id ? { ...choice, isCorrect: !choice.isCorrect } : choice;
+        }
+      })
+    }));
+  };
+
+  const validateForm = (): boolean => {
+    const newErrors = {
+      title: "",
+      choices: "",
+      correctAnswers: ""
+    };
+    let isValid = true;
+
+    if (!questionData.title.trim()) {
+      newErrors.title = "กรุณาระบุชื่อคำถาม";
+      isValid = false;
+    }
+
+    if (questionData.type !== "FB") {
+      const correctAnswers = questionData.choices.filter(c => c.isCorrect);
       
-      {/* Modal สำหรับสร้างแบบทดสอบใหม่ */}
-      {showCreateQuizModal && (
-        <div className="modal fade show"
-          style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}
-          tabIndex={-1}
-        >
-          <div className="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">สร้างแบบทดสอบใหม่</h5>
-                <button
-                  type="button"
-                  className="btn-close"
-                  onClick={() => setShowCreateQuizModal(false)}
-                ></button>
-              </div>
-              <div className="modal-body">
-                <AddQuizzes onSubmit={handleCreateQuiz} onCancel={() => setShowCreateQuizModal(false)} />
-              </div>
-            </div>
+      if (questionData.type === "MC" && correctAnswers.length < 2) {
+        newErrors.correctAnswers = "ข้อสอบหลายตัวเลือกต้องมีคำตอบที่ถูกต้องอย่างน้อย 2 ข้อ";
+        isValid = false;
+      } else if ((questionData.type === "SC" || questionData.type === "TF") && correctAnswers.length !== 1) {
+        newErrors.correctAnswers = "ต้องเลือกคำตอบที่ถูกต้องเพียง 1 ข้อ";
+        isValid = false;
+      }
+    }
+
+    setErrors(newErrors);
+    return isValid;
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (validateForm()) {
+      onSubmit(questionData);
+    }
+  };
+
+  // Get available question types based on quiz type
+  const getAvailableTypes = () => {
+    if (quizType === "normal") {
+      return [
+        { value: "SC", label: "ตัวเลือกเดียว (Single Choice)" },
+        { value: "MC", label: "หลายตัวเลือก (Multiple Choice)" },
+        { value: "TF", label: "ถูก/ผิด (True/False)" }
+      ];
+    } else {
+      return [
+        { value: "FB", label: "เติมคำ (Fill in Blank)" }
+      ];
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <div className="mb-3">
+        <label htmlFor="title" className="form-label">
+          ชื่อคำถาม <span className="text-danger">*</span>
+        </label>
+        <input
+          type="text"
+          className={`form-control ${errors.title ? 'is-invalid' : ''}`}
+          id="title"
+          name="title"
+          value={questionData.title}
+          onChange={handleInputChange}
+          placeholder="ระบุชื่อคำถาม"
+        />
+        {errors.title && <div className="invalid-feedback">{errors.title}</div>}
+      </div>
+
+      <div className="row">
+        <div className="col-md-8">
+          <div className="mb-3">
+            <label htmlFor="type" className="form-label">
+              ประเภทคำถาม <span className="text-danger">*</span>
+            </label>
+            <select
+              className="form-select"
+              id="type"
+              name="type"
+              value={questionData.type}
+              onChange={handleTypeChange}
+              disabled={quizType === "special"} // Disable for special quiz (only FB allowed)
+            >
+              {getAvailableTypes().map(type => (
+                <option key={type.value} value={type.value}>
+                  {type.label}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
-      )}
-      
-      {/* Modal สำหรับเลือกวิชา */}
-      {showSubjectModal && (
-        <div className="modal fade show"
-          style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}
-          tabIndex={-1}
-        >
-          <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">เลือกวิชาที่เกี่ยวข้อง</h5>
-                <button
-                  type="button"
-                  className="btn-close"
-                  onClick={() => setShowSubjectModal(false)}
-                ></button>
-              </div>
-              <div className="modal-body">
-                {/* ค้นหาวิชา */}
-                <div className="mb-3">
-                  <div className="input-group">
-                    <input
-                      type="text"
-                      className="form-control"
-                      placeholder="ค้นหาวิชา..."
-                      value={subjectSearchTerm}
-                      onChange={(e) => setSubjectSearchTerm(e.target.value)}
-                    />
-                    <button className="btn btn-outline-secondary" type="button">
-                      <i className="fas fa-search"></i>
-                    </button>
-                  </div>
-                </div>
-                
-                {/* รายการวิชา */}
-                <div className="list-group">
-                  {filteredSubjects.length > 0 ? (
-                    filteredSubjects.map((subject) => (
-                      <div
-                        key={subject.id}
-                        className="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
-                      >
-                        <div>
-                          <h6 className="mb-1">{subject.title}</h6>
-                          <p className="mb-0 small text-muted">
-                            {subject.subject_code && `รหัสวิชา: ${subject.subject_code} | `}
-                            ภาควิชา: {subject.category || "ไม่ระบุ"}
-                          </p>
-                        </div>
-                        <div className="form-check">
-                          <input
-                            className="form-check-input"
-                            type="checkbox"
-                            id={`select-subject-${subject.id}`}
-                            checked={lessonData.subjects.includes(subject.id)}
-                            onChange={() => handleToggleSubject(subject.id)}
-                          />
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-center py-4">
-                      <p className="text-muted">ไม่พบวิชาที่ตรงกับคำค้นหา</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-primary" onClick={() => setShowSubjectModal(false)}>
-                  เสร็จสิ้น
-                </button>
-              </div>
-            </div>
+        <div className="col-md-4">
+          <div className="mb-3">
+            <label htmlFor="score" className="form-label">คะแนน</label>
+            <input
+              type="number"
+              className="form-control"
+              id="score"
+              name="score"
+              value={questionData.score}
+              onChange={handleInputChange}
+              min="1"
+              max="100"
+            />
           </div>
         </div>
+      </div>
+
+      {questionData.type !== "FB" && (
+        <div className="mb-3">
+          <label className="form-label">
+            ตัวเลือก <span className="text-danger">*</span>
+          </label>
+          {errors.correctAnswers && <div className="text-danger small mb-2">{errors.correctAnswers}</div>}
+          
+          <div className="choices-container">
+            {questionData.choices.map((choice, index) => (
+              <div key={choice.id} className="d-flex align-items-center mb-2">
+                <div className="form-check me-2">
+                  <input
+                    className="form-check-input"
+                    type={questionData.type === "MC" ? "checkbox" : "radio"}
+                    name="correctAnswer"
+                    checked={choice.isCorrect}
+                    onChange={() => handleCorrectAnswerChange(choice.id)}
+                  />
+                </div>
+                <input
+                  type="text"
+                  className="form-control"
+                  value={choice.text}
+                  onChange={(e) => handleChoiceChange(choice.id, e.target.value)}
+                  placeholder={`ตัวเลือกที่ ${index + 1}`}
+                  readOnly={questionData.type === "TF"}
+                />
+              </div>
+            ))}
+          </div>
+          
+          <small className="text-muted">
+            {questionData.type === "MC" ? "เลือกได้หลายข้อ" : "เลือกได้เพียงข้อเดียว"}
+          </small>
+        </div>
       )}
+
+      {questionData.type === "FB" && (
+        <div className="alert alert-info">
+          <i className="fas fa-info-circle me-2"></i>
+          คำถามประเภทเติมคำจะต้องให้อาจารย์ตรวจให้คะแนนเอง และนักเรียนสามารถแนบไฟล์ได้
+        </div>
+      )}
+
+      <div className="d-flex justify-content-end gap-2">
+        <button type="button" className="btn btn-secondary" onClick={onCancel}>
+          ยกเลิก
+        </button>
+        <button type="submit" className="btn btn-primary">
+          <i className="fas fa-plus me-2"></i>เพิ่มคำถาม
+        </button>
+      </div>
     </form>
   );
 };
 
-export default AddLessons;
+export default AddQuizzes;

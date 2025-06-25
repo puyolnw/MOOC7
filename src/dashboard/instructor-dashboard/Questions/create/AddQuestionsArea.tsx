@@ -1,5 +1,5 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import {useNavigate } from "react-router-dom";
 import DashboardBanner from "../../../dashboard-common/DashboardBanner";
 import DashboardSidebar from "../../../dashboard-common/DashboardSidebar";
 import AddQuestions from "../../../../forms/Course/Questions/AddQuestions";
@@ -21,9 +21,7 @@ const AddQuestionsArea: React.FC<AddQuestionsAreaProps> = ({ isEmbedded = false 
     
     // แสดงข้อความสำเร็จ
     alert("บันทึกข้อมูลสำเร็จ");
-    
-    // กลับไปยังหน้ารายการคำถาม
-    navigate("/admin-questions");
+
   };
   
   // จัดการเมื่อมีการยกเลิก

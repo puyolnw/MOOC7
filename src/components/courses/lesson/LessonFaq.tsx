@@ -12,7 +12,7 @@ interface LessonItem {
   type: 'video' | 'quiz';
   duration: string;
   status?: 'passed' | 'failed' | 'awaiting_review';
-  quiz_id?: number; // เพิ่มนี้สำหรับ subject quiz
+  quiz_id?: number;
 }
 
 interface SectionData {
@@ -52,6 +52,57 @@ const LessonFaq = ({
   const [loadingQuizzes, setLoadingQuizzes] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
+  // ฟังก์ชันเช็คว่าแบบทดสอบก่อนเรียนผ่านแล้วหรือยัง
+  const isPreTestPassed = () => {
+    const preTest = subjectQuizzes.find(q => q.type === "pre_test");
+    return preTest?.passed || false;
+  };
+
+  // ฟังก์ชันเช็คว่าบทเรียนทั้งหมดเสร็จแล้วหรือยัง
+  const areAllLessonsCompleted = () => {
+    return lessonData.every(section => 
+      section.items.every(item => item.completed)
+    );
+  };
+
+  // ฟังก์ชันเช็คว่าบทก่อนหน้าเสร็จแล้วหรือยัง
+  const isPreviousLessonCompleted = (sectionIndex: number, itemIndex: number) => {
+    const allLessons = [];
+    for (let i = 0; i < lessonData.length; i++) {
+      for (let j = 0; j < lessonData[i].items.length; j++) {
+        allLessons.push({
+          sectionIndex: i,
+          itemIndex: j,
+          item: lessonData[i].items[j]
+        });
+      }
+    }
+
+    const currentIndex = allLessons.findIndex(lesson => 
+      lesson.sectionIndex === sectionIndex && lesson.itemIndex === itemIndex
+    );
+
+    if (currentIndex <= 0) {
+      return true;
+    }
+
+    const previousLesson = allLessons[currentIndex - 1];
+    return previousLesson.item.completed;
+  };
+
+  // ฟังก์ชันเช็คว่าควรล็อคบทเรียนหรือไม่
+  const shouldLockLesson = (sectionIndex: number, itemIndex: number) => {
+    if (!isPreTestPassed()) {
+      return true;
+    }
+    
+    if (sectionIndex === 0 && itemIndex === 0) {
+      return false;
+    }
+    
+    return !isPreviousLessonCompleted(sectionIndex, itemIndex);
+  };
+
   // ฟังก์ชันโหลดข้อมูลแบบทดสอบ pre/post test
   const fetchSubjectQuizzes = async () => {
     if (!subjectId) {
@@ -89,7 +140,7 @@ const LessonFaq = ({
             title: preTest.title || "แบบทดสอบก่อนเรียน",
             description: preTest.description,
             type: "pre_test",
-            locked: preTest.locked || false,
+            locked: false,
             completed: preTest.progress?.completed || false,
             passed: preTest.progress?.passed || false,
             status: preTest.progress?.awaiting_review ? "awaiting_review" :
@@ -108,7 +159,7 @@ const LessonFaq = ({
             title: postTest.title || "แบบทดสอบหลังเรียน",
             description: postTest.description,
             type: "post_test",
-            locked: postTest.locked || false,
+            locked: !areAllLessonsCompleted(),
             completed: postTest.progress?.completed || false,
             passed: postTest.progress?.passed || false,
             status: postTest.progress?.awaiting_review ? "awaiting_review" :
@@ -140,37 +191,109 @@ const LessonFaq = ({
     }
   }, [subjectId]);
 
-  const handleItemClick = (sectionId: number, item: LessonItem) => {
-    if (!item.lock) {
-      onSelectLesson(sectionId, item.id, item.title, item.type);
+  // อัพเดทสถานะการล็อคของแบบทดสอบหลังเรียนเมื่อข้อมูลเปลี่ยน
+  useEffect(() => {
+    setSubjectQuizzes(prev => prev.map(quiz => ({
+      ...quiz,
+      locked: quiz.type === "post_test" ? !areAllLessonsCompleted() : false
+    })));
+  }, [lessonData]);
+
+  const handleItemClick = (sectionId: number, item: LessonItem, sectionIndex: number, itemIndex: number) => {
+    const isLocked = shouldLockLesson(sectionIndex, itemIndex);
+    
+    if (isLocked) {
+      if (sectionIndex === 0 && itemIndex === 0) {
+        alert("กรุณาทำแบบทดสอบก่อนเรียนให้ผ่านก่อน");
+      } else {
+        alert("กรุณาเรียนบทก่อนหน้าให้เสร็จก่อน");
+      }
+      return;
     }
+    
+    onSelectLesson(sectionId, item.id, item.title, item.type);
   };
 
-  // แปลง SubjectQuiz เป็น LessonItem แล้วเรียก onSelectLesson ธรรมดา
+  // แปลง SubjectQuiz เป็น LessonItem แล้วเรียก onSelectLesson
   const handleSubjectQuizClick = (quiz: SubjectQuiz) => {
     if (quiz.locked) {
-      alert("แบบทดสอบนี้ยังไม่สามารถทำได้ กรุณาเรียนให้ครบก่อน");
+      if (quiz.type === "pre_test") {
+        alert("กรุณาทำแบบทดสอบก่อนเรียนก่อน");
+      } else {
+        alert("กรุณาเรียนบทเรียนให้ครบทุกบทก่อนทำแบบทดสอบหลังเรียน");
+      }
       return;
     }
 
-    // สร้าง fake LessonItem จาก SubjectQuiz
-    const fakeItem: LessonItem = {
-      id: quiz.type === 'pre_test' ? -1 : -2, // ใช้ negative id เพื่อแยกจาก lesson จริง
-      title: quiz.title,
-      lock: quiz.locked,
-      completed: quiz.completed,
-      type: 'quiz',
-      duration: quiz.completed ? '100%' : '0%',
-      status: quiz.status as any,
-      quiz_id: quiz.quiz_id
-    };
+    console.log("Clicking subject quiz:", quiz);
 
-    // เรียก onSelectLesson เหมือนปกติ
-    onSelectLesson(quiz.quiz_id, fakeItem.id, quiz.title, 'quiz');
+    // ส่งข้อมูลแบบทดสอบพิเศษไปยัง parent component
+    // ใช้ค่าลบเพื่อแยกจากบทเรียนปกติ
+    const specialSectionId = quiz.type === 'pre_test' ? -1000 : -2000;
+    const specialItemId = quiz.quiz_id;
+    
+    console.log("Calling onSelectLesson for special quiz:", specialSectionId, specialItemId, quiz.title);
+    onSelectLesson(specialSectionId, specialItemId, quiz.title, 'quiz');
   };
 
   const toggleAccordion = (id: number) => {
     setActiveAccordion(activeAccordion === id ? null : id);
+  };
+
+  // ฟังก์ชันสำหรับ render แบบทดสอบในรูปแบบ accordion เหมือนบทเรียน
+  const renderQuizSection = (quiz: SubjectQuiz, sectionId: number) => {
+    const statusText = quiz.status === 'passed' ? 'ผ่าน' : 
+                      quiz.status === 'awaiting_review' ? 'รอตรวจ' : 
+                      quiz.status === 'failed' ? 'ไม่ผ่าน' : 'ยังไม่ทำ';
+    
+    return (
+      <div key={`${quiz.type}-${quiz.quiz_id}`} className="accordion-item">
+        <h2 className="accordion-header">
+          <button 
+            className={`accordion-button ${activeAccordion === sectionId ? '' : 'collapsed'}`}
+            type="button"
+            onClick={() => toggleAccordion(sectionId)}
+          >
+            <span className="section-title">
+              {quiz.type === 'pre_test' ? '🎯 ' : '🏁 '}{quiz.title}
+            </span>
+            <span className={`section-status ${
+              quiz.status === 'passed' ? "status-passed" : 
+              quiz.status === 'awaiting_review' ? "status-awaiting" : "status-not-passed"
+            }`}>
+              {statusText}
+            </span>
+          </button>
+        </h2>
+        <div 
+          id={`collapse${sectionId}`} 
+          className={`accordion-collapse collapse ${activeAccordion === sectionId ? 'show' : ''}`}
+        >
+          <div className="accordion-body">
+            <ul className="list-wrap">
+              <li
+                className={`course-item ${quiz.completed ? 'completed' : ''} ${quiz.locked ? 'locked' : ''}`}
+                onClick={() => handleSubjectQuizClick(quiz)}
+                style={{ cursor: quiz.locked ? 'not-allowed' : 'pointer' }}
+              >
+                <div className="course-item-link">
+                  <span className="item-name">
+                    {quiz.locked && <i className="fas fa-lock lock-icon me-2"></i>}
+                    {quiz.title}
+                  </span>
+                  <span className={`item-status ${
+                    quiz.status === 'passed' ? "status-passed" : 
+                    quiz.status === 'awaiting_review' ? "status-awaiting" : "status-not-passed"
+                  }`}>
+                    {statusText}
+                  </span>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   // เปิดแอคคอร์เดียนแรกที่ยังไม่เสร็จ
@@ -212,40 +335,12 @@ const LessonFaq = ({
         </div>
       )}
 
-      {/* แบบทดสอบก่อนเรียน - ทำให้เหมือนบทเรียนธรรมดา */}
+      {/* แบบทดสอบก่อนเรียน */}
       {subjectQuizzes
         .filter(quiz => quiz.type === "pre_test")
-        .map((quiz) => (
-          <div key={`pre-test-${quiz.quiz_id}`} className="accordion-item">
-            <div className="accordion-body">
-              <ul className="list-wrap">
-                <li
-                  className={`course-item ${quiz.completed ? 'completed' : ''} ${quiz.locked ? 'locked' : ''}`}
-                  onClick={() => handleSubjectQuizClick(quiz)}
-                  style={{ cursor: quiz.locked ? 'not-allowed' : 'pointer' }}
-                >
-                  <div className="course-item-link">
-                    <span className="item-name">
-                      {quiz.locked && <i className="fas fa-lock lock-icon me-2"></i>}
-                      🎯 {quiz.title}
-                    </span>
-                    <span className={`item-status ${
-                      quiz.status === 'passed' ? "status-passed" : 
-                      quiz.status === 'awaiting_review' ? "status-awaiting" : "status-not-passed"
-                    }`}>
-                      {quiz.status === 'passed' ? 'ผ่าน' : 
-                       quiz.status === 'awaiting_review' ? 'รอตรวจ' : 
-                       quiz.status === 'failed' ? 'ไม่ผ่าน' : 'ยังไม่ทำ'}
-                    </span>
-                  </div>
-                </li>
-              </ul>
-            </div>
-          </div>
-        ))}
-
+        .map((quiz) => renderQuizSection(quiz, -1000))}
       {/* บทเรียนปกติ */}
-      {lessonData.map((section) => (
+      {lessonData.map((section, sectionIndex) => (
         <div key={section.id} className="accordion-item">
           <h2 className="accordion-header">
             <button 
@@ -268,71 +363,47 @@ const LessonFaq = ({
           >
             <div className="accordion-body">
               <ul className="list-wrap">
-                {section.items.map((item) => (
-                  <li
-                    key={item.id}
-                    className={`course-item ${item.completed ? 'completed' : ''} ${item.lock ? 'locked' : ''}`}
-                    onClick={() => handleItemClick(section.id, item)}
-                    style={{ cursor: item.lock ? 'not-allowed' : 'pointer' }}
-                  >
-                    <div className="course-item-link">
-                      <span className="item-name">
-                        {item.lock && <i className="fas fa-lock lock-icon me-2"></i>}
-                        {item.title}
-                      </span>
-                      <span className={`item-status ${
-                        item.status === 'passed' ? "status-passed" : 
-                        item.status === 'awaiting_review' ? "status-awaiting" : "status-not-passed"
-                      }`}>
-                        {item.status === 'passed' ? 'ผ่าน' : 
-                         item.status === 'awaiting_review' ? 'รอตรวจ' : 'ไม่ผ่าน'}
-                      </span>
-                    </div>
-                  </li>
-                ))}
+                {section.items.map((item, itemIndex) => {
+                  const isLocked = shouldLockLesson(sectionIndex, itemIndex);
+                  return (
+                    <li
+                      key={item.id}
+                      className={`course-item ${item.completed ? 'completed' : ''} ${isLocked ? 'locked' : ''}`}
+                      onClick={() => handleItemClick(section.id, item, sectionIndex, itemIndex)}
+                      style={{ cursor: isLocked ? 'not-allowed' : 'pointer' }}
+                    >
+                      <div className="course-item-link">
+                        <span className="item-name">
+                          {isLocked && <i className="fas fa-lock lock-icon me-2"></i>}
+                          {item.title}
+                        </span>
+                        <span className={`item-status ${
+                          item.status === 'passed' ? "status-passed" : 
+                          item.status === 'awaiting_review' ? "status-awaiting" : "status-not-passed"
+                        }`}>
+                          {item.status === 'passed' ? 'ผ่าน' : 
+                           item.status === 'awaiting_review' ? 'รอตรวจ' : 'ไม่ผ่าน'}
+                        </span>
+                      </div>
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           </div>
         </div>
       ))}
 
-      {/* แบบทดสอบหลังเรียน - ทำให้เหมือนบทเรียนธรรมดา */}
+      {/* แบบทดสอบหลังเรียน */}
       {subjectQuizzes
         .filter(quiz => quiz.type === "post_test")
-        .map((quiz) => (
-          <div key={`post-test-${quiz.quiz_id}`} className="accordion-item">
-            <div className="accordion-body">
-              <ul className="list-wrap">
-                <li
-                  className={`course-item ${quiz.completed ? 'completed' : ''} ${quiz.locked ? 'locked' : ''}`}
-                  onClick={() => handleSubjectQuizClick(quiz)}
-                  style={{ cursor: quiz.locked ? 'not-allowed' : 'pointer' }}
-                >
-                  <div className="course-item-link">
-                    <span className="item-name">
-                      {quiz.locked && <i className="fas fa-lock lock-icon me-2"></i>}
-                      🏁 {quiz.title}
-                    </span>
-                    <span className={`item-status ${
-                      quiz.status === 'passed' ? "status-passed" : 
-                      quiz.status === 'awaiting_review' ? "status-awaiting" : "status-not-passed"
-                    }`}>
-                      {quiz.status === 'passed' ? 'ผ่าน' : 
-                       quiz.status === 'awaiting_review' ? 'รอตรวจ' : 
-                       quiz.status === 'failed' ? 'ไม่ผ่าน' : 'ยังไม่ทำ'}
-                    </span>
-                  </div>
-                </li>
-              </ul>
-            </div>
-          </div>
-        ))}
+        .map((quiz) => renderQuizSection(quiz, -2000))}
 
       {/* แสดงข้อความเมื่อไม่มีแบบทดสอบ */}
       {!loadingQuizzes && subjectQuizzes.length === 0 && subjectId && !error && (
         <div className="no-quizzes text-center p-3 text-muted">
           <i className="fas fa-info-circle me-2"></i>
-                   ไม่มีแบบทดสอบก่อนเรียนหรือหลังเรียนสำหรับวิชานี้
+          ไม่มีแบบทดสอบก่อนเรียนหรือหลังเรียนสำหรับวิชานี้
         </div>
       )}
     </div>
@@ -340,4 +411,3 @@ const LessonFaq = ({
 };
 
 export default LessonFaq;
-

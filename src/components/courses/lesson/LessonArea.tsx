@@ -492,50 +492,86 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
         return false;
     };
 
-    // ฟังก์ชันเมื่อเลือกบทเรียน
-    const handleSelectLesson = (
-        sectionId: number,
-        itemId: number,
-        title: string,
-        type: "video" | "quiz"
-    ) => {
-        const section = lessonData.find((s) => s.id === sectionId);
-        if (section) {
-            const item = section.items.find((i) => i.id === itemId);
-            if (item) {
-                if (item.lock) {
-                    alert("คุณต้องเรียนบทเรียนก่อนหน้าให้เสร็จก่อน");
-                    return;
-                }
+   // ฟังก์ชันเมื่อเลือกบทเรียน
+const handleSelectLesson = (
+    sectionId: number,
+    itemId: number,
+    title: string,
+    type: "video" | "quiz"
+) => {
+    console.log("handleSelectLesson called with:", { sectionId, itemId, title, type });
 
-                setCurrentLessonId(`${sectionId}-${itemId}`);
-                setCurrentLesson(title);
-                setCurrentView(type);
-                setCurrentSubjectId(section.subject_id);
+    // ตรวจสอบว่าเป็นแบบทดสอบพิเศษ (pre/post test) หรือไม่
+    if (sectionId < 0) {
+        console.log("Handling special quiz (pre/post test)");
+        
+        // จัดการแบบทดสอบก่อน/หลังเรียน
+        setCurrentLessonId(`${sectionId}-${itemId}`);
+        setCurrentLesson(title);
+        setCurrentView(type);
+        
+        // สร้าง fake lesson data สำหรับแบบทดสอบพิเศษ
+        const specialQuizData = {
+            id: itemId,
+            lesson_id: itemId, // ใช้ quiz_id เป็น lesson_id สำหรับแบบทดสอบพิเศษ
+            title: title,
+            lock: false,
+            completed: false, // จะต้องเช็คจาก API จริง
+            type: type,
+            quizType: "special", // กำหนดเป็น special เพื่อแยกจากปกติ
+            duration: "0%",
+            quiz_id: itemId, // quiz_id จริง
+            status: "not_started" as const
+        };
+        
+        setCurrentLessonData(specialQuizData);
+        
+        // สำหรับแบบทดสอบพิเศษ ไม่ต้องหา quiz data จาก courseData
+        // เพราะจะโหลดจาก API ใน LessonQuiz component
+        setCurrentQuizData(null);
+        
+        return;
+    }
 
-                setCurrentLessonData({
-                    ...item,
-                    quiz_id: type === "quiz" ? item.quiz_id : section.quiz_id,
-                });
+    // จัดการแบบทดสอบ/วิดีโอปกติ (โค้ดเดิม)
+    const section = lessonData.find((s) => s.id === sectionId);
+    if (section) {
+        const item = section.items.find((i) => i.id === itemId);
+        if (item) {
+            if (item.lock) {
+                alert("คุณต้องเรียนบทเรียนก่อนหน้าให้เสร็จก่อน");
+                return;
+            }
 
-                console.log("New lessonId:", currentLessonData?.lesson_id)
+            setCurrentLessonId(`${sectionId}-${itemId}`);
+            setCurrentLesson(title);
+            setCurrentView(type);
+            setCurrentSubjectId(section.subject_id);
 
-                if (type === "video" && item.video_url) {
-                    const videoId = extractYoutubeId(item.video_url);
-                    if (videoId) setYoutubeId(videoId);
-                }
+            setCurrentLessonData({
+                ...item,
+                quiz_id: type === "quiz" ? item.quiz_id : section.quiz_id,
+            });
 
-                if (courseData && type === "quiz" && item.quiz_id) {
-                    const lesson = courseData.subjects[0].lessons.find(
-                        (l) => l.lesson_id === sectionId
-                    );
-                    if (lesson && lesson.quiz) {
-                        setCurrentQuizData(lesson.quiz);
-                    }
+            console.log("New lessonId:", item.lesson_id);
+
+            if (type === "video" && item.video_url) {
+                const videoId = extractYoutubeId(item.video_url);
+                if (videoId) setYoutubeId(videoId);
+            }
+
+            if (courseData && type === "quiz" && item.quiz_id) {
+                const lesson = courseData.subjects[0].lessons.find(
+                    (l) => l.lesson_id === sectionId
+                );
+                if (lesson && lesson.quiz) {
+                    setCurrentQuizData(lesson.quiz);
                 }
             }
         }
-    };
+    }
+};
+
 
     if (loading) {
         return (

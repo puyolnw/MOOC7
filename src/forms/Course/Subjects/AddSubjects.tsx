@@ -2,8 +2,9 @@ import React, { useState, useRef, useEffect } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { DragDropContext } from 'react-beautiful-dnd';
+import AddLessons from '../Lessons/AddLessons'; // เพิ่ม import
 
-// ===== INTERFACES =====
+// ===== INTERFACES ===== (เหมือนเดิม)
 export interface SubjectData {
   title: string;
   code: string;
@@ -75,7 +76,7 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel, subjectTo
   const fileInputRef = useRef<HTMLInputElement>(null);
   const apiUrl = import.meta.env.VITE_API_URL;
 
-  // ===== STATES =====
+  // ===== STATES ===== (เหมือนเดิม)
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [apiError, setApiError] = useState("");
@@ -390,8 +391,49 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel, subjectTo
     );
   };
 
-  const findCourseById = (courseId: string) => {
+   const findCourseById = (courseId: string) => {
     return availableCourses.find(course => course.id === courseId);
+  };
+
+  // ===== LESSON CREATION HANDLERS =====
+  const handleLessonCreated = async (newLesson: any) => {
+    try {
+      // รีเฟรชรายการบทเรียนที่มีอยู่
+      const token = localStorage.getItem("token");
+      if (token) {
+        const lessonsRes = await axios.get(`${apiUrl}/api/courses/subjects/lessons/available`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (lessonsRes.data.success) {
+          const formattedLessons = lessonsRes.data.lessons.map((lesson: any) => ({
+            id: lesson.lesson_id?.toString() || lesson.id?.toString() || "",
+            title: lesson.title || "",
+            description: lesson.description || "",
+            duration: lesson.duration || "ไม่ระบุ",
+            hasQuiz: lesson.has_quiz || lesson.hasQuiz || false,
+            quizTitle: lesson.quiz_title || lesson.quizTitle || ""
+          }));
+          setAvailableLessons(formattedLessons);
+
+          // เพิ่มบทเรียนใหม่เข้าไปในวิชาโดยอัตโนมัติ
+          if (newLesson && newLesson.id) {
+            handleAddLesson(newLesson.id.toString());
+          }
+        }
+      }
+
+      setShowCreateLessonModal(false);
+      toast.success("สร้างบทเรียนสำเร็จและเพิ่มเข้าในวิชาแล้ว");
+    } catch (error) {
+      console.error("Error refreshing lessons:", error);
+      setShowCreateLessonModal(false);
+      toast.success("สร้างบทเรียนสำเร็จ กรุณารีเฟรชหน้าเพื่อดูบทเรียนใหม่");
+    }
+  };
+
+  const handleLessonCreationCancel = () => {
+    setShowCreateLessonModal(false);
   };
 
   // ===== VALIDATION =====
@@ -533,11 +575,7 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel, subjectTo
     }
   };
 
-  const handlePreview = () => {
-    if (validateForm()) {
-      setShowPreview(true);
-    }
-  };
+
 
   const handleBackToForm = () => {
     setShowPreview(false);
@@ -789,7 +827,7 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel, subjectTo
         </p>
         
         <div className="d-flex justify-content-between align-items-center mb-3">
-                    <div className="d-flex gap-2">
+          <div className="d-flex gap-2">
             {subjectData.lessons.length > 0 ? (
               <span className="badge bg-info rounded-pill">
                 {subjectData.lessons.length} บทเรียน
@@ -808,13 +846,14 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel, subjectTo
             >
               <i className="fas fa-plus me-2"></i>เลือกบทเรียน
             </button>
-            <button
-              type="button"
-              className="btn btn-outline-primary btn-sm"
-              onClick={() => setShowCreateLessonModal(true)}
+           <div //ปิดใช้งาน
+              //type="button"
+              //className="btn btn-outline-primary btn-sm"
+              //onClick={() => setShowCreateLessonModal(true)}
+              //<i className="fas fa-video me-2"></i>สร้างบทเรียนใหม่
             >
-              <i className="fas fa-video me-2"></i>สร้างบทเรียนใหม่
-            </button>
+              
+            </div>
           </div>
         </div>
 
@@ -938,20 +977,6 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel, subjectTo
         </div>
         
         <div className="d-flex gap-2 mt-3">
-          <button
-            type="button"
-            className="btn btn-outline-warning btn-sm"
-            onClick={() => setShowCreateQuizModal(true)}
-          >
-            <i className="fas fa-plus me-2"></i>สร้างแบบทดสอบใหม่
-          </button>
-          <button
-            type="button"
-            className="btn btn-outline-secondary btn-sm"
-            onClick={() => setShowCreateQuestionModal(true)}
-          >
-            <i className="fas fa-question me-2"></i>สร้างคำถามใหม่
-          </button>
         </div>
       </div>
     </div>
@@ -1092,7 +1117,7 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel, subjectTo
             <div className="d-flex justify-content-between align-items-center mb-3">
               <h5 className="mb-0">
                 <i className="fas fa-play-circle text-primary me-2"></i>
-                บทเรียนทั้งหมด ({subjectData.lessons.length} บทเรียน)
+                                บทเรียนทั้งหมด ({subjectData.lessons.length} บทเรียน)
               </h5>
               <div className="lesson-stats">
                 <span className="badge bg-info me-2">
@@ -1136,7 +1161,7 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel, subjectTo
                             <i className="fas fa-play me-1"></i>เรียน
                           </button>
                           {lesson.hasQuiz && (
-                                                        <button className="btn btn-outline-success btn-sm">
+                            <button className="btn btn-outline-success btn-sm">
                               <i className="fas fa-clipboard-check me-1"></i>ทดสอบ
                             </button>
                           )}
@@ -1450,7 +1475,7 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel, subjectTo
     return (
       <div className="container-fluid">
         <div className="d-flex justify-content-center align-items-center" style={{ minHeight: "400px" }}>
-          <div className="text-center">
+                    <div className="text-center">
             <div className="spinner-border text-primary mb-3" role="status">
               <span className="visually-hidden">กำลังโหลด...</span>
             </div>
@@ -1501,17 +1526,7 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel, subjectTo
           </p>
         </div>
         <div className="d-flex gap-2">
-          {!showPreview && (
-            <button
-              type="button"
-              className="btn btn-outline-info"
-              onClick={handlePreview}
-                            disabled={!subjectData.title || !subjectData.code || subjectData.lessons.length === 0 || subjectData.instructors.length === 0}
-            >
-              <i className="fas fa-eye me-2"></i>
-              ดูตัวอย่าง
-            </button>
-          )}
+       
           {showPreview && (
             <button
               type="button"
@@ -1574,10 +1589,10 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel, subjectTo
       {renderInstructorModal()}
       {renderCourseModal()}
 
-      {/* Create New Content Modals */}
+      {/* Create New Lesson Modal */}
       {showCreateLessonModal && (
         <div className="modal fade show" style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}>
-          <div className="modal-dialog modal-xl modal-dialog-centered">
+          <div className="modal-dialog modal-fullscreen">
             <div className="modal-content">
               <div className="modal-header">
                 <h5 className="modal-title">สร้างบทเรียนใหม่</h5>
@@ -1587,44 +1602,18 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel, subjectTo
                   onClick={() => setShowCreateLessonModal(false)}
                 ></button>
               </div>
-              <div className="modal-body">
-                <div className="alert alert-info">
-                  <i className="fas fa-info-circle me-2"></i>
-                  ฟีเจอร์นี้จะเปิดหน้าสร้างบทเรียนใหม่ในอนาคต
-                </div>
-                <p>คุณสามารถ:</p>
-                <ul>
-                  <li>สร้างบทเรียนวิดีโอ</li>
-                  <li>เพิ่มเอกสารประกอบ</li>
-                  <li>กำหนดแบบทดสอบในบทเรียน</li>
-                  <li>ตั้งค่าระยะเวลาการเรียน</li>
-                </ul>
-              </div>
-              <div className="modal-footer">
-                <button 
-                  type="button" 
-                  className="btn btn-secondary" 
-                  onClick={() => setShowCreateLessonModal(false)}
-                >
-                  ปิด
-                </button>
-                <button 
-                  type="button" 
-                  className="btn btn-primary"
-                  onClick={() => {
-                    setShowCreateLessonModal(false);
-                    // TODO: Navigate to lesson creation page
-                    toast.info("ฟีเจอร์นี้จะเปิดใช้งานในเร็วๆ นี้");
-                  }}
-                >
-                  เริ่มสร้างบทเรียน
-                </button>
+              <div className="modal-body p-0">
+                <AddLessons
+                  onSubmit={handleLessonCreated}
+                  onCancel={handleLessonCreationCancel}
+                />
               </div>
             </div>
           </div>
         </div>
       )}
 
+      {/* Create New Content Modals */}
       {showCreateQuizModal && (
         <div className="modal fade show" style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}>
           <div className="modal-dialog modal-xl modal-dialog-centered">
@@ -1663,7 +1652,6 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel, subjectTo
                   className="btn btn-warning"
                   onClick={() => {
                     setShowCreateQuizModal(false);
-                    // TODO: Navigate to quiz creation page
                     toast.info("ฟีเจอร์นี้จะเปิดใช้งานในเร็วๆ นี้");
                   }}
                 >
@@ -1713,7 +1701,6 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel, subjectTo
                   className="btn btn-success"
                   onClick={() => {
                     setShowCreateQuestionModal(false);
-                    // TODO: Navigate to question creation page
                     toast.info("ฟีเจอร์นี้จะเปิดใช้งานในเร็วๆ นี้");
                   }}
                 >
@@ -1784,6 +1771,10 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel, subjectTo
           max-width: 90%;
         }
         
+        .modal-fullscreen .modal-body {
+          padding: 1rem;
+        }
+        
         @media (max-width: 768px) {
           .modal-xl {
             max-width: 95%;
@@ -1795,7 +1786,5 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel, subjectTo
 };
 
 export default AddSubjects;
-
-
 
 

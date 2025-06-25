@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
 import DashboardBanner from "../../dashboard-common/DashboardBanner";
@@ -15,19 +15,20 @@ interface Subject {
   instructor_count: number;
   lesson_count: number;
   course_count: number;
-  status: "active" | "inactive" | "draft";
   created_at: string;
 }
 
-const InstSubjectsArea = () => {
+const InsSubjectsArea = () => {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [modalImage, setModalImage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
   const apiUrl = import.meta.env.VITE_API_URL;
-
+  const navigate = useNavigate();
   const closeModal = () => setModalImage(null);
   const subjectsPerPage = 10;
 
@@ -68,7 +69,6 @@ const InstSubjectsArea = () => {
             instructor_count: subject.instructor_count || 0,
             lesson_count: subject.lesson_count || 0,
             course_count: subject.course_count || 0,
-            status: subject.status,
             created_at: subject.created_at,
           }));
           setSubjects(formattedSubjects);
@@ -120,6 +120,8 @@ const InstSubjectsArea = () => {
         if (response.data.success) {
           toast.success("ลบรายวิชาสำเร็จ");
           setSubjects(subjects.filter((subject) => subject.subject_id !== id));
+          setShowDetailModal(false);
+          setSelectedSubject(null);
         } else {
           toast.error(response.data.message || "ไม่สามารถลบรายวิชาได้");
         }
@@ -132,35 +134,10 @@ const InstSubjectsArea = () => {
     }
   };
 
-  // Status badge component
-  const StatusBadge = ({ status }: { status: Subject["status"] }) => {
-    let badgeClass = "";
-    let statusText = "";
-
-    switch (status) {
-      case "active":
-        badgeClass = "badge bg-success-subtle text-success rounded-pill px-3 py-1 small";
-        statusText = "เปิดใช้งาน";
-        break;
-      case "inactive":
-        badgeClass = "badge bg-danger-subtle text-danger rounded-pill px-3 py-1 small";
-        statusText = "ปิดใช้งาน";
-        break;
-      case "draft":
-        badgeClass = "badge bg-secondary-subtle text-secondary rounded-pill px-3 py-1 small";
-        statusText = "ฉบับร่าง";
-        break;
-    }
-
-    return <span className={badgeClass}>{statusText}</span>;
-  };
-
-  // Statistics
-  const totalSubjects = subjects.length;
-  const countByStatus = {
-    active: subjects.filter((s) => s.status === "active").length,
-    inactive: subjects.filter((s) => s.status === "inactive").length,
-    draft: subjects.filter((s) => s.status === "draft").length,
+  // Handle row click
+  const handleRowClick = (subject: Subject) => {
+    setSelectedSubject(subject);
+    setShowDetailModal(true);
   };
 
   return (
@@ -175,36 +152,6 @@ const InstSubjectsArea = () => {
                 <div className="dashboard__content-header mb-4">
                   <h2 className="title text-muted">รายการวิชา</h2>
                   <p className="desc">จัดการรายวิชาทั้งหมดในระบบ</p>
-                </div>
-
-                {/* Statistics */}
-                <div className="mb-4">
-                  <div className="row g-3">
-                    <div className="col-md-3">
-                      <div className="bg-light rounded p-3 text-center">
-                        <h6 className="mb-1 text-muted">วิชาทั้งหมด</h6>
-                        <h5 className="mb-0">{totalSubjects} วิชา</h5>
-                      </div>
-                    </div>
-                    <div className="col-md-3">
-                      <div className="bg-success-subtle rounded p-3 text-center">
-                        <h6 className="mb-1 text-success">เปิดใช้งาน</h6>
-                        <h5 className="mb-0">{countByStatus.active} วิชา</h5>
-                      </div>
-                    </div>
-                    <div className="col-md-3">
-                      <div className="bg-danger-subtle rounded p-3 text-center">
-                        <h6 className="mb-1 text-danger">ปิดใช้งาน</h6>
-                        <h5 className="mb-0">{countByStatus.inactive} วิชา</h5>
-                      </div>
-                    </div>
-                    <div className="col-md-3">
-                      <div className="bg-secondary-subtle rounded p-3 text-center">
-                        <h6 className="mb-1 text-secondary">ฉบับร่าง</h6>
-                        <h5 className="mb-0">{countByStatus.draft} วิชา</h5>
-                      </div>
-                    </div>
-                  </div>
                 </div>
 
                 {/* Search and Add button */}
@@ -256,7 +203,6 @@ const InstSubjectsArea = () => {
                               <th>ผู้สอน</th>
                               <th>บทเรียน</th>
                               <th>หมวดหมู่</th>
-                              <th className="text-center">สถานะ</th>
                               <th style={{ width: "100px" }} className="text-center">จัดการ</th>
                             </tr>
                           </thead>
@@ -264,48 +210,52 @@ const InstSubjectsArea = () => {
                             {currentSubjects.length > 0 ? (
                               currentSubjects.map((subject) => (
                                 <tr key={subject.subject_id}>
-                                  <td>
+                                  <td onClick={() => handleRowClick(subject)}>
                                     <img
                                       src={getImageUrl(subject.cover_image)}
                                       alt={subject.subject_name}
                                       className="img-thumbnail"
                                       style={{ width: "70px", height: "50px", objectFit: "cover", cursor: "pointer" }}
-                                      onClick={() => setModalImage(getImageUrl(subject.cover_image))}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setModalImage(getImageUrl(subject.cover_image));
+                                      }}
                                       onError={(e) => {
                                         (e.target as HTMLImageElement).src =
                                           "/assets/img/courses/default-course.jpg";
                                       }}
                                     />
                                   </td>
-                                  <td>{subject.subject_code}</td>
-                                  <td>{subject.subject_name}</td>
-                                  <td>
+                                  <td onClick={() => handleRowClick(subject)}>{subject.subject_code}</td>
+                                  <td onClick={() => handleRowClick(subject)}>{subject.subject_name}</td>
+                                  <td onClick={() => handleRowClick(subject)}>
                                     <span className="badge bg-info-subtle text-info rounded-pill px-3 py-1">
                                       {subject.instructor_count} คน
                                     </span>
                                   </td>
-                                  <td>
+                                  <td onClick={() => handleRowClick(subject)}>
                                     <span className="badge bg-primary-subtle text-primary rounded-pill px-3 py-1">
                                       {subject.lesson_count} บทเรียน
                                     </span>
                                   </td>
-                                  <td>{subject.department_name || "ไม่ระบุ"}</td>
-                                  <td className="text-center">
-                                    <StatusBadge status={subject.status} />
-                                  </td>
+                                  <td onClick={() => handleRowClick(subject)}>{subject.department_name || "ไม่ระบุ"}</td>
                                   <td>
-                                    <div className="d-flex justify-content-center gap-3">
-                                      <Link
-                                        to={`/admin-subjects/edit-subject/${subject.subject_id}`}
-                                        className="text-primary"
-                                        style={{ display: "inline-flex", alignItems: "center" }}
-                                      >
-                                        <i className="fas fa-edit icon-action" style={{ lineHeight: 1 }}></i>
-                                      </Link>
+                                    <div className="d-flex justify-content-center gap-3 action-icons">
+                                      <i
+                                        className="fas fa-edit text-primary icon-action"
+                                        style={{ cursor: "pointer", lineHeight: 1 }}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          navigate(`/admin-subjects/edit-subject/${subject.subject_id}`);
+                                        }}
+                                      ></i>
                                       <i
                                         className="fas fa-trash-alt text-danger icon-action"
                                         style={{ cursor: "pointer", lineHeight: 1 }}
-                                        onClick={() => handleDeleteSubject(subject.subject_id)}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleDeleteSubject(subject.subject_id);
+                                        }}
                                       ></i>
                                     </div>
                                   </td>
@@ -313,7 +263,7 @@ const InstSubjectsArea = () => {
                               ))
                             ) : (
                               <tr>
-                                <td colSpan={8} className="text-center py-4">
+                                <td colSpan={7} className="text-center py-4">
                                   ไม่พบข้อมูลรายวิชา
                                 </td>
                               </tr>
@@ -386,8 +336,265 @@ const InstSubjectsArea = () => {
           </div>
         </div>
       )}
+
+      {/* Subject Detail Modal */}
+      {showDetailModal && selectedSubject && (
+        <div
+          className="modal fade show"
+          style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.75)' }}
+          tabIndex={-1}
+          aria-labelledby="subjectDetailModalLabel"
+          aria-hidden="false"
+        >
+          <div className="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+            <div className="modal-content border-0 shadow-lg rounded-3 overflow-hidden">
+              <div className="modal-header bg-gradient-primary border-0 py-3">
+                <h5 className="modal-title text-white fw-bold" id="subjectDetailModalLabel">
+                  <i className="fas fa-book me-2" />
+                  {selectedSubject.subject_name}
+                </h5>
+                <button
+                  type="button"
+                  className="btn-close btn-close-white"
+                  onClick={() => {
+                    setShowDetailModal(false);
+                    setSelectedSubject(null);
+                  }}
+                  aria-label="ปิด"
+                />
+              </div>
+              <div className="modal-body p-4 bg-light">
+                <div className="row g-4">
+                  <div className="col-lg-6">
+                    <div className="card shadow-sm border-0 bg-white rounded-3 h-100">
+                      <div className="card-body p-4">
+                        <h6 className="card-title mb-3 fw-bold text-primary border-bottom pb-2">
+                          ข้อมูลรายวิชา
+                        </h6>
+                        <table className="table table-borderless">
+                          <tbody>
+                            <tr>
+                              <td className="fw-medium text-muted" style={{ width: '120px' }}>รหัสวิชา:</td>
+                              <td>{selectedSubject.subject_code}</td>
+                            </tr>
+                            <tr>
+                              <td className="fw-medium text-muted">ชื่อวิชา:</td>
+                              <td>{selectedSubject.subject_name}</td>
+                            </tr>
+                            <tr>
+                              <td className="fw-medium text-muted">หมวดหมู่:</td>
+                              <td>{selectedSubject.department_name || 'ไม่ระบุ'}</td>
+                            </tr>
+                            <tr>
+                              <td className="fw-medium text-muted">จำนวนผู้สอน:</td>
+                              <td>{selectedSubject.instructor_count} คน</td>
+                            </tr>
+                            <tr>
+                              <td className="fw-medium text-muted">จำนวนบทเรียน:</td>
+                              <td>{selectedSubject.lesson_count} บทเรียน</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="col-lg-6">
+                    <div className="card shadow-sm border-0 bg-white rounded-3">
+                      <div className="card-body p-4">
+                        <h6 className="card-title mb-3 fw-bold text-primary border-bottom pb-2">
+                          รูปภาพหน้าปก
+                        </h6>
+                        <div className="card-img-container">
+                          <img
+                            src={getImageUrl(selectedSubject.cover_image)}
+                            alt={selectedSubject.subject_name}
+                            className="img-fluid rounded-2 shadow-sm cursor-pointer"
+                            style={{ maxWidth: '100%', maxHeight: '200px', objectFit: 'cover' }}
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = "/assets/img/courses/default-course.jpg";
+                            }}
+                            onClick={() => setModalImage(getImageUrl(selectedSubject.cover_image))}
+                            aria-label={`ดูภาพหน้าปกของ ${selectedSubject.subject_name} ขนาดเต็ม`}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="modal-footer border-0 p-4 bg-light">
+                <Link
+                  to={`/admin-subjects/edit-subject/${selectedSubject.subject_id}`}
+                  className="btn btn-primary btn-sm px-4 py-2 rounded-pill me-2"
+                  aria-label={`แก้ไขรายวิชา ${selectedSubject.subject_name}`}
+                >
+                  <i className="fas fa-edit me-2" />แก้ไข
+                </Link>
+                <button
+                  type="button"
+                  className="btn btn-danger btn-sm px-4 py-2 rounded-pill me-2"
+                  onClick={() => handleDeleteSubject(selectedSubject.subject_id)}
+                  aria-label={`ลบรายวิชา ${selectedSubject.subject_name}`}
+                >
+                  <i className="fas fa-trash-alt me-2" />ลบ
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm px-4 py-2 rounded-pill"
+                  onClick={() => {
+                    setShowDetailModal(false);
+                    setSelectedSubject(null);
+                  }}
+                  aria-label="ปิด"
+                >
+                  <i className="fas fa-times me-2" />ปิด
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      <style>
+        {`
+          .modal.fade.show {
+            animation: fadeIn 0.3s ease-out;
+            z-index: 1050;
+          }
+
+          @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+          }
+
+          .modal-dialog {
+            transition: transform 0.3s ease-out;
+            transform: translateY(0);
+            max-width: 90vw;
+            width: 1200px;
+          }
+
+          .modal-content {
+            border-radius: 12px !important;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+          }
+
+          .modal-header.bg-gradient-primary {
+            background: linear-gradient(90deg, #0d6efd, #6610f2);
+            border-bottom: none;
+            padding: 1.5rem 2rem;
+          }
+
+          .modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+          }
+
+          .modal-body.bg-light {
+            background: #f8f9fa;
+            padding: 2rem !important;
+          }
+
+          .card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border-radius: 12px !important;
+          }
+
+          .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1) !important;
+          }
+
+          .card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+          }
+
+          .btn-danger, .btn-secondary, .btn-primary {
+            transition: all 0.3s ease;
+            font-weight: 500;
+            padding: 0.5rem 1.5rem;
+            border-radius: 50px !important;
+          }
+
+          .btn-danger:hover, .btn-secondary:hover, .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+          }
+
+          .btn-danger {
+            background: linear-gradient(90deg, #dc3545, #a52834);
+            border: none;
+          }
+
+          .btn-secondary {
+            background: #6c757d;
+            border: none;
+          }
+
+          .table-hover tbody tr:hover {
+            background-color: #f1f5f9;
+            transition: background-color 0.2s ease;
+            cursor: pointer;
+          }
+
+          .action-icon {
+            cursor: pointer;
+            font-size: 1rem;
+            transition: color 0.2s ease, transform 0.2s ease;
+          }
+
+          .action-icon:hover {
+            color: #007bff;
+            transform: scale(1.2);
+          }
+
+          .text-danger.action-icon:hover {
+            color: #a52834;
+          }
+
+          .card-img-container {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 150px;
+          }
+
+          .card-img-container img {
+            transition: opacity 0.3s ease;
+            opacity: 1;
+          }
+
+          .cursor-pointer {
+            cursor: pointer;
+          }
+
+          @media (max-width: 991px) {
+            .modal-dialog {
+              margin: 1rem;
+              max-width: 95vw;
+            }
+            .modal-body {
+              padding: 1.5rem !important;
+            }
+            .card-body {
+              padding: 1rem !important;
+            }
+            .card-img-container {
+              min-height: 100px;
+            }
+            .card-img-container img {
+              max-width: 100%;
+              max-height: 150px;
+            }
+          }
+        `}
+      </style>
     </section>
   );
 };
 
-export default InstSubjectsArea;
+export default InsSubjectsArea;
