@@ -647,7 +647,7 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel, subjectTo
 
           <div className="col-md-4">
             <div className="mb-3">
-              <label className="form-label">รูปปกวิชา</label>
+              <label className="form-label">รูปปกวิชา <span className="text-danger">*</span></label>
               <div className="cover-image-upload">
                 {(imagePreview || existingImageUrl) ? (
                   <div className="image-preview-container">
@@ -656,6 +656,7 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel, subjectTo
                       alt="รูปปกวิชา"
                       className="img-fluid rounded"
                       style={{ maxHeight: "200px", width: "100%", objectFit: "cover" }}
+                      
                     />
                     <button
                       type="button"
@@ -682,6 +683,7 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel, subjectTo
                   onChange={handleImageUpload}
                   accept="image/*"
                   className="d-none"
+                  required
                 />
                 {errors.coverImage && (
                   <div className="text-danger small mt-1">{errors.coverImage}</div>

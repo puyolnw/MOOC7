@@ -7,6 +7,7 @@ import { toast } from "react-toastify";
 interface Department {
   department_id: number;
   department_name: string;
+  faculty: string;
 }
 
 // Interface สำหรับข้อมูลนักศึกษา
@@ -20,6 +21,7 @@ interface StudentData {
   studentCode: string;
   department: string;
   educationLevel: string;
+  academicYear: string;
 }
 
 interface AddStudentsProps {
@@ -51,6 +53,7 @@ const AddStudents: React.FC<AddStudentsProps> = ({ onSubmit, onCancel }) => {
     studentCode: "",
     department: "",
     educationLevel: "",
+    academicYear: "",
   });
 
   // State สำหรับข้อผิดพลาดในการตรวจสอบข้อมูล
@@ -64,6 +67,7 @@ const AddStudents: React.FC<AddStudentsProps> = ({ onSubmit, onCancel }) => {
     studentCode: "",
     department: "",
     educationLevel: "",
+    academicYear: "",
   });
 
   // ดึงข้อมูลแผนกจาก API
@@ -134,20 +138,21 @@ const AddStudents: React.FC<AddStudentsProps> = ({ onSubmit, onCancel }) => {
       studentCode: "",
       department: "",
       educationLevel: "",
+      academicYear: "",
     };
 
     // ตรวจสอบชื่อผู้ใช้
     if (!studentData.username.trim()) {
-      newErrors.username = "กรุณาระบุชื่อผู้ใช้";
+      newErrors.username = "กรุณากรอกชื่อผู้ใช้";
       isValid = false;
-    } else if (studentData.username.length < 4) {
-      newErrors.username = "ชื่อผู้ใช้ต้องมีความยาวอย่างน้อย 4 ตัวอักษร";
+    } else if (studentData.username.length < 3) {
+      newErrors.username = "ชื่อผู้ใช้ต้องมีอย่างน้อย 3 ตัวอักษร";
       isValid = false;
     }
 
     // ตรวจสอบอีเมล
     if (!studentData.email.trim()) {
-      newErrors.email = "กรุณาระบุอีเมล";
+      newErrors.email = "กรุณากรอกอีเมล";
       isValid = false;
     } else if (!/\S+@\S+\.\S+/.test(studentData.email)) {
       newErrors.email = "รูปแบบอีเมลไม่ถูกต้อง";
@@ -156,10 +161,10 @@ const AddStudents: React.FC<AddStudentsProps> = ({ onSubmit, onCancel }) => {
 
     // ตรวจสอบรหัสผ่าน
     if (!studentData.password) {
-      newErrors.password = "กรุณาระบุรหัสผ่าน";
+      newErrors.password = "กรุณากรอกรหัสผ่าน";
       isValid = false;
     } else if (studentData.password.length < 6) {
-      newErrors.password = "รหัสผ่านต้องมีความยาวอย่างน้อย 6 ตัวอักษร";
+      newErrors.password = "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร";
       isValid = false;
     }
 
@@ -171,25 +176,43 @@ const AddStudents: React.FC<AddStudentsProps> = ({ onSubmit, onCancel }) => {
 
     // ตรวจสอบชื่อ
     if (!studentData.firstName.trim()) {
-      newErrors.firstName = "กรุณาระบุชื่อ";
+      newErrors.firstName = "กรุณากรอกชื่อจริง";
       isValid = false;
     }
 
     // ตรวจสอบนามสกุล
     if (!studentData.lastName.trim()) {
-      newErrors.lastName = "กรุณาระบุนามสกุล";
+      newErrors.lastName = "กรุณากรอกนามสกุล";
       isValid = false;
     }
 
     // ตรวจสอบรหัสนักศึกษา
     if (!studentData.studentCode.trim()) {
-      newErrors.studentCode = "กรุณาระบุรหัสนักศึกษา";
+      newErrors.studentCode = "กรุณากรอกรหัสนักศึกษา";
       isValid = false;
     }
 
-    // ตรวจสอบแผนก
+    // ตรวจสอบชั้นปีการศึกษา
+    if (!studentData.academicYear) {
+      newErrors.academicYear = "กรุณาเลือกชั้นปีการศึกษา";
+      isValid = false;
+    } else {
+      const year = parseInt(studentData.academicYear);
+      if (year < 1 || year > 4) {
+        newErrors.academicYear = "ชั้นปีต้องอยู่ระหว่าง 1-4";
+        isValid = false;
+      }
+    }
+
+    // ตรวจสอบภาควิชา
     if (!studentData.department) {
-      newErrors.department = "กรุณาเลือกแผนก";
+      newErrors.department = "กรุณาเลือกภาควิชา";
+      isValid = false;
+    }
+
+    // ตรวจสอบระดับการศึกษา
+    if (!studentData.educationLevel) {
+      newErrors.educationLevel = "กรุณาเลือกระดับการศึกษา";
       isValid = false;
     }
 
@@ -224,9 +247,10 @@ const AddStudents: React.FC<AddStudentsProps> = ({ onSubmit, onCancel }) => {
         email: studentData.email,
         password: studentData.password,
         role_id: 1, // ตั้งค่า role_id เป็น 1 สำหรับนักศึกษา
-        student_code: studentData.studentCode,
+        student_code: parseInt(studentData.studentCode),
         department_id: studentData.department,
-        education_level: studentData.educationLevel || null,
+        education_level: studentData.educationLevel,
+        academic_year: parseInt(studentData.academicYear),
         first_name: studentData.firstName,
         last_name: studentData.lastName,
       };
@@ -240,8 +264,8 @@ const AddStudents: React.FC<AddStudentsProps> = ({ onSubmit, onCancel }) => {
       });
 
       if (response.data.success) {
-        setApiSuccess("สมัครสมาชิกนักศึกษาสำเร็จ");
-        toast.success("สมัครสมาชิกนักศึกษาสสำเร็จ");
+        setApiSuccess("เพิ่มนักศึกษาสำเร็จ");
+        toast.success("เพิ่มนักศึกษาสำเร็จ");
 
         // ถ้าสำเร็จและมี callback onSubmit ให้เรียกใช้
         if (onSubmit) {
@@ -249,16 +273,40 @@ const AddStudents: React.FC<AddStudentsProps> = ({ onSubmit, onCancel }) => {
         } else {
           // ถ้าไม่มี callback ให้ redirect ไปหน้าจัดการนักศึกษา หลังจากแสดง toast สักครู่
           setTimeout(() => {
-            navigate("/admin-account/students"); // ปรับ path ตามโครงสร้างของโปรเจค
+            navigate("/admin-account/students");
           }, 1500);
         }
       } else {
-        setApiError(response.data.message || "เกิดข้อผิดพลาดในการสมัครสมาชิกนักศึกษา");
-        toast.error(response.data.message || "เกิดข้อผิดพลาดในการสมัครสมาชิกนักศึกษา");
+        // ตรวจสอบข้อความ error เพื่อแสดงคำเตือนที่เฉพาะเจาะจง
+        let errorMessage = response.data.message || "เกิดข้อผิดพลาดในการเพิ่มนักศึกษา";
+        if (response.data.message === 'อีเมลนี้มีในระบบแล้ว') {
+          errorMessage = 'อีเมลนี้ได้มีการลงทะเบียนในระบบแล้ว กรุณาใช้อีเมลอื่น';
+        } else if (response.data.message === 'รหัสนักศึกษานี้มีในระบบแล้ว') {
+          errorMessage = 'รหัสนักศึกษานี้ได้มีการลงทะเบียนในระบบแล้ว';
+        } else if (response.data.message === 'ชื่อผู้ใช้นี้มีในระบบแล้ว') {
+          errorMessage = 'ชื่อผู้ใช้นี้ได้มีการลงทะเบียนในระบบแล้ว กรุณาใช้ชื่อผู้ใช้อื่น';
+        }
+        
+        setApiError(errorMessage);
+        toast.error(errorMessage);
       }
     } catch (error: any) {
       console.error("Error creating student account:", error);
-      const errorMessage = error.response?.data?.message || "เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์";
+      let errorMessage = "เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์";
+      
+      if (axios.isAxiosError(error) && error.response) {
+        const responseMessage = error.response.data.message;
+        if (responseMessage === 'อีเมลนี้มีในระบบแล้ว') {
+          errorMessage = 'อีเมลนี้มีในระบบแล้ว กรุณาใช้อีเมลอื่น';
+        } else if (responseMessage === 'รหัสนักศึกษานี้มีในระบบแล้ว') {
+          errorMessage = 'รหัสนักศึกษานี้มีในระบบแล้ว กรุณาใช้รหัสอื่น';
+        } else if (responseMessage === 'ชื่อผู้ใช้นี้มีในระบบแล้ว') {
+          errorMessage = 'ชื่อผู้ใช้นี้ได้มีการลงทะเบียนในระบบแล้ว กรุณาใช้ชื่อผู้ใช้อื่น';
+        } else {
+          errorMessage = responseMessage || errorMessage;
+        }
+      }
+      
       setApiError(errorMessage);
       toast.error(errorMessage);
     } finally {
@@ -272,7 +320,7 @@ const AddStudents: React.FC<AddStudentsProps> = ({ onSubmit, onCancel }) => {
       onCancel();
     } else {
       // ถ้าไม่มี callback ให้ redirect ไปหน้าจัดการนักศึกษา
-      navigate("/admin-account/students"); // ปรับ path ตามโครงสร้างของโปรเจค
+      navigate("/admin-account/students");
     }
   };
 
@@ -339,10 +387,10 @@ const AddStudents: React.FC<AddStudentsProps> = ({ onSubmit, onCancel }) => {
                 name="username"
                 value={studentData.username}
                 onChange={handleInputChange}
-                placeholder="ระบุชื่อผู้ใช้สำหรับเข้าสู่ระบบ"
+                placeholder="ชื่อผู้ใช้"
               />
               {errors.username && <div className="invalid-feedback">{errors.username}</div>}
-              <small className="form-text text-muted">ชื่อผู้ใช้ต้องมีความยาวอย่างน้อย 4 ตัวอักษร</small>
+              <small className="form-text text-muted">ชื่อผู้ใช้ต้องมีอย่างน้อย 3 ตัวอักษร</small>
             </div>
 
             <div className="col-md-6">
@@ -356,7 +404,7 @@ const AddStudents: React.FC<AddStudentsProps> = ({ onSubmit, onCancel }) => {
                 name="email"
                 value={studentData.email}
                 onChange={handleInputChange}
-                placeholder="ระบุอีเมล"
+                placeholder="อีเมล"
               />
               {errors.email && <div className="invalid-feedback">{errors.email}</div>}
             </div>
@@ -374,10 +422,10 @@ const AddStudents: React.FC<AddStudentsProps> = ({ onSubmit, onCancel }) => {
                 name="password"
                 value={studentData.password}
                 onChange={handleInputChange}
-                placeholder="ระบุรหัสผ่าน"
+                placeholder="รหัสผ่าน"
               />
               {errors.password && <div className="invalid-feedback">{errors.password}</div>}
-              <small className="form-text text-muted">รหัสผ่านต้องมีความยาวอย่างน้อย 6 ตัวอักษร</small>
+              <small className="form-text text-muted">รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร</small>
             </div>
 
             <div className="col-md-6">
@@ -391,7 +439,7 @@ const AddStudents: React.FC<AddStudentsProps> = ({ onSubmit, onCancel }) => {
                 name="confirmPassword"
                 value={studentData.confirmPassword}
                 onChange={handleInputChange}
-                placeholder="ยืนยันรหัสผ่านอีกครั้ง"
+                placeholder="ยืนยันรหัสผ่าน"
               />
               {errors.confirmPassword && <div className="invalid-feedback">{errors.confirmPassword}</div>}
             </div>
@@ -407,7 +455,7 @@ const AddStudents: React.FC<AddStudentsProps> = ({ onSubmit, onCancel }) => {
           <div className="row mb-3">
             <div className="col-md-6">
               <label htmlFor="firstName" className="form-label">
-                ชื่อ <span className="text-danger">*</span>
+                ชื่อจริง <span className="text-danger">*</span>
               </label>
               <input
                 type="text"
@@ -416,7 +464,7 @@ const AddStudents: React.FC<AddStudentsProps> = ({ onSubmit, onCancel }) => {
                 name="firstName"
                 value={studentData.firstName}
                 onChange={handleInputChange}
-                placeholder="ระบุชื่อ"
+                placeholder="ชื่อจริง"
               />
               {errors.firstName && <div className="invalid-feedback">{errors.firstName}</div>}
             </div>
@@ -432,7 +480,7 @@ const AddStudents: React.FC<AddStudentsProps> = ({ onSubmit, onCancel }) => {
                 name="lastName"
                 value={studentData.lastName}
                 onChange={handleInputChange}
-                placeholder="ระบุนามสกุล"
+                placeholder="นามสกุล"
               />
               {errors.lastName && <div className="invalid-feedback">{errors.lastName}</div>}
             </div>
@@ -450,19 +498,41 @@ const AddStudents: React.FC<AddStudentsProps> = ({ onSubmit, onCancel }) => {
                 name="studentCode"
                 value={studentData.studentCode}
                 onChange={handleInputChange}
-                placeholder="ระบุรหัสนักศึกษา"
+                placeholder="รหัสนักศึกษา"
               />
               {errors.studentCode && <div className="invalid-feedback">{errors.studentCode}</div>}
             </div>
 
             <div className="col-md-6">
+              <label htmlFor="academicYear" className="form-label">
+                ชั้นปีการศึกษา <span className="text-danger">*</span>
+              </label>
+              <select
+                className={`form-select ${errors.academicYear ? "is-invalid" : ""}`}
+                id="academicYear"
+                name="academicYear"
+                value={studentData.academicYear}
+                onChange={handleInputChange}
+              >
+                <option value="">เลือกชั้นปี</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+              </select>
+              {errors.academicYear && <div className="invalid-feedback">{errors.academicYear}</div>}
+            </div>
+          </div>
+
+          <div className="row mb-3">
+            <div className="col-md-6">
               <label htmlFor="department" className="form-label">
-                แผนก/สาขาวิชา <span className="text-danger">*</span>
+                ภาควิชา <span className="text-danger">*</span>
               </label>
               {isLoading ? (
                 <div className="d-flex align-items-center mb-2">
                   <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                  <span>กำลังโหลดข้อมูลแผนก...</span>
+                  <span>กำลังโหลดข้อมูลภาควิชา...</span>
                 </div>
               ) : (
                 <select
@@ -473,7 +543,7 @@ const AddStudents: React.FC<AddStudentsProps> = ({ onSubmit, onCancel }) => {
                   onChange={handleInputChange}
                   disabled={isLoading}
                 >
-                  <option value="">-- เลือกแผนก/สาขาวิชา --</option>
+                  <option value="">เลือกภาควิชา</option>
                   {departments.map((dept) => (
                     <option key={dept.department_id} value={dept.department_id}>
                       {dept.department_name}
@@ -483,12 +553,10 @@ const AddStudents: React.FC<AddStudentsProps> = ({ onSubmit, onCancel }) => {
               )}
               {errors.department && <div className="invalid-feedback">{errors.department}</div>}
             </div>
-          </div>
 
-          <div className="row mb-3">
             <div className="col-md-6">
               <label htmlFor="educationLevel" className="form-label">
-                ระดับการศึกษา
+                ระดับการศึกษา <span className="text-danger">*</span>
               </label>
               <select
                 className={`form-select ${errors.educationLevel ? "is-invalid" : ""}`}
@@ -497,7 +565,7 @@ const AddStudents: React.FC<AddStudentsProps> = ({ onSubmit, onCancel }) => {
                 value={studentData.educationLevel}
                 onChange={handleInputChange}
               >
-                <option value="">-- เลือกระดับการศึกษา --</option>
+                <option value="">เลือกระดับการศึกษา</option>
                 <option value="ปริญญาตรี">ปริญญาตรี</option>
                 <option value="ปริญญาโท">ปริญญาโท</option>
                 <option value="ปริญญาเอก">ปริญญาเอก</option>

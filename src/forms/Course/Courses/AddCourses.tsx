@@ -29,13 +29,14 @@ interface Prerequisite {
 interface CourseData {
   title: string;
   department_id: string;
-  category: string; // เพิ่ม category
   description: string;
   coverImage: File | null;
   coverImagePreview: string;
   video_url: string;
   subjects: string[];
   prerequisites: Prerequisite[];
+  study_result: string;
+  attachments: File[];
 }
 
 interface AddCoursesProps {
@@ -61,13 +62,14 @@ const AddCourses: React.FC<AddCoursesProps> = ({ onSubmit, onCancel }) => {
   const [courseData, setCourseData] = useState<CourseData>({
     title: "",
     department_id: "",
-    category: "", // เพิ่ม category
     description: "",
     coverImage: null,
     coverImagePreview: "",
     video_url: "",
     subjects: [],
     prerequisites: [],
+    study_result: "",
+    attachments: [],
   });
 
   // State for search term
@@ -82,8 +84,8 @@ const AddCourses: React.FC<AddCoursesProps> = ({ onSubmit, onCancel }) => {
   const [errors, setErrors] = useState({
     title: "",
     department_id: "",
-    category: "", 
     description: "",
+    study_result: "",
     subjects: "",
     videoUrl: "",
   });
@@ -339,6 +341,37 @@ const AddCourses: React.FC<AddCoursesProps> = ({ onSubmit, onCancel }) => {
       .map((p) => p.prerequisiteId);
   };
 
+  // Handle file attachment upload
+  const handleAttachmentUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const newFiles = Array.from(files);
+    
+    // Validate file size (max 10MB per file)
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    const validFiles = newFiles.filter(file => {
+      if (file.size > maxSize) {
+        toast.error(`ไฟล์ ${file.name} มีขนาดเกิน 10MB`);
+        return false;
+      }
+      return true;
+    });
+
+    setCourseData(prevState => ({
+      ...prevState,
+      attachments: [...prevState.attachments, ...validFiles]
+    }));
+  };
+
+  // Remove attachment
+  const handleRemoveAttachment = (index: number) => {
+    setCourseData(prevState => ({
+      ...prevState,
+      attachments: prevState.attachments.filter((_, i) => i !== index)
+    }));
+  };
+
   // Validate form before submission
   const validateForm = () => {
     let isValid = true;
@@ -346,7 +379,7 @@ const AddCourses: React.FC<AddCoursesProps> = ({ onSubmit, onCancel }) => {
       title: "",
       department_id: "",
       description: "",
-      category: "", 
+      study_result: "",
       subjects: "",
       videoUrl: "",
     };
@@ -427,19 +460,20 @@ const AddCourses: React.FC<AddCoursesProps> = ({ onSubmit, onCancel }) => {
       formData.append("title", courseData.title);
       formData.append("department_id", courseData.department_id);
       formData.append("description", courseData.description);
+      formData.append("study_result", courseData.study_result);
 
       if (courseData.coverImage) {
         formData.append("coverImage", courseData.coverImage);
       }
 
       const subjectsData = courseData.subjects.map((subjectId, index) => ({
-        id: parseInt(subjectId), // แปลงเป็น integer เพื่อให้สอดคล้องกับ backend
+        id: parseInt(subjectId),
         order: index + 1,
       }));
       formData.append("subjects", JSON.stringify(subjectsData));
 
       if (courseData.video_url) {
-        formData.append("video_url", courseData.video_url); // เปลี่ยนเป็น video_url เพื่อให้สอดคล้องกับ backend
+        formData.append("video_url", courseData.video_url);
       }
 
       // Log FormData entries
@@ -457,6 +491,28 @@ const AddCourses: React.FC<AddCoursesProps> = ({ onSubmit, onCancel }) => {
       if (response.data.success) {
         setApiSuccess(response.data.message);
         toast.success(response.data.message);
+
+        // Upload attachments if any
+        if (courseData.attachments.length > 0) {
+          const courseId = response.data.courseId;
+          for (const attachment of courseData.attachments) {
+            const attachmentFormData = new FormData();
+            attachmentFormData.append("file", attachment);
+            attachmentFormData.append("title", attachment.name);
+            attachmentFormData.append("file_name", attachment.name);
+
+            try {
+              await axios.post(`${apiURL}/api/courses/${courseId}/attachments`, attachmentFormData, {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              });
+            } catch (attachmentError) {
+              console.error("Error uploading attachment:", attachmentError);
+              toast.warning(`ไม่สามารถอัปโหลดไฟล์ ${attachment.name} ได้`);
+            }
+          }
+        }
 
         if (onSubmit) {
           onSubmit(response.data);
@@ -541,6 +597,8 @@ const AddCourses: React.FC<AddCoursesProps> = ({ onSubmit, onCancel }) => {
           handleInputChange={handleInputChange}
           handleCoverImageUpload={handleCoverImageUpload}
           handleRemoveCoverImage={handleRemoveCoverImage}
+          handleAttachmentUpload={handleAttachmentUpload}
+          handleRemoveAttachment={handleRemoveAttachment}
           fileInputRef={fileInputRef}
         />
 

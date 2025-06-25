@@ -7,13 +7,23 @@ import DashboardBanner from "../dashboard-common/AdminBanner";
 
 interface Course {
   course_id: number;
+  course_code: string;
   title: string;
   description: string;
   cover_image_path: string | null;
   cover_image_file_id: string | null;
   video_url: string | null;
+  study_result: string | null;
   department_name: string | null;
+  faculty: string | null;
   subject_count: number;
+}
+
+interface Attachment {
+  file_id: string;
+  file_name: string;
+  file_type?: string;
+  file_size?: number;
 }
 
 interface PaginationProps {
@@ -105,6 +115,10 @@ const AdminCreditbankArea: React.FC = () => {
   const [imageLoading, setImageLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+  const [isStudyResultExpanded, setIsStudyResultExpanded] = useState(false);
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [attachmentsLoading, setAttachmentsLoading] = useState(false);
+  const [attachmentsError, setAttachmentsError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchCourses = async () => {
@@ -122,6 +136,8 @@ const AdminCreditbankArea: React.FC = () => {
           headers: { Authorization: `Bearer ${token}` },
         });
 
+        console.log('API Response:', response.data);
+
         if (response.data.courses) {
           const formattedCourses: Course[] = response.data.courses.map((course: any) => ({
             course_id: course.course_id,
@@ -132,7 +148,10 @@ const AdminCreditbankArea: React.FC = () => {
             video_url: course.video_url || null,
             department_name: course.department_name || null,
             subject_count: course.subject_count || 0,
+            study_result: course.study_result || null,
+            course_code: course.course_code || null,
           }));
+          console.log('Formatted courses:', formattedCourses);
           setCourses(formattedCourses);
           setFilteredCourses(formattedCourses);
           setTotalPages(Math.ceil(formattedCourses.length / itemsPerPage));
@@ -178,7 +197,7 @@ const AdminCreditbankArea: React.FC = () => {
   };
 
   const handleDeleteCourse = async (courseId: number) => {
-    if (!window.confirm('คุณต้องการลบหลักสูตรนี้ใช่หรือไม่?')) {
+    if (!window.confirm('คุณต้องการลบหลักสูตรนี้และไฟล์ประกอบทั้งหมดใช่หรือไม่?')) {
       return;
     }
 
@@ -189,6 +208,28 @@ const AdminCreditbankArea: React.FC = () => {
         return;
       }
 
+      // 1. ดึง attachments
+      const attachmentsRes = await axios.get(
+        `${apiURL}/api/courses/${courseId}/attachments`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const attachments: { file_id: string }[] =
+        attachmentsRes.data.attachments || [];
+
+      // 2. ลบไฟล์แต่ละไฟล์
+      for (const att of attachments) {
+        try {
+          await axios.delete(
+            `${apiURL}/api/courses/${courseId}/attachments/${att.file_id}`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+        } catch (err) {
+          console.error('ลบไฟล์แนบไม่สำเร็จ', att.file_id, err);
+          // สามารถ toast.warn ได้ถ้าต้องการ
+        }
+      }
+
+      // 3. ลบ course
       const response = await axios.delete(`${apiURL}/api/courses/${courseId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -199,22 +240,69 @@ const AdminCreditbankArea: React.FC = () => {
         setShowDetailModal(false);
         setSelectedCourse(null);
         setShowImageLightbox(false);
-        toast.success('ลบหลักสูตรสำเร็จ');
+        toast.success('ลบหลักสูตรและไฟล์ประกอบสำเร็จ');
       } else {
         toast.error(response.data.message || 'ไม่สามารถลบหลักสูตรได้');
       }
     } catch (err) {
-      console.error('Error deleting course:', err);
-      toast.error('เกิดข้อผิดพลาดในการลบหลักสูตร');
+      console.error('Error deleting course or attachments:', err);
+      toast.error('เกิดข้อผิดพลาดในการลบหลักสูตรหรือไฟล์ประกอบ');
     }
   };
 
-  const handleRowClick = (course: Course) => {
+  const handleRowClick = async (course: Course) => {
+    console.log('Selected course:', course);
     setSelectedCourse(course);
     setShowDetailModal(true);
     setImageLoading(true);
     setImageError(false);
     setIsDescriptionExpanded(false);
+    
+    // ดึงข้อมูล attachments สำหรับ course นี้
+    await fetchAttachments(course.course_id);
+  };
+
+  const fetchAttachments = async (courseId: number) => {
+    console.log('Fetching attachments for course ID:', courseId);
+    setAttachmentsLoading(true);
+    setAttachmentsError(null);
+    
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setAttachmentsError('กรุณาเข้าสู่ระบบ');
+        setAttachments([]);
+        return;
+      }
+
+      const response = await axios.get(`${apiURL}/api/courses/${courseId}/attachments`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      console.log('Attachments API response:', response.data);
+
+      if (response.data.success && Array.isArray(response.data.attachments)) {
+        const formattedAttachments: Attachment[] = response.data.attachments.map((attachment: any) => ({
+          file_id: attachment.file_id || attachment.id || '',
+          file_name: attachment.file_name || attachment.title || '',
+          file_type: attachment.file_type || attachment.mime_type || '',
+          file_size: attachment.file_size || attachment.size || 0,
+        }));
+        setAttachments(formattedAttachments);
+        console.log('Formatted attachments:', formattedAttachments);
+      } else {
+        setAttachments([]);
+        console.log('No attachments found or invalid response format');
+      }
+    } catch (error: any) {
+      console.error('Error fetching attachments:', error);
+      console.error('Error details:', error.response?.data);
+      console.error('Error status:', error.response?.status);
+      setAttachmentsError('ไม่สามารถโหลดไฟล์ประกอบได้');
+      setAttachments([]);
+    } finally {
+      setAttachmentsLoading(false);
+    }
   };
 
   const getImageUrl = (course: Course): string => {
@@ -261,12 +349,66 @@ const AdminCreditbankArea: React.FC = () => {
   const isDescriptionLong = (description: string): boolean => {
     return description?.length > 100;
   };
+  const isStudyResultLong = (study_result: string): boolean => {
+    return study_result?.length > 100;
+  };
 
   const toggleDescription = () => {
     setIsDescriptionExpanded(prev => !prev);
   };
 
+  const toggleStudyResult = () => {
+    setIsStudyResultExpanded(prev => !prev);
+  };
 
+  const handleDownloadAttachment = async (fileId: string, fileName: string) => {
+    console.log('Downloading attachment - fileId:', fileId, 'fileName:', fileName);
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        toast.error('กรุณาเข้าสู่ระบบก่อนดาวน์โหลด');
+        return;
+      }
+
+      console.log('Making request to:', `${apiURL}/api/courses/attachment/${fileId}`);
+
+      const response = await axios.get(`${apiURL}/api/courses/attachment/${fileId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: 'blob',
+      });
+
+      console.log('Download response:', response);
+      console.log('Response headers:', response.headers);
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      
+      const contentDisposition = response.headers['content-disposition'];
+      let downloadFileName = fileName;
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+        if (filenameMatch && filenameMatch[1]) {
+          downloadFileName = filenameMatch[1].replace(/['"]/g, '');
+        }
+      }
+      
+      console.log('Final download filename:', downloadFileName);
+      
+      link.setAttribute('download', downloadFileName);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      
+      toast.success('ดาวน์โหลดไฟล์สำเร็จ');
+    } catch (error: any) {
+      console.error('Error downloading attachment:', error);
+      console.error('Error details:', error.response?.data);
+      console.error('Error status:', error.response?.status);
+      toast.error('เกิดข้อผิดพลาดในการดาวน์โหลดไฟล์');
+    }
+  };
 
   return (
     <section className="dashboard__area section-pb-120">
@@ -277,31 +419,27 @@ const AdminCreditbankArea: React.FC = () => {
             <DashboardSidebar />
             <div className="dashboard__content-area col-lg-9">
               <div className="dashboard__content-main">
-
-
-
-
-<div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-  <div className="input-group w-50">
-    <input
-      type="text"
-      className="form-control"
-      placeholder="ค้นหาหลักสูตร..."
-      value={searchTerm}
-      onChange={(e) => {
-        setSearchTerm(e.target.value);
-        setCurrentPage(1); // รีเซ็ตหน้าเมื่อค้นหาใหม่
-      }}
-      aria-label="ค้นหาหลักสูตร"
-    />
-    <button className="btn btn-outline-secondary" type="button">
-      <i className="fas fa-search"></i>
-    </button>
-  </div>
-  <Link to="/admin-creditbank/create-new" className="btn btn-primary">
-    <i className="fas fa-plus-circle me-2"></i>สร้างหลักสูตรใหม่
-  </Link>
-</div>
+                <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                  <div className="input-group w-50">
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="ค้นหาหลักสูตร..."
+                      value={searchTerm}
+                      onChange={(e) => {
+                        setSearchTerm(e.target.value);
+                        setCurrentPage(1); // รีเซ็ตหน้าเมื่อค้นหาใหม่
+                      }}
+                      aria-label="ค้นหาหลักสูตร"
+                    />
+                    <button className="btn btn-outline-secondary" type="button">
+                      <i className="fas fa-search"></i>
+                    </button>
+                  </div>
+                  <Link to="/admin-creditbank/create-new" className="btn btn-primary">
+                    <i className="fas fa-plus-circle me-2"></i>สร้างหลักสูตรใหม่
+                  </Link>
+                </div>
 
                 {isLoading ? (
                   <div className="text-center py-5">
@@ -330,6 +468,7 @@ const AdminCreditbankArea: React.FC = () => {
                         <thead className="table-light sticky-top">
                           <tr>
                             <th scope="col" style={{ width: '30px' }}>#</th>
+                            <th scope="col">รหัสหลักสูตร</th>
                             <th scope="col">ชื่อหลักสูตร</th>
                             <th scope="col">สาขาวิชา</th>
                             <th scope="col" style={{ width: '130px' }}>จำนวนรายวิชา</th>
@@ -344,6 +483,7 @@ const AdminCreditbankArea: React.FC = () => {
                               style={{ cursor: 'pointer' }}
                             >
                               <td>{indexOfFirstItem + index + 1}</td>
+                              <td>{course.course_code || '-'}</td>
                               <td>{course.title || '-'}</td>
                               <td>{course.department_name || '-'}</td>
                               <td>{course.subject_count} วิชา</td>
@@ -435,6 +575,12 @@ const AdminCreditbankArea: React.FC = () => {
                           <tbody>
                             <tr>
                               <td className="fw-medium text-muted" style={{ width: '120px' }}>
+                                รหัสหลักสูตร:
+                              </td>
+                              <td>{selectedCourse.course_code || '-'}</td>
+                            </tr>
+                            <tr>
+                              <td className="fw-medium text-muted" style={{ width: '120px' }}>
                                 ชื่อหลักสูตร:
                               </td>
                               <td>{selectedCourse.title || '-'}</td>
@@ -452,18 +598,37 @@ const AdminCreditbankArea: React.FC = () => {
                         <h6 className="card-title mb-3 fw-bold text-primary border-bottom pb-2">
                           รายละเอียด
                         </h6>
-                        <div className={`description ${isDescriptionExpanded ? '' : 'description-truncated'}`}>
-                          {selectedCourse.description || 'ไม่มีคำอธิบาย'}
+                        <div className="mb-3">
+                          <div className={`description ${isDescriptionExpanded ? '' : 'description-truncated'}`}>
+                            {selectedCourse.description || 'ไม่มีคำอธิบาย'}
+                          </div>
+                          {isDescriptionLong(selectedCourse.description || '') && (
+                            <button
+                              className="btn btn-link btn-sm p-0 mt-1 text-primary"
+                              onClick={toggleDescription}
+                              aria-expanded={isDescriptionExpanded}
+                            >
+                              {isDescriptionExpanded ? 'แสดงน้อยลง' : 'แสดงเพิ่ม'}
+                            </button>
+                          )}
                         </div>
-                        {isDescriptionLong(selectedCourse.description || '') && (
-                          <button
-                            className="btn btn-link btn-sm p-0 mt-1 text-primary"
-                            onClick={toggleDescription}
-                            aria-expanded={isDescriptionExpanded}
-                          >
-                            {isDescriptionExpanded ? 'แสดงน้อยลง' : 'แสดงเพิ่ม'}
-                          </button>
-                        )}
+                        <h6 className="card-title mb-3 fw-bold text-primary border-bottom pb-2">
+                          ผลลัพธ์การศึกษา
+                        </h6>
+                        <div className="mb-3">
+                          <div className={`study_result ${isStudyResultExpanded ? '' : 'study_result-truncated'}`}>
+                            {selectedCourse.study_result || 'ไม่มีคำอธิบาย'}
+                          </div>
+                          {isStudyResultLong(selectedCourse.study_result || '') && (
+                            <button
+                              className="btn btn-link btn-sm p-0 mt-1 text-primary"
+                              onClick={toggleStudyResult}
+                              aria-expanded={isStudyResultExpanded}
+                            >
+                              {isStudyResultExpanded ? 'แสดงน้อยลง' : 'แสดงเพิ่ม'}
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -522,6 +687,77 @@ const AdminCreditbankArea: React.FC = () => {
                         )}
                       </div>
                     </div>
+                  </div>
+                </div>
+                <div className="card shadow-sm border-0 bg-white rounded-3 mt-4">
+                  <div className="card-body p-4">
+                    <h6 className="card-title mb-3 fw-bold text-primary border-bottom pb-2">
+                      ไฟล์ประกอบหลักสูตร
+                    </h6>
+                    {(() => {
+                      
+                      if (attachmentsLoading) {
+                        return (
+                          <div className="text-center py-4">
+                            <div className="spinner-border text-primary" role="status">
+                              <span className="visually-hidden">กำลังโหลดไฟล์...</span>
+                            </div>
+                            <p className="mt-2 text-muted">กำลังโหลดไฟล์ประกอบ...</p>
+                          </div>
+                        );
+                      }
+                      
+                      if (attachmentsError) {
+                        return (
+                          <div className="text-center py-4">
+                            <i className="fas fa-exclamation-triangle fa-2x text-warning mb-2"></i>
+                            <p className="text-danger mb-0">{attachmentsError}</p>
+                          </div>
+                        );
+                      }
+                      
+                      if (attachments.length > 0) {
+                        return (
+                          <div className="space-y-3">
+                            {attachments.map((attachment, index) => (
+                              <div key={`attachment-${attachment.file_id}-${index}`} className="d-flex align-items-center gap-3 p-3 border rounded-3 bg-light">
+                                <div className="flex-grow-1">
+                                  <div className="d-flex align-items-center">
+                                    <i className="fas fa-file-alt text-primary me-2"></i>
+                                    <span className="fw-medium">{attachment.file_name}</span>
+                                  </div>
+                                  {attachment.file_type && (
+                                    <small className="text-muted">
+                                      ประเภท: {attachment.file_type}
+                                      {attachment.file_size && ` | ขนาด: ${(attachment.file_size / 1024 / 1024).toFixed(2)} MB`}
+                                    </small>
+                                  )}
+                                </div>
+                                <button
+                                  className="btn btn-outline-primary btn-sm"
+                                  onClick={() => {
+                                    console.log('Download button clicked - fileId:', attachment.file_id, 'fileName:', attachment.file_name);
+                                    handleDownloadAttachment(attachment.file_id, attachment.file_name);
+                                  }}
+                                  aria-label={`ดาวน์โหลดไฟล์ ${attachment.file_name}`}
+                                >
+                                  <i className="fas fa-download me-2"></i>
+                                  ดาวน์โหลด
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      }
+                      
+                      return (
+                        <div className="text-center py-4">
+                          <i className="fas fa-file-slash fa-2x text-muted mb-2"></i>
+                          <p className="text-muted mb-0">ไม่มีไฟล์ประกอบหลักสูตร</p>
+                          <small className="text-muted">จำนวนไฟล์: {attachments.length}</small>
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>
@@ -805,6 +1041,15 @@ const AdminCreditbankArea: React.FC = () => {
           }
 
           .description-truncated {
+            max-height: 4.5rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+          }
+
+          .study_result-truncated {
             max-height: 4.5rem;
             overflow: hidden;
             text-overflow: ellipsis;
