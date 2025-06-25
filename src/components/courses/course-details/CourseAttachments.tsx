@@ -22,17 +22,6 @@ const CourseAttachments: React.FC<CourseAttachmentsProps> = ({ courseId }) => {
   const apiURL = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
-    console.log('CourseAttachments: useEffect triggered with courseId:', courseId);
-    console.log('CourseAttachments: courseId type:', typeof courseId);
-    console.log('CourseAttachments: courseId value:', courseId);
-    
-    if (!courseId) {
-      console.log('CourseAttachments: No courseId provided');
-      return;
-    }
-
-    console.log('CourseAttachments: Fetching attachments for courseId:', courseId);
-
     const fetchAttachments = async () => {
       setIsLoading(true);
       setError(null);
@@ -40,22 +29,17 @@ const CourseAttachments: React.FC<CourseAttachmentsProps> = ({ courseId }) => {
       try {
         const token = localStorage.getItem('token');
         if (!token) {
-          console.log('CourseAttachments: No token found');
           setError('กรุณาเข้าสู่ระบบ');
           setAttachments([]);
           return;
         }
 
-        console.log('CourseAttachments: Making API request to:', `${apiURL}/api/courses/${courseId}/attachments`);
-
         const response = await axios.get(`${apiURL}/api/courses/${courseId}/attachments`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        console.log('CourseAttachments: API Response:', response.data);
 
         if (response.data.success && Array.isArray(response.data.attachments)) {
-          console.log('CourseAttachments: Raw attachments data:', response.data.attachments);
           
           const formattedAttachments: Attachment[] = response.data.attachments.map((attachment: any) => ({
             file_id: attachment.file_id || attachment.id || '',
@@ -64,10 +48,8 @@ const CourseAttachments: React.FC<CourseAttachmentsProps> = ({ courseId }) => {
             file_size: attachment.file_size || attachment.size || 0,
           }));
           
-          console.log('CourseAttachments: Formatted attachments:', formattedAttachments);
           setAttachments(formattedAttachments);
         } else {
-          console.log('CourseAttachments: No attachments found or invalid response structure');
           setAttachments([]);
         }
       } catch (error: any) {
@@ -139,7 +121,6 @@ const CourseAttachments: React.FC<CourseAttachmentsProps> = ({ courseId }) => {
         return;
       }
 
-      console.log('Opening file - fileId:', fileId, 'fileName:', fileName, 'fileType:', fileType);
 
       // ใช้ API ที่มีอยู่แล้วเพื่อดึงข้อมูลไฟล์
       const response = await axios.get(`${apiURL}/api/courses/attachment/${fileId}`, {
@@ -217,15 +198,6 @@ const CourseAttachments: React.FC<CourseAttachmentsProps> = ({ courseId }) => {
     const i = Math.floor(Math.log(bytes) / Math.log(1024));
     return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
   };
-
-  // Debug logging for render
-  console.log('CourseAttachments: Render state:', {
-    courseId,
-    isLoading,
-    error,
-    attachmentsCount: attachments.length,
-    attachments
-  });
 
   return (
     <div className="courses__reviews-wrap">
