@@ -1,0 +1,188 @@
+.course-details-area {
+  background-color: #f8f9fa;
+  padding: 20px 0;
+}
+
+.course-details-content {
+  background: white;
+  padding: 30px;
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.course-title {
+  color: #1a73e8;
+  font-weight: 700;
+  margin-bottom: 20px;
+}
+
+.course-description {
+  color: #4a4a4a;
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+.course-image img,
+.subject-image {
+  max-width: 100%;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.course-video video {
+  width: 100%;
+  border-radius: 8px;
+}
+
+.course-info .list-group-item,
+.course-subjects .list-group-item {
+  border: none;
+  padding: 10px 0;
+  color: #4a4a4a;
+}
+
+.course-sidebar {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.instructor-card {
+  border-bottom: 1px solid #eee;
+  padding-bottom: 15px;
+}
+
+.instructor-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.btn-enroll {
+  background-color: #1a73e8;
+  border: none;
+  padding: 12px 24px;
+  font-size: 16px;
+  border-radius: 25px;
+  transition: background-color 0.3s;
+}
+
+.btn-enroll:hover {
+  background-color: #1557b0;
+}
+
+.course-popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.course-popup {
+  background: white;
+  border-radius: 12px;
+  width: 80%;
+  max-width: 900px;
+  overflow: hidden;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+}
+
+.popup-header {
+  background: #1a73e8;
+  color: white;
+  padding: 15px 20px;
+  border-radius: 12px 12px 0 0;
+}
+
+.popup-header h3 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.popup-content {
+  display: flex;
+  flex-direction: row;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.popup-media {
+  flex: 1;
+  padding-right: 20px;
+}
+
+.popup-image {
+  max-width: 100%;
+  border-radius: 8px;
+  margin-bottom: 15px;
+}
+
+.popup-video {
+  width: 100%;
+  max-height: 200px;
+  border-radius: 8px;
+}
+
+.popup-details {
+  flex: 2;
+  padding-left: 20px;
+}
+
+.popup-details h4 {
+  color: #1a73e8;
+  margin-bottom: 15px;
+}
+
+.popup-details p {
+  color: #4a4a4a;
+  line-height: 1.6;
+}
+
+.popup-details .list-group-item {
+  border: none;
+  padding: 8px 0;
+}
+
+.popup-footer {
+  padding: 15px 20px;
+  border-top: 1px solid #eee;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.btn-confirm {
+  background-color: #1a73e8;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 25px;
+  transition: background-color 0.3s;
+}
+
+.btn-confirm:hover {
+  background-color: #1557b0;
+}
+
+.btn-cancel {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 25px;
+  transition: background-color 0.3s;
+}
+
+.btn-cancel:hover {
+  background-color: #bb2d3b;
+}

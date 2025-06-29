@@ -1,5 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 import DashboardSidebar from "../../../dashboard-common/AdminSidebar";
 import DashboardBanner from "../../../dashboard-common/AdminBanner";
 import AddSubjects from "../../../../forms/Course/Subjects/AddSubjects";
@@ -11,26 +12,37 @@ interface AddSubjectsAreaProps {
 
 const AddSubjectsArea: React.FC<AddSubjectsAreaProps> = ({ isEmbedded = false, onSubmit }) => {
   const navigate = useNavigate();
-  
+
   // จัดการเมื่อมีการส่งฟอร์ม
   const handleSubmit = (subjectData: any) => {
     console.log("บันทึกข้อมูล:", subjectData);
-    
+
+    // แสดง notification ตรงกลางหน้าจอ
+    toast.success("บันทึกข้อมูลสำเร็จ!", {
+      position: "top-center", // เปลี่ยนเป็น top-center
+      autoClose: 3000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+    });
+
     if (isEmbedded && onSubmit) {
       onSubmit(subjectData);
       return;
     }
-    
-    // แสดงข้อความสำเร็จ
-    alert("บันทึกข้อมูลสำเร็จ");
-    
+
+    // รอให้ notification แสดงก่อนนำทาง
+    setTimeout(() => {
+      navigate("/admin-subjects");
+    }, 3500);
   };
-  
+
   // จัดการเมื่อมีการยกเลิก
   const handleCancel = () => {
     navigate("/admin-subjects");
   };
-  
+
   // ถ้าเป็นแบบ embedded ให้แสดงเฉพาะฟอร์ม
   if (isEmbedded) {
     return (
@@ -42,7 +54,7 @@ const AddSubjectsArea: React.FC<AddSubjectsAreaProps> = ({ isEmbedded = false, o
       </div>
     );
   }
-  
+
   // แสดงแบบปกติเมื่อใช้งานเป็นหน้าเต็ม
   return (
     <section className="dashboard__area section-pb-120">
