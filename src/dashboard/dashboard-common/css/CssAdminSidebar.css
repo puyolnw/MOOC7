@@ -200,4 +200,361 @@
     font-size: 8px;
     margin-right: 8px;
   }
-  
+  /* เก็บ CSS เดิมและเพิ่มเติมเฉพาะส่วนที่จำเป็น */
+
+/* Menu Item Styling */
+.dashboard__sidebar-menu .menu-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 15px;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    position: relative;
+    text-decoration: none;
+    color: #495057;
+}
+
+.dashboard__sidebar-menu .menu-item:hover {
+    background-color: rgba(13, 110, 253, 0.05);
+    color: #0d6efd;
+}
+
+.dashboard__sidebar-menu .menu-item.active {
+    background-color: rgba(13, 110, 253, 0.1);
+    color: #0d6efd;
+    font-weight: 500;
+}
+
+.dashboard__sidebar-menu .menu-item.parent-active {
+    background-color: rgba(13, 110, 253, 0.08);
+    color: #0d6efd;
+    font-weight: 500;
+}
+
+.dashboard__sidebar-menu .menu-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    margin-right: 12px;
+    font-size: 16px;
+}
+
+.dashboard__sidebar-menu .menu-text {
+    flex: 1;
+    font-weight: 500;
+}
+
+.dashboard__sidebar-menu .menu-arrow {
+    margin-left: 8px;
+    font-size: 12px;
+    transition: transform 0.3s ease;
+}
+
+/* Submenu Styling */
+.dashboard__sidebar-menu .submenu {
+    max-height: 0;
+    overflow: hidden;
+    padding-left: 36px;
+    margin: 0;
+    transition: max-height 0.3s ease, padding 0.3s ease;
+    list-style: none;
+}
+
+.dashboard__sidebar-menu .submenu.open {
+    max-height: 500px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+}
+
+.dashboard__sidebar-menu .submenu li {
+    margin-bottom: 8px;
+}
+
+.dashboard__sidebar-menu .submenu li:last-child {
+    margin-bottom: 0;
+}
+
+.dashboard__sidebar-menu .submenu-link {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    font-size: 14px;
+    color: #6c757d;
+}
+
+.dashboard__sidebar-menu .submenu-link:hover {
+    background-color: rgba(13, 110, 253, 0.05);
+    color: #0d6efd;
+}
+
+.dashboard__sidebar-menu .submenu-link.active {
+    background-color: rgba(13, 110, 253, 0.1);
+    color: #0d6efd;
+    font-weight: 500;
+}
+
+.dashboard__sidebar-menu .submenu-icon {
+    font-size: 6px;
+    margin-right: 10px;
+    opacity: 0.7;
+}
+
+/* Sidebar Container */
+.dashboard__sidebar-wrap {
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
+    padding: 25px 20px;
+}
+
+.dashboard__sidebar-title .title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 0;
+}
+
+.dashboard__sidebar-menu .list-wrap {
+    padding: 0;
+    margin: 0;
+    list-style: none;
+}
+
+.dashboard__sidebar-menu .has-submenu {
+    margin-bottom: 5px;
+}
+
+/* เพิ่มการรองรับ AdminCreditbankArea */
+.dashboard__sidebar-menu .menu-item[href*="creditbank"] {
+    border-left: 3px solid transparent;
+}
+.dashboard__sidebar-menu .menu-item[href*="creditbank"].active,
+.dashboard__sidebar-menu .menu-item[href*="creditbank"].parent-active {
+    border-left-color: #0d6efd;
+}
+
+/* Responsive Design */
+@media (max-width: 991px) {
+    .dashboard__sidebar-wrap {
+        margin-bottom: 30px;
+    }
+}
+
+@media (max-width: 767px) {
+    .dashboard__sidebar-wrap {
+        padding: 20px 15px;
+    }
+    
+    .dashboard__sidebar-menu .menu-item {
+        padding: 10px 12px;
+    }
+    
+    .dashboard__sidebar-menu .menu-text {
+        font-size: 14px;
+    }
+    
+    .dashboard__sidebar-menu .submenu {
+        padding-left: 30px;
+    }
+}
+
+/* Animation for smooth transitions */
+.dashboard__sidebar-menu .menu-item {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dashboard__sidebar-menu .submenu {
+    transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dashboard__sidebar-menu .menu-arrow {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Focus states for accessibility */
+.dashboard__sidebar-menu .menu-item:focus,
+.dashboard__sidebar-menu .submenu-link:focus {
+    outline: 2px solid #0d6efd;
+    outline-offset: 2px;
+}
+
+/* Hover effects */
+.dashboard__sidebar-menu .menu-item:hover .menu-icon {
+    transform: scale(1.1);
+}
+
+.dashboard__sidebar-menu .submenu-link:hover .submenu-icon {
+    transform: scale(1.2);
+}
+
+/* Active state enhancements */
+.dashboard__sidebar-menu .menu-item.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 20px;
+    background-color: #0d6efd;
+    border-radius: 0 2px 2px 0;
+}
+
+.dashboard__sidebar-menu .submenu-link.active::before {
+    content: '';
+    position: absolute;
+    left: -20px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 2px;
+    height: 16px;
+    background-color: #0d6efd;
+    border-radius: 1px;
+}
+
+/* Spacing adjustments */
+.dashboard__sidebar-title.mb-20 {
+    margin-bottom: 20px;
+}
+
+.dashboard__sidebar-title.mt-40 {
+    margin-top: 40px;
+}
+
+/* Icon colors for different sections */
+.dashboard__sidebar-menu .menu-item[href*="dashboard"] .menu-icon {
+    color: #28a745;
+}
+
+.dashboard__sidebar-menu .menu-item[href*="creditbank"] .menu-icon {
+    color: #007bff;
+}
+
+.dashboard__sidebar-menu .menu-item[href*="subjects"] .menu-icon {
+    color: #17a2b8;
+}
+
+.dashboard__sidebar-menu .menu-item[href*="lessons"] .menu-icon {
+    color: #ffc107;
+}
+
+.dashboard__sidebar-menu .menu-item[href*="quizzes"] .menu-icon {
+    color: #fd7e14;
+}
+
+.dashboard__sidebar-menu .menu-item[href*="questions"] .menu-icon {
+    color: #e83e8c;
+}
+
+.dashboard__sidebar-menu .menu-item[href*="instructors"] .menu-icon {
+    color: #6f42c1;
+}
+
+.dashboard__sidebar-menu .menu-item[href*="students"] .menu-icon {
+    color: #20c997;
+}
+
+.dashboard__sidebar-menu .menu-item[href*="departments"] .menu-icon {
+    color: #6c757d;
+}
+
+.dashboard__sidebar-menu .menu-item[href*="settings"] .menu-icon {
+    color: #495057;
+}
+
+/* Keep icon colors when active */
+.dashboard__sidebar-menu .menu-item.active .menu-icon,
+.dashboard__sidebar-menu .menu-item.parent-active .menu-icon {
+    color: #0d6efd;
+}
+
+/* Loading state */
+.dashboard__sidebar-wrap.loading {
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+.dashboard__sidebar-wrap.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 20px;
+    height: 20px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #0d6efd;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: translate(-50%, -50%) rotate(0deg); }
+    100% { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* Smooth scroll behavior */
+.dashboard__sidebar-wrap {
+    scroll-behavior: smooth;
+}
+
+/* Custom scrollbar if needed */
+.dashboard__sidebar-wrap::-webkit-scrollbar {
+    width: 6px;
+}
+
+.dashboard__sidebar-wrap::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.dashboard__sidebar-wrap::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.dashboard__sidebar-wrap::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Print styles */
+@media print {
+    .dashboard__sidebar-wrap {
+        display: none;
+    }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .dashboard__sidebar-menu .menu-item {
+        border: 1px solid transparent;
+    }
+    
+    .dashboard__sidebar-menu .menu-item:hover,
+    .dashboard__sidebar-menu .menu-item.active {
+        border-color: #0d6efd;
+    }
+    
+    .dashboard__sidebar-menu .submenu-link {
+        border: 1px solid transparent;
+    }
+    
+    .dashboard__sidebar-menu .submenu-link:hover,
+    .dashboard__sidebar-menu .submenu-link.active {
+        border-color: #0d6efd;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .dashboard__sidebar-menu .menu-item,
+    .dashboard__sidebar-menu .submenu,
+    .dashboard__sidebar-menu .menu-arrow {
+        transition: none;
+    }
+}
+

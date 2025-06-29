@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useLocation } from "react-router-dom"; // Import useLocation
+import { Link, useLocation } from "react-router-dom";
 import "./css/CssAdminSidebar.css";
 
 interface SubMenuType {
@@ -24,86 +24,179 @@ interface DataType {
   sidebar_details: SidebarDetailType[];
 }
 
-// Update the sidebar_data array with better icons
+// ปรับปรุง sidebar_data โดยตัดหัวข้อ "ระบบ" ออก
 const sidebar_data: DataType[] = [
    {
       id: 1,
-      title: "Welcome, Jone Due",
+      title: "ภาพรวม",
       sidebar_details: [
          {
             id: 1,
             link: "/admin-dashboard",
-            icon: "fas fa-chart-line", // Changed to analytics icon
+            icon: "fas fa-chart-pie",
             title: "แดชบอร์ด",
          },
       ],
    },
    {
       id: 2,
-      title: "การจัดการ",
+      title: "จัดการหลักสูตร",
       class_name: "mt-40",
       sidebar_details: [
          {
             id: 3,
             link: "/admin-creditbank",
-            icon: "fas fa-graduation-cap", // Changed to education icon    
+            icon: "fas fa-graduation-cap",
             title: "คลังหลักสูตร",
             hasSubmenu: true,
             submenu: [
                {
                   id: 4,
                   link: "/admin-creditbank",
-                  title: "หลักสูตร",
+                  title: "เรียกดูหลักสูตร",
                },
                {
                   id: 5,
-                  link: "/admin-subjects",
-                  title: "รายวิชา",
+                  link: "/admin-creditbank/create-new",
+                  title: "สร้างหลักสูตรใหม่",
                },
-               {
-                  id: 6,
-                  link: "/admin-lessons",
-                  title: "บทเรียน",
-               },
+            ],
+         },
+         {
+            id: 6,
+            link: "/admin-subjects",
+            icon: "fas fa-book-open",
+            title: "รายวิชา",
+            hasSubmenu: true,
+            submenu: [
                {
                   id: 7,
-                  link: "/admin-quizzes",
-                  title: "แบบทดสอบ",
+                  link: "/admin-subjects",
+                  title: "จัดการรายวิชา",
                },
                {
                   id: 8,
-                  link: "/admin-questions",
-                  title: "คำถาม",
+                  link: "/admin-subjects/create-new",
+                  title: "สร้างรายวิชาใหม่",
                },
             ],
          },
          {
             id: 9,
-            link: "/admin-account/instructors",
-            icon: "fas fa-users-cog", // Changed to user management icon    
-            title: "บัญชีผู้ใช้",
+            link: "/admin-lessons",
+            icon: "fas fa-chalkboard-teacher",
+            title: "บทเรียน",
             hasSubmenu: true,
             submenu: [
                {
                   id: 10,
-                  link: "/admin-account/instructors",
-                  title: "อาจารย์",
+                  link: "/admin-lessons",
+                  title: "จัดการบทเรียน",
                },
                {
                   id: 11,
+                  link: "/admin-lessons/create-new",
+                  title: "สร้างบทเรียนใหม่",
+               },
+            ],
+         },
+      ],
+   },
+   {
+      id: 3,
+      title: "การประเมินผล",
+      class_name: "mt-40",
+      sidebar_details: [
+         {
+            id: 12,
+            link: "/admin-quizzes",
+            icon: "fas fa-clipboard-list",
+            title: "แบบทดสอบ",
+            hasSubmenu: true,
+            submenu: [
+               {
+                  id: 13,
+                  link: "/admin-quizzes",
+                  title: "จัดการแบบทดสอบ",
+               },
+               {
+                  id: 14,
+                  link: "/admin-quizzes/create-new",
+                  title: "สร้างแบบทดสอบใหม่",
+               },
+            ],
+         },
+         {
+            id: 15,
+            link: "/admin-questions",
+            icon: "fas fa-question-circle",
+            title: "คำถาม",
+            hasSubmenu: true,
+            submenu: [
+               {
+                  id: 16,
+                  link: "/admin-questions",
+                  title: "จัดการคำถาม",
+               },
+               {
+                  id: 17,
+                  link: "/admin-questions/create-new",
+                  title: "สร้างคำถามใหม่",
+               },
+            ],
+         },
+      ],
+   },
+   {
+      id: 4,
+      title: "จัดการผู้ใช้",
+      class_name: "mt-40",
+      sidebar_details: [
+         {
+            id: 18,
+            link: "/admin-account/instructors",
+            icon: "fas fa-chalkboard-teacher",
+            title: "อาจารย์",
+            hasSubmenu: true,
+            submenu: [
+               {
+                  id: 19,
+                  link: "/admin-account/instructors",
+                  title: "รายชื่ออาจารย์",
+               },
+               {
+                  id: 20,
+                  link: "/admin-account/instructors/create-new",
+                  title: "เพิ่มอาจารย์ใหม่",
+               },
+            ],
+         },
+         {
+            id: 21,
+            link: "/admin-account/students",
+            icon: "fas fa-user-graduate",
+            title: "นักเรียน",
+            hasSubmenu: true,
+            submenu: [
+               {
+                  id: 22,
                   link: "/admin-account/students",
-                  title: "นักเรียน",
-               }
+                  title: "รายชื่อนักเรียน",
+               },
+               {
+                  id: 23,
+                  link: "/admin-account/students/enrollment",
+                  title: "การลงทะเบียน",
+               },
             ],
          },
       ],
    },
 ];
 
-
 const AdminSidebar = () => {
    const [openSubmenu, setOpenSubmenu] = useState<number | null>(null);
-   const location = useLocation(); // Get current location
+   const location = useLocation();
    const currentPath = location.pathname;
 
    const toggleSubmenu = (id: number) => {

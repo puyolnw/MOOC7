@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
-import { toast } from 'react-toastify';
+
 import DashboardSidebar from "../dashboard-common/AdminSidebar";
 import DashboardBanner from "../dashboard-common/AdminBanner";
+import "./main.css";
 
 interface Course {
   course_id: number;
@@ -17,13 +18,76 @@ interface Course {
   department_name: string | null;
   faculty: string | null;
   subject_count: number;
+  status: string;
+  created_at: string;
+  updated_at: string;
 }
 
-interface Attachment {
-  file_id: string;
-  file_name: string;
-  file_type?: string;
-  file_size?: number;
+interface Subject {
+  subject_id: number;
+  subject_code: string;
+  subject_name: string;
+  description: string;
+  credits: number;
+  cover_image: string | null;
+  cover_image_file_id: string | null;
+  video_url: string | null;
+  status: string;
+  lesson_count: number;
+  quiz_count: number;
+  instructors: Instructor[];
+  prerequisites: Subject[];
+  pre_test: Quiz | null;
+  post_test: Quiz | null;
+  order_number: number;
+  lessons?: Lesson[]; // เพิ่ม lessons
+}
+
+interface Lesson {
+  lesson_id: number;
+  title: string;
+  description: string;
+  content: string;
+  video_url: string | null;
+  order_number: number;
+  status: string;
+  created_at: string;
+}
+
+interface Instructor {
+  instructor_id: number;
+  name: string;
+  position: string;
+  avatar_path: string | null;
+  avatar_file_id: string | null;
+  status: string;
+  description: string | null;
+  department: number;
+  ranking_id: number | null;
+  ranking_name?: string;
+}
+
+interface Quiz {
+  quiz_id: number;
+  title: string;
+  description: string;
+  status: string;
+  passing_score_enabled: boolean;
+  passing_score_value: number;
+}
+
+interface Department {
+  department_id: number;
+  department_name: string;
+  faculty: string;
+  description?: string;
+  created_at: string;
+  course_count?: number;
+}
+
+interface Faculty {
+  name: string;
+  department_count: number;
 }
 
 interface PaginationProps {
@@ -32,6 +96,1235 @@ interface PaginationProps {
   onPageChange: (page: number) => void;
 }
 
+// Enhanced Navigation breadcrumb component
+const NavigationBreadcrumb: React.FC<{
+  selectedFaculty: string | null;
+  selectedDepartment: Department | null;
+  selectedCourse: Course | null;
+  selectedSubject: Subject | null;
+  onFacultyClick: () => void;
+  onDepartmentClick: () => void;
+  onCourseClick: () => void;
+  onSubjectClick?: () => void;
+}> = ({ 
+  selectedFaculty, 
+  selectedDepartment, 
+  selectedCourse, 
+  selectedSubject,
+  onFacultyClick, 
+  onDepartmentClick, 
+  onCourseClick,
+  onSubjectClick 
+}) => {
+  return (
+    <nav aria-label="breadcrumb" className="mb-4">
+      <div className="breadcrumb-container">
+        <ol className="breadcrumb-modern">
+          <li className="breadcrumb-item-modern">
+            <button 
+              className="breadcrumb-btn home-btn"
+              onClick={onFacultyClick}
+            >
+              <i className="fas fa-home me-2"></i>
+              <span>เลือกคณะ</span>
+            </button>
+          </li>
+          {selectedFaculty && (
+            <>
+              <li className="breadcrumb-separator">
+                <i className="fas fa-chevron-right"></i>
+              </li>
+              <li className="breadcrumb-item-modern">
+                <button 
+                  className="breadcrumb-btn faculty-btn"
+                  onClick={onDepartmentClick}
+                >
+                  <i className="fas fa-university me-2"></i>
+                  <span>{selectedFaculty}</span>
+                </button>
+              </li>
+            </>
+          )}
+          {selectedDepartment && (
+            <>
+              <li className="breadcrumb-separator">
+                <i className="fas fa-chevron-right"></i>
+              </li>
+              <li className="breadcrumb-item-modern">
+                <button 
+                  className="breadcrumb-btn department-btn"
+                  onClick={onCourseClick}
+                >
+                  <i className="fas fa-building me-2"></i>
+                  <span>{selectedDepartment.department_name}</span>
+                </button>
+              </li>
+            </>
+          )}
+          {selectedCourse && (
+            <>
+              <li className="breadcrumb-separator">
+                <i className="fas fa-chevron-right"></i>
+              </li>
+              <li className="breadcrumb-item-modern">
+                {selectedSubject ? (
+                  <button 
+                    className="breadcrumb-btn course-btn"
+                    onClick={onSubjectClick || (() => {})}
+                  >
+                    <i className="fas fa-book me-2"></i>
+                    <span>{selectedCourse.title}</span>
+                  </button>
+                ) : (
+                  <span className="breadcrumb-current">
+                    <i className="fas fa-book me-2"></i>
+                    <span>{selectedCourse.title}</span>
+                  </span>
+                )}
+              </li>
+            </>
+          )}
+          {selectedSubject && (
+            <>
+              <li className="breadcrumb-separator">
+                <i className="fas fa-chevron-right"></i>
+              </li>
+              <li className="breadcrumb-item-modern active">
+                <span className="breadcrumb-current">
+                  <i className="fas fa-graduation-cap me-2"></i>
+                  <span>{selectedSubject.subject_name}</span>
+                </span>
+              </li>
+            </>
+          )}
+        </ol>
+      </div>
+    </nav>
+  );
+};
+
+// Enhanced Faculty selection component
+const FacultySelection: React.FC<{
+  faculties: Faculty[];
+  isLoading: boolean;
+  onSelectFaculty: (faculty: string) => void;
+}> = ({ faculties, isLoading, onSelectFaculty }) => {
+  if (isLoading) {
+    return (
+      <div className="loading-container">
+        <div className="loading-spinner">
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">กำลังโหลด...</span>
+          </div>
+          <p className="loading-text">กำลังโหลดข้อมูลคณะ...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="selection-container">
+      <div className="section-header">
+        <div className="section-icon">
+          <i className="fas fa-university"></i>
+        </div>
+        <div className="section-title">
+          <h2>เลือกคณะ</h2>
+          <p>เลือกคณะที่ต้องการจัดการหลักสูตร</p>
+        </div>
+      </div>
+      
+      <div className="cards-grid">
+        {faculties.map((faculty, index) => (
+          <div key={`faculty-${index}`} className="selection-card faculty-card">
+            <div 
+              className="card-content"
+              onClick={() => onSelectFaculty(faculty.name)}
+            >
+              <div className="card-icon faculty-icon">
+                <i className="fas fa-graduation-cap"></i>
+              </div>
+              <div className="card-body">
+                <h3 className="card-title">{faculty.name}</h3>
+                <div className="card-stats">
+                  <span className="stat-item">
+                    <i className="fas fa-building me-1"></i>
+                    {faculty.department_count} สาขา
+                  </span>
+                </div>
+              </div>
+              <div className="card-arrow">
+                <i className="fas fa-arrow-right"></i>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// Enhanced Department selection component
+const DepartmentSelection: React.FC<{
+  departments: Department[];
+  isLoading: boolean;
+  selectedFaculty: string;
+  onSelectDepartment: (department: Department) => void;
+}> = ({ departments, isLoading, selectedFaculty, onSelectDepartment }) => {
+  if (isLoading) {
+    return (
+      <div className="loading-container">
+        <div className="loading-spinner">
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">กำลังโหลด...</span>
+          </div>
+          <p className="loading-text">กำลังโหลดข้อมูลสาขา...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="selection-container">
+      <div className="section-header">
+        <div className="section-icon">
+          <i className="fas fa-building"></i>
+        </div>
+        <div className="section-title">
+          <h2>เลือกสาขาวิชา</h2>
+          <p>คณะ {selectedFaculty} - เลือกสาขาที่ต้องการจัดการหลักสูตร</p>
+        </div>
+      </div>
+      
+      <div className="cards-grid">
+        {departments.map((department) => (
+          <div key={`department-${department.department_id}`} className="selection-card department-card">
+            <div 
+              className="card-content"
+              onClick={() => onSelectDepartment(department)}
+            >
+              <div className="card-icon department-icon">
+                <i className="fas fa-book-open"></i>
+              </div>
+              <div className="card-body">
+                <h3 className="card-title">{department.department_name}</h3>
+                {department.description && (
+                  <p className="card-description">
+                    {department.description.length > 80 
+                      ? `${department.description.substring(0, 80)}...`
+                      : department.description
+                    }
+                  </p>
+                )}
+                <div className="card-stats">
+                  <span className="stat-item">
+                    <i className="fas fa-graduation-cap me-1"></i>
+                    {department.course_count || 0} หลักสูตร
+                  </span>
+                </div>
+              </div>
+              <div className="card-arrow">
+                <i className="fas fa-arrow-right"></i>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// Course List component
+const CourseList: React.FC<{
+  courses: Course[];
+  isLoading: boolean;
+  searchTerm: string;
+  onSearchChange: (term: string) => void;
+  onCourseSelect: (course: Course) => void;
+  selectedDepartment: Department;
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+  indexOfFirstItem: number;
+}> = ({ 
+  courses, 
+  isLoading, 
+  searchTerm, 
+  onSearchChange, 
+  onCourseSelect, 
+  selectedDepartment,
+  currentPage,
+  totalPages,
+  onPageChange,
+}) => {
+  if (isLoading) {
+    return (
+      <div className="loading-container">
+        <div className="loading-spinner">
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">กำลังโหลด...</span>
+          </div>
+          <p className="loading-text">กำลังโหลดข้อมูลหลักสูตร...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="course-list-container">
+      <div className="section-header">
+        <div className="section-icon">
+          <i className="fas fa-graduation-cap"></i>
+        </div>
+        <div className="section-title">
+          <h2>หลักสูตร</h2>
+          <p>สาขา {selectedDepartment.department_name} - จำนวน {courses.length} หลักสูตร</p>
+        </div>
+      </div>
+
+      <div className="course-controls">
+        <div className="search-container">
+          <div className="search-input-group">
+            <i className="fas fa-search search-icon"></i>
+            <input
+              type="text"
+              className="search-input"
+              placeholder="ค้นหาหลักสูตร..."
+              value={searchTerm}
+              onChange={(e) => onSearchChange(e.target.value)}
+            />
+            {searchTerm && (
+              <button 
+                className="clear-search-btn"
+                onClick={() => onSearchChange('')}
+              >
+                <i className="fas fa-times"></i>
+              </button>
+            )}
+          </div>
+        </div>
+        <Link 
+          to="/admin-creditbank/create-new" 
+          className="add-course-btn"
+        >
+          <i className="fas fa-plus me-2"></i>
+          เพิ่มหลักสูตรใหม่
+        </Link>
+      </div>
+
+      {courses.length === 0 ? (
+        <div className="no-courses">
+          <div className="no-courses-icon">
+            <i className="fas fa-book-open"></i>
+          </div>
+          <h3>ไม่พบหลักสูตร</h3>
+          <p>
+            {searchTerm 
+              ? 'ไม่พบหลักสูตรที่ตรงกับเงื่อนไขการค้นหา' 
+              : 'ยังไม่มีหลักสูตรในสาขานี้'
+            }
+          </p>
+        </div>
+      ) : (
+        <>
+          <div className="courses-grid">
+            {courses.map((course, index) => (
+              <div 
+                key={`course-${course.course_id}-${index}`} 
+                className="course-card"
+                onClick={() => onCourseSelect(course)}
+              >
+                <div className="course-card-image">
+                  <img
+                    src={course.cover_image_file_id 
+                                          ? `${import.meta.env.VITE_API_URL}/api/courses/image/${course.cover_image_file_id}`
+                      : 'https://via.placeholder.com/300x200.png?text=ไม่มีรูปภาพ'
+                    }
+                    alt={course.title}
+                    className="course-image"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = 'https://via.placeholder.com/300x200.png?text=ไม่มีรูปภาพ';
+                    }}
+                  />
+                  <div className="course-card-overlay">
+                    <div className="course-status">
+                      <span className={`status-badge ${course.status}`}>
+                        {course.status === 'active' ? 'เปิดใช้งาน' : 
+                         course.status === 'inactive' ? 'ปิดใช้งาน' : 'ร่าง'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div className="course-card-content">
+                  <div className="course-card-header">
+                    <h3 className="course-title">{course.title}</h3>
+                    {course.course_code && (
+                      <span className="course-code">{course.course_code}</span>
+                    )}
+                  </div>
+                  {course.description && (
+                    <p className="course-description">
+                      {course.description.length > 100 
+                        ? `${course.description.substring(0, 100)}...`
+                        : course.description
+                      }
+                    </p>
+                  )}
+                  <div className="course-stats">
+                    <div className="stat-group">
+                      <i className="fas fa-list-alt me-1"></i>
+                      <span>{course.subject_count} รายวิชา</span>
+                    </div>
+                    <div className="stat-group">
+                      <i className="fas fa-calendar me-1"></i>
+                      <span>{new Date(course.created_at).toLocaleDateString('th-TH')}</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="course-card-footer">
+                  <div className="course-actions">
+                    <Link
+                      to={`/admin-creditbank/edit-course/${course.course_id}`}
+                      className="action-btn edit-btn"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <i className="fas fa-edit me-1"></i>
+                      แก้ไข
+                    </Link>
+                    <button 
+                      className="action-btn view-btn"
+                      onClick={() => onCourseSelect(course)}
+                    >
+                      <i className="fas fa-eye me-1"></i>
+                      ดูรายละเอียด
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          {totalPages > 1 && (
+            <div className="pagination-nav">
+              <SimplePagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={onPageChange}
+              />
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+};
+
+// Subject Detail component with lessons
+const SubjectDetail: React.FC<{
+  subject: Subject;
+  course: Course;
+  onBack: () => void;
+}> = ({ subject, course, onBack }) => {
+  const apiURL = import.meta.env.VITE_API_URL;
+  const [activeTab, setActiveTab] = useState('overview');
+  const [lessons, setLessons] = useState<Lesson[]>([]);
+  const [lessonsLoading, setLessonsLoading] = useState(false);
+
+  // ดึงข้อมูล lessons เมื่อเปิด tab lessons
+  useEffect(() => {
+    if (activeTab === 'lessons') {
+      fetchLessons();
+    }
+  }, [activeTab, subject.subject_id]);
+
+  const fetchLessons = async () => {
+    setLessonsLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(
+        `${apiURL}/api/courses/subjects/${subject.subject_id}/lessons`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      if (response.data.success) {
+        setLessons(response.data.lessons || []);
+      }
+    } catch (error) {
+      console.error('Error fetching lessons:', error);
+      setLessons([]);
+    } finally {
+      setLessonsLoading(false);
+    }
+  };
+
+  // ฟังก์ชันสำหรับแสดงรูปภาพ subject (ตามตัวอย่างใน SubjectDetailsArea.tsx)
+  const getSubjectImageUrl = (subject: Subject): string => {
+    if (subject.cover_image_file_id) {
+      return `${apiURL}/api/courses/subjects/image/${subject.cover_image_file_id}`;
+    }
+    if (subject.cover_image && typeof subject.cover_image === 'string' && subject.cover_image.trim() !== '') {
+      // ตรวจสอบว่าเป็น Google Drive URL หรือไม่
+      const fileIdMatch = subject.cover_image.match(/\/d\/(.+?)\//);
+      if (fileIdMatch && fileIdMatch[1]) {
+        return `${apiURL}/api/courses/subjects/image/${fileIdMatch[1]}`;
+      }
+      // ถ้าเป็น URL ปกติ
+      if (subject.cover_image.startsWith('http')) {
+        return subject.cover_image;
+      }
+    }
+    return 'https://via.placeholder.com/400x250.png?text=ไม่มีรูปภาพ';
+  };
+
+  const getVideoEmbedUrl = (videoUrl: string | null): string => {
+    if (!videoUrl) return '';
+    if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
+      const videoIdMatch = videoUrl.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/);
+      if (videoIdMatch) {
+        return `https://www.youtube.com/embed/${videoIdMatch[1]}`;
+      }
+    }
+    return videoUrl;
+  };
+
+  return (
+    <div className="subject-detail-container">
+      <div className="subject-detail-header">
+        <div className="subject-header-content">
+          <div className="subject-image-section">
+            <div className="subject-image-container">
+              <img
+                src={getSubjectImageUrl(subject)}
+                alt={subject.subject_name}
+                className="subject-detail-image"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400x250.png?text=ไม่มีรูปภาพ';
+                }}
+              />
+            </div>
+          </div>
+          <div className="subject-info-section">
+            <div className="subject-header-top">
+              <h1 className="subject-detail-title">{subject.subject_name}</h1>
+              <div className="subject-badges">
+                <span className="subject-code-badge">{subject.subject_code}</span>
+              </div>
+            </div>
+            <div className="subject-meta">
+              <div className="meta-item">
+                <i className="fas fa-graduation-cap me-2"></i>
+                <span>{subject.credits} หน่วยกิต</span>
+              </div>
+              <div className="meta-item">
+                <i className="fas fa-book me-2"></i>
+                <span>{lessons.length} บทเรียน</span>
+              </div>
+              <div className="meta-item">
+                <i className="fas fa-question-circle me-2"></i>
+                <span>{subject.quiz_count} แบบทดสอบ</span>
+              </div>
+              <div className="meta-item">
+                <i className="fas fa-chalkboard-teacher me-2"></i>
+                <span>{subject.instructors?.length || 0} อาจารย์</span>
+              </div>
+            </div>
+            {subject.description && (
+              <div className="subject-description-section">
+                <h3>รายละเอียดรายวิชา</h3>
+                <div className="subject-description">
+                  {subject.description}
+                </div>
+              </div>
+            )}
+            {subject.video_url && (
+              <div className="subject-video-section">
+                <h3>วิดีโอแนะนำรายวิชา</h3>
+                <div className="ratio ratio-16x9">
+                  <iframe
+                    src={getVideoEmbedUrl(subject.video_url)}
+                    title={`วิดีโอแนะนำ ${subject.subject_name}`}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    className="rounded-2"
+                  ></iframe>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="subject-detail-tabs">
+        <div className="tabs-header">
+          <button
+            className={`tab-btn ${activeTab === 'overview' ? 'active' : ''}`}
+            onClick={() => setActiveTab('overview')}
+          >
+            <i className="fas fa-info-circle"></i>
+            <span>ภาพรวม</span>
+          </button>
+          <button
+            className={`tab-btn ${activeTab === 'lessons' ? 'active' : ''}`}
+            onClick={() => setActiveTab('lessons')}
+          >
+            <i className="fas fa-play-circle"></i>
+            <span>บทเรียน</span>
+          </button>
+          <button
+            className={`tab-btn ${activeTab === 'instructors' ? 'active' : ''}`}
+            onClick={() => setActiveTab('instructors')}
+          >
+            <i className="fas fa-chalkboard-teacher"></i>
+            <span>อาจารย์ผู้สอน</span>
+          </button>
+          <button
+            className={`tab-btn ${activeTab === 'tests' ? 'active' : ''}`}
+            onClick={() => setActiveTab('tests')}
+          >
+            <i className="fas fa-clipboard-check"></i>
+            <span>แบบทดสอบ</span>
+          </button>
+        </div>
+
+        <div className="tabs-content">
+          {activeTab === 'overview' && (
+            <div className="tab-panel overview-panel">
+              <div className="overview-grid">
+                <div className="overview-card">
+                  <div className="card-icon">
+                    <i className="fas fa-chart-bar"></i>
+                  </div>
+                  <h3>สถิติรายวิชา</h3>
+                  <div className="stats-list">
+                    <div className="stat-row">
+                      <span>จำนวนบทเรียน</span>
+                      <strong>{lessons.length} บทเรียน</strong>
+                    </div>
+                    <div className="stat-row">
+                      <span>จำนวนแบบทดสอบ</span>
+                      <strong>{subject.quiz_count} แบบทดสอบ</strong>
+                    </div>
+                    <div className="stat-row">
+                      <span>หน่วยกิต</span>
+                      <strong>{subject.credits} หน่วยกิต</strong>
+                    </div>
+                    <div className="stat-row">
+                      <span>สถานะ</span>
+                      <strong>
+                        <span className={`status ${subject.status}`}>
+                          {subject.status === 'active' ? 'เปิดใช้งาน' : 
+                           subject.status === 'inactive' ? 'ปิดใช้งาน' : 'ร่าง'}
+                        </span>
+                      </strong>
+                    </div>
+                  </div>
+                </div>
+
+                {subject.prerequisites && subject.prerequisites.length > 0 && (
+                  <div className="overview-card">
+                    <div className="card-icon">
+                      <i className="fas fa-link"></i>
+                    </div>
+                    <h3>รายวิชาที่ต้องเรียนก่อน</h3>
+                    <div className="prerequisites-list">
+                      {subject.prerequisites.map((prereq) => (
+                        <div key={prereq.subject_id} className="prerequisite-item">
+                          <span className="prereq-code">{prereq.subject_code}</span>
+                          <span className="prereq-name">{prereq.subject_name}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="overview-card">
+                  <div className="card-icon">
+                    <i className="fas fa-clipboard-list"></i>
+                  </div>
+                  <h3>แบบทดสอบ</h3>
+                  <div className="tests-overview">
+                    <div className={`test-item pre-test ${!subject.pre_test ? 'disabled' : ''}`}>
+                      <i className="fas fa-play-circle"></i>
+                      <div className="test-info">
+                        <strong>Pre-test</strong>
+                        <span>
+                          {subject.pre_test ? subject.pre_test.title : 'ไม่มีแบบทดสอบก่อนเรียน'}
+                        </span>
+                      </div>
+                    </div>
+                    <div className={`test-item post-test ${!subject.post_test ? 'disabled' : ''}`}>
+                      <i className="fas fa-stop-circle"></i>
+                      <div className="test-info">
+                        <strong>Post-test</strong>
+                        <span>
+                          {subject.post_test ? subject.post_test.title : 'ไม่มีแบบทดสอบหลังเรียน'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'lessons' && (
+            <div className="tab-panel lessons-panel">
+              <div className="lessons-header">
+                <h3>บทเรียนทั้งหมด</h3>
+                <p>รายการบทเรียนในรายวิชา {subject.subject_name}</p>
+              </div>
+              
+              {lessonsLoading ? (
+                <div className="loading-container">
+                  <div className="loading-spinner">
+                    <div className="spinner-border text-primary" role="status">
+                      <span className="visually-hidden">กำลังโหลด...</span>
+                    </div>
+ <p className="loading-text">กำลังโหลดบทเรียน...</p>
+                  </div>
+                </div>
+              ) : lessons.length === 0 ? (
+                <div className="no-lessons">
+                  <div className="no-lessons-icon">
+                    <i className="fas fa-play-circle"></i>
+                  </div>
+                  <h4>ไม่มีบทเรียน</h4>
+                  <p>ยังไม่มีบทเรียนในรายวิชานี้</p>
+                </div>
+              ) : (
+                <div className="lessons-list">
+                  {lessons.map((lesson, index) => (
+                    <div key={`lesson-${lesson.lesson_id}`} className="lesson-item">
+                      <div className="lesson-number">
+                        <span>{index + 1}</span>
+                      </div>
+                      <div className="lesson-content">
+                        <div className="lesson-header">
+                          <h4 className="lesson-title">{lesson.title}</h4>
+                          <div className="lesson-badges">
+                            <span className={`status-badge ${lesson.status}`}>
+                              {lesson.status === 'active' ? 'เปิดใช้งาน' : 
+                               lesson.status === 'inactive' ? 'ปิดใช้งาน' : 'ร่าง'}
+                            </span>
+                          </div>
+                        </div>
+                        {lesson.description && (
+                          <p className="lesson-description">{lesson.description}</p>
+                        )}
+                        <div className="lesson-meta">
+                          <div className="meta-item">
+                            <i className="fas fa-calendar me-1"></i>
+                            <span>สร้างเมื่อ {new Date(lesson.created_at).toLocaleDateString('th-TH')}</span>
+                          </div>
+                          {lesson.video_url && (
+                            <div className="meta-item">
+                              <i className="fas fa-video me-1"></i>
+                              <span>มีวิดีโอ</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="lesson-actions">
+                        <Link
+                          to={`/admin-lessons/edit/${lesson.lesson_id}`}
+                          className="action-btn edit-btn"
+                        >
+                          <i className="fas fa-edit"></i>
+                        </Link>
+                        <button className="action-btn view-btn">
+                          <i className="fas fa-eye"></i>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'instructors' && (
+            <div className="tab-panel instructors-panel">
+              <div className="instructors-header">
+                <h3>อาจารย์ผู้สอน</h3>
+                <p>รายชื่ออาจารย์ที่สอนในรายวิชา {subject.subject_name}</p>
+              </div>
+              
+              {!subject.instructors || subject.instructors.length === 0 ? (
+                <div className="no-instructors">
+                  <div className="no-instructors-icon">
+                    <i className="fas fa-chalkboard-teacher"></i>
+                  </div>
+                  <h4>ไม่มีอาจารย์ผู้สอน</h4>
+                  <p>ยังไม่มีการกำหนดอาจารย์ผู้สอนสำหรับรายวิชานี้</p>
+                </div>
+              ) : (
+                <div className="instructors-grid">
+                  {subject.instructors.map((instructor) => (
+                    <div key={`instructor-${instructor.instructor_id}`} className="instructor-card">
+                      <div className="instructor-avatar">
+                        <img
+                          src={instructor.avatar_file_id 
+                            ? `${apiURL}/api/accounts/instructors/avatar/${instructor.avatar_file_id}`
+                            : 'https://via.placeholder.com/100x100.png?text=ไม่มีรูป'
+                          }
+                          alt={instructor.name}
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = 'https://via.placeholder.com/100x100.png?text=ไม่มีรูป';
+                          }}
+                        />
+                      </div>
+                      <div className="instructor-info">
+                        <h4 className="instructor-name">{instructor.name}</h4>
+                        <p className="instructor-position">{instructor.position}</p>
+                        {instructor.ranking_name && (
+                          <p className="instructor-ranking">{instructor.ranking_name}</p>
+                        )}
+                        {instructor.description && (
+                          <p className="instructor-description">
+                            {instructor.description.length > 100 
+                              ? `${instructor.description.substring(0, 100)}...`
+                              : instructor.description
+                            }
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'tests' && (
+            <div className="tab-panel tests-panel">
+              <div className="tests-header">
+                <h3>แบบทดสอบ</h3>
+                <p>แบบทดสอบก่อนเรียนและหลังเรียนสำหรับรายวิชา {subject.subject_name}</p>
+              </div>
+              
+              <div className="tests-grid">
+                <div className={`test-card pre-test ${!subject.pre_test ? 'disabled' : ''}`}>
+                  <div className="test-card-header">
+                    <div className={`test-icon pre-test ${!subject.pre_test ? 'disabled' : ''}`}>
+                      <i className="fas fa-play-circle"></i>
+                    </div>
+                    <div className="test-title">
+                      <h4>แบบทดสอบก่อนเรียน (Pre-test)</h4>
+                      <p>ทดสอบความรู้พื้นฐานก่อนเริ่มเรียน</p>
+                    </div>
+                  </div>
+                  {subject.pre_test ? (
+                    <div className="test-details">
+                      <div className="detail-item">
+                        <span>ชื่อแบบทดสอบ</span>
+                        <span>{subject.pre_test.title}</span>
+                      </div>
+                      <div className="detail-item">
+                        <span>คำอธิบาย</span>
+                        <span>{subject.pre_test.description || '-'}</span>
+                      </div>
+                      <div className="detail-item">
+                        <span>คะแนนผ่าน</span>
+                        <span>
+                          {subject.pre_test.passing_score_enabled 
+                            ? `${subject.pre_test.passing_score_value} คะแนน`
+                            : 'ไม่กำหนด'
+                          }
+                        </span>
+                      </div>
+                      <div className="detail-item">
+                        <span>สถานะ</span>
+                        <span className={`status ${subject.pre_test.status}`}>
+                          {subject.pre_test.status === 'active' ? 'เปิดใช้งาน' : 
+                           subject.pre_test.status === 'inactive' ? 'ปิดใช้งาน' : 'ร่าง'}
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="no-test">
+                      <i className="fas fa-exclamation-circle"></i>
+                      <p>ไม่มีแบบทดสอบก่อนเรียน</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className={`test-card post-test ${!subject.post_test ? 'disabled' : ''}`}>
+                  <div className="test-card-header">
+                    <div className={`test-icon post-test ${!subject.post_test ? 'disabled' : ''}`}>
+                      <i className="fas fa-stop-circle"></i>
+                    </div>
+                    <div className="test-title">
+                      <h4>แบบทดสอบหลังเรียน (Post-test)</h4>
+                      <p>ทดสอบความรู้หลังจากเรียนจบ</p>
+                    </div>
+                  </div>
+                  {subject.post_test ? (
+                    <div className="test-details">
+                      <div className="detail-item">
+                        <span>ชื่อแบบทดสอบ</span>
+                        <span>{subject.post_test.title}</span>
+                      </div>
+                      <div className="detail-item">
+                        <span>คำอธิบาย</span>
+                        <span>{subject.post_test.description || '-'}</span>
+                      </div>
+                      <div className="detail-item">
+                        <span>คะแนนผ่าน</span>
+                        <span>
+                          {subject.post_test.passing_score_enabled 
+                            ? `${subject.post_test.passing_score_value} คะแนน`
+                            : 'ไม่กำหนด'
+                          }
+                        </span>
+                      </div>
+                      <div className="detail-item">
+                        <span>สถานะ</span>
+                        <span className={`status ${subject.post_test.status}`}>
+                          {subject.post_test.status === 'active' ? 'เปิดใช้งาน' : 
+                           subject.post_test.status === 'inactive' ? 'ปิดใช้งาน' : 'ร่าง'}
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="no-test">
+                      <i className="fas fa-exclamation-circle"></i>
+                      <p>ไม่มีแบบทดสอบหลังเรียน</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Course Detail component
+const CourseDetail: React.FC<{
+  course: Course;
+  onBack: () => void;
+  onSubjectSelect: (subject: Subject) => void;
+}> = ({ course, onBack, onSubjectSelect }) => {
+  const apiURL = import.meta.env.VITE_API_URL;
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filteredSubjects, setFilteredSubjects] = useState<Subject[]>([]);
+
+  useEffect(() => {
+    fetchSubjects();
+  }, [course.course_id]);
+
+  useEffect(() => {
+    if (searchTerm) {
+      const filtered = subjects.filter(subject =>
+        subject.subject_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        subject.subject_code.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      setFilteredSubjects(filtered);
+    } else {
+      setFilteredSubjects(subjects);
+    }
+  }, [searchTerm, subjects]);
+
+  const fetchSubjects = async () => {
+    setIsLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(
+        `${apiURL}/api/courses/${course.course_id}/subjects`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      if (response.data.success) {
+        setSubjects(response.data.subjects || []);
+        setFilteredSubjects(response.data.subjects || []);
+      }
+    } catch (error) {
+      console.error('Error fetching subjects:', error);
+      setSubjects([]);
+      setFilteredSubjects([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const getCourseImageUrl = (course: Course): string => {
+    if (course.cover_image_file_id) {
+      return `${apiURL}/api/courses/image/${course.cover_image_file_id}`;
+    }
+    if (course.cover_image_path && typeof course.cover_image_path === 'string' && course.cover_image_path.trim() !== '') {
+      const fileIdMatch = course.cover_image_path.match(/\/d\/(.+?)\//);
+      if (fileIdMatch && fileIdMatch[1]) {
+        return `${apiURL}/api/courses/image/${fileIdMatch[1]}`;
+      }
+    }
+    return 'https://via.placeholder.com/400x250.png?text=ไม่มีรูปภาพ';
+  };
+
+  const getVideoEmbedUrl = (videoUrl: string | null): string => {
+    if (!videoUrl) return '';
+    if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
+      const videoIdMatch = videoUrl.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/);
+      if (videoIdMatch) {
+        return `https://www.youtube.com/embed/${videoIdMatch[1]}`;
+      }
+    }
+    return videoUrl;
+  };
+
+  return (
+    <div className="course-detail-container">
+      <div className="course-detail-header">
+        <div className="course-header-content">
+          <div className="course-image-section">
+            <div className="course-image-container">
+              <img
+                src={getCourseImageUrl(course)}
+                alt={course.title}
+                className="course-detail-image"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400x250.png?text=ไม่มีรูปภาพ';
+                }}
+              />
+            </div>
+          </div>
+          <div className="course-info-section">
+            <div className="course-header-top">
+              <h1 className="course-detail-title">{course.title}</h1>
+              <div className="course-badges">
+                {course.course_code && (
+                  <span className="course-code-badge">{course.course_code}</span>
+                )}
+                <span className={`status-badge ${course.status}`}>
+                  {course.status === 'active' ? 'เปิดใช้งาน' : 
+                   course.status === 'inactive' ? 'ปิดใช้งาน' : 'ร่าง'}
+                </span>
+              </div>
+            </div>
+            <div className="course-meta">
+                            <div className="meta-item">
+                <i className="fas fa-building me-2"></i>
+                <span>{course.department_name}</span>
+              </div>
+              <div className="meta-item">
+                <i className="fas fa-university me-2"></i>
+                <span>{course.faculty}</span>
+              </div>
+              <div className="meta-item">
+                <i className="fas fa-list-alt me-2"></i>
+                <span>{subjects.length} รายวิชา</span>
+              </div>
+              <div className="meta-item">
+                <i className="fas fa-calendar me-2"></i>
+                <span>สร้างเมื่อ {new Date(course.created_at).toLocaleDateString('th-TH')}</span>
+              </div>
+            </div>
+            {course.description && (
+              <div className="course-description-section">
+                <h3>รายละเอียดหลักสูตร</h3>
+                <div className="course-description">
+                  {course.description}
+                </div>
+              </div>
+            )}
+            {course.study_result && (
+              <div className="study-result-section">
+                <h3>ผลลัพธ์การเรียนรู้</h3>
+                <div className="study-result">
+                  {course.study_result}
+                </div>
+              </div>
+            )}
+            {course.video_url && (
+              <div className="course-video-section">
+                <h3>วิดีโอแนะนำหลักสูตร</h3>
+                <div className="ratio ratio-16x9">
+                  <iframe
+                    src={getVideoEmbedUrl(course.video_url)}
+                    title={`วิดีโอแนะนำ ${course.title}`}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    className="rounded-2"
+                  ></iframe>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="subjects-section">
+        <div className="subjects-header">
+          <div className="section-title">
+            <h2>รายวิชาในหลักสูตร</h2>
+            <p>จำนวน {subjects.length} รายวิชา</p>
+          </div>
+          <div className="subjects-controls">
+            <div className="search-container">
+              <div className="search-input-group">
+                <i className="fas fa-search search-icon"></i>
+                <input
+                  type="text"
+                  className="search-input"
+                  placeholder="ค้นหารายวิชา..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                {searchTerm && (
+                  <button 
+                    className="clear-search-btn"
+                    onClick={() => setSearchTerm('')}
+                  >
+                    <i className="fas fa-times"></i>
+                  </button>
+                )}
+              </div>
+            </div>
+            <Link 
+              to={`/admin-subjects/create-new?course_id=${course.course_id}`} 
+              className="add-subject-btn"
+            >
+              <i className="fas fa-plus me-2"></i>
+              เพิ่มรายวิชาใหม่
+            </Link>
+          </div>
+        </div>
+
+        {isLoading ? (
+          <div className="loading-container">
+            <div className="loading-spinner">
+              <div className="spinner-border text-primary" role="status">
+                <span className="visually-hidden">กำลังโหลด...</span>
+              </div>
+              <p className="loading-text">กำลังโหลดรายวิชา...</p>
+            </div>
+          </div>
+        ) : filteredSubjects.length === 0 ? (
+          <div className="no-subjects">
+            <div className="no-subjects-icon">
+              <i className="fas fa-graduation-cap"></i>
+            </div>
+            <h3>ไม่พบรายวิชา</h3>
+            <p>
+              {searchTerm 
+                ? 'ไม่พบรายวิชาที่ตรงกับเงื่อนไขการค้นหา' 
+                : 'ยังไม่มีรายวิชาในหลักสูตรนี้'
+              }
+            </p>
+          </div>
+        ) : (
+          <div className="subjects-grid">
+            {filteredSubjects.map((subject, index) => (
+              <div 
+                key={`subject-${subject.subject_id}-${index}`} 
+                className="subject-card"
+                onClick={() => onSubjectSelect(subject)}
+              >
+                <div className="subject-card-image">
+                  <img
+                    src={subject.cover_image_file_id 
+                      ? `${apiURL}/api/courses/subjects/image/${subject.cover_image_file_id}`
+                      : 'https://via.placeholder.com/300x200.png?text=ไม่มีรูปภาพ'
+                    }
+                    alt={subject.subject_name}
+                    className="subject-image"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = 'https://via.placeholder.com/300x200.png?text=ไม่มีรูปภาพ';
+                    }}
+                  />
+                  <div className="subject-card-overlay">
+                    <div className="subject-order">
+                      <span className="order-badge">#{subject.order_number || index + 1}</span>
+                    </div>
+                    <div className="subject-status">
+                      <span className={`status-badge ${subject.status}`}>
+                        {subject.status === 'active' ? 'เปิดใช้งาน' : 
+                         subject.status === 'inactive' ? 'ปิดใช้งาน' : 'ร่าง'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div className="subject-card-content">
+                  <div className="subject-card-header">
+                    <h3 className="subject-title">{subject.subject_name}</h3>
+                    <span className="subject-code">{subject.subject_code}</span>
+                  </div>
+                  {subject.description && (
+                    <p className="subject-description">
+                      {subject.description.length > 100 
+                        ? `${subject.description.substring(0, 100)}...`
+                        : subject.description
+                      }
+                    </p>
+                  )}
+                  <div className="subject-stats">
+                    <div className="stat-group">
+                      <i className="fas fa-graduation-cap me-1"></i>
+                      <span>{subject.credits} หน่วยกิต</span>
+                    </div>
+                    <div className="stat-group">
+                      <i className="fas fa-play-circle me-1"></i>
+                      <span>{subject.lesson_count || 0} บทเรียน</span>
+                    </div>
+                    <div className="stat-group">
+                      <i className="fas fa-question-circle me-1"></i>
+                      <span>{subject.quiz_count || 0} แบบทดสอบ</span>
+                    </div>
+                  </div>
+                  {subject.instructors && subject.instructors.length > 0 && (
+                    <div className="subject-instructors">
+                      <div className="instructors-label">
+                        <i className="fas fa-chalkboard-teacher me-1"></i>
+                        <span>อาจารย์ผู้สอน:</span>
+                      </div>
+                      <div className="instructors-list">
+                        {subject.instructors.slice(0, 2).map((instructor, idx) => (
+                          <span key={instructor.instructor_id} className="instructor-name">
+                            {instructor.name}
+                            {idx < Math.min(subject.instructors.length, 2) - 1 && ', '}
+                          </span>
+                        ))}
+                        {subject.instructors.length > 2 && (
+                          <span className="more-instructors">
+                            และอีก {subject.instructors.length - 2} คน
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <div className="subject-card-footer">
+                  <div className="subject-actions">
+                    <Link
+                      to={`/admin-subjects/edit/${subject.subject_id}`}
+                      className="action-btn edit-btn"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <i className="fas fa-edit me-1"></i>
+                      แก้ไข
+                    </Link>
+                    <button 
+                      className="action-btn view-btn"
+                      onClick={() => onSubjectSelect(subject)}
+                    >
+                      <i className="fas fa-eye me-1"></i>
+                      ดูรายละเอียด
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Simple Pagination component
 const SimplePagination: React.FC<PaginationProps> = ({ currentPage, totalPages, onPageChange }) => {
   const pageNumbers: number[] = [];
 
@@ -99,76 +1392,39 @@ const SimplePagination: React.FC<PaginationProps> = ({ currentPage, totalPages, 
   );
 };
 
+// Main AdminCreditbankArea component
 const AdminCreditbankArea: React.FC = () => {
   const apiURL = import.meta.env.VITE_API_URL;
+  
+  // State management
+  const [currentView, setCurrentView] = useState<'faculties' | 'departments' | 'courses' | 'subjects'>('faculties');
+  const [selectedFaculty, setSelectedFaculty] = useState<string | null>(null);
+  const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+  const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
+  
+  // Data states
+  const [faculties, setFaculties] = useState<Faculty[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
   const [filteredCourses, setFilteredCourses] = useState<Course[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
+  
+  // UI states
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  
+  // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
+  const [itemsPerPage] = useState(12);
   const [totalPages, setTotalPages] = useState(1);
-  const [showDetailModal, setShowDetailModal] = useState(false);
-  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
-  const [showImageLightbox, setShowImageLightbox] = useState(false);
-  const [imageLoading, setImageLoading] = useState(true);
-  const [imageError, setImageError] = useState(false);
-  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
-  const [isStudyResultExpanded, setIsStudyResultExpanded] = useState(false);
-  const [attachments, setAttachments] = useState<Attachment[]>([]);
-  const [attachmentsLoading, setAttachmentsLoading] = useState(false);
-  const [attachmentsError, setAttachmentsError] = useState<string | null>(null);
 
+  // Load faculties on component mount
   useEffect(() => {
-    const fetchCourses = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
+    fetchFaculties();
+  }, []);
 
-        const token = localStorage.getItem('token');
-        if (!token) {
-          setError('ไม่พบข้อมูลการเข้าสู่ระบบ กรุณาเข้าสู่ระบบใหม่');
-          return;
-        }
-
-        const response = await axios.get(`${apiURL}/api/courses`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        console.log('API Response:', response.data);
-
-        if (response.data.courses) {
-          const formattedCourses: Course[] = response.data.courses.map((course: any) => ({
-            course_id: course.course_id,
-            title: course.title || '',
-            description: course.description || '',
-            cover_image_path: course.cover_image_path || null,
-            cover_image_file_id: course.cover_image_file_id || null,
-            video_url: course.video_url || null,
-            department_name: course.department_name || null,
-            subject_count: course.subject_count || 0,
-            study_result: course.study_result || null,
-            course_code: course.course_code || null,
-          }));
-          console.log('Formatted courses:', formattedCourses);
-          setCourses(formattedCourses);
-          setFilteredCourses(formattedCourses);
-          setTotalPages(Math.ceil(formattedCourses.length / itemsPerPage));
-        } else {
-          setError('ไม่สามารถดึงข้อมูลหลักสูตรได้');
-        }
-      } catch (error) {
-        console.error('Error fetching courses:', error);
-        setError('เกิดข้อผิดพลาดในการดึงข้อมูลหลักสูตร');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchCourses();
-  }, [apiURL, itemsPerPage]);
-
+  // Handle search and pagination for courses
   useEffect(() => {
     let results = courses;
 
@@ -177,7 +1433,8 @@ const AdminCreditbankArea: React.FC = () => {
       results = results.filter(
         course =>
           (course.title?.toLowerCase().includes(searchLower) || false) ||
-          (course.department_name?.toLowerCase().includes(searchLower) || false)
+          (course.course_code?.toLowerCase().includes(searchLower) || false) ||
+          (course.description?.toLowerCase().includes(searchLower) || false)
       );
     }
 
@@ -186,6 +1443,209 @@ const AdminCreditbankArea: React.FC = () => {
     setCurrentPage(1);
   }, [searchTerm, courses, itemsPerPage]);
 
+  // API calls
+  const fetchFaculties = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setError('ไม่พบข้อมูลการเข้าสู่ระบบ กรุณาเข้าสู่ระบบใหม่');
+        return;
+      }
+
+      const response = await axios.get(`${apiURL}/api/departments/faculties`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.data.success) {
+        // Count departments for each faculty
+        const facultiesWithCount = await Promise.all(
+          response.data.faculties.map(async (faculty: string) => {
+            try {
+              const deptResponse = await axios.get(
+                `${apiURL}/api/departments/by-faculty/${encodeURIComponent(faculty)}`,
+                { headers: { Authorization: `Bearer ${token}` } }
+              );
+              return {
+                name: faculty,
+                                department_count: deptResponse.data.departments?.length || 0
+              };
+            } catch (error) {
+              console.error(`Error fetching departments for faculty ${faculty}:`, error);
+              return {
+                name: faculty,
+                department_count: 0
+              };
+            }
+          })
+        );
+        setFaculties(facultiesWithCount);
+      } else {
+        setError('ไม่สามารถดึงข้อมูลคณะได้');
+      }
+    } catch (error) {
+      console.error('Error fetching faculties:', error);
+      setError('เกิดข้อผิดพลาดในการดึงข้อมูลคณะ');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchDepartmentsByFaculty = async (faculty: string) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setError('ไม่พบข้อมูลการเข้าสู่ระบบ กรุณาเข้าสู่ระบบใหม่');
+        return;
+      }
+
+      const response = await axios.get(
+        `${apiURL}/api/departments/by-faculty/${encodeURIComponent(faculty)}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (response.data.success) {
+        // Count courses for each department
+        const departmentsWithCount = await Promise.all(
+          response.data.departments.map(async (department: Department) => {
+            try {
+              const coursesResponse = await axios.get(
+                `${apiURL}/api/courses?department_id=${department.department_id}`,
+                { headers: { Authorization: `Bearer ${token}` } }
+              );
+              return {
+                ...department,
+                course_count: coursesResponse.data.courses?.length || 0
+              };
+            } catch (error) {
+              console.error(`Error fetching courses for department ${department.department_id}:`, error);
+              return {
+                ...department,
+                course_count: 0
+              };
+            }
+          })
+        );
+        setDepartments(departmentsWithCount);
+      } else {
+        setError('ไม่สามารถดึงข้อมูลสาขาได้');
+      }
+    } catch (error) {
+      console.error('Error fetching departments:', error);
+      setError('เกิดข้อผิดพลาดในการดึงข้อมูลสาขา');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchCoursesByDepartment = async (departmentId: number) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setError('ไม่พบข้อมูลการเข้าสู่ระบบ กรุณาเข้าสู่ระบบใหม่');
+        return;
+      }
+
+      const response = await axios.get(
+        `${apiURL}/api/courses?department_id=${departmentId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (response.data.success) {
+        const formattedCourses: Course[] = response.data.courses.map((course: any) => ({
+          course_id: course.course_id,
+          course_code: course.course_code || '',
+          title: course.title || '',
+          description: course.description || '',
+          cover_image_path: course.cover_image_path || null,
+          cover_image_file_id: course.cover_image_file_id || null,
+          video_url: course.video_url || null,
+          study_result: course.study_result || null,
+          department_name: course.department_name || null,
+          faculty: course.faculty || null,
+          subject_count: course.subject_count || 0,
+          status: course.status || 'draft',
+          created_at: course.created_at || new Date().toISOString(),
+          updated_at: course.updated_at || new Date().toISOString(),
+        }));
+        setCourses(formattedCourses);
+        setFilteredCourses(formattedCourses);
+      } else {
+        setError('ไม่สามารถดึงข้อมูลหลักสูตรได้');
+      }
+    } catch (error) {
+      console.error('Error fetching courses:', error);
+      setError('เกิดข้อผิดพลาดในการดึงข้อมูลหลักสูตร');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Navigation handlers
+  const handleFacultySelect = (faculty: string) => {
+    setSelectedFaculty(faculty);
+    setSelectedDepartment(null);
+    setSelectedCourse(null);
+    setSelectedSubject(null);
+    setCurrentView('departments');
+    setSearchTerm('');
+    fetchDepartmentsByFaculty(faculty);
+  };
+
+  const handleDepartmentSelect = (department: Department) => {
+    setSelectedDepartment(department);
+    setSelectedCourse(null);
+    setSelectedSubject(null);
+    setCurrentView('courses');
+    setSearchTerm('');
+    fetchCoursesByDepartment(department.department_id);
+  };
+
+  const handleCourseSelect = (course: Course) => {
+    setSelectedCourse(course);
+    setSelectedSubject(null);
+    setCurrentView('subjects');
+    setSearchTerm('');
+  };
+
+  const handleSubjectSelect = (subject: Subject) => {
+    setSelectedSubject(subject);
+  };
+
+  const handleBackToFaculties = () => {
+    setCurrentView('faculties');
+    setSelectedFaculty(null);
+    setSelectedDepartment(null);
+    setSelectedCourse(null);
+    setSelectedSubject(null);
+    setSearchTerm('');
+  };
+
+  const handleBackToDepartments = () => {
+    setCurrentView('departments');
+    setSelectedDepartment(null);
+    setSelectedCourse(null);
+    setSelectedSubject(null);
+    setSearchTerm('');
+  };
+
+  const handleBackToCourses = () => {
+    setCurrentView('courses');
+    setSelectedCourse(null);
+    setSelectedSubject(null);
+    setSearchTerm('');
+  };
+
+  const handleBackToSubjects = () => {
+    setSelectedSubject(null);
+  };
+
+  // Pagination
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentItems = filteredCourses.slice(indexOfFirstItem, indexOfLastItem);
@@ -193,220 +1653,6 @@ const AdminCreditbankArea: React.FC = () => {
   const handlePageChange = (pageNumber: number) => {
     if (pageNumber >= 1 && pageNumber <= totalPages) {
       setCurrentPage(pageNumber);
-    }
-  };
-
-  const handleDeleteCourse = async (courseId: number) => {
-    if (!window.confirm('คุณต้องการลบหลักสูตรนี้และไฟล์ประกอบทั้งหมดใช่หรือไม่?')) {
-      return;
-    }
-
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        toast.error('กรุณาเข้าสู่ระบบก่อนใช้งาน');
-        return;
-      }
-
-      // 1. ดึง attachments
-      const attachmentsRes = await axios.get(
-        `${apiURL}/api/courses/${courseId}/attachments`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      const attachments: { file_id: string }[] =
-        attachmentsRes.data.attachments || [];
-
-      // 2. ลบไฟล์แต่ละไฟล์
-      for (const att of attachments) {
-        try {
-          await axios.delete(
-            `${apiURL}/api/courses/${courseId}/attachments/${att.file_id}`,
-            { headers: { Authorization: `Bearer ${token}` } }
-          );
-        } catch (err) {
-          console.error('ลบไฟล์แนบไม่สำเร็จ', att.file_id, err);
-          // สามารถ toast.warn ได้ถ้าต้องการ
-        }
-      }
-
-      // 3. ลบ course
-      const response = await axios.delete(`${apiURL}/api/courses/${courseId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (response.data.success) {
-        setCourses(prev => prev.filter(course => course.course_id !== courseId));
-        setFilteredCourses(prev => prev.filter(course => course.course_id !== courseId));
-        setShowDetailModal(false);
-        setSelectedCourse(null);
-        setShowImageLightbox(false);
-        toast.success('ลบหลักสูตรและไฟล์ประกอบสำเร็จ');
-      } else {
-        toast.error(response.data.message || 'ไม่สามารถลบหลักสูตรได้');
-      }
-    } catch (err) {
-      console.error('Error deleting course or attachments:', err);
-      toast.error('เกิดข้อผิดพลาดในการลบหลักสูตรหรือไฟล์ประกอบ');
-    }
-  };
-
-  const handleRowClick = async (course: Course) => {
-    console.log('Selected course:', course);
-    setSelectedCourse(course);
-    setShowDetailModal(true);
-    setImageLoading(true);
-    setImageError(false);
-    setIsDescriptionExpanded(false);
-    
-    // ดึงข้อมูล attachments สำหรับ course นี้
-    await fetchAttachments(course.course_id);
-  };
-
-  const fetchAttachments = async (courseId: number) => {
-    console.log('Fetching attachments for course ID:', courseId);
-    setAttachmentsLoading(true);
-    setAttachmentsError(null);
-    
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setAttachmentsError('กรุณาเข้าสู่ระบบ');
-        setAttachments([]);
-        return;
-      }
-
-      const response = await axios.get(`${apiURL}/api/courses/${courseId}/attachments`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      console.log('Attachments API response:', response.data);
-
-      if (response.data.success && Array.isArray(response.data.attachments)) {
-        const formattedAttachments: Attachment[] = response.data.attachments.map((attachment: any) => ({
-          file_id: attachment.file_id || attachment.id || '',
-          file_name: attachment.file_name || attachment.title || '',
-          file_type: attachment.file_type || attachment.mime_type || '',
-          file_size: attachment.file_size || attachment.size || 0,
-        }));
-        setAttachments(formattedAttachments);
-        console.log('Formatted attachments:', formattedAttachments);
-      } else {
-        setAttachments([]);
-        console.log('No attachments found or invalid response format');
-      }
-    } catch (error: any) {
-      console.error('Error fetching attachments:', error);
-      console.error('Error details:', error.response?.data);
-      console.error('Error status:', error.response?.status);
-      setAttachmentsError('ไม่สามารถโหลดไฟล์ประกอบได้');
-      setAttachments([]);
-    } finally {
-      setAttachmentsLoading(false);
-    }
-  };
-
-  const getImageUrl = (course: Course): string => {
-    if (course.cover_image_file_id) {
-      return `${apiURL}/api/courses/image/${course.cover_image_file_id}`;
-    }
-    if (course.cover_image_path && typeof course.cover_image_path === 'string' && course.cover_image_path.trim() !== '') {
-      const fileIdMatch = course.cover_image_path.match(/\/d\/(.+?)\//);
-      if (fileIdMatch && fileIdMatch[1]) {
-        return `${apiURL}/api/courses/image/${fileIdMatch[1]}`;
-      }
-    }
-    return 'https://via.placeholder.com/200x200.png?text=ไม่มีรูปภาพ';
-  };
-
-  const getVideoUrl = (videoUrl: string | null): string => {
-    if (!videoUrl) return '';
-    if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
-      const videoIdMatch = videoUrl.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/);
-      if (videoIdMatch) {
-        return `https://www.youtube.com/embed/${videoIdMatch[1]}`;
-      }
-    }
-    return videoUrl;
-  };
-
-  const handleImageLoad = () => {
-    setImageLoading(false);
-    setImageError(false);
-  };
-
-  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    (e.target as HTMLImageElement).src = 'https://via.placeholder.com/200x200.png?text=ไม่มีรูปภาพ';
-    setImageLoading(false);
-    setImageError(true);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === 'Escape') {
-      setShowImageLightbox(false);
-    }
-  };
-
-  const isDescriptionLong = (description: string): boolean => {
-    return description?.length > 100;
-  };
-  const isStudyResultLong = (study_result: string): boolean => {
-    return study_result?.length > 100;
-  };
-
-  const toggleDescription = () => {
-    setIsDescriptionExpanded(prev => !prev);
-  };
-
-  const toggleStudyResult = () => {
-    setIsStudyResultExpanded(prev => !prev);
-  };
-
-  const handleDownloadAttachment = async (fileId: string, fileName: string) => {
-    console.log('Downloading attachment - fileId:', fileId, 'fileName:', fileName);
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        toast.error('กรุณาเข้าสู่ระบบก่อนดาวน์โหลด');
-        return;
-      }
-
-      console.log('Making request to:', `${apiURL}/api/courses/attachment/${fileId}`);
-
-      const response = await axios.get(`${apiURL}/api/courses/attachment/${fileId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-        responseType: 'blob',
-      });
-
-      console.log('Download response:', response);
-      console.log('Response headers:', response.headers);
-
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      
-      const contentDisposition = response.headers['content-disposition'];
-      let downloadFileName = fileName;
-      if (contentDisposition) {
-        const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
-        if (filenameMatch && filenameMatch[1]) {
-          downloadFileName = filenameMatch[1].replace(/['"]/g, '');
-        }
-      }
-      
-      console.log('Final download filename:', downloadFileName);
-      
-      link.setAttribute('download', downloadFileName);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-      
-      toast.success('ดาวน์โหลดไฟล์สำเร็จ');
-    } catch (error: any) {
-      console.error('Error downloading attachment:', error);
-      console.error('Error details:', error.response?.data);
-      console.error('Error status:', error.response?.status);
-      toast.error('เกิดข้อผิดพลาดในการดาวน์โหลดไฟล์');
     }
   };
 
@@ -419,680 +1665,76 @@ const AdminCreditbankArea: React.FC = () => {
             <DashboardSidebar />
             <div className="dashboard__content-area col-lg-9">
               <div className="dashboard__content-main">
-                <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-                  <div className="input-group w-50">
-                    <input
-                      type="text"
-                      className="form-control"
-                      placeholder="ค้นหาหลักสูตร..."
-                      value={searchTerm}
-                      onChange={(e) => {
-                        setSearchTerm(e.target.value);
-                        setCurrentPage(1); // รีเซ็ตหน้าเมื่อค้นหาใหม่
-                      }}
-                      aria-label="ค้นหาหลักสูตร"
-                    />
-                    <button className="btn btn-outline-secondary" type="button">
-                      <i className="fas fa-search"></i>
-                    </button>
-                  </div>
-                  <Link to="/admin-creditbank/create-new" className="btn btn-primary">
-                    <i className="fas fa-plus-circle me-2"></i>สร้างหลักสูตรใหม่
-                  </Link>
-                </div>
+                
+                {/* Navigation Breadcrumb */}
+                <NavigationBreadcrumb
+                  selectedFaculty={selectedFaculty}
+                  selectedDepartment={selectedDepartment}
+                  selectedCourse={selectedCourse}
+                  selectedSubject={selectedSubject}
+                  onFacultyClick={handleBackToFaculties}
+                  onDepartmentClick={handleBackToDepartments}
+                  onCourseClick={handleBackToCourses}
+                  onSubjectClick={handleBackToSubjects}
+                />
 
-                {isLoading ? (
-                  <div className="text-center py-5">
-                    <div className="spinner-border text-primary" role="status">
-                      <span className="visually-hidden">กำลังโหลด...</span>
-                    </div>
-                    <p className="mt-2 text-muted">กำลังโหลดข้อมูลหลักสูตร...</p>
-                  </div>
-                ) : error ? (
-                  <div className="alert alert-danger rounded-3">
+                {/* Error Display */}
+                {error && (
+                  <div className="alert alert-danger rounded-3 mb-4">
                     <i className="fas fa-exclamation-circle me-2"></i>
                     {error}
                   </div>
-                ) : filteredCourses.length === 0 ? (
-                  <div className="text-center py-5 bg-light rounded-3">
-                    <i className="fas fa-book-open fa-3x text-muted mb-3"></i>
-                    <h5>ไม่พบข้อมูลหลักสูตร</h5>
-                    <p className="text-muted">
-                      {searchTerm ? 'ไม่พบข้อมูลที่ตรงกับเงื่อนไขการค้นหา' : 'ยังไม่มีข้อมูลหลักสูตรในระบบ'}
-                    </p>
-                  </div>
+                )}
+
+                {/* Content based on current view */}
+                {selectedSubject ? (
+                  <SubjectDetail
+                    subject={selectedSubject}
+                    course={selectedCourse!}
+                    onBack={handleBackToSubjects}
+                  />
+                ) : currentView === 'subjects' && selectedCourse ? (
+                  <CourseDetail
+                    course={selectedCourse}
+                    onBack={handleBackToCourses}
+                    onSubjectSelect={handleSubjectSelect}
+                  />
+                ) : currentView === 'courses' && selectedDepartment ? (
+                  <CourseList
+                    courses={currentItems}
+                    isLoading={isLoading}
+                    searchTerm={searchTerm}
+                    onSearchChange={setSearchTerm}
+                    onCourseSelect={handleCourseSelect}
+                    selectedDepartment={selectedDepartment}
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={handlePageChange}
+                    indexOfFirstItem={indexOfFirstItem}
+                  />
+                ) : currentView === 'departments' && selectedFaculty ? (
+                  <DepartmentSelection
+                    departments={departments}
+                    isLoading={isLoading}
+                    selectedFaculty={selectedFaculty}
+                    onSelectDepartment={handleDepartmentSelect}
+                  />
                 ) : (
-                  <>
-                    <div className="table-responsive shadow-sm rounded-3">
-                      <table className="table table-hover table-sm mb-0 align-middle table-striped">
-                        <thead className="table-light sticky-top">
-                          <tr>
-                            <th scope="col" style={{ width: '30px' }}>#</th>
-                            <th scope="col">รหัสหลักสูตร</th>
-                            <th scope="col">ชื่อหลักสูตร</th>
-                            <th scope="col">สาขาวิชา</th>
-                            <th scope="col" style={{ width: '130px' }}>จำนวนรายวิชา</th>
-                            <th scope="col" style={{ width: '100px' }} className="text-center">จัดการ</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {currentItems.map((course, index) => (
-                            <tr
-                              key={`course-${course.course_id}-${index}`}
-                              onClick={() => handleRowClick(course)}
-                              style={{ cursor: 'pointer' }}
-                            >
-                              <td>{indexOfFirstItem + index + 1}</td>
-                              <td>{course.course_code || '-'}</td>
-                              <td>{course.title || '-'}</td>
-                              <td>{course.department_name || '-'}</td>
-                              <td>{course.subject_count} วิชา</td>
-                              <td className="text-center">
-                                <div className="d-flex justify-content-center gap-3">
-                                  <Link
-                                    to={`/admin-creditbank/edit-course/${course.course_id}`}
-                                    className="text-primary action-icon"
-                                    onClick={(e) => e.stopPropagation()}
-                                    aria-label={`แก้ไขหลักสูตร ${course.title}`}
-                                  >
-                                    <i className="fas fa-edit"></i>
-                                  </Link>
-                                  <button
-                                    className="text-danger action-icon border-0 bg-transparent"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleDeleteCourse(course.course_id);
-                                    }}
-                                    aria-label={`ลบหลักสูตร ${course.title}`}
-                                  >
-                                    <i className="fas fa-trash-alt"></i>
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                    <div className="d-flex justify-content-between align-items-center mt-4">
-                      <div className="text-muted small">
-                        แสดง {indexOfFirstItem + 1} ถึง{' '}
-                        {Math.min(indexOfLastItem, filteredCourses.length)} จากทั้งหมด{' '}
-                        {filteredCourses.length} รายการ
-                      </div>
-                      <SimplePagination
-                        currentPage={currentPage}
-                        totalPages={totalPages}
-                        onPageChange={handlePageChange}
-                      />
-                    </div>
-                  </>
+                  <FacultySelection
+                    faculties={faculties}
+                    isLoading={isLoading}
+                    onSelectFaculty={handleFacultySelect}
+                  />
                 )}
               </div>
             </div>
           </div>
         </div>
       </div>
-
-      {showDetailModal && selectedCourse && (
-        <div
-          className="modal fade show"
-          style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.75)' }}
-          tabIndex={-1}
-          aria-labelledby="courseDetailModalLabel"
-          aria-hidden="false"
-        >
-          <div className="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
-            <div className="modal-content border-0 shadow-lg rounded-3 overflow-hidden">
-              <div className="modal-header bg-gradient-primary border-0 py-3">
-                <h5 className="modal-title text-white fw-bold" id="courseDetailModalLabel">
-                  <i className="fas fa-book me-2" />
-                  {selectedCourse.title || 'ไม่มีชื่อหลักสูตร'}
-                </h5>
-                <button
-                  type="button"
-                  className="btn-close btn-close-white"
-                  onClick={() => {
-                    setShowDetailModal(false);
-                    setSelectedCourse(null);
-                    setShowImageLightbox(false);
-                    setImageLoading(true);
-                    setImageError(false);
-                    setIsDescriptionExpanded(false);
-                  }}
-                  aria-label="ปิด"
-                />
-              </div>
-              <div className="modal-body p-4 bg-light">
-                <div className="row g-4">
-                  <div className="col-lg-6">
-                    <div className="card shadow-sm border-0 bg-white rounded-3 h-100">
-                      <div className="card-body p-4">
-                        <h6 className="card-title mb-3 fw-bold text-primary border-bottom pb-2">
-                          ข้อมูลหลักสูตร
-                        </h6>
-                        <table className="table table-borderless">
-                          <tbody>
-                            <tr>
-                              <td className="fw-medium text-muted" style={{ width: '120px' }}>
-                                รหัสหลักสูตร:
-                              </td>
-                              <td>{selectedCourse.course_code || '-'}</td>
-                            </tr>
-                            <tr>
-                              <td className="fw-medium text-muted" style={{ width: '120px' }}>
-                                ชื่อหลักสูตร:
-                              </td>
-                              <td>{selectedCourse.title || '-'}</td>
-                            </tr>
-                            <tr>
-                              <td className="fw-medium text-muted">สาขาวิชา:</td>
-                              <td>{selectedCourse.department_name || '-'}</td>
-                            </tr>
-                            <tr>
-                              <td className="fw-medium text-muted">จำนวนรายวิชา:</td>
-                              <td>{selectedCourse.subject_count} วิชา</td>
-                            </tr>
-                          </tbody>
-                        </table>
-                        <h6 className="card-title mb-3 fw-bold text-primary border-bottom pb-2">
-                          รายละเอียด
-                        </h6>
-                        <div className="mb-3">
-                          <div className={`description ${isDescriptionExpanded ? '' : 'description-truncated'}`}>
-                            {selectedCourse.description || 'ไม่มีคำอธิบาย'}
-                          </div>
-                          {isDescriptionLong(selectedCourse.description || '') && (
-                            <button
-                              className="btn btn-link btn-sm p-0 mt-1 text-primary"
-                              onClick={toggleDescription}
-                              aria-expanded={isDescriptionExpanded}
-                            >
-                              {isDescriptionExpanded ? 'แสดงน้อยลง' : 'แสดงเพิ่ม'}
-                            </button>
-                          )}
-                        </div>
-                        <h6 className="card-title mb-3 fw-bold text-primary border-bottom pb-2">
-                          ผลลัพธ์การศึกษา
-                        </h6>
-                        <div className="mb-3">
-                          <div className={`study_result ${isStudyResultExpanded ? '' : 'study_result-truncated'}`}>
-                            {selectedCourse.study_result || 'ไม่มีคำอธิบาย'}
-                          </div>
-                          {isStudyResultLong(selectedCourse.study_result || '') && (
-                            <button
-                              className="btn btn-link btn-sm p-0 mt-1 text-primary"
-                              onClick={toggleStudyResult}
-                              aria-expanded={isStudyResultExpanded}
-                            >
-                              {isStudyResultExpanded ? 'แสดงน้อยลง' : 'แสดงเพิ่ม'}
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="col-lg-6">
-                    <div className="card shadow-sm border-0 bg-white rounded-3 mb-4">
-                      <div className="card-body p-4">
-                        <h6 className="card-title mb-3 fw-bold text-primary border-bottom pb-2">
-                          รูปภาพหน้าปก
-                        </h6>
-                        <div className="card-img-container">
-                          {imageLoading && !imageError && (
-                            <div className="spinner-border text-primary mb-3" role="status">
-                              <span className="visually-hidden">กำลังโหลดรูปภาพ...</span>
-                            </div>
-                          )}
-                          {imageError ? (
-                            <div className="text-muted text-center">
-                              <i className="fas fa-image fa-2x mb-2"></i>
-                              <p>ไม่สามารถโหลดรูปภาพได้</p>
-                            </div>
-                          ) : (
-                            <img
-                              src={getImageUrl(selectedCourse)}
-                              alt={`หน้าปกของ ${selectedCourse.title || 'หลักสูตร'}`}
-                              className={`img-fluid rounded-2 shadow-sm cursor-pointer ${imageLoading ? 'd-none' : ''}`}
-                              style={{ maxWidth: '100%', maxHeight: '200px', objectFit: 'cover' }}
-                              onLoad={handleImageLoad}
-                              onError={handleImageError}
-                              onClick={() => setShowImageLightbox(true)}
-                              aria-label={`ดูภาพหน้าปกของ ${selectedCourse.title || 'หลักสูตร'} ขนาดเต็ม`}
-                            />
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="card shadow-sm border-0 bg-white rounded-3">
-                      <div className="card-body p-4">
-                        <h6 className="card-title mb-3 fw-bold text-primary border-bottom pb-2">
-                          คลิปตัวอย่าง
-                        </h6>
-                        {selectedCourse.video_url ? (
-                          <div className="ratio ratio-16x9">
-                            <iframe
-                              src={getVideoUrl(selectedCourse.video_url)}
-                              title={`ตัวอย่างวิดีโอของ ${selectedCourse.title}`}
-                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                              allowFullScreen
-                              className="rounded-2 shadow-sm"
-                            ></iframe>
-                          </div>
-                        ) : (
-                          <div className="text-center py-4 bg-light rounded-2">
-                            <i className="fas fa-video-slash fa-2x text-muted mb-2"></i>
-                            <p className="text-muted mb-0">ไม่มีวิดีโอตัวอย่าง</p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="card shadow-sm border-0 bg-white rounded-3 mt-4">
-                  <div className="card-body p-4">
-                    <h6 className="card-title mb-3 fw-bold text-primary border-bottom pb-2">
-                      ไฟล์ประกอบหลักสูตร
-                    </h6>
-                    {(() => {
-                      
-                      if (attachmentsLoading) {
-                        return (
-                          <div className="text-center py-4">
-                            <div className="spinner-border text-primary" role="status">
-                              <span className="visually-hidden">กำลังโหลดไฟล์...</span>
-                            </div>
-                            <p className="mt-2 text-muted">กำลังโหลดไฟล์ประกอบ...</p>
-                          </div>
-                        );
-                      }
-                      
-                      if (attachmentsError) {
-                        return (
-                          <div className="text-center py-4">
-                            <i className="fas fa-exclamation-triangle fa-2x text-warning mb-2"></i>
-                            <p className="text-danger mb-0">{attachmentsError}</p>
-                          </div>
-                        );
-                      }
-                      
-                      if (attachments.length > 0) {
-                        return (
-                          <div className="space-y-3">
-                            {attachments.map((attachment, index) => (
-                              <div key={`attachment-${attachment.file_id}-${index}`} className="d-flex align-items-center gap-3 p-3 border rounded-3 bg-light">
-                                <div className="flex-grow-1">
-                                  <div className="d-flex align-items-center">
-                                    <i className="fas fa-file-alt text-primary me-2"></i>
-                                    <span className="fw-medium">{attachment.file_name}</span>
-                                  </div>
-                                  {attachment.file_type && (
-                                    <small className="text-muted">
-                                      ประเภท: {attachment.file_type}
-                                      {attachment.file_size && ` | ขนาด: ${(attachment.file_size / 1024 / 1024).toFixed(2)} MB`}
-                                    </small>
-                                  )}
-                                </div>
-                                <button
-                                  className="btn btn-outline-primary btn-sm"
-                                  onClick={() => {
-                                    console.log('Download button clicked - fileId:', attachment.file_id, 'fileName:', attachment.file_name);
-                                    handleDownloadAttachment(attachment.file_id, attachment.file_name);
-                                  }}
-                                  aria-label={`ดาวน์โหลดไฟล์ ${attachment.file_name}`}
-                                >
-                                  <i className="fas fa-download me-2"></i>
-                                  ดาวน์โหลด
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        );
-                      }
-                      
-                      return (
-                        <div className="text-center py-4">
-                          <i className="fas fa-file-slash fa-2x text-muted mb-2"></i>
-                          <p className="text-muted mb-0">ไม่มีไฟล์ประกอบหลักสูตร</p>
-                          <small className="text-muted">จำนวนไฟล์: {attachments.length}</small>
-                        </div>
-                      );
-                    })()}
-                  </div>
-                </div>
-              </div>
-              <div className="modal-footer border-0 p-4 bg-light">
-                <Link
-                  to={`/admin-creditbank/edit-course/${selectedCourse.course_id}`}
-                  className="btn btn-primary btn-sm px-4 py-2 rounded-pill me-2"
-                  aria-label={`แก้ไขหลักสูตร ${selectedCourse.title}`}
-                >
-                  <i className="fas fa-edit me-2" />แก้ไข
-                </Link>
-                <button
-                  type="button"
-                  className="btn btn-danger btn-sm px-4 py-2 rounded-pill me-2"
-                  onClick={() => handleDeleteCourse(selectedCourse.course_id)}
-                  aria-label={`ลบหลักสูตร ${selectedCourse.title}`}
-                >
-                  <i className="fas fa-trash-alt me-2" />ลบ
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-secondary btn-sm px-4 py-2 rounded-pill"
-                  onClick={() => {
-                    setShowDetailModal(false);
-                    setSelectedCourse(null);
-                    setShowImageLightbox(false);
-                    setImageLoading(true);
-                    setImageError(false);
-                    setIsDescriptionExpanded(false);
-                  }}
-                  aria-label="ปิด"
-                >
-                  <i className="fas fa-times me-2" />ปิด
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showImageLightbox && selectedCourse && (
-        <div
-          className="lightbox fade show"
-          style={{
-            display: 'block',
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            backgroundColor: 'rgba(0,0,0,0.85)',
-            zIndex: 1060,
-          }}
-          onClick={() => setShowImageLightbox(false)}
-          onKeyDown={handleKeyDown}
-          tabIndex={0}
-          aria-labelledby="imageLightboxLabel"
-          role="dialog"
-          aria-modal="true"
-        >
-          <div
-            className="lightbox-content"
-            style={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              maxWidth: '90%',
-              maxHeight: '90%',
-              textAlign: 'center',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {imageLoading && !imageError && (
-              <div className="spinner-border text-light mb-3" role="status">
-                <span className="visually-hidden">กำลังโหลดรูปภาพ...</span>
-              </div>
-            )}
-            {imageError ? (
-              <div className="text-light">
-                <i className="fas fa-image fa-3x mb-2"></i>
-                <p>ไม่สามารถโหลดรูปภาพได้</p>
-              </div>
-            ) : (
-              <img
-                src={getImageUrl(selectedCourse)}
-                alt={`หน้าปกเต็มของ ${selectedCourse.title || 'หลักสูตร'}`}
-                className={`img-fluid rounded-2 shadow-lg ${imageLoading ? 'd-none' : ''}`}
-                style={{
-                  maxWidth: '100%',
-                  maxHeight: '80vh',
-                  objectFit: 'contain',
-                }}
-                onLoad={handleImageLoad}
-                onError={handleImageError}
-              />
-            )}
-            <button
-              type="button"
-              className="btn-close btn-close-white"
-              style={{
-                position: 'absolute',
-                top: '-20px',
-                right: '-20px',
-                backgroundColor: 'rgba(0,0,0,0.5)',
-                borderRadius: '50%',
-                padding: '10px',
-              }}
-              onClick={() => setShowImageLightbox(false)}
-              aria-label="ปิดภาพหน้าปก"
-            />
-          </div>
-        </div>
-      )}
-
-      <style>
-        {`
-          .modal.fade.show {
-            animation: fadeIn 0.3s ease-out;
-            z-index: 1050;
-          }
-
-          @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-          }
-
-          .modal-dialog {
-            transition: transform 0.3s ease-out;
-            transform: translateY(0);
-            max-width: 90vw;
-            width: 1200px;
-          }
-
-          .modal-content {
-            border-radius: 12px !important;
-            overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-          }
-
-          .modal-header.bg-gradient-primary {
-            background: linear-gradient(90deg, #0d6efd, #6610f2);
-            border-bottom: none;
-            padding: 1.5rem 2rem;
-          }
-
-          .modal-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-          }
-
-          .modal-body.bg-light {
-            background: #f8f9fa;
-            padding: 2rem !important;
-          }
-
-          .card {
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            border-radius: 12px !important;
-          }
-
-          .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 24px rgba(0,0,0,0.1) !important;
-          }
-
-          .card-title {
-            font-size: 1.1rem;
-            font-weight: 600;
-          }
-
-          .btn-danger, .btn-secondary, .btn-primary {
-            transition: all 0.3s ease;
-            font-weight: 500;
-            padding: 0.5rem 1.5rem;
-            border-radius: 50px !important;
-          }
-
-          .btn-danger:hover, .btn-secondary:hover, .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-          }
-
-          .btn-danger {
-            background: linear-gradient(90deg, #dc3545, #a52834);
-            border: none;
-          }
-
-          .btn-secondary {
-            background: #6c757d;
-            border: none;
-          }
-
-          .btn-link {
-            text-decoration: none;
-            color: #0d6efd;
-            padding: 0;
-            font-size: 0.875rem;
-            transition: color 0.2s ease;
-          }
-
-          .btn-link:hover {
-            color: #0056b3;
-            text-decoration: underline;
-          }
-
-          .table-hover tbody tr:hover {
-            background-color: #f1f5f9;
-            transition: background-color 0.2s ease;
-            cursor: pointer;
-          }
-
-          .action-icon {
-            cursor: pointer;
-            font-size: 1rem;
-            transition: color 0.2s ease, transform 0.2s ease;
-          }
-
-          .action-icon:hover {
-            color: #007bff;
-            transform: scale(1.2);
-          }
-
-          .text-danger.action-icon:hover {
-            color: #a52834;
-          }
-
-          .sticky-top {
-            top: 0;
-            z-index: 1020;
-          }
-
-          .ratio-16x9 iframe {
-            border: none;
-            width: 100%;
-            height: 100%;
-          }
-
-          .cursor-pointer {
-            cursor: pointer;
-          }
-
-          .lightbox {
-            animation: fadeIn 0.3s ease-out;
-            outline: none;
-          }
-
-          .lightbox-content {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-          }
-
-          .lightbox-content img {
-            transition: opacity 0.3s ease, transform 0.3s ease;
-            opacity: 1;
-          }
-
-          .lightbox-content img.d-none {
-            opacity: 0;
-          }
-
-          .card-img-container {
-            position: relative;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 150px;
-          }
-
-          .card-img-container img {
-            transition: opacity 0.3s ease;
-            opacity: 1;
-          }
-
-          .card-img-container img.d-none {
-            opacity: 0;
-          }
-
-          .description-truncated {
-            max-height: 4.5rem;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            display: -webkit-box;
-            -webkit-line-clamp: 3;
-            -webkit-box-orient: vertical;
-          }
-
-          .study_result-truncated {
-            max-height: 4.5rem;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            display: -webkit-box;
-            -webkit-line-clamp: 3;
-            -webkit-box-orient: vertical;
-          }
-
-          @media (max-width: 991px) {
-            .modal-dialog {
-              margin: 1rem;
-              max-width: 95vw;
-            }
-            .modal-body {
-              padding: 1.5rem !important;
-            }
-            .card-body {
-              padding: 1rem !important;
-            }
-            .card-img-container {
-              min-height: 100px;
-            }
-            .card-img-container img {
-              max-width: 100%;
-              max-height: 150px;
-            }
-            .lightbox-content {
-              max-width: 95%;
-              max-height: 95%;
-            }
-            .lightbox-content img {
-              max-height: 70vh;
-            }
-            .btn-close {
-              top: -15px;
-              right: -15px;
-              padding: 8px;
-            }
-          }
-        `}
-      </style>
     </section>
   );
 };
 
 export default AdminCreditbankArea;
+
+
