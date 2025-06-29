@@ -29,6 +29,7 @@ const DashboardSidebar = () => {
    const location = useLocation(); // Get current location
    const currentPath = location.pathname;
    const [userName, setUserName] = useState("Welcome");
+   const [instructorId, setInstructorId] = useState<string | null>(null);
    
    // Get user data from localStorage
    useEffect(() => {
@@ -47,6 +48,13 @@ const DashboardSidebar = () => {
                // Use email before @ symbol as name
                const emailName = parsedUser.email.split('@')[0];
                setUserName(`Welcome, ${emailName}`);
+            }
+            
+            // Set instructor ID for settings link
+            if (parsedUser.instructor_id) {
+               setInstructorId(parsedUser.instructor_id.toString());
+            } else if (parsedUser.id) {
+               setInstructorId(parsedUser.id.toString());
             }
          } catch (error) {
             console.error("Error parsing user data:", error);
@@ -120,6 +128,19 @@ const DashboardSidebar = () => {
                link: "/instructor-grading",
                icon: "skillgro-video-tutorial",
                title: "การตรวจงาน",
+            },
+         ],
+      },
+      {
+         id: 10,
+         title: "ตั้งค่า",
+         class_name: "mt-40",
+         sidebar_details: [
+            {
+               id: 1,
+               link: instructorId ? `/instructor-setting/${instructorId}` : "/instructor-setting",
+               icon: "fas fa-cog",
+               title: "ตั้งค่าบัญชี",
             },
          ],
       },

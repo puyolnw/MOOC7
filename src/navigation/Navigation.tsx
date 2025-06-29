@@ -180,7 +180,7 @@ const AppNavigation = () => {
         <Route path="/instructor-announcement" element={<InstructorAnnouncement />} />
         <Route path="/instructor-quiz" element={<InstructorQuiz />} />
         <Route path="/instructor-assignment" element={<InstructorAssignment />} />
-        <Route path="/instructor-setting" element={<InstructorSetting />} />
+        <Route path="/instructor-setting/:id" element={<InstructorSetting />} />
         <Route path="/instructor-subjects" element={<InsSubjectspage />} />
         <Route path="/instructor-quizzes" element={<InsQuizzespage/>} />
         <Route path="/instructor-questions" element={<InsQuestionspage />} />
