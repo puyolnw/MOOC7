@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { toast } from "react-toastify";
+import { toast } from "react-toastify"; // ยังคง import toast ไว้เผื่อมีการใช้งานในส่วนอื่น เช่น การตรวจสอบไฟล์
 
 // Interface สำหรับข้อมูลแผนก
 interface Department {
@@ -51,7 +51,7 @@ const AddInstructors: React.FC<AddInstructorsProps> = ({ onSubmit, onCancel }) =
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
-  const [apiSuccess, setApiSuccess] = useState<string | null>(null);
+  const [apiSuccess, setApiSuccess] = useState<string | null>(null); // ยังคงเก็บ state นี้ไว้เผื่อจำเป็นต้องใช้ UI success message อื่นๆ ภายในฟอร์มนี้
 
   // State สำหรับข้อมูลแผนก
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -271,7 +271,7 @@ const AddInstructors: React.FC<AddInstructorsProps> = ({ onSubmit, onCancel }) =
     try {
       setIsSubmitting(true);
       setApiError(null);
-      setApiSuccess(null);
+      setApiSuccess(null); // ตั้งค่าให้เป็น null ก่อนส่ง
 
       const token = localStorage.getItem("token");
 
@@ -305,17 +305,17 @@ const AddInstructors: React.FC<AddInstructorsProps> = ({ onSubmit, onCancel }) =
       });
 
       if (response.data.success) {
-        setApiSuccess("สร้างบัญชีผู้สอนสำเร็จ");
-        toast.success("สร้างบัญชีผู้สอนสำเร็จ");
+        // ลบ UI แจ้งเตือนส่วนนี้ออกตามคำขอ
+        // setApiSuccess("สร้างบัญชีผู้สอนสำเร็จ");
+        // toast.success("สร้างบัญชีผู้สอนสำเร็จ");
 
         // ถ้าสำเร็จและมี callback onSubmit ให้เรียกใช้
         if (onSubmit) {
           onSubmit(response.data.instructor as InstructorResponse);
         } else {
-          // ถ้าไม่มี callback ให้ redirect ไปหน้าจัดการผู้สอน หลังจากแสดง toast สักครู่
-          setTimeout(() => {
-            navigate("/admin-account/instructors");
-          }, 1500);
+          // ถ้าไม่มี callback ให้ redirect ไปหน้าจัดการผู้สอน
+          // **การหน่วงเวลาเพื่อแสดง toast จะถูกจัดการที่คอมโพเนนต์แม่ (CreateAccountInstructorsArea)**
+          navigate("/admin-account/instructors");
         }
       } else {
         setApiError(response.data.message || "เกิดข้อผิดพลาดในการสร้างบัญชีผู้สอน");
@@ -361,7 +361,7 @@ const AddInstructors: React.FC<AddInstructorsProps> = ({ onSubmit, onCancel }) =
         </div>
       )}
 
-      {/* แสดงข้อความสำเร็จถ้ามี */}
+      {/* แสดงข้อความสำเร็จถ้ามี (จาก state apiSuccess ที่อาจใช้สำหรับวัตถุประสงค์อื่น) */}
       {apiSuccess && (
         <div className="alert alert-success mb-4">
           <i className="fas fa-check-circle me-2"></i>

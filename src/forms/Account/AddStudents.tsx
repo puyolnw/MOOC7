@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { toast } from "react-toastify";
+import { toast } from "react-toastify"; // ยังคง import toast ไว้สำหรับ toast.error
 
 // Interface สำหรับข้อมูลแผนก
 interface Department {
@@ -37,7 +37,7 @@ const AddStudents: React.FC<AddStudentsProps> = ({ onSubmit, onCancel }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
-  const [apiSuccess, setApiSuccess] = useState<string | null>(null);
+  // const [apiSuccess, setApiSuccess] = useState<string | null>(null); // ลบ apiSuccess state ออก
 
   // State สำหรับข้อมูลแผนก
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -231,7 +231,7 @@ const AddStudents: React.FC<AddStudentsProps> = ({ onSubmit, onCancel }) => {
     try {
       setIsSubmitting(true);
       setApiError(null);
-      setApiSuccess(null);
+      // setApiSuccess(null); // ลบการ set apiSuccess ออก
 
       const token = localStorage.getItem("token");
 
@@ -264,17 +264,18 @@ const AddStudents: React.FC<AddStudentsProps> = ({ onSubmit, onCancel }) => {
       });
 
       if (response.data.success) {
-        setApiSuccess("เพิ่มนักศึกษาสำเร็จ");
-        toast.success("เพิ่มนักศึกษาสำเร็จ");
+        // ลบ setApiSuccess("เพิ่มนักศึกษาสำเร็จ"); และ toast.success("เพิ่มนักศึกษาสำเร็จsss"); ออก
+        // การแจ้งเตือน "บันทึกข้อมูลนักศึกษาสำเร็จ!" จะถูกจัดการโดยคอมโพเนนต์แม่ที่เรียก AddStudents (CreateAccountStudentsArea)
 
         // ถ้าสำเร็จและมี callback onSubmit ให้เรียกใช้
         if (onSubmit) {
-          onSubmit(response.data);
+          onSubmit(response.data); // ส่งข้อมูลที่สำเร็จกลับไปให้คอมโพเนนต์แม่
         } else {
-          // ถ้าไม่มี callback ให้ redirect ไปหน้าจัดการนักศึกษา หลังจากแสดง toast สักครู่
-          setTimeout(() => {
-            navigate("/admin-account/students");
-          }, 1500);
+          // หากไม่มี onSubmit (ซึ่งไม่ควรเกิดขึ้นถ้าใช้เป็นฟอร์มย่อย) ให้จัดการ Redirect เอง
+          // แต่เพื่อให้สอดคล้องกับโครงสร้าง parent component ควรใช้ onSubmit
+          // หากถึงตรงนี้โดยไม่มี onSubmit ก็หมายถึงว่า CreateAccountStudentsArea ไม่ได้ส่ง onSubmit มา
+          // ซึ่งในกรณีนั้น ควรให้ Toast แสดงใน CreateAccountStudentsArea แทน
+          // ในกรณีนี้จะไม่มีการ redirect ตรงนี้ เพื่อให้ CreateAccountStudentsArea เป็นผู้ควบคุม
         }
       } else {
         // ตรวจสอบข้อความ error เพื่อแสดงคำเตือนที่เฉพาะเจาะจง
@@ -288,7 +289,7 @@ const AddStudents: React.FC<AddStudentsProps> = ({ onSubmit, onCancel }) => {
         }
         
         setApiError(errorMessage);
-        toast.error(errorMessage);
+        toast.error(errorMessage); // ยังคงแสดง toast error
       }
     } catch (error: any) {
       console.error("Error creating student account:", error);
@@ -308,7 +309,7 @@ const AddStudents: React.FC<AddStudentsProps> = ({ onSubmit, onCancel }) => {
       }
       
       setApiError(errorMessage);
-      toast.error(errorMessage);
+      toast.error(errorMessage); // ยังคงแสดง toast error
     } finally {
       setIsSubmitting(false);
     }
@@ -362,13 +363,13 @@ const AddStudents: React.FC<AddStudentsProps> = ({ onSubmit, onCancel }) => {
         </div>
       )}
 
-      {/* แสดงข้อความสำเร็จถ้ามี */}
-      {apiSuccess && (
+      {/* ลบส่วนแสดงข้อความสำเร็จ (apiSuccess) ออก */}
+      {/* {apiSuccess && (
         <div className="alert alert-success mb-4">
           <i className="fas fa-check-circle me-2"></i>
           {apiSuccess}
         </div>
-      )}
+      )} */}
 
       {/* ส่วนที่ 1: ข้อมูลบัญชี */}
       <div className="card shadow-sm border-0 mb-4">
