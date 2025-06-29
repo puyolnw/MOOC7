@@ -524,7 +524,7 @@ const SubjectDetail: React.FC<{
   subject: Subject;
   course: Course;
   onBack: () => void;
-}> = ({ subject, course, onBack }) => {
+}> = ({ subject}) => {
   const apiURL = import.meta.env.VITE_API_URL;
   const [activeTab, setActiveTab] = useState('overview');
   const [lessons, setLessons] = useState<Lesson[]>([]);
@@ -1006,7 +1006,7 @@ const CourseDetail: React.FC<{
   course: Course;
   onBack: () => void;
   onSubjectSelect: (subject: Subject) => void;
-}> = ({ course, onBack, onSubjectSelect }) => {
+}> = ({ course, onSubjectSelect }) => {
   const apiURL = import.meta.env.VITE_API_URL;
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [isLoading, setIsLoading] = useState(false);
