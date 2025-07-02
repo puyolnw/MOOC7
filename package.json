@@ -50,6 +50,7 @@
     "react-toastify": "^10.0.6",
     "react-use": "^17.5.1",
     "sass": "^1.77.8",
+    "sweetalert2": "^11.22.2",
     "swiper": "^11.1.10",
     "uuid": "^10.0.0",
     "vivus": "^0.4.6",

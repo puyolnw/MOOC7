@@ -1,13 +1,12 @@
 import React from 'react';
 
-
 // Interface for subject data
 interface Subject {
   id: string;
   title: string;
   instructor: string;
   description: string;
-  coverImage?: string; // ปรับให้สอดคล้องกับ AddCourses.tsx
+  coverImage?: string;
   coverImageFileId?: string;
 }
 
@@ -25,8 +24,10 @@ interface CourseContentSectionProps {
   getPrerequisitesForSubject: (subjectId: string) => string[];
   handleRemovePrerequisite: (subjectId: string, prerequisiteId: string) => void;
   setShowSubjectModal: (value: boolean) => void;
-  setShowPrerequisiteModal: (value: boolean) => void;
+  setShowPrerequisiteModal: (value: boolean) => void; // Keep original
   setSelectedSubjectForPrereq: (value: string | null) => void;
+  // Add new prop for handling prerequisite modal with subject ID
+  onShowPrerequisiteModal?: (subjectId: string) => void;
 }
 
 const apiURL = import.meta.env.VITE_API_URL;
@@ -44,6 +45,7 @@ const CourseContentSection: React.FC<CourseContentSectionProps> = ({
   setShowSubjectModal,
   setShowPrerequisiteModal,
   setSelectedSubjectForPrereq,
+  onShowPrerequisiteModal,
 }) => {
   // Debug ข้อมูล selectedSubjectsDetails และ prerequisites
   console.log("Selected Subjects Details:", selectedSubjectsDetails);
@@ -130,8 +132,13 @@ const CourseContentSection: React.FC<CourseContentSectionProps> = ({
                             type="button"
                             className="btn btn-sm btn-outline-primary"
                             onClick={() => {
-                              setSelectedSubjectForPrereq(subject.id);
-                              setShowPrerequisiteModal(true);
+                              // Use the new prop if available, otherwise fall back to the old method
+                              if (onShowPrerequisiteModal) {
+                                onShowPrerequisiteModal(subject.id);
+                              } else {
+                                setSelectedSubjectForPrereq(subject.id);
+                                setShowPrerequisiteModal(true);
+                              }
                             }}
                           >
                             <i className="fas fa-project-diagram me-1"></i>

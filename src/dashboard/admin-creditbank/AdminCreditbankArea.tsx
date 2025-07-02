@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 
 import DashboardSidebar from "../dashboard-common/AdminSidebar";
 import DashboardBanner from "../dashboard-common/AdminBanner";
-import "./main.css";
+import AdminSubjectArea from "./AdminSubjectArea";
+import "./mega.css";
 
 interface Course {
   course_id: number;
@@ -40,7 +41,7 @@ interface Subject {
   pre_test: Quiz | null;
   post_test: Quiz | null;
   order_number: number;
-  lessons?: Lesson[]; // เพิ่ม lessons
+  lessons?: Lesson[];
 }
 
 interface Lesson {
@@ -334,6 +335,26 @@ const DepartmentSelection: React.FC<{
   );
 };
 
+// Add Course Card Component
+const AddCourseCard: React.FC<{
+  selectedDepartment: Department;
+  onClick: () => void;
+}> = ({ selectedDepartment, onClick }) => {
+  return (
+    <div className="add-course-card" onClick={onClick}>
+      <div className="add-course-content">
+        <div className="add-course-icon">
+          <i className="fas fa-plus"></i>
+        </div>
+        <h3 className="add-course-title">เพิ่มหลักสูตรใหม่</h3>
+        <p className="add-course-description">
+          สร้างหลักสูตรใหม่สำหรับสาขา {selectedDepartment.department_name}
+        </p>
+      </div>
+    </div>
+  );
+};
+
 // Course List component
 const CourseList: React.FC<{
   courses: Course[];
@@ -341,6 +362,7 @@ const CourseList: React.FC<{
   searchTerm: string;
   onSearchChange: (term: string) => void;
   onCourseSelect: (course: Course) => void;
+  onAddCourse: () => void;
   selectedDepartment: Department;
   currentPage: number;
   totalPages: number;
@@ -352,6 +374,7 @@ const CourseList: React.FC<{
   searchTerm, 
   onSearchChange, 
   onCourseSelect, 
+  onAddCourse,
   selectedDepartment,
   currentPage,
   totalPages,
@@ -403,615 +426,129 @@ const CourseList: React.FC<{
             )}
           </div>
         </div>
-        <Link 
-          to="/admin-creditbank/create-new" 
-          className="add-course-btn"
-        >
-          <i className="fas fa-plus me-2"></i>
-          เพิ่มหลักสูตรใหม่
-        </Link>
       </div>
 
-      {courses.length === 0 ? (
-        <div className="no-courses">
-          <div className="no-courses-icon">
-            <i className="fas fa-book-open"></i>
-          </div>
-          <h3>ไม่พบหลักสูตร</h3>
-          <p>
-            {searchTerm 
-              ? 'ไม่พบหลักสูตรที่ตรงกับเงื่อนไขการค้นหา' 
-              : 'ยังไม่มีหลักสูตรในสาขานี้'
-            }
-          </p>
-        </div>
-      ) : (
-        <>
-          <div className="courses-grid">
-            {courses.map((course, index) => (
-              <div 
-                key={`course-${course.course_id}-${index}`} 
-                className="course-card"
-                onClick={() => onCourseSelect(course)}
-              >
-                <div className="course-card-image">
-                  <img
-                    src={course.cover_image_file_id 
-                                          ? `${import.meta.env.VITE_API_URL}/api/courses/image/${course.cover_image_file_id}`
-                      : 'https://via.placeholder.com/300x200.png?text=ไม่มีรูปภาพ'
-                    }
-                    alt={course.title}
-                    className="course-image"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = 'https://via.placeholder.com/300x200.png?text=ไม่มีรูปภาพ';
-                    }}
-                  />
-                  <div className="course-card-overlay">
-                    <div className="course-status">
-                      <span className={`status-badge ${course.status}`}>
-                        {course.status === 'active' ? 'เปิดใช้งาน' : 
-                         course.status === 'inactive' ? 'ปิดใช้งาน' : 'ร่าง'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <div className="course-card-content">
-                  <div className="course-card-header">
-                    <h3 className="course-title">{course.title}</h3>
-                    {course.course_code && (
-                      <span className="course-code">{course.course_code}</span>
-                    )}
-                  </div>
-                  {course.description && (
-                    <p className="course-description">
-                      {course.description.length > 100 
-                        ? `${course.description.substring(0, 100)}...`
-                        : course.description
-                      }
-                    </p>
-                  )}
-                  <div className="course-stats">
-                    <div className="stat-group">
-                      <i className="fas fa-list-alt me-1"></i>
-                      <span>{course.subject_count} รายวิชา</span>
-                    </div>
-                    <div className="stat-group">
-                      <i className="fas fa-calendar me-1"></i>
-                      <span>{new Date(course.created_at).toLocaleDateString('th-TH')}</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="course-card-footer">
-                  <div className="course-actions">
-                    <Link
-                      to={`/admin-creditbank/edit-course/${course.course_id}`}
-                      className="action-btn edit-btn"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <i className="fas fa-edit me-1"></i>
-                      แก้ไข
-                    </Link>
-                    <button 
-                      className="action-btn view-btn"
-                      onClick={() => onCourseSelect(course)}
-                    >
-                      <i className="fas fa-eye me-1"></i>
-                      ดูรายละเอียด
-                    </button>
-                  </div>
+      <div className="courses-grid">
+        {/* Add Course Card เป็นอันแรก */}
+        <AddCourseCard 
+          selectedDepartment={selectedDepartment}
+          onClick={onAddCourse}
+        />
+        
+                {courses.map((course, index) => (
+          <div 
+            key={`course-${course.course_id}-${index}`} 
+            className="course-card"
+            onClick={() => onCourseSelect(course)}
+          >
+            <div className="course-card-image">
+              <img
+                src={course.cover_image_file_id 
+                  ? `${import.meta.env.VITE_API_URL}/api/courses/image/${course.cover_image_file_id}`
+                  : 'https://via.placeholder.com/300x200.png?text=ไม่มีรูปภาพ'
+                }
+                alt={course.title}
+                className="course-image"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = 'https://via.placeholder.com/300x200.png?text=ไม่มีรูปภาพ';
+                }}
+              />
+              <div className="course-card-overlay">
+                <div className="course-status">
+                  <span className={`status-badge ${course.status}`}>
+                    {course.status === 'active' ? 'เปิดใช้งาน' : 
+                     course.status === 'inactive' ? 'ปิดใช้งาน' : 'ร่าง'}
+                  </span>
                 </div>
               </div>
-            ))}
-          </div>
-          
-          {totalPages > 1 && (
-            <div className="pagination-nav">
-              <SimplePagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={onPageChange}
-              />
             </div>
-          )}
-        </>
+            <div className="course-card-content">
+              <div className="course-card-header">
+                <h3 className="course-title">{course.title}</h3>
+                {course.course_code && (
+                  <span className="course-code">{course.course_code}</span>
+                )}
+              </div>
+              {course.description && (
+                <p className="course-description">
+                  {course.description.length > 100 
+                    ? `${course.description.substring(0, 100)}...`
+                    : course.description
+                  }
+                </p>
+              )}
+              <div className="course-stats">
+                <div className="stat-group">
+                  <i className="fas fa-list-alt me-1"></i>
+                  <span>{course.subject_count} รายวิชา</span>
+                </div>
+                <div className="stat-group">
+                  <i className="fas fa-calendar me-1"></i>
+                  <span>{new Date(course.created_at).toLocaleDateString('th-TH')}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+      
+      {totalPages > 1 && (
+        <div className="pagination-nav">
+          <SimplePagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={onPageChange}
+          />
+        </div>
       )}
     </div>
   );
 };
 
-// Subject Detail component with lessons
-const SubjectDetail: React.FC<{
-  subject: Subject;
-  course: Course;
-  onBack: () => void;
-}> = ({ subject}) => {
-  const apiURL = import.meta.env.VITE_API_URL;
-  const [activeTab, setActiveTab] = useState('overview');
-  const [lessons, setLessons] = useState<Lesson[]>([]);
-  const [lessonsLoading, setLessonsLoading] = useState(false);
-
-  // ดึงข้อมูล lessons เมื่อเปิด tab lessons
-  useEffect(() => {
-    if (activeTab === 'lessons') {
-      fetchLessons();
-    }
-  }, [activeTab, subject.subject_id]);
-
-  const fetchLessons = async () => {
-    setLessonsLoading(true);
-    try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(
-        `${apiURL}/api/courses/subjects/${subject.subject_id}/lessons`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      
-      if (response.data.success) {
-        setLessons(response.data.lessons || []);
-      }
-    } catch (error) {
-      console.error('Error fetching lessons:', error);
-      setLessons([]);
-    } finally {
-      setLessonsLoading(false);
-    }
-  };
-
-  // ฟังก์ชันสำหรับแสดงรูปภาพ subject (ตามตัวอย่างใน SubjectDetailsArea.tsx)
-  const getSubjectImageUrl = (subject: Subject): string => {
-    if (subject.cover_image_file_id) {
-      return `${apiURL}/api/courses/subjects/image/${subject.cover_image_file_id}`;
-    }
-    if (subject.cover_image && typeof subject.cover_image === 'string' && subject.cover_image.trim() !== '') {
-      // ตรวจสอบว่าเป็น Google Drive URL หรือไม่
-      const fileIdMatch = subject.cover_image.match(/\/d\/(.+?)\//);
-      if (fileIdMatch && fileIdMatch[1]) {
-        return `${apiURL}/api/courses/subjects/image/${fileIdMatch[1]}`;
-      }
-      // ถ้าเป็น URL ปกติ
-      if (subject.cover_image.startsWith('http')) {
-        return subject.cover_image;
-      }
-    }
-    return 'https://via.placeholder.com/400x250.png?text=ไม่มีรูปภาพ';
-  };
-
-  const getVideoEmbedUrl = (videoUrl: string | null): string => {
-    if (!videoUrl) return '';
-    if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
-      const videoIdMatch = videoUrl.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/);
-      if (videoIdMatch) {
-        return `https://www.youtube.com/embed/${videoIdMatch[1]}`;
-      }
-    }
-    return videoUrl;
-  };
-
+// Add Subject Card Component
+const AddSubjectCard: React.FC<{
+  courseId: number;
+  onClick: () => void;
+}> = ({ onClick }) => {
   return (
-    <div className="subject-detail-container">
-      <div className="subject-detail-header">
-        <div className="subject-header-content">
-          <div className="subject-image-section">
-            <div className="subject-image-container">
-              <img
-                src={getSubjectImageUrl(subject)}
-                alt={subject.subject_name}
-                className="subject-detail-image"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400x250.png?text=ไม่มีรูปภาพ';
-                }}
-              />
-            </div>
-          </div>
-          <div className="subject-info-section">
-            <div className="subject-header-top">
-              <h1 className="subject-detail-title">{subject.subject_name}</h1>
-              <div className="subject-badges">
-                <span className="subject-code-badge">{subject.subject_code}</span>
-              </div>
-            </div>
-            <div className="subject-meta">
-              <div className="meta-item">
-                <i className="fas fa-graduation-cap me-2"></i>
-                <span>{subject.credits} หน่วยกิต</span>
-              </div>
-              <div className="meta-item">
-                <i className="fas fa-book me-2"></i>
-                <span>{lessons.length} บทเรียน</span>
-              </div>
-              <div className="meta-item">
-                <i className="fas fa-question-circle me-2"></i>
-                <span>{subject.quiz_count} แบบทดสอบ</span>
-              </div>
-              <div className="meta-item">
-                <i className="fas fa-chalkboard-teacher me-2"></i>
-                <span>{subject.instructors?.length || 0} อาจารย์</span>
-              </div>
-            </div>
-            {subject.description && (
-              <div className="subject-description-section">
-                <h3>รายละเอียดรายวิชา</h3>
-                <div className="subject-description">
-                  {subject.description}
-                </div>
-              </div>
-            )}
-            {subject.video_url && (
-              <div className="subject-video-section">
-                <h3>วิดีโอแนะนำรายวิชา</h3>
-                <div className="ratio ratio-16x9">
-                  <iframe
-                    src={getVideoEmbedUrl(subject.video_url)}
-                    title={`วิดีโอแนะนำ ${subject.subject_name}`}
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                    className="rounded-2"
-                  ></iframe>
-                </div>
-              </div>
-            )}
-          </div>
+    <div className="add-subject-card" onClick={onClick}>
+      <div className="add-subject-content">
+        <div className="add-subject-icon">
+          <i className="fas fa-plus"></i>
         </div>
-      </div>
-
-      <div className="subject-detail-tabs">
-        <div className="tabs-header">
-          <button
-            className={`tab-btn ${activeTab === 'overview' ? 'active' : ''}`}
-            onClick={() => setActiveTab('overview')}
-          >
-            <i className="fas fa-info-circle"></i>
-            <span>ภาพรวม</span>
-          </button>
-          <button
-            className={`tab-btn ${activeTab === 'lessons' ? 'active' : ''}`}
-            onClick={() => setActiveTab('lessons')}
-          >
-            <i className="fas fa-play-circle"></i>
-            <span>บทเรียน</span>
-          </button>
-          <button
-            className={`tab-btn ${activeTab === 'instructors' ? 'active' : ''}`}
-            onClick={() => setActiveTab('instructors')}
-          >
-            <i className="fas fa-chalkboard-teacher"></i>
-            <span>อาจารย์ผู้สอน</span>
-          </button>
-          <button
-            className={`tab-btn ${activeTab === 'tests' ? 'active' : ''}`}
-            onClick={() => setActiveTab('tests')}
-          >
-            <i className="fas fa-clipboard-check"></i>
-            <span>แบบทดสอบ</span>
-          </button>
-        </div>
-
-        <div className="tabs-content">
-          {activeTab === 'overview' && (
-            <div className="tab-panel overview-panel">
-              <div className="overview-grid">
-                <div className="overview-card">
-                  <div className="card-icon">
-                    <i className="fas fa-chart-bar"></i>
-                  </div>
-                  <h3>สถิติรายวิชา</h3>
-                  <div className="stats-list">
-                    <div className="stat-row">
-                      <span>จำนวนบทเรียน</span>
-                      <strong>{lessons.length} บทเรียน</strong>
-                    </div>
-                    <div className="stat-row">
-                      <span>จำนวนแบบทดสอบ</span>
-                      <strong>{subject.quiz_count} แบบทดสอบ</strong>
-                    </div>
-                    <div className="stat-row">
-                      <span>หน่วยกิต</span>
-                      <strong>{subject.credits} หน่วยกิต</strong>
-                    </div>
-                    <div className="stat-row">
-                      <span>สถานะ</span>
-                      <strong>
-                        <span className={`status ${subject.status}`}>
-                          {subject.status === 'active' ? 'เปิดใช้งาน' : 
-                           subject.status === 'inactive' ? 'ปิดใช้งาน' : 'ร่าง'}
-                        </span>
-                      </strong>
-                    </div>
-                  </div>
-                </div>
-
-                {subject.prerequisites && subject.prerequisites.length > 0 && (
-                  <div className="overview-card">
-                    <div className="card-icon">
-                      <i className="fas fa-link"></i>
-                    </div>
-                    <h3>รายวิชาที่ต้องเรียนก่อน</h3>
-                    <div className="prerequisites-list">
-                      {subject.prerequisites.map((prereq) => (
-                        <div key={prereq.subject_id} className="prerequisite-item">
-                          <span className="prereq-code">{prereq.subject_code}</span>
-                          <span className="prereq-name">{prereq.subject_name}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                <div className="overview-card">
-                  <div className="card-icon">
-                    <i className="fas fa-clipboard-list"></i>
-                  </div>
-                  <h3>แบบทดสอบ</h3>
-                  <div className="tests-overview">
-                    <div className={`test-item pre-test ${!subject.pre_test ? 'disabled' : ''}`}>
-                      <i className="fas fa-play-circle"></i>
-                      <div className="test-info">
-                        <strong>Pre-test</strong>
-                        <span>
-                          {subject.pre_test ? subject.pre_test.title : 'ไม่มีแบบทดสอบก่อนเรียน'}
-                        </span>
-                      </div>
-                    </div>
-                    <div className={`test-item post-test ${!subject.post_test ? 'disabled' : ''}`}>
-                      <i className="fas fa-stop-circle"></i>
-                      <div className="test-info">
-                        <strong>Post-test</strong>
-                        <span>
-                          {subject.post_test ? subject.post_test.title : 'ไม่มีแบบทดสอบหลังเรียน'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'lessons' && (
-            <div className="tab-panel lessons-panel">
-              <div className="lessons-header">
-                <h3>บทเรียนทั้งหมด</h3>
-                <p>รายการบทเรียนในรายวิชา {subject.subject_name}</p>
-              </div>
-              
-              {lessonsLoading ? (
-                <div className="loading-container">
-                  <div className="loading-spinner">
-                    <div className="spinner-border text-primary" role="status">
-                      <span className="visually-hidden">กำลังโหลด...</span>
-                    </div>
- <p className="loading-text">กำลังโหลดบทเรียน...</p>
-                  </div>
-                </div>
-              ) : lessons.length === 0 ? (
-                <div className="no-lessons">
-                  <div className="no-lessons-icon">
-                    <i className="fas fa-play-circle"></i>
-                  </div>
-                  <h4>ไม่มีบทเรียน</h4>
-                  <p>ยังไม่มีบทเรียนในรายวิชานี้</p>
-                </div>
-              ) : (
-                <div className="lessons-list">
-                  {lessons.map((lesson, index) => (
-                    <div key={`lesson-${lesson.lesson_id}`} className="lesson-item">
-                      <div className="lesson-number">
-                        <span>{index + 1}</span>
-                      </div>
-                      <div className="lesson-content">
-                        <div className="lesson-header">
-                          <h4 className="lesson-title">{lesson.title}</h4>
-                          <div className="lesson-badges">
-                            <span className={`status-badge ${lesson.status}`}>
-                              {lesson.status === 'active' ? 'เปิดใช้งาน' : 
-                               lesson.status === 'inactive' ? 'ปิดใช้งาน' : 'ร่าง'}
-                            </span>
-                          </div>
-                        </div>
-                        {lesson.description && (
-                          <p className="lesson-description">{lesson.description}</p>
-                        )}
-                        <div className="lesson-meta">
-                          <div className="meta-item">
-                            <i className="fas fa-calendar me-1"></i>
-                            <span>สร้างเมื่อ {new Date(lesson.created_at).toLocaleDateString('th-TH')}</span>
-                          </div>
-                          {lesson.video_url && (
-                            <div className="meta-item">
-                              <i className="fas fa-video me-1"></i>
-                              <span>มีวิดีโอ</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      <div className="lesson-actions">
-                        <Link
-                          to={`/admin-lessons/edit/${lesson.lesson_id}`}
-                          className="action-btn edit-btn"
-                        >
-                          <i className="fas fa-edit"></i>
-                        </Link>
-                        <button className="action-btn view-btn">
-                          <i className="fas fa-eye"></i>
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {activeTab === 'instructors' && (
-            <div className="tab-panel instructors-panel">
-              <div className="instructors-header">
-                <h3>อาจารย์ผู้สอน</h3>
-                <p>รายชื่ออาจารย์ที่สอนในรายวิชา {subject.subject_name}</p>
-              </div>
-              
-              {!subject.instructors || subject.instructors.length === 0 ? (
-                <div className="no-instructors">
-                  <div className="no-instructors-icon">
-                    <i className="fas fa-chalkboard-teacher"></i>
-                  </div>
-                  <h4>ไม่มีอาจารย์ผู้สอน</h4>
-                  <p>ยังไม่มีการกำหนดอาจารย์ผู้สอนสำหรับรายวิชานี้</p>
-                </div>
-              ) : (
-                <div className="instructors-grid">
-                  {subject.instructors.map((instructor) => (
-                    <div key={`instructor-${instructor.instructor_id}`} className="instructor-card">
-                      <div className="instructor-avatar">
-                        <img
-                          src={instructor.avatar_file_id 
-                            ? `${apiURL}/api/accounts/instructors/avatar/${instructor.avatar_file_id}`
-                            : 'https://via.placeholder.com/100x100.png?text=ไม่มีรูป'
-                          }
-                          alt={instructor.name}
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = 'https://via.placeholder.com/100x100.png?text=ไม่มีรูป';
-                          }}
-                        />
-                      </div>
-                      <div className="instructor-info">
-                        <h4 className="instructor-name">{instructor.name}</h4>
-                        <p className="instructor-position">{instructor.position}</p>
-                        {instructor.ranking_name && (
-                          <p className="instructor-ranking">{instructor.ranking_name}</p>
-                        )}
-                        {instructor.description && (
-                          <p className="instructor-description">
-                            {instructor.description.length > 100 
-                              ? `${instructor.description.substring(0, 100)}...`
-                              : instructor.description
-                            }
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {activeTab === 'tests' && (
-            <div className="tab-panel tests-panel">
-              <div className="tests-header">
-                <h3>แบบทดสอบ</h3>
-                <p>แบบทดสอบก่อนเรียนและหลังเรียนสำหรับรายวิชา {subject.subject_name}</p>
-              </div>
-              
-              <div className="tests-grid">
-                <div className={`test-card pre-test ${!subject.pre_test ? 'disabled' : ''}`}>
-                  <div className="test-card-header">
-                    <div className={`test-icon pre-test ${!subject.pre_test ? 'disabled' : ''}`}>
-                      <i className="fas fa-play-circle"></i>
-                    </div>
-                    <div className="test-title">
-                      <h4>แบบทดสอบก่อนเรียน (Pre-test)</h4>
-                      <p>ทดสอบความรู้พื้นฐานก่อนเริ่มเรียน</p>
-                    </div>
-                  </div>
-                  {subject.pre_test ? (
-                    <div className="test-details">
-                      <div className="detail-item">
-                        <span>ชื่อแบบทดสอบ</span>
-                        <span>{subject.pre_test.title}</span>
-                      </div>
-                      <div className="detail-item">
-                        <span>คำอธิบาย</span>
-                        <span>{subject.pre_test.description || '-'}</span>
-                      </div>
-                      <div className="detail-item">
-                        <span>คะแนนผ่าน</span>
-                        <span>
-                          {subject.pre_test.passing_score_enabled 
-                            ? `${subject.pre_test.passing_score_value} คะแนน`
-                            : 'ไม่กำหนด'
-                          }
-                        </span>
-                      </div>
-                      <div className="detail-item">
-                        <span>สถานะ</span>
-                        <span className={`status ${subject.pre_test.status}`}>
-                          {subject.pre_test.status === 'active' ? 'เปิดใช้งาน' : 
-                           subject.pre_test.status === 'inactive' ? 'ปิดใช้งาน' : 'ร่าง'}
-                        </span>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="no-test">
-                      <i className="fas fa-exclamation-circle"></i>
-                      <p>ไม่มีแบบทดสอบก่อนเรียน</p>
-                    </div>
-                  )}
-                </div>
-
-                <div className={`test-card post-test ${!subject.post_test ? 'disabled' : ''}`}>
-                  <div className="test-card-header">
-                    <div className={`test-icon post-test ${!subject.post_test ? 'disabled' : ''}`}>
-                      <i className="fas fa-stop-circle"></i>
-                    </div>
-                    <div className="test-title">
-                      <h4>แบบทดสอบหลังเรียน (Post-test)</h4>
-                      <p>ทดสอบความรู้หลังจากเรียนจบ</p>
-                    </div>
-                  </div>
-                  {subject.post_test ? (
-                    <div className="test-details">
-                      <div className="detail-item">
-                        <span>ชื่อแบบทดสอบ</span>
-                        <span>{subject.post_test.title}</span>
-                      </div>
-                      <div className="detail-item">
-                        <span>คำอธิบาย</span>
-                        <span>{subject.post_test.description || '-'}</span>
-                      </div>
-                      <div className="detail-item">
-                        <span>คะแนนผ่าน</span>
-                        <span>
-                          {subject.post_test.passing_score_enabled 
-                            ? `${subject.post_test.passing_score_value} คะแนน`
-                            : 'ไม่กำหนด'
-                          }
-                        </span>
-                      </div>
-                      <div className="detail-item">
-                        <span>สถานะ</span>
-                        <span className={`status ${subject.post_test.status}`}>
-                          {subject.post_test.status === 'active' ? 'เปิดใช้งาน' : 
-                           subject.post_test.status === 'inactive' ? 'ปิดใช้งาน' : 'ร่าง'}
-                        </span>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="no-test">
-                      <i className="fas fa-exclamation-circle"></i>
-                      <p>ไม่มีแบบทดสอบหลังเรียน</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
+        <h3 className="add-subject-title">เพิ่มรายวิชาใหม่</h3>
+        <p className="add-subject-description">
+          สร้างรายวิชาใหม่สำหรับหลักสูตรนี้
+        </p>
       </div>
     </div>
   );
 };
 
-// Course Detail component
-const CourseDetail: React.FC<{
+// Editable Course Detail component
+const EditableCourseDetail: React.FC<{
   course: Course;
   onBack: () => void;
   onSubjectSelect: (subject: Subject) => void;
-}> = ({ course, onSubjectSelect }) => {
+  onCourseUpdate: (updatedCourse: Course) => void;
+}> = ({ course, onSubjectSelect, onCourseUpdate }) => {
   const apiURL = import.meta.env.VITE_API_URL;
   const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [filteredSubjects, setFilteredSubjects] = useState<Subject[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filteredSubjects, setFilteredSubjects] = useState<Subject[]>([]);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  
+  // Editable fields
+  const [editTitle, setEditTitle] = useState(course.title);
+  const [editDescription, setEditDescription] = useState(course.description || '');
+  const [editVideoUrl, setEditVideoUrl] = useState(course.video_url || '');
+  const [editStudyResult, setEditStudyResult] = useState(course.study_result || '');
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchSubjects();
@@ -1051,7 +588,101 @@ const CourseDetail: React.FC<{
     }
   };
 
+  const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setSelectedImage(file);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImagePreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      const token = localStorage.getItem('token');
+      const formData = new FormData();
+      
+      formData.append('title', editTitle);
+      formData.append('description', editDescription);
+      formData.append('video_url', editVideoUrl);
+      formData.append('study_result', editStudyResult);
+      
+      if (selectedImage) {
+        formData.append('cover_image', selectedImage);
+      }
+
+      const response = await axios.put(
+        `${apiURL}/api/courses/${course.course_id}`,
+        formData,
+        { 
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data'
+          } 
+        }
+      );
+
+      if (response.data.success) {
+        const updatedCourse = {
+          ...course,
+          title: editTitle,
+          description: editDescription,
+          video_url: editVideoUrl,
+          study_result: editStudyResult,
+          cover_image_file_id: response.data.course?.cover_image_file_id || course.cover_image_file_id
+        };
+        
+        onCourseUpdate(updatedCourse);
+        setIsEditing(false);
+        setSelectedImage(null);
+        setImagePreview(null);
+        
+        alert('บันทึกข้อมูลสำเร็จ');
+      }
+    } catch (error) {
+      console.error('Error updating course:', error);
+      alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setIsEditing(false);
+    setEditTitle(course.title);
+    setEditDescription(course.description || '');
+    setEditVideoUrl(course.video_url || '');
+    setEditStudyResult(course.study_result || '');
+    setSelectedImage(null);
+    setImagePreview(null);
+  };
+
+  const handleDeleteSubject = async (subjectId: number) => {
+    if (!confirm('คุณต้องการลบรายวิชานี้หรือไม่?')) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.delete(
+        `${apiURL}/api/courses/subjects/${subjectId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (response.data.success) {
+        fetchSubjects();
+        alert('ลบรายวิชาสำเร็จ');
+      }
+    } catch (error) {
+      console.error('Error deleting subject:', error);
+      alert('เกิดข้อผิดพลาดในการลบรายวิชา');
+    }
+  };
+
   const getCourseImageUrl = (course: Course): string => {
+    if (imagePreview) return imagePreview;
     if (course.cover_image_file_id) {
       return `${apiURL}/api/courses/image/${course.cover_image_file_id}`;
     }
@@ -1075,25 +706,52 @@ const CourseDetail: React.FC<{
     return videoUrl;
   };
 
+  const handleAddSubject = () => {
+    window.location.href = `/admin-subjects/create-new?course_id=${course.course_id}`;
+  };
+
   return (
     <div className="course-detail-container">
       <div className="course-detail-header">
         <div className="course-header-content">
           <div className="course-image-section">
-            <div className="course-image-container">
+            <div className="course-image-container" onClick={() => isEditing && fileInputRef.current?.click()}>
               <img
                 src={getCourseImageUrl(course)}
-                alt={course.title}
+                alt={editTitle}
                 className="course-detail-image"
                 onError={(e) => {
                   (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400x250.png?text=ไม่มีรูปภาพ';
                 }}
               />
+              {isEditing && (
+                <div className="image-edit-overlay">
+                  <i className="fas fa-camera"></i>
+                  <span>คลิกเพื่อเปลี่ยนรูป</span>
+                </div>
+              )}
             </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageSelect}
+              style={{ display: 'none' }}
+            />
           </div>
           <div className="course-info-section">
             <div className="course-header-top">
-              <h1 className="course-detail-title">{course.title}</h1>
+              {isEditing ? (
+                <input
+                  type="text"
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  className="edit-title-input"
+                  placeholder="ชื่อหลักสูตร"
+                />
+              ) : (
+                <h1 className="course-detail-title">{course.title}</h1>
+              )}
               <div className="course-badges">
                 {course.course_code && (
                   <span className="course-code-badge">{course.course_code}</span>
@@ -1104,8 +762,9 @@ const CourseDetail: React.FC<{
                 </span>
               </div>
             </div>
+            
             <div className="course-meta">
-                            <div className="meta-item">
+              <div className="meta-item">
                 <i className="fas fa-building me-2"></i>
                 <span>{course.department_name}</span>
               </div>
@@ -1122,40 +781,111 @@ const CourseDetail: React.FC<{
                 <span>สร้างเมื่อ {new Date(course.created_at).toLocaleDateString('th-TH')}</span>
               </div>
             </div>
-            {course.description && (
-              <div className="course-description-section">
-                <h3>รายละเอียดหลักสูตร</h3>
+
+            {/* Edit Controls */}
+            <div className="edit-controls">
+              {!isEditing ? (
+                <button 
+                  className="edit-mode-btn"
+                  onClick={() => setIsEditing(true)}
+                >
+                  <i className="fas fa-edit me-2"></i>
+                  แก้ไขข้อมูล
+                </button>
+              ) : (
+                <div className="edit-actions">
+                  <button 
+                    className="save-btn"
+                    onClick={handleSave}
+                    disabled={isSaving}
+                  >
+                    <i className="fas fa-save me-2"></i>
+                    {isSaving ? 'กำลังบันทึก...' : 'บันทึก'}
+                  </button>
+                  <button 
+                    className="cancel-btn"
+                    onClick={handleCancel}
+                  >
+                    <i className="fas fa-times me-2"></i>
+                    ยกเลิก
+                  </button>
+                </div>
+              )}
+            </div>
+
+                     {/* Course Description */}
+            <div className="course-description-section">
+              <h3>รายละเอียดหลักสูตร</h3>
+              {isEditing ? (
+                <textarea
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  className="edit-description-textarea"
+                  placeholder="รายละเอียดหลักสูตร"
+                  rows={4}
+                />
+              ) : (
                 <div className="course-description">
-                  {course.description}
+                  {course.description || 'ไม่มีรายละเอียด'}
                 </div>
-              </div>
-            )}
-            {course.study_result && (
-              <div className="study-result-section">
-                <h3>ผลลัพธ์การเรียนรู้</h3>
+              )}
+            </div>
+
+            {/* Study Result */}
+            <div className="study-result-section">
+              <h3>ผลลัพธ์การเรียนรู้</h3>
+              {isEditing ? (
+                <textarea
+                  value={editStudyResult}
+                  onChange={(e) => setEditStudyResult(e.target.value)}
+                  className="edit-study-result-textarea"
+                  placeholder="ผลลัพธ์การเรียนรู้"
+                  rows={3}
+                />
+              ) : (
                 <div className="study-result">
-                  {course.study_result}
+                  {course.study_result || 'ไม่มีข้อมูลผลลัพธ์การเรียนรู้'}
                 </div>
-              </div>
-            )}
-            {course.video_url && (
-              <div className="course-video-section">
-                <h3>วิดีโอแนะนำหลักสูตร</h3>
-                <div className="ratio ratio-16x9">
-                  <iframe
-                    src={getVideoEmbedUrl(course.video_url)}
-                    title={`วิดีโอแนะนำ ${course.title}`}
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                    className="rounded-2"
-                  ></iframe>
-                </div>
-              </div>
-            )}
+              )}
+            </div>
+
+            {/* Video URL */}
+            <div className="course-video-section">
+              <h3>วิดีโอแนะนำหลักสูตร</h3>
+              {isEditing ? (
+                <input
+                  type="url"
+                  value={editVideoUrl}
+                  onChange={(e) => setEditVideoUrl(e.target.value)}
+                  className="edit-video-input"
+                  placeholder="URL วิดีโอ (YouTube)"
+                />
+              ) : (
+                <>
+                  {course.video_url ? (
+                    <div className="video-container">
+                      <iframe
+                        src={getVideoEmbedUrl(course.video_url)}
+                        title={`วิดีโอแนะนำ ${course.title}`}
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                        className="course-video-iframe"
+                      ></iframe>
+                    </div>
+                  ) : (
+                    <div className="no-video">
+                      <i className="fas fa-video"></i>
+                      <p>ไม่มีวิดีโอแนะนำ</p>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
+      {/* Subjects Section */}
       <div className="subjects-section">
         <div className="subjects-header">
           <div className="section-title">
@@ -1183,13 +913,6 @@ const CourseDetail: React.FC<{
                 )}
               </div>
             </div>
-            <Link 
-              to={`/admin-subjects/create-new?course_id=${course.course_id}`} 
-              className="add-subject-btn"
-            >
-              <i className="fas fa-plus me-2"></i>
-              เพิ่มรายวิชาใหม่
-            </Link>
           </div>
         </div>
 
@@ -1202,27 +925,28 @@ const CourseDetail: React.FC<{
               <p className="loading-text">กำลังโหลดรายวิชา...</p>
             </div>
           </div>
-        ) : filteredSubjects.length === 0 ? (
-          <div className="no-subjects">
-            <div className="no-subjects-icon">
-              <i className="fas fa-graduation-cap"></i>
-            </div>
-            <h3>ไม่พบรายวิชา</h3>
-            <p>
-              {searchTerm 
-                ? 'ไม่พบรายวิชาที่ตรงกับเงื่อนไขการค้นหา' 
-                : 'ยังไม่มีรายวิชาในหลักสูตรนี้'
-              }
-            </p>
-          </div>
         ) : (
           <div className="subjects-grid">
+            {/* Add Subject Card เป็นอันแรก */}
+            <AddSubjectCard 
+              courseId={course.course_id}
+              onClick={handleAddSubject}
+            />
+            
             {filteredSubjects.map((subject, index) => (
               <div 
                 key={`subject-${subject.subject_id}-${index}`} 
                 className="subject-card"
-                onClick={() => onSubjectSelect(subject)}
               >
+                <div className="subject-card-header">
+                  <div className="subject-order">
+                    <span>#{subject.order_number || index + 1}</span>
+                  </div>
+                  <div className="subject-status">
+                    <span className={`status-dot ${subject.status}`}></span>
+                  </div>
+                </div>
+                
                 <div className="subject-card-image">
                   <img
                     src={subject.cover_image_file_id 
@@ -1235,18 +959,8 @@ const CourseDetail: React.FC<{
                       (e.target as HTMLImageElement).src = 'https://via.placeholder.com/300x200.png?text=ไม่มีรูปภาพ';
                     }}
                   />
-                  <div className="subject-card-overlay">
-                    <div className="subject-order">
-                      <span className="order-badge">#{subject.order_number || index + 1}</span>
-                    </div>
-                    <div className="subject-status">
-                      <span className={`status-badge ${subject.status}`}>
-                        {subject.status === 'active' ? 'เปิดใช้งาน' : 
-                         subject.status === 'inactive' ? 'ปิดใช้งาน' : 'ร่าง'}
-                      </span>
-                    </div>
-                  </div>
                 </div>
+                
                 <div className="subject-card-content">
                   <div className="subject-card-header">
                     <h3 className="subject-title">{subject.subject_name}</h3>
@@ -1262,16 +976,18 @@ const CourseDetail: React.FC<{
                   )}
                   <div className="subject-stats">
                     <div className="stat-group">
-                      <i className="fas fa-graduation-cap me-1"></i>
-                      <span>{subject.credits} หน่วยกิต</span>
-                    </div>
-                    <div className="stat-group">
-                      <i className="fas fa-play-circle me-1"></i>
-                      <span>{subject.lesson_count || 0} บทเรียน</span>
-                    </div>
-                    <div className="stat-group">
-                      <i className="fas fa-question-circle me-1"></i>
-                      <span>{subject.quiz_count || 0} แบบทดสอบ</span>
+                      <div className="stat-item">
+                        <i className="fas fa-graduation-cap me-1"></i>
+                        <span>{subject.credits} หน่วยกิต</span>
+                      </div>
+                      <div className="stat-item">
+                        <i className="fas fa-play-circle me-1"></i>
+                        <span>{subject.lesson_count || 0} บทเรียน</span>
+                      </div>
+                      <div className="stat-item">
+                        <i className="fas fa-question-circle me-1"></i>
+                        <span>{subject.quiz_count || 0} แบบทดสอบ</span>
+                      </div>
                     </div>
                   </div>
                   {subject.instructors && subject.instructors.length > 0 && (
@@ -1296,8 +1012,16 @@ const CourseDetail: React.FC<{
                     </div>
                   )}
                 </div>
+                
                 <div className="subject-card-footer">
                   <div className="subject-actions">
+                    <button 
+                      className="action-btn view-btn"
+                      onClick={() => onSubjectSelect(subject)}
+                    >
+                      <i className="fas fa-eye me-1"></i>
+                      ดูรายละเอียด
+                    </button>
                     <Link
                       to={`/admin-subjects/edit/${subject.subject_id}`}
                       className="action-btn edit-btn"
@@ -1307,16 +1031,31 @@ const CourseDetail: React.FC<{
                       แก้ไข
                     </Link>
                     <button 
-                      className="action-btn view-btn"
-                      onClick={() => onSubjectSelect(subject)}
+                      className="action-btn delete-btn"
+                      onClick={() => handleDeleteSubject(subject.subject_id)}
                     >
-                      <i className="fas fa-eye me-1"></i>
-                      ดูรายละเอียด
+                      <i className="fas fa-trash me-1"></i>
+                      ลบ
                     </button>
                   </div>
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {filteredSubjects.length === 0 && !isLoading && (
+          <div className="no-subjects">
+            <div className="no-subjects-icon">
+              <i className="fas fa-graduation-cap"></i>
+            </div>
+            <h3>ไม่พบรายวิชา</h3>
+            <p>
+              {searchTerm 
+                ? 'ไม่พบรายวิชาที่ตรงกับเงื่อนไขการค้นหา' 
+                : 'ยังไม่มีรายวิชาในหลักสูตรนี้'
+              }
+            </p>
           </div>
         )}
       </div>
@@ -1395,9 +1134,11 @@ const SimplePagination: React.FC<PaginationProps> = ({ currentPage, totalPages, 
 // Main AdminCreditbankArea component
 const AdminCreditbankArea: React.FC = () => {
   const apiURL = import.meta.env.VITE_API_URL;
+  const navigate = useNavigate();
+  const location = useLocation();
   
   // State management
-  const [currentView, setCurrentView] = useState<'faculties' | 'departments' | 'courses' | 'subjects'>('faculties');
+  const [currentView, setCurrentView] = useState<'faculties' | 'departments' | 'courses' | 'subjects' | 'subject-detail'>('faculties');
   const [selectedFaculty, setSelectedFaculty] = useState<string | null>(null);
   const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
@@ -1419,10 +1160,50 @@ const AdminCreditbankArea: React.FC = () => {
   const [itemsPerPage] = useState(12);
   const [totalPages, setTotalPages] = useState(1);
 
+  const handleAddCourse = () => {
+    if (selectedDepartment) {
+      navigate(`/admin-creditbank/create-new?department_id=${selectedDepartment.department_id}`);
+    } else {
+      alert('เกิดข้อผิดพลาด: ไม่พบข้อมูลสาขาวิชา');
+    }
+  };
+
   // Load faculties on component mount
   useEffect(() => {
     fetchFaculties();
   }, []);
+
+  // Handle browser back/forward buttons
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      if (event.state) {
+        const { view, faculty, department, course, subject } = event.state;
+        setCurrentView(view);
+        setSelectedFaculty(faculty);
+        setSelectedDepartment(department);
+        setSelectedCourse(course);
+        setSelectedSubject(subject);
+        
+        // Load appropriate data based on state
+        if (view === 'departments' && faculty) {
+          fetchDepartmentsByFaculty(faculty);
+               } else if (view === 'courses' && department) {
+          fetchCoursesByDepartment(department.department_id);
+        }
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  // Update browser history when navigation changes
+  const updateBrowserHistory = (view: string, faculty: string | null, department: Department | null, course: Course | null, subject: Subject | null) => {
+    const state = { view, faculty, department, course, subject };
+    const url = `${location.pathname}?view=${view}${faculty ? `&faculty=${encodeURIComponent(faculty)}` : ''}${department ? `&department=${department.department_id}` : ''}${course ? `&course=${course.course_id}` : ''}${subject ? `&subject=${subject.subject_id}` : ''}`;
+    
+    window.history.pushState(state, '', url);
+  };
 
   // Handle search and pagination for courses
   useEffect(() => {
@@ -1469,7 +1250,7 @@ const AdminCreditbankArea: React.FC = () => {
               );
               return {
                 name: faculty,
-                                department_count: deptResponse.data.departments?.length || 0
+                department_count: deptResponse.data.departments?.length || 0
               };
             } catch (error) {
               console.error(`Error fetching departments for faculty ${faculty}:`, error);
@@ -1594,6 +1375,7 @@ const AdminCreditbankArea: React.FC = () => {
     setSelectedSubject(null);
     setCurrentView('departments');
     setSearchTerm('');
+    updateBrowserHistory('departments', faculty, null, null, null);
     fetchDepartmentsByFaculty(faculty);
   };
 
@@ -1603,6 +1385,7 @@ const AdminCreditbankArea: React.FC = () => {
     setSelectedSubject(null);
     setCurrentView('courses');
     setSearchTerm('');
+    updateBrowserHistory('courses', selectedFaculty, department, null, null);
     fetchCoursesByDepartment(department.department_id);
   };
 
@@ -1611,10 +1394,13 @@ const AdminCreditbankArea: React.FC = () => {
     setSelectedSubject(null);
     setCurrentView('subjects');
     setSearchTerm('');
+    updateBrowserHistory('subjects', selectedFaculty, selectedDepartment, course, null);
   };
 
   const handleSubjectSelect = (subject: Subject) => {
     setSelectedSubject(subject);
+    setCurrentView('subject-detail');
+    updateBrowserHistory('subject-detail', selectedFaculty, selectedDepartment, selectedCourse, subject);
   };
 
   const handleBackToFaculties = () => {
@@ -1624,6 +1410,7 @@ const AdminCreditbankArea: React.FC = () => {
     setSelectedCourse(null);
     setSelectedSubject(null);
     setSearchTerm('');
+    updateBrowserHistory('faculties', null, null, null, null);
   };
 
   const handleBackToDepartments = () => {
@@ -1632,6 +1419,7 @@ const AdminCreditbankArea: React.FC = () => {
     setSelectedCourse(null);
     setSelectedSubject(null);
     setSearchTerm('');
+    updateBrowserHistory('departments', selectedFaculty, null, null, null);
   };
 
   const handleBackToCourses = () => {
@@ -1639,10 +1427,32 @@ const AdminCreditbankArea: React.FC = () => {
     setSelectedCourse(null);
     setSelectedSubject(null);
     setSearchTerm('');
+    updateBrowserHistory('courses', selectedFaculty, selectedDepartment, null, null);
   };
 
   const handleBackToSubjects = () => {
     setSelectedSubject(null);
+    setCurrentView('subjects');
+    updateBrowserHistory('subjects', selectedFaculty, selectedDepartment, selectedCourse, null);
+  };
+
+  const handleCourseUpdate = (updatedCourse: Course) => {
+    setSelectedCourse(updatedCourse);
+    // Update courses list if the updated course is in the current list
+    setCourses(prevCourses => 
+      prevCourses.map(course => 
+        course.course_id === updatedCourse.course_id ? updatedCourse : course
+      )
+    );
+    setFilteredCourses(prevCourses => 
+      prevCourses.map(course => 
+        course.course_id === updatedCourse.course_id ? updatedCourse : course
+      )
+    );
+  };
+
+  const handleSubjectUpdate = (updatedSubject: Subject) => {
+    setSelectedSubject(updatedSubject);
   };
 
   // Pagination
@@ -1653,8 +1463,57 @@ const AdminCreditbankArea: React.FC = () => {
   const handlePageChange = (pageNumber: number) => {
     if (pageNumber >= 1 && pageNumber <= totalPages) {
       setCurrentPage(pageNumber);
+      // Scroll to top when changing pages
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // ESC key to go back
+      if (event.key === 'Escape') {
+        if (selectedSubject) {
+          handleBackToSubjects();
+        } else if (currentView === 'subjects') {
+          handleBackToCourses();
+        } else if (currentView === 'courses') {
+          handleBackToDepartments();
+        } else if (currentView === 'departments') {
+          handleBackToFaculties();
+        }
+      }
+      
+      // Ctrl/Cmd + F to focus search
+      if ((event.ctrlKey || event.metaKey) && event.key === 'f' && (currentView === 'courses' || currentView === 'subjects')) {
+        event.preventDefault();
+        const searchInput = document.querySelector('.search-input') as HTMLInputElement;
+        if (searchInput) {
+          searchInput.focus();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [currentView, selectedSubject]);
+
+  // Auto-save search term to localStorage
+  useEffect(() => {
+    if (searchTerm) {
+      localStorage.setItem(`search_${currentView}`, searchTerm);
+    } else {
+      localStorage.removeItem(`search_${currentView}`);
+    }
+  }, [searchTerm, currentView]);
+
+  // Load saved search term
+  useEffect(() => {
+    const savedSearch = localStorage.getItem(`search_${currentView}`);
+    if (savedSearch && currentView === 'courses') {
+      setSearchTerm(savedSearch);
+    }
+  }, [currentView]);
 
   return (
     <section className="dashboard__area section-pb-120">
@@ -1680,24 +1539,54 @@ const AdminCreditbankArea: React.FC = () => {
 
                 {/* Error Display */}
                 {error && (
-                  <div className="alert alert-danger rounded-3 mb-4">
-                    <i className="fas fa-exclamation-circle me-2"></i>
-                    {error}
+                  <div className="alert alert-danger rounded-3 mb-4" role="alert">
+                    <div className="d-flex align-items-center">
+                      <i className="fas fa-exclamation-circle me-2"></i>
+                      <div className="flex-grow-1">
+                        {error}
+                      </div>
+                      <button 
+                        type="button" 
+                        className="btn-close" 
+                        aria-label="Close"
+                        onClick={() => setError(null)}
+                      ></button>
+                    </div>
                   </div>
                 )}
 
-                {/* Content based on current view */}
-                {selectedSubject ? (
-                  <SubjectDetail
-                    subject={selectedSubject}
-                    course={selectedCourse!}
+                {/* Success Message */}
+                {location.state?.message && (
+                  <div className="alert alert-success rounded-3 mb-4" role="alert">
+                    <div className="d-flex align-items-center">
+                      <i className="fas fa-check-circle me-2"></i>
+                      <div className="flex-grow-1">
+                        {location.state.message}
+                      </div>
+                      <button 
+                        type="button" 
+                        className="btn-close" 
+                        aria-label="Close"
+                        onClick={() => navigate(location.pathname, { replace: true })}
+                      ></button>
+                    </div>
+                  </div>
+                )}
+
+                                {/* Content based on current view */}
+                {currentView === 'subject-detail' && selectedSubject && selectedCourse ? (
+                  <AdminSubjectArea 
+                    subjectId={selectedSubject.subject_id}
+                    courseData={selectedCourse}
+                    onSubjectUpdate={handleSubjectUpdate}
                     onBack={handleBackToSubjects}
                   />
                 ) : currentView === 'subjects' && selectedCourse ? (
-                  <CourseDetail
+                  <EditableCourseDetail
                     course={selectedCourse}
                     onBack={handleBackToCourses}
                     onSubjectSelect={handleSubjectSelect}
+                    onCourseUpdate={handleCourseUpdate}
                   />
                 ) : currentView === 'courses' && selectedDepartment ? (
                   <CourseList
@@ -1706,6 +1595,7 @@ const AdminCreditbankArea: React.FC = () => {
                     searchTerm={searchTerm}
                     onSearchChange={setSearchTerm}
                     onCourseSelect={handleCourseSelect}
+                    onAddCourse={handleAddCourse}
                     selectedDepartment={selectedDepartment}
                     currentPage={currentPage}
                     totalPages={totalPages}
@@ -1726,6 +1616,33 @@ const AdminCreditbankArea: React.FC = () => {
                     onSelectFaculty={handleFacultySelect}
                   />
                 )}
+
+                {/* Loading Overlay */}
+                {isLoading && (
+                  <div className="loading-overlay">
+                    <div className="loading-spinner-overlay">
+                      <div className="spinner-border text-primary" role="status">
+                        <span className="visually-hidden">กำลังโหลด...</span>
+                      </div>
+                      <p className="loading-text-overlay">กำลังโหลดข้อมูล...</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Keyboard Shortcuts Help */}
+                <div className="keyboard-shortcuts-help">
+
+                  <div className="collapse" id="keyboardShortcuts">
+                    <div className="shortcuts-content">
+                      <h6>คีย์บอร์ดลัด</h6>
+                      <ul>
+                        <li><kbd>Esc</kbd> - ย้อนกลับ</li>
+                        <li><kbd>Ctrl</kbd> + <kbd>F</kbd> - ค้นหา</li>
+                        <li><kbd>←</kbd> <kbd>→</kbd> - เปลี่ยนหน้า</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -1736,5 +1653,3 @@ const AdminCreditbankArea: React.FC = () => {
 };
 
 export default AdminCreditbankArea;
-
-
