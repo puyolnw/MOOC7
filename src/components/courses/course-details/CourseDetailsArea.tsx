@@ -15,8 +15,6 @@ const CourseDetailsArea = ({ single_course, onEnroll }: CourseDetailsAreaProps) 
   const [activeTab, setActiveTab] = useState(0);
 
   // Debug logging
-  console.log('CourseDetailsArea: single_course:', single_course);
-  console.log('CourseDetailsArea: single_course.id:', single_course?.id);
 
   const handleTabClick = (index: number) => {
     setActiveTab(index);

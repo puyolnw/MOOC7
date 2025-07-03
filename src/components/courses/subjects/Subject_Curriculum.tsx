@@ -67,7 +67,7 @@ const Curriculum = ({ lessons, subjectId }: CurriculumProps) => {
               id: 1,
               lesson_id: lesson.lesson_id,
               title: `${lesson.order_number}.2 แบบทดสอบท้ายบท`,
-              lock: !progressResponse.data.progress?.video_completed,
+              lock: false,
               completed: progressResponse.data.progress?.quiz_completed || false,
               type: 'quiz',
               duration: progressResponse.data.progress?.quiz_completed ? "100%" : "0%",
@@ -86,7 +86,7 @@ const Curriculum = ({ lessons, subjectId }: CurriculumProps) => {
 
         setLessonData(sections);
 
-        // Fetch overall subject progress
+        // Fetch overall subject progress (ใช้ progressPercentage จาก backend เสมอ)
         const subjectResponse = await axios.get(
           `${apiURL}/api/learn/subject/${subjectId}/progress`,
           {
@@ -95,8 +95,8 @@ const Curriculum = ({ lessons, subjectId }: CurriculumProps) => {
         );
 
         if (subjectResponse.data.success) {
-          setProgress(subjectResponse.data.progressPercentage);
-          setCompletedCount(subjectResponse.data.completedLessons);
+          setProgress(subjectResponse.data.progressPercentage ?? 0);
+          setCompletedCount(subjectResponse.data.completedLessons ?? 0);
         }
 
       } catch (error) {

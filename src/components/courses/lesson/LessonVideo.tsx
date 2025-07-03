@@ -38,17 +38,17 @@ const LessonVideo = ({
 
   // บันทึกความก้าวหน้าการดูวิดีโอ
   const saveVideoProgress = async (position: number, duration: number) => {
-    console.log("NEW POSITION", position)
-    console.log("NEW DURATION", duration)
+    // console.log("NEW POSITION", position)
+    // console.log("NEW DURATION", duration)
     try {
       // ถ้าเคย complete แล้ว และไม่ได้อยู่ใกล้จุดจบ ไม่ต้องส่ง API อีก
       if (hasCompletedRef.current && position < duration * 0.9) {
-        console.log("Video already completed, not sending progress update");
-        console.log("TEST COMPLETE VIDEO")
+        // console.log("Video already completed, not sending progress update");
+        // console.log("TEST COMPLETE VIDEO")
         return;
       }
       
-      console.log(`บันทึกความก้าวหน้า: ${position.toFixed(2)}/${duration.toFixed(2)} (${(position/duration*100).toFixed(2)}%)`);
+      // console.log(`บันทึกความก้าวหน้า: ${position.toFixed(2)}/${duration.toFixed(2)} (${(position/duration*100).toFixed(2)}%)`);
       
       // บันทึกตำแหน่งล่าสุดที่บันทึก
       lastSavedPositionRef.current = position;
@@ -67,10 +67,33 @@ const LessonVideo = ({
       if (response.data.success) {
         // ถ้าตำแหน่งปัจจุบันมากกว่า 90% ของวิดีโอ ให้ถือว่าดูจบแล้ว
         if (position >= duration * 0.9 && !hasCompletedRef.current) {
-          console.log("วิดีโอดูจบแล้ว (>90%)");
+          // console.log("วิดีโอดูจบแล้ว (>90%)");
           setIsCompleted(true);
           setShowCompletionModal(true);
           hasCompletedRef.current = true;
+          
+          // อัปเดต subject progress
+          try {
+            const subjectResponse = await axios.get(
+              `${API_URL}/api/learn/lesson/${lessonId}/subject`,
+              {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+              }
+            );
+            
+            if (subjectResponse.data.success && subjectResponse.data.subject_id) {
+              await axios.post(
+                `${API_URL}/api/subjects/${subjectResponse.data.subject_id}/update-progress`,
+                {},
+                {
+                  headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+                }
+              );
+            }
+          } catch (error) {
+            console.error("Error updating subject progress:", error);
+          }
+          
           onComplete();
         }
       }
@@ -94,11 +117,11 @@ const LessonVideo = ({
       if (response.data.success && response.data.progress) {
         const { last_position_seconds, duration_seconds, video_completed } = response.data.progress;
         
-        console.log("ข้อมูลความก้าวหน้า:", {
-          last_position_seconds,
-          duration_seconds,
-          video_completed
-        });
+        // console.log("ข้อมูลความก้าวหน้า:", {
+        //   last_position_seconds,
+        //   duration_seconds,
+        //   video_completed
+        // });
 
         // ตั้งค่าตำแหน่งล่าสุดที่บันทึก
         if (last_position_seconds) {
@@ -112,13 +135,13 @@ const LessonVideo = ({
 
         // ถ้าวิดีโอดูจบแล้ว
         if (video_completed && !hasCompletedRef.current) {
-          console.log("วิดีโอนี้ดูจบแล้ว (จากข้อมูลในฐานข้อมูล) และยังไม่เคย complete");
+          // console.log("วิดีโอนี้ดูจบแล้ว (จากข้อมูลในฐานข้อมูล) และยังไม่เคย complete");
           setIsCompleted(true);
           hasCompletedRef.current = true;
           onComplete();
         } else if (last_position_seconds && duration_seconds) {
           const progressPercentage = (last_position_seconds / duration_seconds) * 100;
-          console.log("Progress from API:", progressPercentage);
+          // console.log("Progress from API:", progressPercentage);
           if (progressPercentage >= 90 && !hasCompletedRef.current) {
             setIsCompleted(true);
             hasCompletedRef.current = true;
@@ -162,7 +185,7 @@ const LessonVideo = ({
 
   // เมื่อ lessonId เปลี่ยน
   useEffect(() => {
-    console.log(`โหลดวิดีโอบทเรียน ID: ${lessonId}`);
+    // console.log(`โหลดวิดีโอบทเรียน ID: ${lessonId}`);
     
     const loadProgress = async () => {
       // รีเซ็ต refs และ state เมื่อ lessonId เปลี่ยน
@@ -171,7 +194,7 @@ const LessonVideo = ({
       setProgress(0);
       setShowCompletionModal(false);
       setIsCompleted(false);
-      console.log("After reset - lastSavedPositionRef:", lastSavedPositionRef.current);
+      // console.log("After reset - lastSavedPositionRef:", lastSavedPositionRef.current);
       
       // ดึงความก้าวหน้าก่อน
       await fetchVideoProgress();
@@ -186,13 +209,13 @@ const LessonVideo = ({
   }, [lessonId, youtubeId]);
 
   useEffect(() => {
-    console.log("isCompleted state updated to:", isCompleted);
+    // console.log("isCompleted state updated to:", isCompleted);
   }, [isCompleted]);
 
   // สร้าง player เมื่อ component โหลดหรือ lessonId เปลี่ยน
   useEffect(() => {
     if (containerRef.current && !isLoading) {
-      console.log(`กำลังสร้าง player สำหรับวิดีโอ YouTube ID: ${youtubeId}`);
+      // console.log(`กำลังสร้าง player สำหรับวิดีโอ YouTube ID: ${youtubeId}`);
       
       // ลบ player เดิมถ้ามี
       while (containerRef.current.firstChild) {
@@ -212,24 +235,24 @@ const LessonVideo = ({
       containerRef.current.appendChild(videoDiv);
 
       playerRef.current = new Plyr(videoDiv, {
-        controls: ['play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'fullscreen']
+        controls: ['play-large', 'play', 'current-time', 'mute', 'volume', 'fullscreen']
       });
 
       // เมื่อ player พร้อม
       playerRef.current.on('ready', () => {
-        console.log("Player พร้อมแล้ว");
+        // console.log("Player พร้อมแล้ว");
         
         // ตรวจสอบ duration จริงหลังจาก player พร้อม
         const checkDuration = setInterval(() => {
           if (playerRef.current?.duration && playerRef.current.duration > 0) {
-            console.log(`Duration ของวิดีโอ: ${playerRef.current.duration} วินาที`);
+            // console.log(`Duration ของวิดีโอ: ${playerRef.current.duration} วินาที`);
   
             clearInterval(checkDuration);
             
             // ตั้งค่าตำแหน่งเริ่มต้นของวิดีโอ
             if (lastSavedPositionRef.current > 0 && playerRef.current) {
               playerRef.current.currentTime = lastSavedPositionRef.current;
-              console.log(`ตั้งค่าตำแหน่งเริ่มต้นที่: ${playerRef.current.currentTime} วินาที`);
+              // console.log(`ตั้งค่าตำแหน่งเริ่มต้นที่: ${playerRef.current.currentTime} วินาที`);
             }
           }
         }, 500);
@@ -247,7 +270,7 @@ const LessonVideo = ({
           
           // เมื่อถึง 90% และยังไม่เคย complete
           if (currentProgress >= 90 && !hasCompletedRef.current) {
-            console.log("วิดีโอดูถึง 90% แล้ว - ถือว่าดูจบ");
+            // console.log("วิดีโอดูถึง 90% แล้ว - ถือว่าดูจบ");
             setIsCompleted(true);
             setShowCompletionModal(true);
             hasCompletedRef.current = true;
@@ -264,7 +287,7 @@ const LessonVideo = ({
       // เมื่อหยุดวิดีโอชั่วคราว
       playerRef.current.on('pause', () => {
         if (playerRef.current) {
-          console.log("วิดีโอถูกหยุดชั่วคราว - บันทึกความก้าวหน้า");
+          // console.log("วิดีโอถูกหยุดชั่วคราว - บันทึกความก้าวหน้า");
           saveVideoProgress(playerRef.current.currentTime, playerRef.current.duration);
         }
       });
@@ -272,7 +295,7 @@ const LessonVideo = ({
       // เมื่อมีการเลื่อนตำแหน่งวิดีโอ
       playerRef.current.on('seeked', () => {
         if (playerRef.current) {
-          console.log("มีการเลื่อนตำแหน่งวิดีโอ - บันทึกความก้าวหน้า");
+          // console.log("มีการเลื่อนตำแหน่งวิดีโอ - บันทึกความก้าวหน้า");
           saveVideoProgress(playerRef.current.currentTime, playerRef.current.duration);
         }
       });
@@ -280,7 +303,7 @@ const LessonVideo = ({
       // เมื่อวิดีโอจบ
       playerRef.current.on('ended', () => {
         if (playerRef.current) {
-          console.log("วิดีโอจบแล้ว - บันทึกความก้าวหน้าและแสดง modal");
+          // console.log("วิดีโอจบแล้ว - บันทึกความก้าวหน้าและแสดง modal");
           
           // บันทึกความก้าวหน้า - ใช้ duration เป็นทั้ง position และ duration
           saveVideoProgress(playerRef.current.duration, playerRef.current.duration);
@@ -372,7 +395,7 @@ const LessonVideo = ({
 
       {/* ปุ่มควบคุมเพิ่มเติม */}
       {isCompleted && (
-        <div className="video-additional-controls">
+        <div className="video-additional-controls mt-0 p-3 bg-white shadow-sm rounded-bottom">
           <button 
             className="btn-rewatch-inline" 
             onClick={handleRewatch}

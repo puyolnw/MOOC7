@@ -72,7 +72,7 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
     selectedAttemptId,
     onClose,
     onGraded,
-
+    onOpenGrading,
 }) => {
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
@@ -281,6 +281,10 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
 
     // ฟังก์ชันบันทึกการให้คะแนน
     const handleSaveGrading = async () => {
+        if (!selectedAttemptId) {
+            toast.error("ไม่พบ attempt ที่ต้องการให้คะแนน");
+            return;
+        }
         try {
             setIsSaving(true);
 
@@ -313,6 +317,16 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
                 if (onGraded && selectedAttemptId !== null && selectedAttemptId !== undefined) {
                     const passed = response.data.attempt.passed;
                     onGraded(selectedAttemptId, passed);
+                }
+
+                // === Trigger refresh progress for student ===
+                // ใช้ selectedSubjectId (state) แทน
+                if (selectedSubjectId) {
+                    try {
+                        await axios.get(`${apiURL}/api/learn/subject/${selectedSubjectId}/progress`, {
+                            headers: { Authorization: `Bearer ${token}` },
+                        });
+                    } catch (e) { /* ignore */ }
                 }
 
                 if (onClose) {
@@ -815,7 +829,13 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
                                         <div className="card-footer bg-transparent">
                                             <button
                                                 className="btn btn-primary w-100"
-                                                onClick={() => handleSelectAttempt(attempt.attempt_id)}
+                                                onClick={() => {
+                                                    if (onOpenGrading) {
+                                                        onOpenGrading(attempt.attempt_id);
+                                                    } else {
+                                                        handleSelectAttempt(attempt.attempt_id);
+                                                    }
+                                                }}
                                             >
                                                 <i className="fas fa-edit me-2"></i>
                                                 ตรวจแบบทดสอบ
