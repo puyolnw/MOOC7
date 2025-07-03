@@ -12,6 +12,7 @@ interface LessonQuizProps {
     quizData?: any[];
     onNextLesson?: () => void;
     lessonId: number;
+    onRefreshProgress?: () => void;
 }
 
 // Define different question types
@@ -65,6 +66,21 @@ interface PassedQuizResult {
     completedAt: string;
 }
 
+// เพิ่มฟังก์ชันแปลงข้อมูล question จาก backend ให้ตรงกับ frontend
+function mapBackendQuestions(backendQuestions: any[]): Question[] {
+    return backendQuestions.map(q => ({
+        question_id: q.question_id,
+        title: q.question_text || q.title || "",
+        type: q.question_type || q.type,
+        score: q.points || q.score || 1,
+        choices: (q.options || q.choices || []).map((c: any) => ({
+            choice_id: c.option_id ?? c.choice_id,
+            text: c.option_text ?? c.text,
+            is_correct: c.is_correct,
+        })),
+    }));
+}
+
 const LessonQuiz = ({
     onComplete,
     isCompleted = false,
@@ -72,6 +88,7 @@ const LessonQuiz = ({
     quizData = [],
     onNextLesson,
     lessonId,
+    onRefreshProgress,
 }: LessonQuizProps) => {
     const [currentQuestion, setCurrentQuestion] = useState(0);
     const [showResult, setShowResult] = useState(false);
@@ -84,6 +101,7 @@ const LessonQuiz = ({
     const [isAwaitingReview, setIsAwaitingReview] = useState(false);
     const [previousAttempts, setPreviousAttempts] = useState<Attempt[]>([]);
     const [uploadedAttachments, setUploadedAttachments] = useState<Attachment[]>([]);
+    const [hasCompleted, setHasCompleted] = useState(false);
 
     // For single choice questions (SC, TF)
     const [selectedSingleAnswers, setSelectedSingleAnswers] = useState<number[]>([]);
@@ -108,8 +126,16 @@ const LessonQuiz = ({
         return hasFillInBlank;
     };
 
+    // ป้องกัน onComplete ถูกเรียกซ้ำ
+    const safeOnComplete = () => {
+        if (!hasCompleted) {
+            setHasCompleted(true);
+            onComplete();
+        }
+    };
+
     // เพิ่มฟังก์ชันสำหรับดึงข้อมูลสถานะแบบทดสอบ
-    const fetchQuizStatus = async () => {
+    const fetchQuizStatus = async (cancelled = false) => {
         try {
             const response = await axios.get(
                 `${API_URL}/api/learn/quiz/${quizId}/status`,
@@ -119,14 +145,11 @@ const LessonQuiz = ({
                     },
                 }
             );
-
-            if (response.data.success) {
-                console.log("fetchQuizStatus", response.data);
-
+            if (response.data.success && !cancelled) {
                 if (response.data.status === "awaiting_review") {
                     setIsAwaitingReview(true);
                     setShowResult(true);
-                    onComplete(); // แจ้งว่าแบบทดสอบนี้เสร็จสิ้นแล้ว (รอตรวจ)
+                    safeOnComplete();
                 }
             }
         } catch (error) {
@@ -135,7 +158,7 @@ const LessonQuiz = ({
     };
 
     // เพิ่มฟังก์ชันสำหรับดึงข้อมูลแบบทดสอบที่ผ่านแล้ว
-    const fetchPassedQuizResults = async () => {
+    const fetchPassedQuizResults = async (cancelled = false) => {
         try {
             const response = await axios.get(
                 `${API_URL}/api/learn/quiz-results/passed`,
@@ -145,29 +168,21 @@ const LessonQuiz = ({
                     },
                 }
             );
-
-            if (response.data.success) {
-                console.log("fetchPassedQuizResults", response.data);
-
-                // ตรวจสอบว่าแบบทดสอบปัจจุบันอยู่ในรายการที่ผ่านแล้วหรือไม่
+            if (response.data.success && !cancelled) {
                 const currentQuizPassed = response.data.results.some(
                     (result: PassedQuizResult) =>
                         result.quizId === quizId && result.passed
                 );
-
                 if (currentQuizPassed) {
                     const currentResult = response.data.results.find(
                         (result: PassedQuizResult) => result.quizId === quizId
                     );
-
                     if (currentResult) {
                         setScore(currentResult.score);
                         setMaxScore(currentResult.maxScore);
                         setIsPassed(true);
                         setShowResult(true);
-
-                        // ถ้าเคยผ่านแล้ว ให้เรียก onComplete เพื่อบอกว่าแบบทดสอบนี้เสร็จสิ้นแล้ว
-                        onComplete();
+                        safeOnComplete();
                     }
                 }
             }
@@ -176,131 +191,160 @@ const LessonQuiz = ({
         }
     };
 
-    // โหลดข้อมูลแบบทดสอบเมื่อ quizId เปลี่ยน
-    useEffect(() => {
-        const fetchQuizData = async () => {
-            if (quizId <= 0) {
-                setLoading(false);
+    // เพิ่มฟังก์ชันสำหรับดึงคะแนน special quiz
+    const fetchSpecialQuizScore = async (attemptId: number) => {
+        try {
+            const response = await axios.get(
+                `${API_URL}/api/special-quiz/attempt/${attemptId}`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem("token")}`,
+                    },
+                }
+            );
+            if (response.data.success && response.data.attempt) {
+                return response.data.attempt;
+            }
+        } catch (error) {
+            console.error("Error fetching special quiz score:", error);
+        }
+        return null;
+    };
+
+    // ย้าย fetchQuizData ออกมานอก useEffect
+    const fetchQuizData = async (cancelled = false) => {
+        if (quizId <= 0) {
+            setLoading(false);
+            return;
+        }
+        try {
+            setLoading(true);
+            await fetchPassedQuizResults(cancelled);
+            await fetchQuizStatus(cancelled);
+            if (quizData && quizData.length > 0) {
+                const formattedQuestions = mapBackendQuestions(quizData);
+                if (!cancelled) {
+                    setQuestions(formattedQuestions);
+                    checkIfSpecialQuiz(formattedQuestions);
+                    setLoading(false);
+                }
                 return;
             }
-
+            const response = await axios.get(
+                `${API_URL}/api/courses/quizzes/${quizId}`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem("token")}`,
+                    },
+                }
+            );
+            if (response.data.success && response.data.quiz && !cancelled) {
+                const mappedQuestions = mapBackendQuestions(response.data.quiz.questions);
+                setQuestions(mappedQuestions);
+                checkIfSpecialQuiz(mappedQuestions);
+                if (response.data.quiz.status === "awaiting_review") {
+                    setIsAwaitingReview(true);
+                    setShowResult(true);
+                }
+            }
             try {
-                setLoading(true);
-
-                // ดึงข้อมูลแบบทดสอบที่ผ่านแล้ว
-                await fetchPassedQuizResults();
-
-                // ดึงข้อมูลสถานะแบบทดสอบ (รอตรวจหรือไม่)
-                await fetchQuizStatus();
-
-                // ถ้ามีข้อมูล quizData ที่ส่งมาจาก props ให้ใช้ข้อมูลนั้น
-                if (quizData && quizData.length > 0) {
-                    const formattedQuestions = quizData.map((q: any) => ({
-                        question_id: q.question_id,
-                        title: q.question_text || q.title,
-                        type: q.type,
-                        score: q.score || 1,
-                        choices: q.choices || [],
-                    }));
-
-                    setQuestions(formattedQuestions);
-                    
-                    // ตรวจสอบว่าเป็น Special Quiz หรือไม่
-                    checkIfSpecialQuiz(formattedQuestions);
-
-                    setLoading(false);
-                    return;
-                }
-
-                // ถ้าไม่มีข้อมูลจาก props ให้ดึงข้อมูลจาก API
-                const response = await axios.get(
-                    `${API_URL}/api/courses/quizzes/${quizId}`,
-                    {
-                        headers: {
-                            Authorization: `Bearer ${localStorage.getItem("token")}`,
-                        },
-                    }
-                );
-
-                if (response.data.success && response.data.quiz) {
-                    setQuestions(response.data.quiz.questions);
-
-                    // ตรวจสอบว่าเป็น Special Quiz หรือไม่
-                    checkIfSpecialQuiz(response.data.quiz.questions);
-
-                    if (response.data.quiz.status === "awaiting_review") {
-                        setIsAwaitingReview(true);
-                        setShowResult(true);
-                    }
-                }
-
-                // ดึงข้อมูลการส่งครั้งก่อนหน้า
                 const attemptsResponse = await axios.get(
-                    `${API_URL}/api/learn/quizzes/${quizId}/attempts`,
+                    `${API_URL}/api/courses/quizzes/${quizId}/attempts`,
                     {
                         headers: {
                             Authorization: `Bearer ${localStorage.getItem("token")}`,
                         },
                     }
                 );
-
-                if (attemptsResponse.data.success && attemptsResponse.data.attempts) {
+                if (attemptsResponse.data.success && attemptsResponse.data.attempts && !cancelled) {
                     setPreviousAttempts(attemptsResponse.data.attempts);
-
                     const latestAttempt = attemptsResponse.data.attempts[0];
                     if (latestAttempt) {
                         setScore(latestAttempt.score);
                         setMaxScore(latestAttempt.max_score);
                         setIsPassed(latestAttempt.passed);
-
-                        // ตรวจสอบสถานะ awaiting_review อย่างชัดเจน
                         if (latestAttempt.status === "awaiting_review") {
                             setIsAwaitingReview(true);
                             setShowResult(true);
-                            onComplete(); // แจ้งว่าแบบทดสอบนี้เสร็จสิ้นแล้ว (รอตรวจ)
+                            safeOnComplete();
                         } else {
                             setShowResult(true);
                         }
-
-                        if (latestAttempt.answers.some((ans: Answer) => ans.attachments && ans.attachments.length > 0)) {
+                        if (latestAttempt.answers && latestAttempt.answers.some((ans: Answer) => ans.attachments && ans.attachments.length > 0)) {
                             setUploadedAttachments(
                                 latestAttempt.answers.flatMap((ans: Answer) => ans.attachments || [])
                             );
                         }
                     }
                 }
-
-                // ตรวจสอบสถานะจาก lesson_progress ด้วย
-                const lessonResponse = await axios.get(
-                    `${API_URL}/api/learn/lesson/${quizId}/progress`,
-                    {
-                        headers: {
-                            Authorization: `Bearer ${localStorage.getItem("token")}`,
-                        },
-                    }
-                );
-
-                if (lessonResponse.data.success && lessonResponse.data.progress) {
-                    if (lessonResponse.data.progress.quiz_awaiting_review) {
-                        setIsAwaitingReview(true);
-                        setShowResult(true);
-                        onComplete(); // แจ้งว่าแบบทดสอบนี้เสร็จสิ้นแล้ว (รอตรวจ)
-                    }
-                }
             } catch (error) {
-                console.error("Error fetching quiz data:", error);
-            } finally {
-                setLoading(false);
+                if (axios.isAxiosError(error) && error.response?.status === 404) {
+                    setPreviousAttempts([]);
+                } else {
+                    console.error("Error fetching quiz data:", error);
+                }
             }
-        };
+            const lessonResponse = await axios.get(
+                `${API_URL}/api/learn/lesson/${quizId}/progress`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem("token")}`,
+                    },
+                }
+            );
+            if (lessonResponse.data.success && lessonResponse.data.progress && !cancelled) {
+                if (lessonResponse.data.progress.quiz_awaiting_review) {
+                    setIsAwaitingReview(true);
+                    setShowResult(true);
+                    safeOnComplete();
+                }
+            }
+            if (isSpecialQuiz && previousAttempts.length > 0) {
+                const latestSpecial = previousAttempts.find(a => a.status === "completed" && a.score != null);
+                if (latestSpecial) {
+                    fetchSpecialQuizScore(latestSpecial.attempt_id).then((specialAttempt) => {
+                        if (specialAttempt) {
+                            setScore(specialAttempt.score);
+                            setMaxScore(specialAttempt.max_score);
+                            setIsPassed(specialAttempt.passed);
+                            setShowResult(true);
+                            setIsAwaitingReview(false);
+                        }
+                    });
+                }
+            }
+        } catch (error) {
+            if (axios.isAxiosError(error) && error.response?.status === 404) {
+                setPreviousAttempts([]);
+            } else {
+                console.error("Error fetching quiz data:", error);
+            }
+        } finally {
+            if (!cancelled) setLoading(false);
+        }
+    };
 
-        fetchQuizData();
-
-        if (isCompleted) {
+    // ใน useEffect หลัก เปลี่ยนจาก fetchQuizData() เป็น fetchQuizData(cancelled)
+    useEffect(() => {
+        let cancelled = false;
+        fetchQuizData(cancelled);
+        if (isCompleted && !hasCompleted) {
             setIsPassed(true);
             setShowResult(true);
+            setHasCompleted(true);
         }
-    }, [quizId, quizData, isCompleted]);
+        return () => { cancelled = true; };
+    }, [quizId]);
+
+    // เพิ่ม useEffect สำหรับ auto refresh
+    useEffect(() => {
+        if (isSpecialQuiz && isAwaitingReview) {
+            const interval = setInterval(() => {
+                fetchQuizData();
+            }, 10000); // 10 วินาที
+            return () => clearInterval(interval);
+        }
+    }, [isSpecialQuiz, isAwaitingReview]);
 
     // Handle single choice answer selection (SC, TF)
     const handleSingleAnswerSelect = (answerIndex: number) => {
@@ -445,10 +489,6 @@ const LessonQuiz = ({
             formData.append("startTime", new Date().toISOString());
             formData.append("endTime", new Date().toISOString());
 
-            // ดูข้อมูลที่จะส่ง (เพื่อการดีบัก)
-            console.log("isSpecialQuiz:", isSpecialQuiz);
-            console.log("grouped_files_question_ids:", grouped_files_question_ids);
-
             const response = await axios.post(
                 `${API_URL}/api/learn/quiz/${quizId}/submit`,
                 formData,
@@ -480,9 +520,59 @@ const LessonQuiz = ({
                 // ถ้าเป็น Special Quiz (มี FB) ให้รอตรวจเสมอ
                 if (isSpecialQuiz || result.isSpecialQuiz) {
                     setIsAwaitingReview(true);
-                    onComplete(); // แจ้งว่าส่งแล้ว รอตรวจ
+                    
+                    // อัปเดต subject progress แม้จะรอตรวจ
+                    try {
+                        const subjectResponse = await axios.get(
+                            `${API_URL}/api/learn/lesson/${lessonId}/subject`,
+                            {
+                                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+                            }
+                        );
+                        
+                        if (subjectResponse.data.success && subjectResponse.data.subject_id) {
+                            await axios.post(
+                                `${API_URL}/api/subjects/${subjectResponse.data.subject_id}/update-progress`,
+                                {},
+                                {
+                                    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+                                }
+                            );
+                        }
+                    } catch (error) {
+                        console.error("Error updating subject progress:", error);
+                    }
+                    
+                    safeOnComplete(); // แจ้งว่าส่งแล้ว รอตรวจ
                 } else if (result.passed) {
-                    onComplete(); // ผ่านแบบทดสอบปกติ
+                    // อัปเดต subject progress เมื่อผ่านแบบทดสอบ
+                    try {
+                        const subjectResponse = await axios.get(
+                            `${API_URL}/api/learn/lesson/${lessonId}/subject`,
+                            {
+                                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+                            }
+                        );
+                        
+                        if (subjectResponse.data.success && subjectResponse.data.subject_id) {
+                            await axios.post(
+                                `${API_URL}/api/subjects/${subjectResponse.data.subject_id}/update-progress`,
+                                {},
+                                {
+                                    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+                                }
+                            );
+                        }
+                    } catch (error) {
+                        console.error("Error updating subject progress:", error);
+                    }
+                    
+                    safeOnComplete(); // ผ่านแบบทดสอบปกติ
+                }
+
+                // เรียก onRefreshProgress ถ้ามี
+                if (typeof onRefreshProgress === 'function') {
+                    onRefreshProgress();
                 }
 
                 return result;
@@ -517,6 +607,7 @@ const LessonQuiz = ({
             if (result) {
                 setScore(result.totalScore || 0);
                 setIsPassed(result.passed);
+                setShowResult(true); // แสดงผลลัพธ์เสมอ
 
                 // ถ้าเป็น Special Quiz (มี FB) ให้รอตรวจเสมอ
                 if (isSpecialQuiz || result.isSpecialQuiz) {
@@ -570,14 +661,13 @@ const LessonQuiz = ({
                     setMaxScore(maxScore);
                     setScore(newScore);
                     setIsPassed(percentage >= PASSING_PERCENTAGE);
+                    setShowResult(true); // แสดงผลลัพธ์เสมอ
 
                     if (percentage >= PASSING_PERCENTAGE) {
-                        onComplete();
+                        safeOnComplete();
                     }
                 }
             }
-
-            setShowResult(true);
         }
     };
 
@@ -589,7 +679,7 @@ const LessonQuiz = ({
 
     const handleFinish = () => {
         if (isPassed || isAwaitingReview) {
-            onComplete();
+            safeOnComplete();
             if (onNextLesson) {
                 onNextLesson();
             }
@@ -660,6 +750,39 @@ const LessonQuiz = ({
     }
 
     if (isAwaitingReview) {
+        // ถ้ามี attempt ล่าสุดและข้อกาไม่ผ่าน ให้แสดง 'ไม่ผ่าน' + ปุ่มทำใหม่
+        const latestAttempt = previousAttempts[0];
+        if (latestAttempt && latestAttempt.passed === false) {
+            return (
+                <div className="quiz-container">
+                    <div className="result-container">
+                        <div className="result card shadow-sm p-4 failed border-danger">
+                            <div className="icon-container mb-3">
+                                <span className="icon-circle bg-danger-light">
+                                    <i className="fas fa-times-circle text-danger fa-3x"></i>
+                                </span>
+                            </div>
+                            <h2 className="mb-4 fw-bold">คุณไม่ผ่านแบบทดสอบนี้</h2>
+                            <div className="score-info card mb-4">
+                                <div className="card-body">
+                                    <div className="score-item d-flex justify-content-between align-items-center mb-2">
+                                        <span>คะแนนของคุณ:</span>
+                                        <span className="score fw-bold">{latestAttempt.score} / {latestAttempt.max_score}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="d-grid gap-2 col-md-6 mx-auto">
+                                <button className="btn btn-primary btn-lg" onClick={resetQuiz}>
+                                    <i className="fas fa-redo me-2"></i>
+                                    เริ่มทำแบบทดสอบใหม่
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+        // กรณีปกติ (รอตรวจจริง)
         return (
             <div className="quiz-container">
                 <div className="result-container">
@@ -682,7 +805,7 @@ const LessonQuiz = ({
                             </p>
                         </div>
                         <div className="d-grid gap-2 col-md-6 mx-auto">
-                            <button className="btn btn-primary btn-lg" onClick={onComplete}>
+                            <button className="btn btn-primary btn-lg" onClick={safeOnComplete}>
                                 <i className="fas fa-arrow-left me-2"></i>
                                 กลับไปยังบทเรียน
                             </button>
@@ -694,8 +817,6 @@ const LessonQuiz = ({
     }
 
     if (showResult) {
-        const percentage = maxScore > 0 ? Math.round((score / maxScore) * 100) : 0;
-
         return (
             <div className="quiz-container">
                 <div className="result-container">
@@ -716,54 +837,34 @@ const LessonQuiz = ({
 
                         <div className="score-info card mb-4">
                             <div className="card-body">
-                                <div className="row align-items-center">
-                                    <div className="col-md-4 text-center mb-3 mb-md-0">
-                                        <div className="score-circle position-relative">
-                                            <svg viewBox="0 0 36 36" className="circular-chart">
-                                                <path
-                                                    className="circle-bg"
-                                                    d="M18 2.0845
-                          a 15.9155 15.9155 0 0 1 0 31.831
-                          a 15.9155 15.9155 0 0 1 0 -31.831"
-                                                />
-                                                <path
-                                                    className={`circle ${isPassed ? "stroke-success" : "stroke-danger"}`}
-                                                    strokeDasharray={`${percentage}, 100`}
-                                                                                                        d="M18 2.0845
-                          a 15.9155 15.9155 0 0 1 0 31.831
-                          a 15.9155 15.9155 0 0 1 0 -31.831"
-                                                />
-                                            </svg>
-                                            <div className="percentage-text">
-                                                <span className="percentage-value">{percentage}%</span>
-                                            </div>
+                                {score !== null && score !== undefined ? (
+                                    <div>
+                                        <div className="score-item d-flex justify-content-between align-items-center mb-2">
+                                            <span>คะแนนของคุณ:</span>
+                                            <span className="score fw-bold">{score} / {maxScore}</span>
+                                        </div>
+                                        <div className="score-item d-flex justify-content-between align-items-center mb-2">
+                                            <span>เกณฑ์ผ่าน:</span>
+                                            <span className="fw-bold">{PASSING_PERCENTAGE}%</span>
+                                        </div>
+                                        <div className="score-item d-flex justify-content-between align-items-center mb-2">
+                                            <span>ประเภทแบบทดสอบ:</span>
+                                            <span className={`badge ${isSpecialQuiz ? "bg-warning" : "bg-info"}`}>
+                                                {isSpecialQuiz ? "Special Quiz (มี Fill in Blank)" : "Normal Quiz"}
+                                            </span>
+                                        </div>
+                                        <div className="score-item d-flex justify-content-between align-items-center">
+                                            <span>สถานะ:</span>
+                                            <span className={`badge ${isPassed ? "bg-success" : "bg-danger"}`}>
+                                                {isPassed ? "ผ่าน" : "ไม่ผ่าน"}
+                                            </span>
                                         </div>
                                     </div>
-                                    <div className="col-md-8">
-                                        <div className="score-details">
-                                            <div className="score-item d-flex justify-content-between align-items-center mb-2">
-                                                <span>คะแนนของคุณ:</span>
-                                                <span className="score fw-bold">{score} / {maxScore}</span>
-                                            </div>
-                                            <div className="score-item d-flex justify-content-between align-items-center mb-2">
-                                                <span>เกณฑ์ผ่าน:</span>
-                                                <span className="fw-bold">{PASSING_PERCENTAGE}%</span>
-                                            </div>
-                                            <div className="score-item d-flex justify-content-between align-items-center mb-2">
-                                                <span>ประเภทแบบทดสอบ:</span>
-                                                <span className={`badge ${isSpecialQuiz ? "bg-warning" : "bg-info"}`}>
-                                                    {isSpecialQuiz ? "Special Quiz (มี Fill in Blank)" : "Normal Quiz"}
-                                                </span>
-                                            </div>
-                                            <div className="score-item d-flex justify-content-between align-items-center">
-                                                <span>สถานะ:</span>
-                                                <span className={`badge ${isPassed ? "bg-success" : "bg-danger"}`}>
-                                                    {isPassed ? "ผ่าน" : "ไม่ผ่าน"}
-                                                </span>
-                                            </div>
-                                        </div>
+                                ) : (
+                                    <div className="alert alert-warning mb-0">
+                                        คะแนนจะปรากฏหลังอาจารย์ตรวจเสร็จ
                                     </div>
-                                </div>
+                                )}
                             </div>
                         </div>
 
@@ -818,9 +919,11 @@ const LessonQuiz = ({
                                                                 <span className={`badge ${attempt.passed ? "bg-success" : "bg-danger"}`}>
                                                                     {attempt.passed ? "ผ่าน" : "ไม่ผ่าน"}
                                                                 </span>
-                                                                {attempt.status === "awaiting_review" && (
-                                                                    <span className="badge bg-warning">รอตรวจ</span>
-                                                                )}
+                                                                <span className="badge bg-secondary">
+                                                                    {attempt.status === "completed" && attempt.score !== null && attempt.score !== undefined
+                                                                        ? `${attempt.score} / ${attempt.max_score}`
+                                                                        : <span className="badge bg-warning">รอการตรวจ</span>}
+                                                                </span>
                                                             </div>
                                                         </div>
                                                     </button>
@@ -855,7 +958,7 @@ const LessonQuiz = ({
                                                                 </div>
                                                             </div>
 
-                                                            {attempt.answers.some((ans) => ans.attachments && ans.attachments.length > 0) && (
+                                                            {attempt.answers && attempt.answers.some((ans) => ans.attachments && ans.attachments.length > 0) && (
                                                                 <div className="attached-files mt-3">
                                                                     <h6 className="mb-3">
                                                                         <i className="fas fa-paperclip me-2"></i>
@@ -912,19 +1015,17 @@ const LessonQuiz = ({
                         )}
 
                         <div className="d-grid gap-2 col-md-6 mx-auto">
-                            <button className={`btn btn-lg ${isPassed ? "btn-success" : "btn-primary"}`} onClick={handleFinish}>
-                                {isPassed ? (
-                                    <>
-                                        <i className="fas fa-arrow-right me-2"></i>
-                                        ไปยังบทเรียนถัดไป
-                                    </>
-                                ) : (
-                                    <>
-                                        <i className="fas fa-redo me-2"></i>
-                                        ลองทำอีกครั้ง
-                                    </>
-                                )}
-                            </button>
+                            {isPassed ? (
+                                <button className="btn btn-success btn-lg" onClick={handleFinish}>
+                                    <i className="fas fa-arrow-right me-2"></i>
+                                    ไปยังบทเรียนถัดไป
+                                </button>
+                            ) : (
+                                <button className="btn btn-primary btn-lg" onClick={resetQuiz}>
+                                    <i className="fas fa-redo me-2"></i>
+                                    เริ่มทำแบบทดสอบใหม่
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -1161,6 +1262,14 @@ const LessonQuiz = ({
                     )}
                 </button>
             </div>
+
+            {/* ในหน้ารอตรวจ (isAwaitingReview) */}
+            {isAwaitingReview && (
+                <button className="btn btn-secondary mt-3" onClick={() => fetchQuizData()}>
+                    <i className="fas fa-sync-alt me-2"></i>
+                    รีเฟรชผลตรวจ
+                </button>
+            )}
         </div>
     );
 };

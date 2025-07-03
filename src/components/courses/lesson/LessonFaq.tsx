@@ -92,21 +92,27 @@ const LessonFaq = ({
 
   // ฟังก์ชันเช็คว่าควรล็อคบทเรียนหรือไม่
   const shouldLockLesson = (sectionIndex: number, itemIndex: number) => {
+    // ถ้าไม่มี pre-test ให้เรียนได้เลย
+    const hasPreTest = subjectQuizzes.some(q => q.type === "pre_test");
+    if (!hasPreTest) {
+      if (sectionIndex === 0 && itemIndex === 0) {
+        return false;
+      }
+      return !isPreviousLessonCompleted(sectionIndex, itemIndex);
+    }
+    // ถ้ามี pre-test ต้องผ่านก่อน
     if (!isPreTestPassed()) {
       return true;
     }
-    
     if (sectionIndex === 0 && itemIndex === 0) {
       return false;
     }
-    
     return !isPreviousLessonCompleted(sectionIndex, itemIndex);
   };
 
   // ฟังก์ชันโหลดข้อมูลแบบทดสอบ pre/post test
   const fetchSubjectQuizzes = async () => {
     if (!subjectId) {
-      console.log("No subjectId provided");
       return;
     }
     
@@ -225,14 +231,11 @@ const LessonFaq = ({
       return;
     }
 
-    console.log("Clicking subject quiz:", quiz);
-
     // ส่งข้อมูลแบบทดสอบพิเศษไปยัง parent component
     // ใช้ค่าลบเพื่อแยกจากบทเรียนปกติ
     const specialSectionId = quiz.type === 'pre_test' ? -1000 : -2000;
     const specialItemId = quiz.quiz_id;
     
-    console.log("Calling onSelectLesson for special quiz:", specialSectionId, specialItemId, quiz.title);
     onSelectLesson(specialSectionId, specialItemId, quiz.title, 'quiz');
   };
 

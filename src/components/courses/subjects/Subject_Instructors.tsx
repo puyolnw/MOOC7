@@ -17,7 +17,6 @@ const Instructors = ({ instructors }: InstructorsProps) => {
   const apiURL = import.meta.env.VITE_API_URL;
 
   return (
-    console.log(instructors),
     <div className="courses__instructors-wrap">
       <h3 className="title">อาจารย์ผู้สอน</h3>
       

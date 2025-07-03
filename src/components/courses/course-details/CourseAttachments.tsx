@@ -73,7 +73,6 @@ const CourseAttachments: React.FC<CourseAttachmentsProps> = ({ courseId }) => {
         return;
       }
 
-      console.log('Downloading attachment - fileId:', fileId, 'fileName:', fileName);
 
       const response = await axios.get(`${apiURL}/api/courses/attachment/${fileId}`, {
         headers: { 

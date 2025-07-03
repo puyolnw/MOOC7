@@ -44,7 +44,6 @@ const EnrolledCourseDetailsArea = ({
         
         if (response.data.success) {
           setCourseProgressDetail(response.data);
-          console.log("Course progress detail:", response.data);
         }
       } catch (error) {
         console.error("Error fetching course progress detail:", error);
@@ -94,10 +93,10 @@ const EnrolledCourseDetailsArea = ({
                   return {
                     subject_id: subject.subject_id,
                     subject_name: subject.title,
-                    progress_percentage: progressResponse.data.progressPercentage,
-                    completed_lessons: progressResponse.data.completedLessons,
-                    total_lessons: progressResponse.data.totalLessons,
-                    subjectPassed: progressResponse.data.subjectPassed
+                    progress_percentage: progressResponse.data.progressPercentage || 0,
+                    completed_lessons: progressResponse.data.completedLessons || 0,
+                    total_lessons: progressResponse.data.totalLessons || 0,
+                    subjectPassed: progressResponse.data.subjectPassed || false
                   };
                 }
                 return null;

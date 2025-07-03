@@ -66,7 +66,6 @@ const EnrolledSidebar = ({
 
         if (response.data.success) {
           setCourseProgress(response.data);
-          console.log("Course progress detail:", response.data);
         }
       } catch (error) {
         console.error("Error fetching course progress detail:", error);
@@ -98,7 +97,6 @@ const EnrolledSidebar = ({
 
         if (response.data.success) {
           setFullContent(response.data.course);
-          console.log("Full course content:", response.data.course);
           
           // อัปเดตจำนวนบทเรียนและแบบทดสอบจากข้อมูลที่ได้
           let lessonCount = 0;
@@ -111,7 +109,6 @@ const EnrolledSidebar = ({
             });
           });
           
-          console.log(`Updated counts: ${lessonCount} lessons, ${quizCount} quizzes`);
         }
       } catch (error) {
         console.error("Error fetching full course content:", error);
@@ -136,11 +133,6 @@ const EnrolledSidebar = ({
       ? "in_progress"
       : "not_started";
 
-  console.log("EnrolledSidebar values:", {
-    courseProgress,
-    calculatedProgress,
-    calculatedEnrollmentStatus,
-  });
 
   const handleStartLearning = async () => {
     try {
@@ -281,6 +273,8 @@ const EnrolledSidebar = ({
 
   // จำนวนบทเรียนและแบบทดสอบจาก API
   const apiTotalLessons = courseProgress?.totalLessons || totalLessons;
+
+
 
   return (
     <>

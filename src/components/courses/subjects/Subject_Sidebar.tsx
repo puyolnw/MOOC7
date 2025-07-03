@@ -46,7 +46,13 @@ const Sidebar = ({
         );
 
         if (response.data.success) {
-          setProgress(response.data);
+          const progressData = {
+            progressPercentage: response.data.progressPercentage || 0,
+            completedLessons: response.data.completedLessons || 0,
+            totalLessons: response.data.totalLessons || 0,
+            subjectPassed: response.data.subjectPassed || false
+          };
+          setProgress(progressData);
         }
       } catch (error) {
         console.error("Error fetching subject progress:", error);

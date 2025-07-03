@@ -414,7 +414,7 @@ const AddLessons: React.FC<AddLessonsProps> = ({ onSubmit, onCancel, lessonToEdi
           attachmentFormData.append("title", file.name);
 
           try {
-            await axios.post(`${apiUrl}/api/courses/lessons/${lessonId}/attachments`, attachmentFormData, {
+            await axios.post(`${apiUrl}/api/lessons/${lessonId}/attachments`, attachmentFormData, {
               headers: {
                 "Content-Type": "multipart/form-data",
                 "Authorization": `Bearer ${token}`,
@@ -435,7 +435,7 @@ const AddLessons: React.FC<AddLessonsProps> = ({ onSubmit, onCancel, lessonToEdi
           // ลบบทเรียนชั่วคราว
           if (lessonId) {
             try {
-              await axios.delete(`${apiUrl}/api/courses/lessons/${lessonId}`, {
+              await axios.delete(`${apiUrl}/api/lessons/${lessonId}`, {
                 headers: { Authorization: `Bearer ${token}` },
               });
             } catch (deleteError) {
@@ -486,7 +486,7 @@ const AddLessons: React.FC<AddLessonsProps> = ({ onSubmit, onCancel, lessonToEdi
         // ลบไฟล์ที่มีการเลือกให้ลบ
         if (filesToRemove.length > 0) {
           for (const fileId of filesToRemove) {
-            await axios.delete(`${apiUrl}/api/courses/lessons/${lessonId}/attachments/${fileId}`, {
+            await axios.delete(`${apiUrl}/api/lessons/${lessonId}/attachments/${fileId}`, {
               headers: { Authorization: `Bearer ${token}` },
             });
           }

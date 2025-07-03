@@ -194,7 +194,6 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
                     });
 
                     setLessonData(sections);
-                    console.log("TEST SECTION", sections)
                     await updateLessonCompletionStatus(sections);
 
                     if (sections.length > 0 && sections[0].items.length > 0) {
@@ -234,7 +233,6 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
     };
 
     useEffect(() => {
-        console.log(lessonData)
         fetchCourseData();
     }, [courseId, subjectId]);
 
@@ -254,9 +252,8 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
 
             if (response.data.success) {
                 const { progressPercentage, completedLessons } = response.data;
-                console.log("Progress", response.data)
-                setProgress(progressPercentage);
-                setCompletedCount(completedLessons);
+                setProgress(progressPercentage || 0);
+                setCompletedCount(completedLessons || 0);
             }
         } catch (error) {
             console.error("Error fetching subject progress:", error);
@@ -321,7 +318,6 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
 
     // ฟังก์ชันเมื่อบทเรียนเสร็จสิ้น
     const handleLessonComplete = () => {
-        console.log("handleLessonComplete")
 
         const [sectionId, itemId] = currentLessonId.split("-").map(Number);
     
@@ -359,7 +355,6 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
 
                     const checkAwating = updatedItems.some((item) => item.status === "awaiting_review") ? true : false;
     
-                    console.log("updatedItems", updatedItems);
                     return {
                         ...section,
                         items: updatedItems,
@@ -499,11 +494,9 @@ const handleSelectLesson = (
     title: string,
     type: "video" | "quiz"
 ) => {
-    console.log("handleSelectLesson called with:", { sectionId, itemId, title, type });
 
     // ตรวจสอบว่าเป็นแบบทดสอบพิเศษ (pre/post test) หรือไม่
     if (sectionId < 0) {
-        console.log("Handling special quiz (pre/post test)");
         
         // จัดการแบบทดสอบก่อน/หลังเรียน
         setCurrentLessonId(`${sectionId}-${itemId}`);
@@ -553,7 +546,6 @@ const handleSelectLesson = (
                 quiz_id: type === "quiz" ? item.quiz_id : section.quiz_id,
             });
 
-            console.log("New lessonId:", item.lesson_id);
 
             if (type === "video" && item.video_url) {
                 const videoId = extractYoutubeId(item.video_url);
@@ -572,6 +564,11 @@ const handleSelectLesson = (
     }
 };
 
+    // ฟังก์ชัน refresh progress/lesson/subject
+    const refreshProgress = async () => {
+        await fetchCourseData();
+        await fetchSubjectProgress();
+    };
 
     if (loading) {
         return (
@@ -650,6 +647,7 @@ const handleSelectLesson = (
                                         lessonData
                                     )}
                                     lessonId={currentLessonData?.lesson_id || 0}
+                                    onRefreshProgress={refreshProgress}
                                 />
                             ) : (
                                 <LessonVideo
