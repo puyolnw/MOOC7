@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 
 import DashboardSidebar from "../dashboard-common/AdminSidebar";
@@ -662,25 +662,7 @@ const EditableCourseDetail: React.FC<{
     setImagePreview(null);
   };
 
-  const handleDeleteSubject = async (subjectId: number) => {
-    if (!confirm('คุณต้องการลบรายวิชานี้หรือไม่?')) return;
-    
-    try {
-      const token = localStorage.getItem('token');
-      const response = await axios.delete(
-        `${apiURL}/api/courses/subjects/${subjectId}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
 
-      if (response.data.success) {
-        fetchSubjects();
-        alert('ลบรายวิชาสำเร็จ');
-      }
-    } catch (error) {
-      console.error('Error deleting subject:', error);
-      alert('เกิดข้อผิดพลาดในการลบรายวิชา');
-    }
-  };
 
   const getCourseImageUrl = (course: Course): string => {
     if (imagePreview) return imagePreview;
@@ -1014,32 +996,17 @@ const EditableCourseDetail: React.FC<{
                   )}
                 </div>
                 
-                <div className="subject-card-footer">
-                  <div className="subject-actions">
-                    <button 
-                      className="action-btn view-btn"
-                      onClick={() => onSubjectSelect(subject)}
-                    >
-                      <i className="fas fa-eye me-1"></i>
-                      ดูรายละเอียด
-                    </button>
-                    <Link
-                      to={`/admin-subjects/edit/${subject.subject_id}`}
-                      className="action-btn edit-btn"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <i className="fas fa-edit me-1"></i>
-                      แก้ไข
-                    </Link>
-                    <button 
-                      className="action-btn delete-btn"
-                      onClick={() => handleDeleteSubject(subject.subject_id)}
-                    >
-                      <i className="fas fa-trash me-1"></i>
-                      ลบ
-                    </button>
-                  </div>
-                </div>
+<div className="subject-card-footer d-flex justify-content-end align-items-center pt-3">
+  <div className="subject-actions">
+    <button
+      className="btn btn-primary btn-sm d-flex align-items-center"
+      onClick={() => onSubjectSelect(subject)}
+    >
+      <i className="fas fa-eye me-2"></i>
+      ดูรายละเอียด
+    </button>
+  </div>
+</div>
               </div>
             ))}
           </div>

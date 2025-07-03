@@ -36,7 +36,7 @@ interface AddSubjectsProps {
 const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel }) => {
   const [searchParams] = useSearchParams();
   const courseId = searchParams.get('course_id');
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -113,7 +113,7 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel }) => {
 
   const generateSubjectCode = async () => {
     if (!courseId || relatedCourses.length === 0) return;
-    
+
     setIsGeneratingCode(true);
     try {
       const token = localStorage.getItem("token");
@@ -127,7 +127,7 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel }) => {
       }
     } catch (error) {
       console.error("Error generating code:", error);
-      toast.error("เกิดข้อผิดพลาดในการสร้างรหัสวิชา");
+      toast.error("เกิดข้อผิดพลาดในการสร้างรหัสรายวิชา");
     } finally {
       setIsGeneratingCode(false);
     }
@@ -224,7 +224,7 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel }) => {
   // ===== SUBMIT HANDLER =====
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       toast.error("กรุณาตรวจสอบข้อมูลที่กรอก");
       return;
@@ -276,7 +276,7 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel }) => {
 
       if (response.data.success) {
         // แสดง SweetAlert2 popup สำเร็จ
-        await Swal.fire({
+        const result = await Swal.fire({
           icon: 'success',
           title: 'สร้างรายวิชาสำเร็จ!',
           html: `
@@ -286,7 +286,7 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel }) => {
               ${relatedCourses.length > 0 ? `<p><strong>หลักสูตร:</strong> ${relatedCourses[0].title}</p>` : ''}
             </div>
           `,
-          confirmButtonText: 'ดูรายละเอียดรายวิชา',
+          confirmButtonText: 'เสร็จสิ้น',
           confirmButtonColor: '#28a745',
           showCancelButton: true,
           cancelButtonText: 'สร้างรายวิชาใหม่',
@@ -295,9 +295,15 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel }) => {
           allowEscapeKey: false,
         });
 
-        if (onSubmit) {
-          onSubmit(response.data.subject);
-        } else {
+        // ตรวจสอบว่าผู้ใช้กดปุ่มใด
+        if (result.isConfirmed) {
+          // ผู้ใช้กด 'เสร็จสิ้น'
+          if (onSubmit) {
+            onSubmit(response.data.subject);
+          }
+          window.history.back(); // เด้งกลับไปหน้าก่อนหน้า
+        } else if (result.dismiss === Swal.DismissReason.cancel) {
+          // ผู้ใช้กด 'สร้างรายวิชาใหม่'
           // Reset form for new subject
           setSubjectData({
             title: "",
@@ -323,7 +329,7 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel }) => {
       }
     } catch (error: any) {
       console.error("Error creating subject:", error);
-      
+
       await Swal.fire({
         icon: 'error',
         title: 'เกิดข้อผิดพลาด!',
@@ -389,34 +395,34 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel }) => {
           {/* Toggle Button */}
           <div className="card shadow-sm border-0 mb-4">
             <div className="card-body">
-                            <div className="d-flex justify-content-between align-items-center">
-                <div>
-                  <h6 className="mb-1">ตัวเลือกการกรอกข้อมูล</h6>
-                  <p className="text-muted mb-0 small">
-                    {showAllSections 
-                      ? 'กำลังแสดงข้อมูลทั้งหมด - คุณสามารถกรอกข้อมูลเพิ่มเติมได้' 
-                      : 'กำลังแสดงเฉพาะข้อมูลที่จำเป็น - คุณสามารถเพิ่มรายละเอียดได้ในภายหลัง'
-                    }
-                  </p>
+                <div className="d-flex justify-content-between align-items-center">
+                  <div>
+                    <h6 className="mb-1">ตัวเลือกการกรอกข้อมูล</h6>
+                    <p className="text-muted mb-0 small">
+                      {showAllSections
+                        ? 'กำลังแสดงข้อมูลทั้งหมด - คุณสามารถกรอกข้อมูลเพิ่มเติมได้'
+                        : 'กำลังแสดงเฉพาะข้อมูลที่จำเป็น - คุณสามารถเพิ่มรายละเอียดได้ในภายหลัง'
+                      }
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    className={`btn ${showAllSections ? 'btn-outline-primary' : 'btn-primary'}`}
+                    onClick={() => setShowAllSections(!showAllSections)}
+                  >
+                    {showAllSections ? (
+                      <>
+                        <i className="fas fa-eye-slash me-2"></i>
+                        แสดงเฉพาะข้อมูลหลัก
+                      </>
+                    ) : (
+                      <>
+                        <i className="fas fa-eye me-2"></i>
+                        แสดงข้อมูลทั้งหมด
+                      </>
+                    )}
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  className={`btn ${showAllSections ? 'btn-outline-primary' : 'btn-primary'}`}
-                  onClick={() => setShowAllSections(!showAllSections)}
-                >
-                  {showAllSections ? (
-                    <>
-                      <i className="fas fa-eye-slash me-2"></i>
-                      แสดงเฉพาะข้อมูลหลัก
-                    </>
-                  ) : (
-                    <>
-                      <i className="fas fa-eye me-2"></i>
-                      แสดงข้อมูลทั้งหมด
-                    </>
-                  )}
-                </button>
-              </div>
             </div>
           </div>
 
@@ -572,7 +578,7 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel }) => {
                       <i className="fas fa-image me-2 text-success"></i>
                       รูปภาพปกรายวิชา
                     </h5>
-                    
+
                     <div className="row">
                       <div className="col-md-6">
                         <div className="mb-3">
@@ -596,7 +602,7 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel }) => {
                           </small>
                         </div>
                       </div>
-                      
+
                       <div className="col-md-6">
                         {imagePreview && (
                           <div className="text-center">
@@ -631,7 +637,7 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel }) => {
                       <i className="fas fa-cogs me-2 text-warning"></i>
                       การตั้งค่าเพิ่มเติม
                     </h5>
-                    
+
                     <div className="row">
                       <div className="col-md-6">
                         <div className="mb-3">
@@ -650,7 +656,7 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel }) => {
                           </select>
                         </div>
                       </div>
-                      
+
                       <div className="col-md-6">
                         <div className="mb-3">
                           <label htmlFor="postTestId" className="form-label">
@@ -672,7 +678,7 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel }) => {
 
                     <div className="alert alert-info">
                       <i className="fas fa-info-circle me-2"></i>
-                      <strong>หมายเหตุ:</strong> คุณสามารถเพิ่มบทเรียน แบบทดสอบ และอาจารย์ผู้สอน 
+                      <strong>หมายเหตุ:</strong> คุณสามารถเพิ่มบทเรียน แบบทดสอบ และอาจารย์ผู้สอน
                       ได้ในภายหลังหลังจากสร้างรายวิชาแล้ว
                     </div>
                   </div>
@@ -726,11 +732,11 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel }) => {
           {/* API Messages */}
           {apiError && (
             <div className="alert alert-danger mt-3">
-                            <i className="fas fa-exclamation-circle me-2"></i>
+              <i className="fas fa-exclamation-circle me-2"></i>
               {apiError}
             </div>
           )}
-          
+
           {apiSuccess && (
             <div className="alert alert-success mt-3">
               <i className="fas fa-check-circle me-2"></i>
@@ -744,4 +750,3 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel }) => {
 };
 
 export default AddSubjects;
-

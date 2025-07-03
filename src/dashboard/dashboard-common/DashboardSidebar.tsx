@@ -76,42 +76,7 @@ const DashboardSidebar = () => {
             },
          ],
       },
-      {
-         id: 2,
-         title: "การจัดการ",
-         class_name: "mt-40",
-         sidebar_details: [
-            {
-               id: 10,
-               link: "/admin-creditbank",
-               icon: "fas fa-list-ul",    
-               title: "คลังหลักสูตร",
-               hasSubmenu: true,
-               submenu: [
-                  {
-                     id: 11,
-                     link: "/instructor-subjects",
-                     title: "รายวิชา",
-                  },
-                  {
-                     id: 3,
-                     link: "/instructor-lessons",
-                     title: "บทเรียน",
-                  },
-                  {
-                     id: 4,
-                     link: "/instructor-quizzes",
-                     title: "แบบทดสอบ",
-                  },
-                  {
-                     id: 7,
-                     link: "/instructor-questions",
-                     title: "คำถาม",
-                  },
-               ],
-            },
-         ],
-      },
+
       {
          id: 9,
          title: "อาจารย์",

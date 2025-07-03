@@ -1369,9 +1369,28 @@ const AdminLessonsArea: React.FC<AdminLessonsAreaProps> = ({
           )}
 
           {activeTab === 'tests' && (
-            <PrePostSection
-              subject={subject}
-            />
+            <div className="tests-panel">
+              <div className="tests-header">
+                <h3>แบบทดสอบ</h3>
+                <p>จัดการแบบทดสอบก่อนเรียนและหลังเรียนสำหรับรายวิชา {subject.subject_name}</p>
+              </div>
+              
+              <div className="tests-container">
+                <div className="test-section">
+                  <PrePostSection
+                    subject={subject}
+                    testType="pre"
+                  />
+                </div>
+                
+                <div className="test-section">
+                  <PrePostSection
+                    subject={subject}
+                    testType="post"
+                  />
+                </div>
+              </div>
+            </div>
           )}
         </div>
       </div>

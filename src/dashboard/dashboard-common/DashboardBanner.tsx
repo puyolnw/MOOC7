@@ -1,5 +1,4 @@
-import { Link } from "react-router-dom"
-import BtnArrow from "../../svg/BtnArrow"
+
 import { useEffect, useState } from "react"
 import axios from "axios"
 
@@ -116,9 +115,7 @@ const DashboardBanner = ({ style }: any) => {
 
                </div>
             </div>
-            <div className="dashboard__instructor-info-right">
-               <Link to="/instructor-subjects/create-new" className="btn btn-two arrow-btn">เพิ่มรายวิชาใหม่ <BtnArrow /></Link>
-            </div>
+
          </div>
       </div>
    )
