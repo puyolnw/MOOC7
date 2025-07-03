@@ -19182,7 +19182,7 @@ blockquote > p {
   border-bottom: 2px solid rgba(230, 227, 241, 0.31);
 }
 .dashboard__counter-item {
-  background: rgba(47, 87, 239, 0.13);
+  background: rgb(47 87 239 / 27%);
   border-radius: 5px;
   text-align: center;
   padding: 30px 30px 50px;
@@ -19202,7 +19202,7 @@ blockquote > p {
 }
 .dashboard__counter-item .icon {
   position: relative;
-  background: rgba(47, 87, 239, 0.13);
+  background: rgb(47 87 239 / 27%);
   width: 100px;
   height: 100px;
   padding: 25px;

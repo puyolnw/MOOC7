@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import axios from 'axios';
+import QuizSectionBar from './QuizSectionBar';
+import PrePostSection from './PrePostSection';
+import InsSection from './Inssection';
 import "./lessons.css";
 import "./mega.css";
 
@@ -95,20 +97,714 @@ interface Course {
   course_code: string;
 }
 
-interface AvailableInstructor {
-  instructor_id: number;
-  name: string;
-  position: string;
-  department_name: string;
-  avatar_file_id: string | null;
-  status: string;
-}
-
 interface AdminLessonsAreaProps {
   subject: Subject;
   courseData: Course;
   onSubjectUpdate: (updatedSubject: Subject) => void;
 }
+
+// Simple Add Lesson Modal Component
+const SimpleAddLessonModal: React.FC<{
+  show: boolean;
+  onClose: () => void;
+  onSubmit: (title: string) => void;
+  subjectId: number;
+}> = ({ show, onClose, onSubmit, subjectId }) => {
+  const [title, setTitle] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!title.trim()) {
+      setError('กรุณากรอกชื่อบทเรียน');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError('');
+
+    try {
+      const apiURL = import.meta.env.VITE_API_URL;
+      const token = localStorage.getItem('token');
+      
+      const response = await axios.post(
+        `${apiURL}/api/courses/lessons/simple`,
+        {
+          title: title.trim(),
+          subject_id: subjectId
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (response.data.success) {
+        onSubmit(title);
+        setTitle('');
+        onClose();
+        showNotification('สร้างบทเรียนสำเร็จ', 'success');
+      }
+    } catch (error) {
+      console.error('Error creating lesson:', error);
+      setError('เกิดข้อผิดพลาดในการสร้างบทเรียน');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const showNotification = (message: string, type: 'success' | 'error') => {
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.innerHTML = `
+      <div class="notification-content">
+        <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
+        <span>${message}</span>
+      </div>
+    `;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+      notification.classList.add('show');
+    }, 100);
+    
+    setTimeout(() => {
+      notification.classList.remove('show');
+      setTimeout(() => {
+        document.body.removeChild(notification);
+      }, 300);
+    }, 3000);
+  };
+
+  if (!show) return null;
+
+  return (
+    <div className="modal fade show" style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+      <div className="modal-dialog modal-dialog-centered">
+        <div className="modal-content border-0 shadow-lg">
+          <div className="modal-header bg-primary">
+            <h5 className="modal-title text-white">เพิ่มบทเรียนใหม่</h5>
+            <button
+              type="button"
+              className="btn-close btn-close-white"
+              onClick={onClose}
+            ></button>
+          </div>
+          <form onSubmit={handleSubmit}>
+            <div className="modal-body">
+              {error && (
+                <div className="alert alert-danger" role="alert">
+                  {error}
+                </div>
+              )}
+              <div className="mb-3">
+                <label htmlFor="lessonTitle" className="form-label">
+                  ชื่อบทเรียน <span className="text-danger">*</span>
+                </label>
+                <input
+                  type="text"
+                  className="form-control"
+                  id="lessonTitle"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="กรอกชื่อบทเรียน"
+                  disabled={isSubmitting}
+                />
+              </div>
+              <div className="alert alert-info">
+                <i className="fas fa-info-circle me-2"></i>
+                ระบบจะสร้างแบบทดสอบประจำบทเรียนให้อัตโนมัติ
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={onClose}
+                disabled={isSubmitting}
+              >
+                ยกเลิก
+              </button>
+              <button
+                type="submit"
+                className="btn btn-primary"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <>
+                    <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                    กำลังสร้าง...
+                  </>
+                ) : (
+                  <>
+                    <i className="fas fa-plus me-2"></i>
+                    สร้างบทเรียน
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Edit Lesson Title Modal
+const EditLessonTitleModal: React.FC<{
+  show: boolean;
+  onClose: () => void;
+  lesson: Lesson | null;
+  onUpdate: (lessonId: number, newTitle: string) => void;
+}> = ({ show, onClose, lesson, onUpdate }) => {
+  const [title, setTitle] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (lesson) {
+      setTitle(lesson.title);
+    }
+  }, [lesson]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!title.trim()) {
+      setError('กรุณากรอกชื่อบทเรียน');
+      return;
+    }
+
+    if (!lesson) return;
+
+    setIsSubmitting(true);
+    setError('');
+
+    try {
+      const apiURL = import.meta.env.VITE_API_URL;
+      const token = localStorage.getItem('token');
+      
+      const formData = new FormData();
+      formData.append('title', title.trim());
+      
+      const response = await axios.put(
+        `${apiURL}/api/courses/lessons/${lesson.lesson_id}`,
+        formData,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (response.data.success) {
+        onUpdate(lesson.lesson_id, title.trim());
+        onClose();
+        showNotification('แก้ไขชื่อบทเรียนสำเร็จ', 'success');
+      }
+    } catch (error) {
+      console.error('Error updating lesson title:', error);
+      setError('เกิดข้อผิดพลาดในการแก้ไขชื่อบทเรียน');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const showNotification = (message: string, type: 'success' | 'error') => {
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.innerHTML = `
+      <div class="notification-content">
+        <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
+        <span>${message}</span>
+      </div>
+    `;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+      notification.classList.add('show');
+    }, 100);
+    
+    setTimeout(() => {
+      notification.classList.remove('show');
+      setTimeout(() => {
+        document.body.removeChild(notification);
+      }, 300);
+    }, 3000);
+  };
+
+  if (!show || !lesson) return null;
+
+  return (
+    <div className="modal fade show" style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+      <div className="modal-dialog modal-dialog-centered">
+        <div className="modal-content border-0 shadow-lg">
+          <div className="modal-header bg-warning">
+            <h5 className="modal-title text-dark">แก้ไขชื่อบทเรียน</h5>
+            <button
+              type="button"
+              className="btn-close"
+              onClick={onClose}
+            ></button>
+          </div>
+          <form onSubmit={handleSubmit}>
+            <div className="modal-body">
+              {error && (
+                <div className="alert alert-danger" role="alert">
+                  {error}
+                </div>
+              )}
+              <div className="mb-3">
+                <label htmlFor="editLessonTitle" className="form-label">
+                  ชื่อบทเรียน <span className="text-danger">*</span>
+                </label>
+                <input
+                  type="text"
+                  className="form-control"
+                  id="editLessonTitle"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="กรอกชื่อบทเรียน"
+                  disabled={isSubmitting}
+                />
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={onClose}
+                disabled={isSubmitting}
+              >
+                ยกเลิก
+              </button>
+              <button
+                type="submit"
+                className="btn btn-warning"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <>
+                    <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                    กำลังบันทึก...
+                  </>
+                ) : (
+                  <>
+                    <i className="fas fa-save me-2"></i>
+                    บันทึก
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Edit Video Modal
+const EditVideoModal: React.FC<{
+  show: boolean;
+  onClose: () => void;
+  lesson: Lesson | null;
+  onUpdate: (lessonId: number, videoUrl: string) => void;
+}> = ({ show, onClose, lesson, onUpdate }) => {
+  const [videoUrl, setVideoUrl] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (lesson) {
+      setVideoUrl(lesson.video_url || '');
+    }
+  }, [lesson]);
+
+    const getYouTubeVideoId = (url: string) => {
+    const regExp = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com|youtu\.be)\/(?:watch\?v=|embed\/|v\/|)([\w-]{11})(?:\S+)?/;
+    const match = url.match(regExp);
+    return (match && match[1].length === 11) ? match[1] : null;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (videoUrl.trim() && !getYouTubeVideoId(videoUrl)) {
+      setError('กรุณาใส่ URL ของ YouTube ที่ถูกต้อง');
+      return;
+    }
+
+    if (!lesson) return;
+
+    setIsSubmitting(true);
+    setError('');
+
+    try {
+      const apiURL = import.meta.env.VITE_API_URL;
+      const token = localStorage.getItem('token');
+      
+      const formData = new FormData();
+      formData.append('videoUrl', videoUrl.trim());
+      
+      const response = await axios.put(
+        `${apiURL}/api/courses/lessons/${lesson.lesson_id}`,
+        formData,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (response.data.success) {
+        onUpdate(lesson.lesson_id, videoUrl.trim());
+        onClose();
+        showNotification('แก้ไขวิดีโอสำเร็จ', 'success');
+      }
+    } catch (error) {
+      console.error('Error updating lesson video:', error);
+      setError('เกิดข้อผิดพลาดในการแก้ไขวิดีโอ');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const showNotification = (message: string, type: 'success' | 'error') => {
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.innerHTML = `
+      <div class="notification-content">
+        <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
+        <span>${message}</span>
+      </div>
+    `;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+      notification.classList.add('show');
+    }, 100);
+    
+    setTimeout(() => {
+      notification.classList.remove('show');
+      setTimeout(() => {
+        document.body.removeChild(notification);
+      }, 300);
+    }, 3000);
+  };
+
+  if (!show || !lesson) return null;
+
+  const videoId = videoUrl ? getYouTubeVideoId(videoUrl) : null;
+
+  return (
+    <div className="modal fade show" style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+      <div className="modal-dialog modal-lg modal-dialog-centered">
+        <div className="modal-content border-0 shadow-lg">
+          <div className="modal-header bg-info">
+            <h5 className="modal-title text-white">แก้ไขวิดีโอบทเรียน</h5>
+            <button
+              type="button"
+              className="btn-close btn-close-white"
+              onClick={onClose}
+            ></button>
+          </div>
+          <form onSubmit={handleSubmit}>
+            <div className="modal-body">
+              {error && (
+                <div className="alert alert-danger" role="alert">
+                  {error}
+                </div>
+              )}
+              <div className="mb-3">
+                <label htmlFor="editVideoUrl" className="form-label">
+                  URL วิดีโอ YouTube
+                </label>
+                <input
+                  type="text"
+                  className="form-control"
+                  id="editVideoUrl"
+                  value={videoUrl}
+                  onChange={(e) => setVideoUrl(e.target.value)}
+                  placeholder="เช่น https://www.youtube.com/watch?v=VIDEO_ID"
+                  disabled={isSubmitting}
+                />
+                <small className="text-muted">
+                  ใส่ URL ของวิดีโอ YouTube หรือเว้นว่างเพื่อลบวิดีโอ
+                </small>
+              </div>
+
+              {videoId && (
+                <div className="mb-3">
+                  <h6>ตัวอย่างวิดีโอ:</h6>
+                  <div className="ratio ratio-16x9">
+                    <iframe
+                      src={`https://www.youtube.com/embed/${videoId}`}
+                      title="YouTube video player"
+                      frameBorder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      allowFullScreen
+                    ></iframe>
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="modal-footer">
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={onClose}
+                disabled={isSubmitting}
+              >
+                ยกเลิก
+              </button>
+              <button
+                type="submit"
+                className="btn btn-info"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <>
+                    <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                    กำลังบันทึก...
+                  </>
+                ) : (
+                  <>
+                    <i className="fas fa-save me-2"></i>
+                    บันทึก
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Edit Files Modal
+const EditFilesModal: React.FC<{
+  show: boolean;
+  onClose: () => void;
+  lesson: Lesson | null;
+  onUpdate: (lessonId: number) => void;
+}> = ({ show, onClose, lesson, onUpdate }) => {
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    const maxSize = 50 * 1024 * 1024; // 50MB
+    const allowedTypes = ['.pdf', '.doc', '.docx', '.xls', '.xlsx'];
+    
+    const validFiles = files.filter(file => {
+      const extension = '.' + file.name.split('.').pop()?.toLowerCase();
+      if (!allowedTypes.includes(extension)) {
+        setError(`ไฟล์ ${file.name} ไม่ใช่ประเภทที่รองรับ`);
+        return false;
+      }
+      if (file.size > maxSize) {
+        setError(`ไฟล์ ${file.name} มีขนาดใหญ่เกินไป (สูงสุด 50MB)`);
+        return false;
+      }
+      return true;
+    });
+
+    setUploadedFiles(validFiles);
+    setError('');
+  };
+
+  const handleRemoveFile = (index: number) => {
+    setUploadedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const getFileIcon = (fileName: string): string => {
+    const extension = fileName.split('.').pop()?.toLowerCase();
+    switch (extension) {
+      case 'pdf': return 'fas fa-file-pdf';
+      case 'doc':
+      case 'docx': return 'fas fa-file-word';
+      case 'xls':
+      case 'xlsx': return 'fas fa-file-excel';
+      default: return 'fas fa-file';
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (uploadedFiles.length === 0) {
+      setError('กรุณาเลือกไฟล์อย่างน้อย 1 ไฟล์');
+      return;
+    }
+
+    if (!lesson) return;
+
+    setIsSubmitting(true);
+    setError('');
+
+    try {
+      const apiURL = import.meta.env.VITE_API_URL;
+      const token = localStorage.getItem('token');
+      
+      const formData = new FormData();
+      formData.append('replaceAll', 'true'); // แทนที่ไฟล์ทั้งหมด
+      uploadedFiles.forEach((file) => {
+        formData.append('files', file);
+      });
+
+      const response = await axios.put(
+        `${apiURL}/api/courses/lessons/${lesson.lesson_id}/files`,
+        formData,
+        { 
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data'
+          } 
+        }
+      );
+
+      if (response.data.success) {
+        onUpdate(lesson.lesson_id);
+        onClose();
+        showNotification('แก้ไขไฟล์สำเร็จ', 'success');
+      }
+    } catch (error) {
+      console.error('Error updating lesson files:', error);
+      setError('เกิดข้อผิดพลาดในการแก้ไขไฟล์');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const showNotification = (message: string, type: 'success' | 'error') => {
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.innerHTML = `
+      <div class="notification-content">
+        <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
+        <span>${message}</span>
+      </div>
+    `;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+      notification.classList.add('show');
+    }, 100);
+    
+    setTimeout(() => {
+      notification.classList.remove('show');
+      setTimeout(() => {
+        document.body.removeChild(notification);
+      }, 300);
+    }, 3000);
+  };
+
+  if (!show || !lesson) return null;
+
+  return (
+    <div className="modal fade show" style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+      <div className="modal-dialog modal-lg modal-dialog-centered">
+        <div className="modal-content border-0 shadow-lg">
+          <div className="modal-header bg-success">
+            <h5 className="modal-title text-white">แก้ไขไฟล์ประกอบบทเรียน</h5>
+            <button
+              type="button"
+              className="btn-close btn-close-white"
+              onClick={onClose}
+            ></button>
+          </div>
+          <form onSubmit={handleSubmit}>
+            <div className="modal-body">
+              {error && (
+                <div className="alert alert-danger" role="alert">
+                  {error}
+                </div>
+              )}
+              
+              <div className="mb-3">
+                <label htmlFor="editFiles" className="form-label">
+                  เลือกไฟล์ใหม่ (จะแทนที่ไฟล์เดิมทั้งหมด)
+                </label>
+                <input
+                  type="file"
+                  className="form-control"
+                  id="editFiles"
+                  onChange={handleFileUpload}
+                  accept=".pdf,.doc,.docx,.xls,.xlsx"
+                  multiple
+                  disabled={isSubmitting}
+                />
+                <small className="text-muted">
+                  รองรับไฟล์ PDF, DOC, DOCX, XLS และ XLSX ขนาดไม่เกิน 50 MB
+                </small>
+              </div>
+
+              {uploadedFiles.length > 0 && (
+                <div className="mb-3">
+                  <h6>ไฟล์ที่เลือก:</h6>
+                  <div className="list-group">
+                    {uploadedFiles.map((file, index) => (
+                      <div key={index} className="list-group-item d-flex justify-content-between align-items-center">
+                        <div className="d-flex align-items-center">
+                          <i className={`${getFileIcon(file.name)} me-2 text-primary`}></i>
+                          <div>
+                            <div className="fw-bold">{file.name}</div>
+                            <small className="text-muted">{formatFileSize(file.size)}</small>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-outline-danger"
+                          onClick={() => handleRemoveFile(index)}
+                          disabled={isSubmitting}
+                        >
+                          <i className="fas fa-times"></i>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="alert alert-warning">
+                <i className="fas fa-exclamation-triangle me-2"></i>
+                <strong>คำเตือน:</strong> การอัปโหลดไฟล์ใหม่จะแทนที่ไฟล์เดิมทั้งหมด
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={onClose}
+                disabled={isSubmitting}
+              >
+                ยกเลิก
+              </button>
+              <button
+                type="submit"
+                className="btn btn-success"
+                disabled={isSubmitting || uploadedFiles.length === 0}
+              >
+                {isSubmitting ? (
+                  <>
+                    <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                    กำลังอัปโหลด...
+                  </>
+                ) : (
+                  <>
+                    <i className="fas fa-upload me-2"></i>
+                    อัปโหลดไฟล์
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // Add Lesson Card Component - Styled like lesson items
 const AddLessonCard: React.FC<{
@@ -124,70 +820,8 @@ const AddLessonCard: React.FC<{
         <div className="add-lesson-text">
           <h4>เพิ่มบทเรียนใหม่</h4>
           <p>สร้างบทเรียนใหม่สำหรับรายวิชานี้</p>
-       
         </div>
       </div>
-    </div>
-  );
-};
-
-// Enhanced Add Instructor Card Component
-const AddInstructorCard: React.FC<{
-  subjectId: number;
-  onClick: () => void;
-}> = ({ onClick }) => {
-  return (
-    <div className="add-content-card add-instructor-card" onClick={onClick}>
-      <div className="add-content-inner">
-        <div className="add-content-icon-wrapper">
-          <div className="add-content-icon instructor-icon">
-            <i className="fas fa-plus"></i>
-          </div>
-          <div className="add-content-ripple"></div>
-        </div>
-        <div className="add-content-text">
-          <h3 className="add-content-title">เพิ่มอาจารย์ผู้สอน</h3>
-          <p className="add-content-description">
-            เลือกอาจารย์ผู้สอนสำหรับรายวิชานี้
-          </p>
-        </div>
-        <div className="add-content-arrow">
-          <i className="fas fa-arrow-right"></i>
-        </div>
-      </div>
-      <div className="add-content-hover-effect"></div>
-    </div>
-  );
-};
-
-// Enhanced Add Test Card Component
-const AddTestCard: React.FC<{
-  testType: 'pre' | 'post';
-  subjectId: number;
-  onClick: () => void;
-}> = ({ testType, onClick }) => {
-  return (
-    <div className={`add-content-card add-test-card ${testType}-test-card`} onClick={onClick}>
-      <div className="add-content-inner">
-        <div className="add-content-icon-wrapper">
-          <div className={`add-content-icon test-icon ${testType}-test-icon`}>
-            <i className="fas fa-plus"></i>
-          </div>
-          <div className="add-content-ripple"></div>
-        </div>
-        <div className="add-content-text">
-          <h3 className="add-content-title">
-            เพิ่มแบบทดสอบ{testType === 'pre' ? 'ก่อนเรียน' : 'หลังเรียน'}
-          </h3>
-          <p className="add-content-description">
-            สร้างแบบทดสอบ{testType === 'pre' ? 'ก่อนเรียน' : 'หลังเรียน'}สำหรับรายวิชานี้
-          </p>
-        </div>
-        <div className="add-content-arrow">
-          <i className="fas fa-arrow-right"></i>
-        </div>
-      </div>
-      <div className="add-content-hover-effect"></div>
     </div>
   );
 };
@@ -197,12 +831,13 @@ const LessonItem: React.FC<{
   lesson: Lesson;
   index: number;
   onDelete: (lessonId: number) => void;
+  onUpdateTitle: (lessonId: number, newTitle: string) => void;
+  onUpdateVideo: (lessonId: number, videoUrl: string) => void;
+  onUpdateFiles: (lessonId: number) => void;
 }> = ({ lesson, index, onDelete }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [videoExpanded, setVideoExpanded] = useState(false);
   const [filesExpanded, setFilesExpanded] = useState(false);
-  const [quizExpanded, setQuizExpanded] = useState(false);
-  const [quizQuestionsExpanded, setQuizQuestionsExpanded] = useState(false);
 
   const apiURL = import.meta.env.VITE_API_URL;
 
@@ -230,16 +865,6 @@ const LessonItem: React.FC<{
     return 'default';
   };
 
-  const getQuestionTypeText = (type: string): string => {
-    switch (type) {
-      case 'multiple_choice': return 'ปรนัย';
-      case 'true_false': return 'ถูก/ผิด';
-      case 'short_answer': return 'คำตอบสั้น';
-      case 'essay': return 'อัตนัย';
-      default: return type;
-    }
-  };
-
   const getVideoEmbedUrl = (videoUrl: string): string => {
     if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
       const videoIdMatch = videoUrl.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/);
@@ -248,18 +873,6 @@ const LessonItem: React.FC<{
       }
     }
     return videoUrl;
-  };
-
-  const handleAddVideo = () => {
-    window.location.href = `/admin-lessons/edit/${lesson.lesson_id}?tab=video`;
-  };
-
-  const handleAddFiles = () => {
-    window.location.href = `/admin-lessons/edit/${lesson.lesson_id}?tab=files`;
-  };
-
-  const handleAddQuiz = () => {
-    window.location.href = `/admin-quizzes/create-new?lesson_id=${lesson.lesson_id}`;
   };
 
   return (
@@ -284,12 +897,6 @@ const LessonItem: React.FC<{
           )}
           
           <div className="lesson-meta">
-            {lesson.video_url && (
-              <div className="meta-badge">
-                <i className="fas fa-play-circle"></i>
-                <span>วิดีโอ</span>
-              </div>
-            )}
             {lesson.files && lesson.files.length > 0 && (
               <div className="meta-badge">
                 <i className="fas fa-file"></i>
@@ -306,23 +913,17 @@ const LessonItem: React.FC<{
         </div>
         
         <div className="lesson-actions">
-          <Link
-            to={`/admin-lessons/edit/${lesson.lesson_id}`}
+          <button
             className="action-btn edit-btn"
-            title="แก้ไข"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <i className="fas fa-edit"></i>
-          </Link>
-          <button 
-            className="action-btn view-btn"
+            title="แก้ไขชื่อ"
             onClick={(e) => {
               e.stopPropagation();
-              window.open(`/lessons/view/${lesson.lesson_id}`, '_blank');
+              // เปิด modal แก้ไขชื่อ
+              const event = new CustomEvent('editLessonTitle', { detail: lesson });
+              window.dispatchEvent(event);
             }}
-            title="ดูตัวอย่าง"
           >
-            <i className="fas fa-eye"></i>
+            <i className="fas fa-edit"></i>
           </button>
           <button 
             className="action-btn delete-btn"
@@ -385,7 +986,13 @@ const LessonItem: React.FC<{
                       <p>ยังไม่มีวิดีโอสำหรับบทเรียนนี้</p>
                     </div>
                   )}
-                  <button className="add-video-btn modern-btn" onClick={handleAddVideo}>
+                  <button 
+                    className="add-video-btn modern-btn" 
+                    onClick={() => {
+                      const event = new CustomEvent('editLessonVideo', { detail: lesson });
+                      window.dispatchEvent(event);
+                    }}
+                  >
                     <i className="fas fa-plus"></i>
                     <span>{lesson.video_url ? 'เปลี่ยนวิดีโอ' : 'เพิ่มวิดีโอ'}</span>
                   </button>
@@ -442,12 +1049,6 @@ const LessonItem: React.FC<{
                             >
                               <i className="fas fa-download"></i>
                             </button>
-                            <button 
-                              className="action-btn delete-btn"
-                              title="ลบไฟล์"
-                            >
-                              <i className="fas fa-trash"></i>
-                            </button>
                           </div>
                         </div>
                       ))}
@@ -458,9 +1059,15 @@ const LessonItem: React.FC<{
                       <p>ยังไม่มีไฟล์แนบสำหรับบทเรียนนี้</p>
                     </div>
                   )}
-                  <button className="add-files-btn modern-btn" onClick={handleAddFiles}>
+                  <button 
+                    className="add-files-btn modern-btn" 
+                    onClick={() => {
+                      const event = new CustomEvent('editLessonFiles', { detail: lesson });
+                      window.dispatchEvent(event);
+                    }}
+                  >
                     <i className="fas fa-plus"></i>
-                    <span>เพิ่มไฟล์แนบ</span>
+                    <span>{lesson.files && lesson.files.length > 0 ? 'เปลี่ยนไฟล์' : 'เพิ่มไฟล์แนบ'}</span>
                   </button>
                 </div>
               </div>
@@ -468,285 +1075,8 @@ const LessonItem: React.FC<{
           </div>
 
           {/* Quiz Section Bar */}
-          <div className="content-section-bar">
-            <div 
-              className={`section-bar-header ${quizExpanded ? 'expanded' : ''}`}
-              onClick={() => setQuizExpanded(!quizExpanded)}
-            >
-                           <div className="section-bar-icon quiz-icon">
-                <i className="fas fa-question-circle"></i>
-              </div>
-              <div className="section-bar-info">
-                <h5 className="section-bar-title">แบบทดสอบ</h5>
-                <p className="section-bar-subtitle">
-                  {lesson.quiz 
-                    ? `แบบทดสอบ: ${lesson.quiz.title}` 
-                    : 'ยังไม่มีแบบทดสอบ'
-                  }
-                </p>
-              </div>
-              <div className="section-bar-count">
-                {lesson.quiz?.questions?.length || 0}
-              </div>
-              <div className="section-bar-expand">
-                <i className="fas fa-chevron-down"></i>
-              </div>
-            </div>
-            
-            <div className={`section-bar-content ${quizExpanded ? 'expanded' : ''}`}>
-              <div className="section-content-inner">
-                <div className="quiz-section">
-                  {lesson.quiz ? (
-                    <div className="quiz-info-card">
-                      <div className="quiz-header">
-                        <h5 className="quiz-title">{lesson.quiz.title}</h5>
-                        <button 
-                          className="expand-quiz-btn"
-                          onClick={() => setQuizQuestionsExpanded(!quizQuestionsExpanded)}
-                        >
-                          <span>{quizQuestionsExpanded ? 'ซ่อน' : 'ดู'}คำถาม</span>
-                          <i className={`fas fa-chevron-${quizQuestionsExpanded ? 'up' : 'down'}`}></i>
-                        </button>
-                      </div>
-                      
-                      <div className="quiz-stats">
-                        <div className="quiz-stat">
-                          <span className="quiz-stat-number">{lesson.quiz.questions?.length || 0}</span>
-                          <p className="quiz-stat-label">คำถาม</p>
-                        </div>
-                        <div className="quiz-stat">
-                          <span className="quiz-stat-number">-</span>
-                          <p className="quiz-stat-label">คะแนนเต็ม</p>
-                        </div>
-                      </div>
-                      
-                      {lesson.quiz.description && (
-                        <p style={{ color: '#718096', marginBottom: '1rem' }}>
-                          {lesson.quiz.description}
-                        </p>
-                      )}
-                      
-                      <div className={`quiz-questions ${quizQuestionsExpanded ? 'expanded' : ''}`}>
-                        {lesson.quiz.questions && lesson.quiz.questions.length > 0 && (
-                          <div className="questions-list">
-                            {lesson.quiz.questions.map((question, qIndex) => (
-                              <div key={question.question_id} className="question-item">
-                                <div className="question-number">
-                                  <span>{qIndex + 1}</span>
-                                </div>
-                                <div className="question-text">
-                                  {question.question_text}
-                                </div>
-                                <div className="question-type">
-                                  {getQuestionTypeText(question.question_type)}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                      
-                      <div className="quiz-actions">
-                        <Link
-                          to={`/admin-quizzes/edit/${lesson.quiz.quiz_id}`}
-                          className="modern-btn secondary small"
-                        >
-                          <i className="fas fa-edit"></i>
-                          <span>แก้ไขแบบทดสอบ</span>
-                        </Link>
-                        <button 
-                          className="modern-btn secondary small"
-                          onClick={() => window.open(`/quizzes/preview/`, '_blank')}
-                        >
-                          <i className="fas fa-eye"></i>
-                          <span>ดูตัวอย่าง</span>
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="quiz-empty">
-                      <i className="fas fa-question-circle"></i>
-                      <p>ยังไม่มีแบบทดสอบสำหรับบทเรียนนี้</p>
-                    </div>
-                  )}
-                  <button className="add-quiz-btn modern-btn" onClick={handleAddQuiz}>
-                    <i className="fas fa-plus"></i>
-                    <span>{lesson.quiz ? 'เปลี่ยนแบบทดสอบ' : 'เพิ่มแบบทดสอบ'}</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+           <QuizSectionBar lesson={lesson} />
           
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Instructor Selection Modal
-const InstructorSelectionModal: React.FC<{
-  show: boolean;
-  onClose: () => void;
-  onSelect: (instructorId: number) => void;
-  subjectId: number;
-}> = ({ show, onClose, onSelect, subjectId }) => {
-  const apiURL = import.meta.env.VITE_API_URL;
-  const [availableInstructors, setAvailableInstructors] = useState<AvailableInstructor[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-
-  useEffect(() => {
-    if (show) {
-      fetchAvailableInstructors();
-    }
-  }, [show]);
-
-  const fetchAvailableInstructors = async () => {
-    setLoading(true);
-    try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(
-        `${apiURL}/api/accounts/instructors`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      if (response.data.success) {
-        setAvailableInstructors(response.data.instructors || []);
-      }
-    } catch (error) {
-      console.error('Error fetching instructors:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const filteredInstructors = availableInstructors.filter(instructor =>
-    instructor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    instructor.position.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const handleSelectInstructor = async (instructorId: number) => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await axios.post(
-        `${apiURL}/api/courses/subjects/${subjectId}/instructors`,
-        { instructor_id: instructorId },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      if (response.data.success) {
-        onSelect(instructorId);
-        onClose();
-        showNotification('เพิ่มอาจารย์ผู้สอนสำเร็จ', 'success');
-        window.location.reload();
-      }
-    } catch (error) {
-      console.error('Error adding instructor:', error);
-      showNotification('เกิดข้อผิดพลาดในการเพิ่มอาจารย์ผู้สอน', 'error');
-    }
-  };
-
-  const showNotification = (message: string, type: 'success' | 'error') => {
-    const notification = document.createElement('div');
-    notification.className = `notification ${type}`;
-    notification.innerHTML = `
-      <div class="notification-content">
-        <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
-        <span>${message}</span>
-      </div>
-    `;
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-      notification.classList.add('show');
-    }, 100);
-    
-    setTimeout(() => {
-      notification.classList.remove('show');
-      setTimeout(() => {
-        document.body.removeChild(notification);
-      }, 300);
-    }, 3000);
-  };
-
-  if (!show) return null;
-
-  return (
-    <div className="modal fade show" style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}>
-      <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-        <div className="modal-content border-0 shadow-lg">
-          <div className="modal-header bg-primary">
-            <h5 className="modal-title text-white">เลือกอาจารย์ผู้สอน</h5>
-            <button
-              type="button"
-              className="btn-close btn-close-white"
-              onClick={onClose}
-            ></button>
-          </div>
-          <div className="modal-body">
-            <div className="mb-3">
-              <input
-                type="text"
-                className="form-control"
-                placeholder="ค้นหาอาจารย์..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-
-            {loading ? (
-              <div className="text-center py-4">
-                <div className="spinner-border text-primary" role="status">
-                  <span className="visually-hidden">กำลังโหลด...</span>
-                </div>
-                <p className="mt-2">กำลังโหลดข้อมูลอาจารย์...</p>
-              </div>
-            ) : filteredInstructors.length > 0 ? (
-              <div className="instructor-list">
-                {filteredInstructors.map((instructor) => (
-                  <div
-                    key={instructor.instructor_id}
-                    className="instructor-item d-flex align-items-center p-3 border rounded mb-2 cursor-pointer hover-bg-light"
-                    onClick={() => handleSelectInstructor(instructor.instructor_id)}
-                  >
-                    <div className="instructor-avatar me-3">
-                      {instructor.avatar_file_id ? (
-                        <img
-                          src={`${apiURL}/api/accounts/instructors/avatar/${instructor.avatar_file_id}`}
-                          alt={instructor.name}
-                          className="rounded-circle"
-                          style={{ width: '50px', height: '50px', objectFit: 'cover' }}
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = 'https://www.pngwing.com/en/search?q=no+Image';
-                          }}
-                        />
-                      ) : (
-                        <div className="avatar-placeholder rounded-circle d-flex align-items-center justify-content-center bg-secondary text-white" style={{ width: '50px', height: '50px' }}>
-                          <i className="fas fa-user"></i>
-                        </div>
-                      )}
-                    </div>
-                    <div className="instructor-info flex-grow-1">
-                      <h6 className="mb-1">{instructor.name}</h6>
-                      <p className="mb-1 text-muted">{instructor.position}</p>
-                      <small className="text-muted">{instructor.department_name}</small>
-                    </div>
-                    <div className="instructor-status">
-                      <span className={`badge ${instructor.status === 'active' ? 'bg-success' : 'bg-secondary'}`}>
-                        {instructor.status === 'active' ? 'เปิดใช้งาน' : 'ปิดใช้งาน'}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-4">
-                <i className="fas fa-search fa-3x text-muted mb-3"></i>
-                <p className="text-muted">ไม่พบอาจารย์ที่ตรงกับการค้นหา</p>
-              </div>
-            )}
-          </div>
         </div>
       </div>
     </div>
@@ -759,8 +1089,41 @@ const LessonsPanel: React.FC<{
   lessons: Lesson[];
   setLessons: (lessons: Lesson[]) => void;
 }> = ({ subject, lessons, setLessons }) => {
+  const [showAddLessonModal, setShowAddLessonModal] = useState(false);
+  const [showEditTitleModal, setShowEditTitleModal] = useState(false);
+  const [showEditVideoModal, setShowEditVideoModal] = useState(false);
+  const [showEditFilesModal, setShowEditFilesModal] = useState(false);
+  const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
+
+  useEffect(() => {
+    const handleEditLessonTitle = (event: any) => {
+      setSelectedLesson(event.detail);
+      setShowEditTitleModal(true);
+    };
+
+    const handleEditLessonVideo = (event: any) => {
+      setSelectedLesson(event.detail);
+      setShowEditVideoModal(true);
+    };
+
+    const handleEditLessonFiles = (event: any) => {
+      setSelectedLesson(event.detail);
+      setShowEditFilesModal(true);
+    };
+
+    window.addEventListener('editLessonTitle', handleEditLessonTitle);
+    window.addEventListener('editLessonVideo', handleEditLessonVideo);
+    window.addEventListener('editLessonFiles', handleEditLessonFiles);
+
+    return () => {
+      window.removeEventListener('editLessonTitle', handleEditLessonTitle);
+      window.removeEventListener('editLessonVideo', handleEditLessonVideo);
+      window.removeEventListener('editLessonFiles', handleEditLessonFiles);
+    };
+  }, []);
+
   const handleAddLesson = () => {
-    window.location.href = `/admin-lessons/create-new?subject_id=${subject.subject_id}`;
+    setShowAddLessonModal(true);
   };
 
   const handleDeleteLesson = async (lessonId: number) => {
@@ -784,108 +1147,24 @@ const LessonsPanel: React.FC<{
     }
   };
 
-  const showNotification = (message: string, type: 'success' | 'error') => {
-    const notification = document.createElement('div');
-    notification.className = `notification ${type}`;
-    notification.innerHTML = `
-      <div class="notification-content">
-        <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
-        <span>${message}</span>
-      </div>
-    `;
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-      notification.classList.add('show');
-    }, 100);
-    
-    setTimeout(() => {
-      notification.classList.remove('show');
-      setTimeout(() => {
-        document.body.removeChild(notification);
-      }, 300);
-    }, 3000);
+  const handleUpdateLessonTitle = (lessonId: number, newTitle: string) => {
+    setLessons(lessons.map(lesson => 
+      lesson.lesson_id === lessonId 
+        ? { ...lesson, title: newTitle }
+        : lesson
+    ));
   };
 
-  return (
-    <div className="tab-panel lessons-panel">
-      <div className="lessons-header">
-        <h3>บทเรียนทั้งหมด</h3>
-        <p>รายการบทเรียนในรายวิชา {subject.subject_name}</p>
-      </div>
-      
-      {lessons.length === 0 ? (
-        <div className="empty-state">
-          <div className="empty-state-icon">
-            <i className="fas fa-play-circle"></i>
-          </div>
-          <h4>ไม่มีบทเรียน</h4>
-          <p>ยังไม่มีบทเรียนในรายวิชานี้</p>
-          <button 
-            className="add-first-btn modern-btn primary large"
-            onClick={handleAddLesson}
-          >
-            <div className="btn-content">
-              <i className="fas fa-plus"></i>
-              <span>เพิ่มบทเรียนแรก</span>
-            </div>
-            <div className="btn-ripple"></div>
-          </button>
-        </div>
-      ) : (
-        <div className="lessons-container">
-          <div className="lessons-list">
-            {/* Add Lesson Card */}
-            <AddLessonCard 
-              subjectId={subject.subject_id}
-              onClick={handleAddLesson}
-            />
-            
-            {/* Lesson Items with Accordion Bars */}
-            {lessons.map((lesson, index) => (
-              <LessonItem
-                key={`lesson-${lesson.lesson_id}`}
-                lesson={lesson}
-                index={index}
-                onDelete={handleDeleteLesson}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-// Instructors Panel Component
-const InstructorsPanel: React.FC<{
-  subject: Subject;
-}> = ({ subject }) => {
-  const apiURL = import.meta.env.VITE_API_URL;
-  const [showInstructorModal, setShowInstructorModal] = useState(false);
-
-  const handleAddInstructor = () => {
-    setShowInstructorModal(true);
+   const handleUpdateLessonVideo = (lessonId: number, videoUrl: string) => {
+    setLessons(lessons.map(lesson => 
+      lesson.lesson_id === lessonId 
+        ? { ...lesson, video_url: videoUrl }
+        : lesson
+    ));
   };
 
-  const handleDeleteInstructor = async (instructorId: number) => {
-    if (!confirm('คุณต้องการลบอาจารย์ผู้สอนนี้หรือไม่?')) return;
-    
-    try {
-      const token = localStorage.getItem('token');
-      const response = await axios.delete(
-        `${apiURL}/api/courses/subjects/${subject.subject_id}/instructors/${instructorId}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      if (response.data.success) {
-        window.location.reload();
-        showNotification('ลบอาจารย์ผู้สอนสำเร็จ', 'success');
-      }
-    } catch (error) {
-      console.error('Error deleting instructor:', error);
-      showNotification('เกิดข้อผิดพลาดในการลบอาจารย์ผู้สอน', 'error');
-    }
+  const handleUpdateLessonFiles = (lessonId: number) => {
+    console.log(`Updating lesson files for lesson ID: ${lessonId}`);
   };
 
   const showNotification = (message: string, type: 'success' | 'error') => {
@@ -913,347 +1192,96 @@ const InstructorsPanel: React.FC<{
 
   return (
     <>
-      <div className="tab-panel instructors-panel">
-        <div className="instructors-header">
-          <h3>อาจารย์ผู้สอน</h3>
-          <p>รายชื่ออาจารย์ที่สอนในรายวิชา {subject.subject_name}</p>
+      <div className="tab-panel lessons-panel">
+        <div className="lessons-header">
+          <h3>บทเรียนทั้งหมด</h3>
+          <p>รายการบทเรียนในรายวิชา {subject.subject_name}</p>
         </div>
         
-        {!subject.instructors || subject.instructors.length === 0 ? (
+        {lessons.length === 0 ? (
           <div className="empty-state">
             <div className="empty-state-icon">
-              <i className="fas fa-chalkboard-teacher"></i>
+              <i className="fas fa-play-circle"></i>
             </div>
-            <h4>ไม่มีอาจารย์ผู้สอน</h4>
-            <p>ยังไม่มีการกำหนดอาจารย์ผู้สอนสำหรับรายวิชานี้</p>
+            <h4>ไม่มีบทเรียน</h4>
+            <p>ยังไม่มีบทเรียนในรายวิชานี้</p>
             <button 
               className="add-first-btn modern-btn primary large"
-              onClick={handleAddInstructor}
+              onClick={handleAddLesson}
             >
               <div className="btn-content">
                 <i className="fas fa-plus"></i>
-                <span>เพิ่มอาจารย์ผู้สอนคนแรก</span>
+                <span>เพิ่มบทเรียนแรก</span>
               </div>
               <div className="btn-ripple"></div>
             </button>
           </div>
         ) : (
-          <div className="content-grid instructors-grid">
-            {/* Enhanced Add Instructor Card */}
-            <AddInstructorCard 
-              subjectId={subject.subject_id}
-              onClick={handleAddInstructor}
-            />
-            
-            {subject.instructors.map((instructor) => (
-              <div key={`instructor-${instructor.instructor_id}`} className="content-item instructor-item">
-                <div className="instructor-avatar-section">
-                  <div className="instructor-avatar">
-                    {instructor.avatar_file_id ? (
-                      <img
-                        src={`${apiURL}/api/accounts/instructors/avatar/${instructor.avatar_file_id}`}
-                        alt={instructor.name}
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = 'https://www.pngwing.com/en/search?q=no+Image';
-                        }}
-                      />
-                    ) : instructor.avatar ? (
-                      <img
-                        src={`data:image/jpeg;base64,${instructor.avatar}`}
-                        alt={instructor.name}
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = 'https://www.pngwing.com/en/search?q=no+Image';
-                        }}
-                      />
-                    ) : (
-                      <div className="avatar-placeholder">
-                        <i className="fas fa-user"></i>
-                      </div>
-                    )}
-                  </div>
-                  <div className="instructor-status">
-                    <span className={`status-dot ${instructor.status}`}></span>
-                  </div>
-                </div>
-                
-                <div className="instructor-info">
-                  <h4 className="instructor-name">{instructor.name}</h4>
-                  <p className="instructor-position">{instructor.position}</p>
-                  {instructor.ranking_name && (
-                    <span className="instructor-rank">{instructor.ranking_name}</span>
-                  )}
-                  {(instructor.description || instructor.bio) && (
-                    <p className="instructor-description">
-                      {((instructor.description || instructor.bio) || '').length > 100 
-                        ? `${((instructor.description || instructor.bio) || '').substring(0, 100)}...`
-                        : (instructor.description || instructor.bio)
-                      }
-                    </p>
-                  )}
-                </div>
-                
-                <div className="item-actions">
-                  <Link
-                    to={`/admin-instructors/edit/${instructor.instructor_id}`}
-                    className="action-btn edit-btn modern-btn small secondary"
-                  >
-                    <i className="fas fa-edit"></i>
-                  </Link>
-                  <button 
-                    className="action-btn view-btn modern-btn small info"
-                    onClick={() => window.open(`/instructors/profile/${instructor.instructor_id}`, '_blank')}
-                  >
-                    <i className="fas fa-eye"></i>
-                  </button>
-                  <button 
-                    className="action-btn delete-btn modern-btn small danger"
-                    onClick={() => handleDeleteInstructor(instructor.instructor_id)}
-                  >
-                    <i className="fas fa-trash"></i>
-                  </button>
-                </div>
-              </div>
-            ))}
+          <div className="lessons-container">
+            <div className="lessons-list">
+              {/* Add Lesson Card */}
+              <AddLessonCard 
+                subjectId={subject.subject_id}
+                onClick={handleAddLesson}
+              />
+              
+              {/* Lesson Items with Accordion Bars */}
+              {lessons.map((lesson, index) => (
+                <LessonItem
+                  key={`lesson-${lesson.lesson_id}`}
+                  lesson={lesson}
+                  index={index}
+                  onDelete={handleDeleteLesson}
+                  onUpdateTitle={handleUpdateLessonTitle}
+                  onUpdateVideo={handleUpdateLessonVideo}
+                  onUpdateFiles={handleUpdateLessonFiles}
+                />
+              ))}
+            </div>
           </div>
         )}
       </div>
 
-      {/* Instructor Selection Modal */}
-      <InstructorSelectionModal
-        show={showInstructorModal}
-        onClose={() => setShowInstructorModal(false)}
-        onSelect={(instructorId) => {
-          console.log('Selected instructor:', instructorId);
+      {/* Modals */}
+      <SimpleAddLessonModal
+        show={showAddLessonModal}
+        onClose={() => setShowAddLessonModal(false)}
+        onSubmit={(title) => {
+          console.log('Created lesson:', title);
         }}
         subjectId={subject.subject_id}
       />
+
+      <EditLessonTitleModal
+        show={showEditTitleModal}
+        onClose={() => {
+          setShowEditTitleModal(false);
+          setSelectedLesson(null);
+        }}
+        lesson={selectedLesson}
+        onUpdate={handleUpdateLessonTitle}
+      />
+
+      <EditVideoModal
+        show={showEditVideoModal}
+        onClose={() => {
+          setShowEditVideoModal(false);
+          setSelectedLesson(null);
+        }}
+        lesson={selectedLesson}
+        onUpdate={handleUpdateLessonVideo}
+      />
+
+      <EditFilesModal
+        show={showEditFilesModal}
+        onClose={() => {
+          setShowEditFilesModal(false);
+          setSelectedLesson(null);
+        }}
+        lesson={selectedLesson}
+        onUpdate={handleUpdateLessonFiles}
+      />
     </>
-  );
-};
-
-// Tests Panel Component
-const TestsPanel: React.FC<{
-  subject: Subject;
-}> = ({ subject }) => {
-  const handleAddTest = (testType: 'pre' | 'post') => {
-    window.location.href = `/admin-quizzes/create-new?subject_id=${subject.subject_id}&type=${testType}`;
-  };
-
-  const handleDeleteTest = async (testType: 'pre' | 'post') => {
-    const testName = testType === 'pre' ? 'ก่อนเรียน' : 'หลังเรียน';
-    if (!confirm(`คุณต้องการลบแบบทดสอบ${testName}นี้หรือไม่?`)) return;
-    
-    try {
-      const apiURL = import.meta.env.VITE_API_URL;
-      const token = localStorage.getItem('token');
-      const testId = testType === 'pre' 
-        ? (subject.pre_test?.quiz_id || subject.preTest?.quiz_id) 
-        : (subject.post_test?.quiz_id || subject.postTest?.quiz_id);
-      
-      if (!testId) return;
-
-      const response = await axios.delete(
-        `${apiURL}/api/courses/quizzes/${testId}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      if (response.data.success) {
-        window.location.reload();
-        showNotification(`ลบแบบทดสอบ${testName}สำเร็จ`, 'success');
-      }
-    } catch (error) {
-      console.error('Error deleting test:', error);
-      showNotification(`เกิดข้อผิดพลาดในการลบแบบทดสอบ${testName}`, 'error');
-    }
-  };
-
-  const showNotification = (message: string, type: 'success' | 'error') => {
-    const notification = document.createElement('div');
-    notification.className = `notification ${type}`;
-    notification.innerHTML = `
-      <div class="notification-content">
-        <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
-        <span>${message}</span>
-      </div>
-    `;
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-      notification.classList.add('show');
-    }, 100);
-    
-    setTimeout(() => {
-      notification.classList.remove('show');
-      setTimeout(() => {
-        document.body.removeChild(notification);
-      }, 300);
-    }, 3000);
-  };
-
-  return (
-    <div className="tab-panel tests-panel">
-      <div className="tests-header">
-        <h3>แบบทดสอบ</h3>
-        <p>แบบทดสอบก่อนเรียนและหลังเรียนสำหรับรายวิชา {subject.subject_name}</p>
-      </div>
-      
-      <div className="tests-grid">
-        {/* Enhanced Pre-test Card */}
-        <div className={`test-card pre-test-card ${!(subject.pre_test || subject.preTest) ? 'empty' : 'filled'}`}>
-          <div className="test-card-header">
-            <div className={`test-icon pre-test-icon ${!(subject.pre_test || subject.preTest) ? 'empty' : ''}`}>
-              <i className="fas fa-play-circle"></i>
-            </div>
-            <div className="test-title">
-              <h4>แบบทดสอบก่อนเรียน</h4>
-              <p>ทดสอบความรู้พื้นฐานก่อนเริ่มเรียน</p>
-            </div>
-          </div>
-          
-          {(subject.pre_test || subject.preTest) ? (
-            <div className="test-content">
-              <div className="test-details">
-                <div className="detail-item">
-                  <span className="detail-label">ชื่อแบบทดสอบ</span>
-                  <span className="detail-value">{(subject.pre_test || subject.preTest)?.title}</span>
-                </div>
-                <div className="detail-item">
-                  <span className="detail-label">คำอธิบาย</span>
-                  <span className="detail-value">{(subject.pre_test || subject.preTest)?.description || '-'}</span>
-                </div>
-                <div className="detail-item">
-                  <span className="detail-label">จำนวนข้อ</span>
-                  <span className="detail-value">{(subject.preTest as any)?.question_count || '-'} ข้อ</span>
-                </div>
-                <div className="detail-item">
-                  <span className="detail-label">สถานะ</span>
-                  <span className={`status-badge ${(subject.pre_test || subject.preTest)?.status || 'active'}`}>
-                    {((subject.pre_test || subject.preTest)?.status || 'active') === 'active' ? 'เปิดใช้งาน' : 
-                     ((subject.pre_test || subject.preTest)?.status || 'active') === 'inactive' ? 'ปิดใช้งาน' : 'ร่าง'}
-                  </span>
-                </div>
-              </div>
-              
-              <div className="test-actions">
-                <Link
-                  to={`/admin-quizzes/edit/${(subject.pre_test || subject.preTest)?.quiz_id}`}
-                  className="action-btn edit-btn modern-btn small secondary"
-                >
-                  <div className="btn-content">
-                    <i className="fas fa-edit"></i>
-                    <span>แก้ไข</span>
-                  </div>
-                </Link>
-                <button 
-                  className="action-btn view-btn modern-btn small info"
-                  onClick={() => window.open(`/quizzes/preview/${(subject.pre_test || subject.preTest)?.quiz_id}`, '_blank')}
-                >
-                  <div className="btn-content">
-                    <i className="fas fa-eye"></i>
-                    <span>ดูตัวอย่าง</span>
-                  </div>
-                </button>
-                <button 
-                  className="action-btn delete-btn modern-btn small danger"
-                  onClick={() => handleDeleteTest('pre')}
-                >
-                  <div className="btn-content">
-                    <i className="fas fa-trash"></i>
-                    <span>ลบ</span>
-                  </div>
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="test-empty">
-              <AddTestCard 
-                testType="pre"
-                subjectId={subject.subject_id}
-                onClick={() => handleAddTest('pre')}
-
-              />
-            </div>
-          )}
-        </div>
-
-        {/* Enhanced Post-test Card */}
-        <div className={`test-card post-test-card ${!(subject.post_test || subject.postTest) ? 'empty' : 'filled'}`}>
-          <div className="test-card-header">
-            <div className={`test-icon post-test-icon ${!(subject.post_test || subject.postTest) ? 'empty' : ''}`}>
-              <i className="fas fa-stop-circle"></i>
-            </div>
-            <div className="test-title">
-              <h4>แบบทดสอบหลังเรียน</h4>
-              <p>ทดสอบความรู้หลังจากเรียนจบ</p>
-            </div>
-          </div>
-          
-          {(subject.post_test || subject.postTest) ? (
-            <div className="test-content">
-              <div className="test-details">
-                <div className="detail-item">
-                  <span className="detail-label">ชื่อแบบทดสอบ</span>
-                  <span className="detail-value">{(subject.post_test || subject.postTest)?.title}</span>
-                </div>
-                <div className="detail-item">
-                  <span className="detail-label">คำอธิบาย</span>
-                  <span className="detail-value">{(subject.post_test || subject.postTest)?.description || '-'}</span>
-                </div>
-                <div className="detail-item">
-                  <span className="detail-label">จำนวนข้อ</span>
-                  <span className="detail-value">{(subject.postTest as any)?.question_count || '-'} ข้อ</span>
-                </div>
-                <div className="detail-item">
-                  <span className="detail-label">สถานะ</span>
-                  <span className={`status-badge ${(subject.post_test || subject.postTest)?.status || 'active'}`}>
-                    {((subject.post_test || subject.postTest)?.status || 'active') === 'active' ? 'เปิดใช้งาน' : 
-                     ((subject.post_test || subject.postTest)?.status || 'active') === 'inactive' ? 'ปิดใช้งาน' : 'ร่าง'}
-                  </span>
-                </div>
-              </div>
-              
-              <div className="test-actions">
-                <Link
-                  to={`/admin-quizzes/edit/${(subject.post_test || subject.postTest)?.quiz_id}`}
-                  className="action-btn edit-btn modern-btn small secondary"
-                >
-                  <div className="btn-content">
-                    <i className="fas fa-edit"></i>
-                    <span>แก้ไข</span>
-                  </div>
-                </Link>
-                <button 
-                  className="action-btn view-btn modern-btn small info"
-                  onClick={() => window.open(`/quizzes/preview/${(subject.post_test || subject.postTest)?.quiz_id}`, '_blank')}
-                >
-                  <div className="btn-content">
-                    <i className="fas fa-eye"></i>
-                    <span>ดูตัวอย่าง</span>
-                  </div>
-                </button>
-                <button 
-                  className="action-btn delete-btn modern-btn small danger"
-                  onClick={() => handleDeleteTest('post')}
-                >
-                  <div className="btn-content">
-                    <i className="fas fa-trash"></i>
-                    <span>ลบ</span>
-                  </div>
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="test-empty">
-              <AddTestCard 
-                testType="post"
-                subjectId={subject.subject_id}
-                onClick={() => handleAddTest('post')}
-              />
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
   );
 };
 
@@ -1335,13 +1363,13 @@ const AdminLessonsArea: React.FC<AdminLessonsAreaProps> = ({
           )}
 
           {activeTab === 'instructors' && (
-            <InstructorsPanel
+            <InsSection
               subject={subject}
             />
           )}
 
           {activeTab === 'tests' && (
-            <TestsPanel
+            <PrePostSection
               subject={subject}
             />
           )}

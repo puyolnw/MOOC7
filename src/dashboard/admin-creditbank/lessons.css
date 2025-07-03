@@ -4,7 +4,6 @@
   max-width: 100%;
   margin: 0;
   padding: 0;
-  font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   min-height: 100vh;
 }
@@ -99,7 +98,7 @@
 /* ===== MODERN PANELS ===== */
 .admin-lessons-area .tab-panel {
   padding: 3rem;
-  background: #ffffff;
+  background: #e6e6e6;
   min-height: 500px;
 }
 
@@ -390,7 +389,7 @@
 }
 
 .admin-lessons-area .lesson-header.expanded .lesson-title {
-  color: white;
+  color: rgb(36, 36, 36);
 }
 
 .admin-lessons-area .lesson-meta-badges {
@@ -2157,7 +2156,6 @@
   max-width: 100%;
   margin: 0;
   padding: 0;
-  font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   min-height: 100vh;
 }
@@ -2251,7 +2249,7 @@
 /* ===== MODERN PANELS ===== */
 .admin-lessons-area .tab-panel {
   padding: 3rem;
-  background: #ffffff;
+  background: #e6e6e6;
   min-height: 500px;
 }
 
@@ -2687,7 +2685,9 @@
 }
 
 .admin-lessons-area .section-bar-header {
-  padding: 1.5rem;
+  padding: 1.5rem 2rem;
+  width: 50%; /* ให้เต็มความกว้าง */
+  min-width: 700px; /* หรือกำหนดความกว้างขั้นต่ำ */
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -3307,4 +3307,8 @@
   .admin-lessons-area .section-bar-title {
     font-size: 1.1rem;
   }
+}
+.admin-lessons-area .section-bar-header.extra-large {
+  padding: 3rem 3.5rem;
+  min-height: 140px;
 }

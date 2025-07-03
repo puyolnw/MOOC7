@@ -7,6 +7,7 @@ import DashboardBanner from "../dashboard-common/AdminBanner";
 import AdminSubjectArea from "./AdminSubjectArea";
 import "./mega.css";
 
+
 interface Course {
   course_id: number;
   course_code: string;

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import AdminLessonsArea from './AdminLessonsArea';
-
+import "./mega.css";
 
 interface Subject {
   subject_id: number;
