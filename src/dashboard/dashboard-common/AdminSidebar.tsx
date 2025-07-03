@@ -62,91 +62,11 @@ const sidebar_data: DataType[] = [
                },
             ],
          },
-         {
-            id: 6,
-            link: "/admin-subjects",
-            icon: "fas fa-book-open",
-            title: "รายวิชา",
-            hasSubmenu: true,
-            submenu: [
-               {
-                  id: 7,
-                  link: "/admin-subjects",
-                  title: "จัดการรายวิชา",
-               },
-               {
-                  id: 8,
-                  link: "/admin-subjects/create-new",
-                  title: "สร้างรายวิชาใหม่",
-               },
-            ],
-         },
-         {
-            id: 9,
-            link: "/admin-lessons",
-            icon: "fas fa-chalkboard-teacher",
-            title: "บทเรียน",
-            hasSubmenu: true,
-            submenu: [
-               {
-                  id: 10,
-                  link: "/admin-lessons",
-                  title: "จัดการบทเรียน",
-               },
-               {
-                  id: 11,
-                  link: "/admin-lessons/create-new",
-                  title: "สร้างบทเรียนใหม่",
-               },
-            ],
-         },
+      
+       
       ],
    },
-   {
-      id: 3,
-      title: "การประเมินผล",
-      class_name: "mt-40",
-      sidebar_details: [
-         {
-            id: 12,
-            link: "/admin-quizzes",
-            icon: "fas fa-clipboard-list",
-            title: "แบบทดสอบ",
-            hasSubmenu: true,
-            submenu: [
-               {
-                  id: 13,
-                  link: "/admin-quizzes",
-                  title: "จัดการแบบทดสอบ",
-               },
-               {
-                  id: 14,
-                  link: "/admin-quizzes/create-new",
-                  title: "สร้างแบบทดสอบใหม่",
-               },
-            ],
-         },
-         {
-            id: 15,
-            link: "/admin-questions",
-            icon: "fas fa-question-circle",
-            title: "คำถาม",
-            hasSubmenu: true,
-            submenu: [
-               {
-                  id: 16,
-                  link: "/admin-questions",
-                  title: "จัดการคำถาม",
-               },
-               {
-                  id: 17,
-                  link: "/admin-questions/create-new",
-                  title: "สร้างคำถามใหม่",
-               },
-            ],
-         },
-      ],
-   },
+  
    {
       id: 4,
       title: "จัดการผู้ใช้",
@@ -207,9 +127,20 @@ const AdminSidebar = () => {
       }
    };
 
-   // Check if a menu item is active
+   // ปรับปรุงฟังก์ชัน isActive ให้ตรวจสอบ exact match สำหรับ submenu items
    const isActive = (path: string) => {
-      return currentPath === path || currentPath.startsWith(path + '/');
+      return currentPath === path;
+   };
+
+   // ฟังก์ชันใหม่สำหรับตรวจสอบ parent menu (ใช้ startsWith เฉพาะกรณีที่ไม่มี submenu)
+   const isParentActive = (path: string, hasSubmenu: boolean = false) => {
+      if (hasSubmenu) {
+         // ถ้ามี submenu ให้ตรวจสอบแค่ว่า path ตรงกันหรือไม่
+         return currentPath === path;
+      } else {
+         // ถ้าไม่มี submenu ให้ใช้ startsWith เหมือนเดิม
+         return currentPath === path || currentPath.startsWith(path + '/');
+      }
    };
 
    // Check if a submenu item is active
@@ -277,7 +208,7 @@ const AdminSidebar = () => {
                               ) : (
                                  <Link 
                                     to={list.link} 
-                                    className={`menu-item ${isActive(list.link) ? "active" : ""}`}
+                                    className={`menu-item ${isParentActive(list.link, list.hasSubmenu) ? "active" : ""}`}
                                  >
                                     <span className="menu-icon">
                                        <i className={list.icon}></i>

@@ -32,8 +32,7 @@ const AddCoursearea: React.FC = () => {
             <div className="dashboard__content-area col-lg-9">
               <div className="dashboard__content-main">
                 <div className="dashboard__content-header mb-4">
-                  <h2 className="title text-muted">เพิ่มหลักสูตรใหม่</h2>
-                  <p className="desc">สร้างหลักสูตรใหม่พร้อมรายวิชาที่เกี่ยวข้อง</p>
+  
                 </div>
                 
                 <AddCourses 

@@ -346,7 +346,7 @@ const AddCourseCard: React.FC<{
         <div className="add-course-icon">
           <i className="fas fa-plus"></i>
         </div>
-        <h3 className="add-course-title">เพิ่มหลักสูตรใหม่</h3>
+    
         <p className="add-course-description">
           สร้างหลักสูตรใหม่สำหรับสาขา {selectedDepartment.department_name}
         </p>
