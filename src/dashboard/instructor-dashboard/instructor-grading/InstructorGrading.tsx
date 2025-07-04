@@ -85,7 +85,7 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
     const [isCorrect, setIsCorrect] = useState<{ [key: number]: boolean }>({});
     const [feedback, setFeedback] = useState<{ [key: number]: string }>({});
     const [studentInfo, setStudentInfo] = useState<{
-        name: string;
+        fullname: string;
         email: string;
         attemptDate: string;
     } | null>(null);
@@ -157,7 +157,7 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
 
                     setAttemptAnswers(attempt.answers);
                     setStudentInfo({
-                        name: `${attempt.first_name} ${attempt.last_name}`,
+                        fullname: `${attempt.first_name} ${attempt.last_name}`,
                         email: attempt.email,
                         attemptDate: new Date(attempt.end_time).toLocaleString(),
                     });
@@ -373,7 +373,7 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
                 
                 setAttemptAnswers(attempt.answers);
                 setStudentInfo({
-                    name: `${attempt.first_name} ${attempt.last_name}`,
+                    fullname: `${attempt.first_name} ${attempt.last_name}`,
                     email: attempt.email,
                     attemptDate: new Date(attempt.end_time).toLocaleString(),
                 });
@@ -505,7 +505,7 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
                                     <div className="col-md-6">
                                         <h5 className="card-title">ข้อมูลผู้เรียน</h5>
                                         <p className="mb-1">
-                                            <strong>ชื่อ:</strong> {studentInfo.name}
+                                            <strong>ชื่อ:</strong> {studentInfo.fullname}
                                         </p>
                                         <p className="mb-1">
                                             <strong>อีเมล:</strong> {studentInfo.email}
