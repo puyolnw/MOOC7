@@ -1379,16 +1379,10 @@ const AdminLessonsArea: React.FC<AdminLessonsAreaProps> = ({
                 <div className="test-section">
                   <PrePostSection
                     subject={subject}
-                    testType="pre"
                   />
                 </div>
                 
-                <div className="test-section">
-                  <PrePostSection
-                    subject={subject}
-                    testType="post"
-                  />
-                </div>
+                
               </div>
             </div>
           )}
