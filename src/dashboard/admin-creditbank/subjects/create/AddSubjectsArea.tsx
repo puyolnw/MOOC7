@@ -34,13 +34,12 @@ const AddSubjectsArea: React.FC<AddSubjectsAreaProps> = ({ isEmbedded = false, o
 
     // รอให้ notification แสดงก่อนนำทาง
     setTimeout(() => {
-      navigate("/admin-subjects");
     }, 3500);
   };
 
   // จัดการเมื่อมีการยกเลิก
   const handleCancel = () => {
-    navigate("/admin-subjects");
+    navigate("/admin-creditbank");
   };
 
   // ถ้าเป็นแบบ embedded ให้แสดงเฉพาะฟอร์ม
@@ -65,10 +64,7 @@ const AddSubjectsArea: React.FC<AddSubjectsAreaProps> = ({ isEmbedded = false, o
             <DashboardSidebar />
             <div className="dashboard__content-area col-lg-9">
               <div className="dashboard__content-main">
-                <div className="dashboard__content-header mb-4">
-                  <h2 className="title text-muted">เพิ่มรายวิชาใหม่</h2>
-                  <p className="desc">สร้างรายวิชาใหม่สำหรับหลักสูตร</p>
-                </div>
+           
                 
                 <AddSubjects 
                   onSubmit={handleSubmit}
