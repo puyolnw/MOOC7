@@ -105,7 +105,7 @@ const sidebar_data: DataType[] = [
                },
                {
                   id: 23,
-                  link: "/admin-account/students/enrollment",
+                  link: "/admin-account/students/create-new",
                   title: "การลงทะเบียน",
                },
             ],

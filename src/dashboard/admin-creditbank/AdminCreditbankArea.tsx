@@ -1128,6 +1128,9 @@ const AdminCreditbankArea: React.FC = () => {
   const [itemsPerPage] = useState(12);
   const [totalPages, setTotalPages] = useState(1);
 
+  // Add state for initialization
+  const [isInitialized, setIsInitialized] = useState(false);
+
   const handleAddCourse = () => {
     if (selectedDepartment) {
       navigate(`/admin-creditbank/create-new?department_id=${selectedDepartment.department_id}`);
@@ -1136,10 +1139,108 @@ const AdminCreditbankArea: React.FC = () => {
     }
   };
 
+  // Initialize from URL parameters on component mount
+  useEffect(() => {
+    const initializeFromURL = async () => {
+      const urlParams = new URLSearchParams(location.search);
+      const view = urlParams.get('view');
+      const faculty = urlParams.get('faculty');
+      const departmentId = urlParams.get('department');
+      const courseId = urlParams.get('course');
+      const subjectId = urlParams.get('subject');
+
+      if (view && faculty) {
+        try {
+          setIsLoading(true);
+          
+          // Set faculty
+          setSelectedFaculty(decodeURIComponent(faculty));
+          
+          if (view === 'departments') {
+            setCurrentView('departments');
+            await fetchDepartmentsByFaculty(decodeURIComponent(faculty));
+          } else if (view === 'courses' && departmentId) {
+            // Need to fetch department data first
+            const token = localStorage.getItem('token');
+            const deptResponse = await axios.get(
+              `${apiURL}/api/departments/${departmentId}`,
+              { headers: { Authorization: `Bearer ${token}` } }
+            );
+            
+            if (deptResponse.data.success) {
+              const department = deptResponse.data.department;
+              setSelectedDepartment(department);
+              setCurrentView('courses');
+              await fetchCoursesByDepartment(parseInt(departmentId));
+            }
+          } else if (view === 'subjects' && departmentId && courseId) {
+            // Fetch department and course data
+            const token = localStorage.getItem('token');
+            
+            const [deptResponse, courseResponse] = await Promise.all([
+              axios.get(`${apiURL}/api/departments/${departmentId}`, {
+                headers: { Authorization: `Bearer ${token}` }
+              }),
+              axios.get(`${apiURL}/api/courses/${courseId}`, {
+                headers: { Authorization: `Bearer ${token}` }
+              })
+            ]);
+            
+            if (deptResponse.data.success && courseResponse.data.success) {
+              setSelectedDepartment(deptResponse.data.department);
+              setSelectedCourse(courseResponse.data.course);
+              setCurrentView('subjects');
+            }
+          } else if (view === 'subject-detail' && departmentId && courseId && subjectId) {
+            // Fetch department, course, and subject data
+            const token = localStorage.getItem('token');
+            
+            const [deptResponse, courseResponse, subjectResponse] = await Promise.all([
+              axios.get(`${apiURL}/api/departments/${departmentId}`, {
+                headers: { Authorization: `Bearer ${token}` }
+              }),
+              axios.get(`${apiURL}/api/courses/${courseId}`, {
+                headers: { Authorization: `Bearer ${token}` }
+              }),
+              axios.get(`${apiURL}/api/subjects/${subjectId}`, {
+                headers: { Authorization: `Bearer ${token}` }
+              })
+            ]);
+            
+            if (deptResponse.data.success && courseResponse.data.success && subjectResponse.data.success) {
+              setSelectedDepartment(deptResponse.data.department);
+              setSelectedCourse(courseResponse.data.course);
+              setSelectedSubject(subjectResponse.data.subject);
+              setCurrentView('subject-detail');
+            }
+          }
+        } catch (error) {
+          console.error('Error initializing from URL:', error);
+          // If there's an error, fall back to faculties view
+          setCurrentView('faculties');
+          setSelectedFaculty(null);
+          setSelectedDepartment(null);
+          setSelectedCourse(null);
+          setSelectedSubject(null);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+      
+      setIsInitialized(true);
+    };
+
+    if (!isInitialized) {
+      initializeFromURL();
+    }
+  }, [location.search, isInitialized, apiURL]);
+
   // Load faculties on component mount
   useEffect(() => {
-    fetchFaculties();
-  }, []);
+    if (isInitialized) {
+      fetchFaculties();
+    }
+  }, [isInitialized]);
 
   // Handle browser back/forward buttons
   useEffect(() => {
@@ -1155,7 +1256,7 @@ const AdminCreditbankArea: React.FC = () => {
         // Load appropriate data based on state
         if (view === 'departments' && faculty) {
           fetchDepartmentsByFaculty(faculty);
-               } else if (view === 'courses' && department) {
+        } else if (view === 'courses' && department) {
           fetchCoursesByDepartment(department.department_id);
         }
       }
@@ -1194,7 +1295,10 @@ const AdminCreditbankArea: React.FC = () => {
 
   // API calls
   const fetchFaculties = async () => {
-    setIsLoading(true);
+    // Only show loading if we're in faculties view
+    if (currentView === 'faculties') {
+      setIsLoading(true);
+    }
     setError(null);
     try {
       const token = localStorage.getItem('token');
@@ -1237,7 +1341,9 @@ const AdminCreditbankArea: React.FC = () => {
       console.error('Error fetching faculties:', error);
       setError('เกิดข้อผิดพลาดในการดึงข้อมูลคณะ');
     } finally {
-      setIsLoading(false);
+      if (currentView === 'faculties') {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -1475,13 +1581,41 @@ const AdminCreditbankArea: React.FC = () => {
     }
   }, [searchTerm, currentView]);
 
-  // Load saved search term
+   // Load saved search term
   useEffect(() => {
     const savedSearch = localStorage.getItem(`search_${currentView}`);
     if (savedSearch && currentView === 'courses') {
       setSearchTerm(savedSearch);
     }
   }, [currentView]);
+
+  // Don't render anything until initialized
+  if (!isInitialized) {
+    return (
+      <section className="dashboard__area section-pb-120">
+        <div className="container">
+          <DashboardBanner />
+          <div className="dashboard__inner-wrap">
+            <div className="row">
+              <DashboardSidebar />
+              <div className="dashboard__content-area col-lg-9">
+                <div className="dashboard__content-main">
+                  <div className="loading-container">
+                    <div className="loading-spinner">
+                      <div className="spinner-border text-primary" role="status">
+                        <span className="visually-hidden">กำลังโหลด...</span>
+                      </div>
+                      <p className="loading-text">กำลังเตรียมข้อมูล...</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="dashboard__area section-pb-120">
@@ -1541,7 +1675,7 @@ const AdminCreditbankArea: React.FC = () => {
                   </div>
                 )}
 
-                                {/* Content based on current view */}
+                {/* Content based on current view */}
                 {currentView === 'subject-detail' && selectedSubject && selectedCourse ? (
                   <AdminSubjectArea 
                     subjectId={selectedSubject.subject_id}
@@ -1599,7 +1733,6 @@ const AdminCreditbankArea: React.FC = () => {
 
                 {/* Keyboard Shortcuts Help */}
                 <div className="keyboard-shortcuts-help">
-
                   <div className="collapse" id="keyboardShortcuts">
                     <div className="shortcuts-content">
                       <h6>คีย์บอร์ดลัด</h6>
@@ -1621,3 +1754,5 @@ const AdminCreditbankArea: React.FC = () => {
 };
 
 export default AdminCreditbankArea;
+
+
