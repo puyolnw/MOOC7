@@ -126,6 +126,10 @@ const TestCard: React.FC<{
     }
   };
 
+  const handleCancel = () => {
+    setShowQuestionForm(false);
+  };
+
   const getQuestionTypeText = (type: string): string => {
     switch (type) {
       case 'multiple_choice': return 'ปรนัย (หลายตัวเลือก)';
@@ -143,9 +147,8 @@ const TestCard: React.FC<{
             <div className="form-wrapper">
               <AddQuestions
                 onSubmit={handleQuestionAdd}
-                onCancel={() => setShowQuestionForm(false)}
-                
-                
+                onCancel={handleCancel}
+               
                 
               />
             </div>
@@ -291,7 +294,7 @@ const PrePostSection: React.FC<PrePostSectionProps> = ({ subject, testType, onSu
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const createTestForSubject = async (type: 'pre' | 'post') => {
+  const createTestForSubject = async (testType: 'pre' | 'post') => {
     setLoading(true);
     setError('');
     
@@ -300,9 +303,9 @@ const PrePostSection: React.FC<PrePostSectionProps> = ({ subject, testType, onSu
       const token = localStorage.getItem('token');
       
       const testData = {
-        title: `แบบทดสอบ${type === 'pre' ? 'ก่อนเรียน' : 'หลังเรียน'} - ${subject.subject_name}`,
-        description: `แบบทดสอบ${type === 'pre' ? 'ก่อนเรียน' : 'หลังเรียน'}สำหรับรายวิชา ${subject.subject_name}`,
-        type: type,
+        title: `แบบทดสอบ${testType === 'pre' ? 'ก่อนเรียน' : 'หลังเรียน'} - ${subject.subject_name}`,
+        description: `แบบทดสอบ${testType === 'pre' ? 'ก่อนเรียน' : 'หลังเรียน'}สำหรับรายวิชา ${subject.subject_name}`,
+        type: testType,
         subject_id: subject.subject_id,
         status: 'draft',
         timeLimit: {
@@ -345,14 +348,14 @@ const PrePostSection: React.FC<PrePostSectionProps> = ({ subject, testType, onSu
 
         const updatedSubject = {
           ...subject,
-          [type === 'pre' ? 'pre_test' : 'post_test']: newQuiz
+          [testType === 'pre' ? 'pre_test' : 'post_test']: newQuiz
         };
 
         if (onSubjectUpdate) {
           onSubjectUpdate(updatedSubject);
         }
 
-        showNotification(`สร้าง${type === 'pre' ? 'แบบทดสอบก่อนเรียน' : 'แบบทดสอบหลังเรียน'}สำเร็จ`, 'success');
+        showNotification(`สร้าง${testType === 'pre' ? 'แบบทดสอบก่อนเรียน' : 'แบบทดสอบหลังเรียน'}สำเร็จ`, 'success');
       }
     } catch (error: any) {
       console.error('Error creating test:', error);
@@ -364,17 +367,17 @@ const PrePostSection: React.FC<PrePostSectionProps> = ({ subject, testType, onSu
     }
   };
 
-  const handleQuestionAdd = async (type: 'pre' | 'post', questionData: any) => {
+  const handleQuestionAdd = async (testType: 'pre' | 'post', questionData: any) => {
     try {
-      const test = type === 'pre' 
+      const test = testType === 'pre' 
         ? (subject.pre_test || subject.preTest) 
         : (subject.post_test || subject.postTest);
 
       let targetQuizId = test?.quiz_id;
 
       if (!targetQuizId) {
-        await createTestForSubject(type);
-        const updatedTest = type === 'pre' 
+        await createTestForSubject(testType);
+        const updatedTest = testType === 'pre' 
           ? (subject.pre_test || subject.preTest) 
           : (subject.post_test || subject.postTest);
         targetQuizId = updatedTest?.quiz_id;

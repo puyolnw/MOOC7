@@ -222,8 +222,7 @@ const EnrolledCourseDetailsArea = ({
                             </div>
                             <div className="d-flex justify-content-between mt-2">
                               <small>บทเรียนที่เรียนแล้ว: {subject.completed_lessons}/{subject.total_lessons}</small>
-                              <Link to={`/subject-details/${subject.subject_id}`} className="btn btn-sm btn-link">
-                                เข้าสู่รายวิชา <i className="fas fa-arrow-right"></i>
+                              <Link to={`/subject-details/${subject.subject_id}`} >
                               </Link>
                             </div>
                           </div>
