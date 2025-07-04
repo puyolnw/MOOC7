@@ -1140,61 +1140,67 @@ const AdminCreditbankArea: React.FC = () => {
   };
 
   // Initialize from URL parameters on component mount
-  useEffect(() => {
-    const initializeFromURL = async () => {
-      const urlParams = new URLSearchParams(location.search);
-      const view = urlParams.get('view');
-      const faculty = urlParams.get('faculty');
-      const departmentId = urlParams.get('department');
-      const courseId = urlParams.get('course');
-      const subjectId = urlParams.get('subject');
+ // แก้ไข useEffect สำหรับ initialization
+useEffect(() => {
+  const initializeFromURL = async () => {
+    const urlParams = new URLSearchParams(location.search);
+    const view = urlParams.get('view');
+    const faculty = urlParams.get('faculty');
+    const departmentId = urlParams.get('department');
+    const courseId = urlParams.get('course');
+    const subjectId = urlParams.get('subject');
 
-      if (view && faculty) {
-        try {
-          setIsLoading(true);
+    console.log('Initializing from URL:', { view, faculty, departmentId, courseId, subjectId });
+
+    if (view && faculty) {
+      try {
+        setIsLoading(true);
+        
+        // Set faculty
+        setSelectedFaculty(decodeURIComponent(faculty));
+        
+        if (view === 'departments') {
+          setCurrentView('departments');
+          await fetchDepartmentsByFaculty(decodeURIComponent(faculty));
+        } else if (view === 'courses' && departmentId) {
+          // Need to fetch department data first
+          const token = localStorage.getItem('token');
+          const deptResponse = await axios.get(
+            `${apiURL}/api/departments/${departmentId}`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
           
-          // Set faculty
-          setSelectedFaculty(decodeURIComponent(faculty));
+          if (deptResponse.data.success) {
+            const department = deptResponse.data.department;
+            setSelectedDepartment(department);
+            setCurrentView('courses');
+            await fetchCoursesByDepartment(parseInt(departmentId));
+          }
+        } else if (view === 'subjects' && departmentId && courseId) {
+          // Fetch department and course data
+          const token = localStorage.getItem('token');
           
-          if (view === 'departments') {
-            setCurrentView('departments');
-            await fetchDepartmentsByFaculty(decodeURIComponent(faculty));
-          } else if (view === 'courses' && departmentId) {
-            // Need to fetch department data first
-            const token = localStorage.getItem('token');
-            const deptResponse = await axios.get(
-              `${apiURL}/api/departments/${departmentId}`,
-              { headers: { Authorization: `Bearer ${token}` } }
-            );
-            
-            if (deptResponse.data.success) {
-              const department = deptResponse.data.department;
-              setSelectedDepartment(department);
-              setCurrentView('courses');
-              await fetchCoursesByDepartment(parseInt(departmentId));
-            }
-          } else if (view === 'subjects' && departmentId && courseId) {
-            // Fetch department and course data
-            const token = localStorage.getItem('token');
-            
-            const [deptResponse, courseResponse] = await Promise.all([
-              axios.get(`${apiURL}/api/departments/${departmentId}`, {
-                headers: { Authorization: `Bearer ${token}` }
-              }),
-              axios.get(`${apiURL}/api/courses/${courseId}`, {
-                headers: { Authorization: `Bearer ${token}` }
-              })
-            ]);
-            
-            if (deptResponse.data.success && courseResponse.data.success) {
-              setSelectedDepartment(deptResponse.data.department);
-              setSelectedCourse(courseResponse.data.course);
-              setCurrentView('subjects');
-            }
-          } else if (view === 'subject-detail' && departmentId && courseId && subjectId) {
-            // Fetch department, course, and subject data
-            const token = localStorage.getItem('token');
-            
+          const [deptResponse, courseResponse] = await Promise.all([
+            axios.get(`${apiURL}/api/departments/${departmentId}`, {
+              headers: { Authorization: `Bearer ${token}` }
+            }),
+            axios.get(`${apiURL}/api/courses/${courseId}`, {
+              headers: { Authorization: `Bearer ${token}` }
+            })
+          ]);
+          
+          if (deptResponse.data.success && courseResponse.data.success) {
+            setSelectedDepartment(deptResponse.data.department);
+            setSelectedCourse(courseResponse.data.course);
+            setCurrentView('subjects');
+          }
+        } else if (view === 'subject-detail' && departmentId && courseId && subjectId) {
+          // Fetch department, course, and subject data
+          const token = localStorage.getItem('token');
+          
+          console.log('Fetching data for subject-detail view...');
+          
+          try {
             const [deptResponse, courseResponse, subjectResponse] = await Promise.all([
               axios.get(`${apiURL}/api/departments/${departmentId}`, {
                 headers: { Authorization: `Bearer ${token}` }
@@ -1202,38 +1208,93 @@ const AdminCreditbankArea: React.FC = () => {
               axios.get(`${apiURL}/api/courses/${courseId}`, {
                 headers: { Authorization: `Bearer ${token}` }
               }),
-              axios.get(`${apiURL}/api/subjects/${subjectId}`, {
+              axios.get(`${apiURL}/api/courses/subjects/${subjectId}`, {
                 headers: { Authorization: `Bearer ${token}` }
               })
             ]);
             
+            console.log('API Responses:', {
+              dept: deptResponse.data,
+              course: courseResponse.data,
+              subject: subjectResponse.data
+            });
+            
             if (deptResponse.data.success && courseResponse.data.success && subjectResponse.data.success) {
-              setSelectedDepartment(deptResponse.data.department);
-              setSelectedCourse(courseResponse.data.course);
-              setSelectedSubject(subjectResponse.data.subject);
+              const department = deptResponse.data.department;
+              const course = courseResponse.data.course;
+              const subject = subjectResponse.data.subject;
+              
+              // Map subject data properly
+              const mappedSubject: Subject = {
+                subject_id: subject.subject_id,
+                subject_code: subject.subject_code || '',
+                subject_name: subject.subject_name || subject.title || '',
+                description: subject.description || '',
+                credits: subject.credits || 0,
+                cover_image: subject.cover_image,
+                cover_image_file_id: subject.cover_image_file_id,
+                video_url: subject.video_url,
+                status: subject.status || 'active',
+                lesson_count: subject.lesson_count || 0,
+                quiz_count: subject.quiz_count || 0,
+                instructors: subject.instructors || [],
+                prerequisites: subject.prerequisites || [],
+                pre_test: subject.pre_test || subject.preTest || null,
+                post_test: subject.post_test || subject.postTest || null,
+                order_number: subject.order_number || 0,
+                lessons: subject.lessons || []
+              };
+              
+              setSelectedDepartment(department);
+              setSelectedCourse(course);
+              setSelectedSubject(mappedSubject);
               setCurrentView('subject-detail');
+              
+              console.log('Successfully set subject-detail view');
+            } else {
+              console.error('API responses not successful');
+              throw new Error('Failed to fetch required data');
             }
+          } catch (error) {
+            console.error('Error fetching data for subject-detail:', error);
+            // ถ้าเกิดข้อผิดพลาด ให้กลับไปหน้า faculties
+            setCurrentView('faculties');
+            setSelectedFaculty(null);
+            setSelectedDepartment(null);
+            setSelectedCourse(null);
+            setSelectedSubject(null);
+            setError('ไม่สามารถโหลดข้อมูลรายวิชาได้');
           }
-        } catch (error) {
-          console.error('Error initializing from URL:', error);
-          // If there's an error, fall back to faculties view
+        } else {
+          console.log('Conditions not met, going to faculties');
           setCurrentView('faculties');
-          setSelectedFaculty(null);
-          setSelectedDepartment(null);
-          setSelectedCourse(null);
-          setSelectedSubject(null);
-        } finally {
-          setIsLoading(false);
         }
+      } catch (error) {
+        console.error('Error initializing from URL:', error);
+        // If there's an error, fall back to faculties view
+        setCurrentView('faculties');
+        setSelectedFaculty(null);
+        setSelectedDepartment(null);
+        setSelectedCourse(null);
+        setSelectedSubject(null);
+        setError('เกิดข้อผิดพลาดในการโหลดข้อมูล');
+      } finally {
+        setIsLoading(false);
       }
-      
-      setIsInitialized(true);
-    };
-
-    if (!isInitialized) {
-      initializeFromURL();
+    } else {
+      console.log('No view or faculty in URL, going to faculties');
+      // ถ้าไม่มี parameters ให้ไปหน้า faculties
+      setCurrentView('faculties');
+      setIsLoading(false);
     }
-  }, [location.search, isInitialized, apiURL]);
+    
+    setIsInitialized(true);
+  };
+
+  if (!isInitialized) {
+    initializeFromURL();
+  }
+}, [location.search, isInitialized, apiURL]);
 
   // Load faculties on component mount
   useEffect(() => {

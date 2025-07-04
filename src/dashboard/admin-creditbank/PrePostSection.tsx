@@ -205,9 +205,9 @@ const CombinedTestCard: React.FC<{
             <i className="fas fa-clipboard-list"></i>
           </div>
           <div className={styles.testInfo}>
-            <h4 className={styles.testTitle}>แบบทดสอบประจำรายวิชา</h4>
+            <h4 className={styles.testTitle}>แบบทดสอบก่อนเรียน - หลังเรียนประจำรายวิชา</h4>
             <p className={styles.testSubtitle}>
-              แบบทดสอบรวมสำหรับรายวิชา {subject.subject_name}
+              แบบทดสอบก่อนเรียน - หลังเรียนประจำรายวิชา{subject.subject_name}
             </p>
             <div className={styles.testStats}>
               <span className={styles.statItem}>

@@ -488,50 +488,6 @@ const AddQuestionsforPrePost: React.FC<AddQuestionsforPrePostProps> = ({ onSubmi
     </div>
   );
 
-  const renderQuizSelection = () => (
-    <div className="card shadow-sm border-0 mb-4">
-      <div className="card-header bg-success text-white">
-        <h5 className="mb-0">
-          <i className="fas fa-clipboard-list me-2"></i>
-          เลือกแบบทดสอบ
-        </h5>
-      </div>
-      <div className="card-body">
-        <div className="mb-3">
-          <button
-            type="button"
-            className="btn btn-outline-success"
-            onClick={() => setShowQuizModal(true)}
-          >
-            <i className="fas fa-search me-2"></i>
-            เลือกแบบทดสอบ ({questionData.quizzes.length} รายการ)
-          </button>
-        </div>
-
-        {questionData.quizzes.length > 0 && (
-          <div className="selected-quizzes">
-            <h6>แบบทดสอบที่เลือก:</h6>
-            <div className="quiz-tags">
-              {questionData.quizzes.map(quizId => {
-                const quiz = availableQuizzes.find(q => q.id === quizId);
-                return quiz ? (
-                  <span key={quizId} className="badge bg-success me-2 mb-2">
-                    {quiz.title}
-                    <button
-                      type="button"
-                      className="btn-close btn-close-white ms-2"
-                      onClick={() => handleToggleQuiz(quizId)}
-                    ></button>
-                  </span>
-                ) : null;
-              })}
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-
   const renderPreview = () => (
     <div className="card shadow-sm border-0 mb-4">
       <div className="card-header bg-info text-white">
@@ -697,7 +653,7 @@ const AddQuestionsforPrePost: React.FC<AddQuestionsforPrePostProps> = ({ onSubmi
                 <>
                   {renderQuestionInfo()}
                   {renderObjectiveSettings()}
-                  {renderQuizSelection()}
+    
                 </>
               ) : (
                 renderPreview()
