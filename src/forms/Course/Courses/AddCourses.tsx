@@ -819,43 +819,7 @@ const AddCourses: React.FC<AddCoursesProps> = ({ onSubmit, onCancel }) => {
         <div className="row justify-content-center">
           <div className="col-12 col-xl-10">
             {/* Header */}
-            <div className="d-flex justify-content-between align-items-center mb-4">
-              <div>
-                <h2 className="h3 mb-1">สร้างหลักสูตรใหม่</h2>
-                <p className="text-muted mb-0">กรอกข้อมูลหลักสูตรและจัดการเนื้อหาการเรียนการสอน</p>
-               
-              </div>
-              <div className="d-flex gap-2">
-                <button
-                  type="button"
-                  className="btn btn-outline-secondary"
-                  onClick={handleCancel}
-                  disabled={isSubmitting}
-                >
-                  <i className="fas fa-times me-2"></i>ยกเลิก
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  onClick={handleSubmit}
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? (
-                    <>
-                      <div className="spinner-border spinner-border-sm me-2" role="status">
-                        <span className="visually-hidden">Loading...</span>
-                      </div>
-                      กำลังสร้าง...
-                    </>
-                  ) : (
-                    <>
-                      <i className="fas fa-save me-2"></i>สร้างหลักสูตร
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-
+          
             {/* Toggle Button สำหรับแสดง/ซ่อนส่วนเพิ่มเติม */}
             <div className="card shadow-sm border-0 mb-4">
               <div className="card-body">

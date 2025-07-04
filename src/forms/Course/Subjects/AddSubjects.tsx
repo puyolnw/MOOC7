@@ -355,42 +355,10 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel }) => {
     <div className="container-fluid py-4">
       <div className="row justify-content-center">
         <div className="col-12 col-xl-10">
-          {/* Header */}
-          <div className="d-flex justify-content-between align-items-center mb-4">
-            <div>
-              <h2 className="h3 mb-1">สร้างรายวิชาใหม่</h2>
-              <p className="text-muted mb-0">กรอกข้อมูลรายวิชาและจัดการเนื้อหาการเรียนการสอน</p>
-            </div>
-            <div className="d-flex gap-2">
-              <button
-                type="button"
-                className="btn btn-outline-secondary"
-                onClick={handleCancel}
-                disabled={isSubmitting}
-              >
-                <i className="fas fa-times me-2"></i>ยกเลิก
-              </button>
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={handleSubmit}
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? (
-                  <>
-                    <div className="spinner-border spinner-border-sm me-2" role="status">
-                      <span className="visually-hidden">Loading...</span>
-                    </div>
-                    กำลังสร้าง...
-                  </>
-                ) : (
-                  <>
-                    <i className="fas fa-save me-2"></i>สร้างรายวิชา
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
+
+
+
+
 
           {/* Toggle Button */}
           <div className="card shadow-sm border-0 mb-4">
@@ -482,34 +450,35 @@ const AddSubjects: React.FC<AddSubjectsProps> = ({ onSubmit, onCancel }) => {
                         </small>
                       )}
                     </label>
-                    <div className="input-group">
-                      <input
-                        type="text"
-                        className={`form-control ${errors.code ? "is-invalid" : ""} ${relatedCourses.length > 0 ? "border-success" : ""}`}
-                        id="code"
-                        name="code"
-                        value={subjectData.code}
-                        onChange={handleInputChange}
-                        placeholder="รหัสรายวิชา"
-                        readOnly={isGeneratingCode}
-                      />
-                      <button
-                        type="button"
-                        className="btn btn-outline-secondary"
-                        onClick={generateSubjectCode}
-                        disabled={!courseId || isGeneratingCode}
-                        title="สร้างรหัสรายวิชาใหม่"
-                      >
-                        {isGeneratingCode ? (
-                          <div className="spinner-border spinner-border-sm" role="status">
-                            <span className="visually-hidden">Loading...</span>
-                          </div>
-                        ) : (
-                          <i className="fas fa-sync-alt"></i>
-                        )}
-                      </button>
-                      {errors.code && <div className="invalid-feedback">{errors.code}</div>}
-                    </div>
+<div className="input-group">
+  <input
+    type="text"
+    className={`form-control ${errors.code ? "is-invalid" : ""} ${relatedCourses.length > 0 ? "border-success" : ""}`}
+    id="code"
+    name="code"
+    value={subjectData.code}
+    onChange={handleInputChange}
+    placeholder="Subject Code"
+    readOnly={isGeneratingCode}
+  />
+  <button
+    type="button"
+    className="btn btn-outline-secondary"
+    onClick={generateSubjectCode}
+    disabled={!courseId || isGeneratingCode}
+    title="Generate new subject code"
+  >
+    {isGeneratingCode ? (
+      <div className="spinner-border spinner-border-sm" role="status">
+        <span className="visually-hidden">Loading...</span>
+      </div>
+    ) : (
+      <i className="fas fa-sync-alt"></i>
+    )}
+  </button>
+  {errors.code && <div className="invalid-feedback">{errors.code}</div>}
+</div>
+
                     <small className="text-muted">
                       รหัสจะถูกสร้างอัตโนมัติตามหลักสูตรและลำดับรายวิชา
                     </small>
