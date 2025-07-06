@@ -21,7 +21,6 @@ interface FormData {
    education_level: string;
    academic_year: number;
    phone: string;
-   address: string;
 }
 
 interface Department {
@@ -58,7 +57,6 @@ const schema = yup
          .min(1, 'ชั้นปีต้องมากกว่า 0')
          .max(4, 'ชั้นปีต้องไม่เกิน 4'),
       phone: yup.string().required('กรุณากรอกเบอร์โทรศัพท์'),
-      address: yup.string().required('กรุณากรอกที่อยู่'),
    })
    .required();
 
@@ -292,7 +290,6 @@ const RegistrationForm = () => {
                   />
                   <p className="form_error">{errors.phone?.message}</p>
                </div>
-
                <div className="form-grp">
                   <label htmlFor="student-code">รหัสนักศึกษา</label>
                   <input
@@ -334,6 +331,22 @@ const RegistrationForm = () => {
                      <option value="ปริญญาเอก">ปริญญาเอก</option>
                   </select>
                   <p className="form_error">{errors.education_level?.message}</p>
+               </div>
+
+               <div className="form-grp">
+                  <label htmlFor="academic-year">ชั้นปีการศึกษา</label>
+                  <select
+                     {...register('academic_year', { valueAsNumber: true })}
+                     id="academic-year"
+                     className="input-like-select"
+                  >
+                     <option value="">เลือกชั้นปี</option>
+                     <option value="1">1</option>
+                     <option value="2">2</option>
+                     <option value="3">3</option>
+                     <option value="4">4</option>
+                  </select>
+                  <p className="form_error">{errors.academic_year?.message}</p>
                </div>
 
                <div className="form-grp">
