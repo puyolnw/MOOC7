@@ -102,6 +102,7 @@ const RegistrationForm = () => {
       grade_level: '',
       password: '',
       cpassword: '',
+      address: '',
    });
 
    useEffect(() => {
@@ -290,17 +291,6 @@ const RegistrationForm = () => {
                      placeholder="เบอร์โทรศัพท์"
                   />
                   <p className="form_error">{errors.phone?.message}</p>
-               </div>
-
-               <div className="form-grp">
-                  <label htmlFor="address">ที่อยู่</label>
-                  <input
-                     type="text"
-                     {...register('address')}
-                     id="address"
-                     placeholder="ที่อยู่"
-                  />
-                  <p className="form_error">{errors.address?.message}</p>
                </div>
 
                <div className="form-grp">
@@ -515,6 +505,16 @@ const RegistrationForm = () => {
                      value={schoolFields.cpassword}
                      onChange={e => setSchoolFields(f => ({ ...f, password: e.target.value }))}
                      placeholder="ยืนยันรหัสผ่าน"
+                  />
+               </div>
+               <div className="form-grp">
+                  <label htmlFor="address">ที่อยู่</label>
+                  <input
+                     type="text"
+                     id="address"
+                     value={schoolFields.address}
+                     onChange={e => setSchoolFields(f => ({ ...f, address: e.target.value }))}
+                     placeholder="ที่อยู่"
                   />
                </div>
             </>
