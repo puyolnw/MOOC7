@@ -28,12 +28,26 @@ interface Subject {
   postTest?: Quiz;
 }
 
+interface BigLesson {
+  big_lesson_id: number;
+  title: string;
+  description: string;
+  subject_id: number;
+  order_number: number;
+  quiz_id: number | null;
+  created_at: string;
+  updated_at: string;
+  lessons?: Lesson[];
+  lesson_count?: number;
+}
+
 interface Lesson {
   lesson_id: number;
   title: string;
   description: string;
   content: string;
   video_url: string | null;
+  video_file_id: string | null; // ✅ เพิ่ม field นี้เพื่อให้ตรงกับ QuizSectionBar
   order_number: number;
   status: string;
   created_at: string;
@@ -43,6 +57,8 @@ interface Lesson {
   file_count?: string;
   files?: LessonFile[];
   quiz?: LessonQuiz;
+  big_lesson_id?: number;
+  duration?: number;
 }
 
 interface LessonFile {
@@ -103,8 +119,8 @@ interface AdminLessonsAreaProps {
   onSubjectUpdate: (updatedSubject: Subject) => void;
 }
 
-// Simple Add Lesson Modal Component
-const SimpleAddLessonModal: React.FC<{
+// Simple Add Big Lesson Modal Component
+const SimpleAddBigLessonModal: React.FC<{
   show: boolean;
   onClose: () => void;
   onSubmit: (title: string) => void;
@@ -130,7 +146,7 @@ const SimpleAddLessonModal: React.FC<{
       const token = localStorage.getItem('token');
       
       const response = await axios.post(
-        `${apiURL}/api/courses/lessons/simple`,
+        `${apiURL}/api/big-lessons`,
         {
           title: title.trim(),
           subject_id: subjectId
@@ -145,7 +161,7 @@ const SimpleAddLessonModal: React.FC<{
         showNotification('สร้างบทเรียนสำเร็จ', 'success');
       }
     } catch (error) {
-      console.error('Error creating lesson:', error);
+      console.error('Error creating big lesson:', error);
       setError('เกิดข้อผิดพลาดในการสร้างบทเรียน');
     } finally {
       setIsSubmitting(false);
@@ -197,22 +213,18 @@ const SimpleAddLessonModal: React.FC<{
                 </div>
               )}
               <div className="mb-3">
-                <label htmlFor="lessonTitle" className="form-label">
+                <label htmlFor="bigLessonTitle" className="form-label">
                   ชื่อบทเรียน <span className="text-danger">*</span>
                 </label>
                 <input
                   type="text"
                   className="form-control"
-                  id="lessonTitle"
+                  id="bigLessonTitle"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="กรอกชื่อบทเรียน"
                   disabled={isSubmitting}
                 />
-              </div>
-              <div className="alert alert-info">
-                <i className="fas fa-info-circle me-2"></i>
-                ระบบจะสร้างแบบทดสอบประจำบทเรียนให้อัตโนมัติ
               </div>
             </div>
             <div className="modal-footer">
@@ -249,13 +261,158 @@ const SimpleAddLessonModal: React.FC<{
   );
 };
 
+// Simple Add Sub Lesson Modal Component
+const SimpleAddSubLessonModal: React.FC<{
+  show: boolean;
+  onClose: () => void;
+  onSubmit: (title: string) => void;
+  bigLessonId: number;
+}> = ({ show, onClose, onSubmit, bigLessonId }) => {
+  const [title, setTitle] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!title.trim()) {
+      setError('กรุณากรอกชื่อบทเรียนย่อย');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError('');
+
+    try {
+      const apiURL = import.meta.env.VITE_API_URL;
+      const token = localStorage.getItem('token');
+      
+      const response = await axios.post(
+        `${apiURL}/api/big-lessons/${bigLessonId}/lessons`,
+        {
+          title: title.trim(),
+          description: '',
+          video_url: '',
+          status: 'active'
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (response.data.success) {
+        onSubmit(title);
+        setTitle('');
+        onClose();
+        showNotification('สร้างบทเรียนย่อยสำเร็จ', 'success');
+      }
+    } catch (error) {
+      console.error('Error creating sub lesson:', error);
+      setError('เกิดข้อผิดพลาดในการสร้างบทเรียนย่อย');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const showNotification = (message: string, type: 'success' | 'error') => {
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.innerHTML = `
+      <div class="notification-content">
+        <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
+        <span>${message}</span>
+      </div>
+    `;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+      notification.classList.add('show');
+    }, 100);
+    
+    setTimeout(() => {
+      notification.classList.remove('show');
+      setTimeout(() => {
+        document.body.removeChild(notification);
+      }, 300);
+    }, 3000);
+  };
+
+  if (!show) return null;
+
+  return (
+    <div className="modal fade show" style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+      <div className="modal-dialog modal-dialog-centered">
+        <div className="modal-content border-0 shadow-lg">
+          <div className="modal-header bg-success">
+            <h5 className="modal-title text-white">เพิ่มบทเรียนย่อย</h5>
+            <button
+              type="button"
+              className="btn-close btn-close-white"
+              onClick={onClose}
+            ></button>
+          </div>
+          <form onSubmit={handleSubmit}>
+            <div className="modal-body">
+              {error && (
+                <div className="alert alert-danger" role="alert">
+                  {error}
+                </div>
+              )}
+              <div className="mb-3">
+                <label htmlFor="subLessonTitle" className="form-label">
+                  ชื่อบทเรียนย่อย <span className="text-danger">*</span>
+                </label>
+                <input
+                  type="text"
+                  className="form-control"
+                  id="subLessonTitle"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="กรอกชื่อบทเรียนย่อย"
+                  disabled={isSubmitting}
+                />
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={onClose}
+                disabled={isSubmitting}
+              >
+                ยกเลิก
+              </button>
+              <button
+                type="submit"
+                className="btn btn-success"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <>
+                    <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                    กำลังสร้าง...
+                  </>
+                ) : (
+                  <>
+                    <i className="fas fa-plus me-2"></i>
+                    สร้างบทเรียนย่อย
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Edit Lesson Title Modal
 const EditLessonTitleModal: React.FC<{
   show: boolean;
   onClose: () => void;
   lesson: Lesson | null;
+  bigLessonId?: number;
   onUpdate: (lessonId: number, newTitle: string) => void;
-}> = ({ show, onClose, lesson, onUpdate }) => {
+}> = ({ show, onClose, lesson, bigLessonId, onUpdate }) => {
   const [title, setTitle] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -276,6 +433,13 @@ const EditLessonTitleModal: React.FC<{
 
     if (!lesson) return;
 
+    const currentBigLessonId = bigLessonId || lesson.big_lesson_id;
+    
+    if (!currentBigLessonId) {
+      setError('ไม่พบข้อมูล Big Lesson ID');
+      return;
+    }
+
     setIsSubmitting(true);
     setError('');
 
@@ -283,12 +447,17 @@ const EditLessonTitleModal: React.FC<{
       const apiURL = import.meta.env.VITE_API_URL;
       const token = localStorage.getItem('token');
       
-      const formData = new FormData();
-      formData.append('title', title.trim());
+      console.log('Updating lesson:', {
+        bigLessonId: currentBigLessonId,
+        lessonId: lesson.lesson_id,
+        title: title.trim()
+      });
       
       const response = await axios.put(
-        `${apiURL}/api/courses/lessons/${lesson.lesson_id}`,
-        formData,
+               `${apiURL}/api/big-lessons/${currentBigLessonId}/lessons/${lesson.lesson_id}`,
+        {
+          title: title.trim()
+        },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -403,8 +572,9 @@ const EditVideoModal: React.FC<{
   show: boolean;
   onClose: () => void;
   lesson: Lesson | null;
+  bigLessonId?: number;
   onUpdate: (lessonId: number, videoUrl: string) => void;
-}> = ({ show, onClose, lesson, onUpdate }) => {
+}> = ({ show, onClose, lesson, bigLessonId, onUpdate }) => {
   const [videoUrl, setVideoUrl] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -415,13 +585,13 @@ const EditVideoModal: React.FC<{
     }
   }, [lesson]);
 
-    const getYouTubeVideoId = (url: string) => {
+  const getYouTubeVideoId = (url: string) => {
     const regExp = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com|youtu\.be)\/(?:watch\?v=|embed\/|v\/|)([\w-]{11})(?:\S+)?/;
     const match = url.match(regExp);
     return (match && match[1].length === 11) ? match[1] : null;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (videoUrl.trim() && !getYouTubeVideoId(videoUrl)) {
@@ -431,6 +601,13 @@ const EditVideoModal: React.FC<{
 
     if (!lesson) return;
 
+    const currentBigLessonId = bigLessonId || lesson.big_lesson_id;
+    
+    if (!currentBigLessonId) {
+      setError('ไม่พบข้อมูล Big Lesson ID');
+      return;
+    }
+
     setIsSubmitting(true);
     setError('');
 
@@ -438,12 +615,11 @@ const EditVideoModal: React.FC<{
       const apiURL = import.meta.env.VITE_API_URL;
       const token = localStorage.getItem('token');
       
-      const formData = new FormData();
-      formData.append('videoUrl', videoUrl.trim());
-      
       const response = await axios.put(
-        `${apiURL}/api/courses/lessons/${lesson.lesson_id}`,
-        formData,
+        `${apiURL}/api/big-lessons/${currentBigLessonId}/lessons/${lesson.lesson_id}`,
+        {
+          video_url: videoUrl.trim()
+        },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -573,241 +749,8 @@ const EditVideoModal: React.FC<{
   );
 };
 
-// Edit Files Modal
-const EditFilesModal: React.FC<{
-  show: boolean;
-  onClose: () => void;
-  lesson: Lesson | null;
-  onUpdate: (lessonId: number) => void;
-}> = ({ show, onClose, lesson, onUpdate }) => {
-  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState('');
-
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    const maxSize = 50 * 1024 * 1024; // 50MB
-    const allowedTypes = ['.pdf', '.doc', '.docx', '.xls', '.xlsx'];
-    
-    const validFiles = files.filter(file => {
-      const extension = '.' + file.name.split('.').pop()?.toLowerCase();
-      if (!allowedTypes.includes(extension)) {
-        setError(`ไฟล์ ${file.name} ไม่ใช่ประเภทที่รองรับ`);
-        return false;
-      }
-      if (file.size > maxSize) {
-        setError(`ไฟล์ ${file.name} มีขนาดใหญ่เกินไป (สูงสุด 50MB)`);
-        return false;
-      }
-      return true;
-    });
-
-    setUploadedFiles(validFiles);
-    setError('');
-  };
-
-  const handleRemoveFile = (index: number) => {
-    setUploadedFiles(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
-
-  const getFileIcon = (fileName: string): string => {
-    const extension = fileName.split('.').pop()?.toLowerCase();
-    switch (extension) {
-      case 'pdf': return 'fas fa-file-pdf';
-      case 'doc':
-      case 'docx': return 'fas fa-file-word';
-      case 'xls':
-      case 'xlsx': return 'fas fa-file-excel';
-      default: return 'fas fa-file';
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (uploadedFiles.length === 0) {
-      setError('กรุณาเลือกไฟล์อย่างน้อย 1 ไฟล์');
-      return;
-    }
-
-    if (!lesson) return;
-
-    setIsSubmitting(true);
-    setError('');
-
-    try {
-      const apiURL = import.meta.env.VITE_API_URL;
-      const token = localStorage.getItem('token');
-      
-      const formData = new FormData();
-      formData.append('replaceAll', 'true'); // แทนที่ไฟล์ทั้งหมด
-      uploadedFiles.forEach((file) => {
-        formData.append('files', file);
-      });
-
-      const response = await axios.put(
-        `${apiURL}/api/courses/lessons/${lesson.lesson_id}/files`,
-        formData,
-        { 
-          headers: { 
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data'
-          } 
-        }
-      );
-
-      if (response.data.success) {
-        onUpdate(lesson.lesson_id);
-        onClose();
-        showNotification('แก้ไขไฟล์สำเร็จ', 'success');
-      }
-    } catch (error) {
-      console.error('Error updating lesson files:', error);
-      setError('เกิดข้อผิดพลาดในการแก้ไขไฟล์');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const showNotification = (message: string, type: 'success' | 'error') => {
-    const notification = document.createElement('div');
-    notification.className = `notification ${type}`;
-    notification.innerHTML = `
-      <div class="notification-content">
-        <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
-        <span>${message}</span>
-      </div>
-    `;
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-      notification.classList.add('show');
-    }, 100);
-    
-    setTimeout(() => {
-      notification.classList.remove('show');
-      setTimeout(() => {
-        document.body.removeChild(notification);
-      }, 300);
-    }, 3000);
-  };
-
-  if (!show || !lesson) return null;
-
-  return (
-    <div className="modal fade show" style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}>
-      <div className="modal-dialog modal-lg modal-dialog-centered">
-        <div className="modal-content border-0 shadow-lg">
-          <div className="modal-header bg-success">
-            <h5 className="modal-title text-white">แก้ไขไฟล์ประกอบบทเรียน</h5>
-            <button
-              type="button"
-              className="btn-close btn-close-white"
-              onClick={onClose}
-            ></button>
-          </div>
-          <form onSubmit={handleSubmit}>
-            <div className="modal-body">
-              {error && (
-                <div className="alert alert-danger" role="alert">
-                  {error}
-                </div>
-              )}
-              
-              <div className="mb-3">
-                <label htmlFor="editFiles" className="form-label">
-                  เลือกไฟล์ใหม่ (จะแทนที่ไฟล์เดิมทั้งหมด)
-                </label>
-                <input
-                  type="file"
-                  className="form-control"
-                  id="editFiles"
-                  onChange={handleFileUpload}
-                  accept=".pdf,.doc,.docx,.xls,.xlsx"
-                  multiple
-                  disabled={isSubmitting}
-                />
-                <small className="text-muted">
-                  รองรับไฟล์ PDF, DOC, DOCX, XLS และ XLSX ขนาดไม่เกิน 50 MB
-                </small>
-              </div>
-
-              {uploadedFiles.length > 0 && (
-                <div className="mb-3">
-                  <h6>ไฟล์ที่เลือก:</h6>
-                  <div className="list-group">
-                    {uploadedFiles.map((file, index) => (
-                      <div key={index} className="list-group-item d-flex justify-content-between align-items-center">
-                        <div className="d-flex align-items-center">
-                          <i className={`${getFileIcon(file.name)} me-2 text-primary`}></i>
-                          <div>
-                            <div className="fw-bold">{file.name}</div>
-                            <small className="text-muted">{formatFileSize(file.size)}</small>
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          className="btn btn-sm btn-outline-danger"
-                          onClick={() => handleRemoveFile(index)}
-                          disabled={isSubmitting}
-                        >
-                          <i className="fas fa-times"></i>
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div className="alert alert-warning">
-                <i className="fas fa-exclamation-triangle me-2"></i>
-                <strong>คำเตือน:</strong> การอัปโหลดไฟล์ใหม่จะแทนที่ไฟล์เดิมทั้งหมด
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={onClose}
-                disabled={isSubmitting}
-              >
-                ยกเลิก
-              </button>
-              <button
-                type="submit"
-                className="btn btn-success"
-                disabled={isSubmitting || uploadedFiles.length === 0}
-              >
-                {isSubmitting ? (
-                  <>
-                    <span className="spinner-border spinner-border-sm me-2" role="status"></span>
-                    กำลังอัปโหลด...
-                  </>
-                ) : (
-                  <>
-                    <i className="fas fa-upload me-2"></i>
-                    อัปโหลดไฟล์
-                  </>
-                )}
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Add Lesson Card Component - Styled like lesson items
-const AddLessonCard: React.FC<{
+// Add Big Lesson Card Component
+const AddBigLessonCard: React.FC<{
   subjectId: number;
   onClick: () => void;
 }> = ({ onClick }) => {
@@ -826,44 +769,17 @@ const AddLessonCard: React.FC<{
   );
 };
 
-// Lesson Item Component with Accordion Bars
-const LessonItem: React.FC<{
+// Sub Lesson Item Component
+const SubLessonItem: React.FC<{
   lesson: Lesson;
   index: number;
+  bigLessonId: number;
   onDelete: (lessonId: number) => void;
   onUpdateTitle: (lessonId: number, newTitle: string) => void;
   onUpdateVideo: (lessonId: number, videoUrl: string) => void;
-  onUpdateFiles: (lessonId: number) => void;
-}> = ({ lesson, index, onDelete }) => {
+}> = ({ lesson, index, bigLessonId, onDelete }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [videoExpanded, setVideoExpanded] = useState(false);
-  const [filesExpanded, setFilesExpanded] = useState(false);
-
-  const apiURL = import.meta.env.VITE_API_URL;
-
-  const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
-
-  const getFileIcon = (fileType: string): string => {
-    if (fileType.includes('pdf')) return 'fas fa-file-pdf';
-    if (fileType.includes('doc') || fileType.includes('docx')) return 'fas fa-file-word';
-    if (fileType.includes('image')) return 'fas fa-file-image';
-    if (fileType.includes('video')) return 'fas fa-file-video';
-    if (fileType.includes('audio')) return 'fas fa-file-audio';
-    return 'fas fa-file';
-  };
-
-  const getFileIconClass = (fileType: string): string => {
-    if (fileType.includes('pdf')) return 'pdf';
-    if (fileType.includes('doc') || fileType.includes('docx')) return 'doc';
-    if (fileType.includes('image')) return 'image';
-    return 'default';
-  };
 
   const getVideoEmbedUrl = (videoUrl: string): string => {
     if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
@@ -876,7 +792,7 @@ const LessonItem: React.FC<{
   };
 
   return (
-    <div className="lesson-item">
+    <div className="lesson-item sub-lesson-item">
       <div 
         className={`lesson-header ${isExpanded ? 'expanded' : ''}`}
         onClick={() => setIsExpanded(!isExpanded)}
@@ -886,7 +802,7 @@ const LessonItem: React.FC<{
         </div>
         
         <div className="lesson-info">
-          <h4 className="lesson-title">{lesson.title}</h4>
+          <h5 className="lesson-title">{lesson.title}</h5>
           {lesson.description && (
             <p className="lesson-description">
               {lesson.description.length > 100 
@@ -897,29 +813,30 @@ const LessonItem: React.FC<{
           )}
           
           <div className="lesson-meta">
-            {lesson.files && lesson.files.length > 0 && (
+            {lesson.video_url && (
               <div className="meta-badge">
-                <i className="fas fa-file"></i>
-                <span>{lesson.files.length} ไฟล์</span>
+                <i className="fas fa-play"></i>
+                <span>วิดีโอ</span>
               </div>
             )}
-            {lesson.has_quiz && (
+            {lesson.video_file_id && (
               <div className="meta-badge">
-                <i className="fas fa-question-circle"></i>
-                <span>แบบทดสอบ</span>
+                <i className="fas fa-file"></i>
+                <span>เอกสาร</span>
               </div>
             )}
           </div>
         </div>
         
-        <div className="lesson-actions">
+       <div className="lesson-actions">
           <button
             className="action-btn edit-btn"
             title="แก้ไขชื่อ"
             onClick={(e) => {
               e.stopPropagation();
-              // เปิด modal แก้ไขชื่อ
-              const event = new CustomEvent('editLessonTitle', { detail: lesson });
+              const event = new CustomEvent('editSubLessonTitle', { 
+                detail: { ...lesson, big_lesson_id: bigLessonId } 
+              });
               window.dispatchEvent(event);
             }}
           >
@@ -942,7 +859,7 @@ const LessonItem: React.FC<{
         </div>
       </div>
 
-      <div className={`lesson-content ${isExpanded ? 'expanded' : ''}`}>
+            <div className={`lesson-content ${isExpanded ? 'expanded' : ''}`}>
         <div className="lesson-content-sections">
           
           {/* Video Section Bar */}
@@ -989,7 +906,7 @@ const LessonItem: React.FC<{
                   <button 
                     className="add-video-btn modern-btn" 
                     onClick={() => {
-                      const event = new CustomEvent('editLessonVideo', { detail: lesson });
+                      const event = new CustomEvent('editSubLessonVideo', { detail: lesson });
                       window.dispatchEvent(event);
                     }}
                   >
@@ -1001,81 +918,7 @@ const LessonItem: React.FC<{
             </div>
           </div>
 
-          {/* Files Section Bar */}
-          <div className="content-section-bar">
-            <div 
-              className={`section-bar-header ${filesExpanded ? 'expanded' : ''}`}
-              onClick={() => setFilesExpanded(!filesExpanded)}
-            >
-              <div className="section-bar-icon files-icon">
-                <i className="fas fa-file-alt"></i>
-              </div>
-              <div className="section-bar-info">
-                <h5 className="section-bar-title">ไฟล์แนบ</h5>
-                <p className="section-bar-subtitle">
-                  {lesson.files && lesson.files.length > 0 
-                    ? `มีไฟล์แนบ ${lesson.files.length} ไฟล์` 
-                    : 'ยังไม่มีไฟล์แนบ'
-                  }
-                </p>
-              </div>
-              <div className="section-bar-count">
-                {lesson.files?.length || 0}
-              </div>
-              <div className="section-bar-expand">
-                <i className="fas fa-chevron-down"></i>
-              </div>
-            </div>
-            
-            <div className={`section-bar-content ${filesExpanded ? 'expanded' : ''}`}>
-              <div className="section-content-inner">
-                <div className="files-section">
-                  {lesson.files && lesson.files.length > 0 ? (
-                    <div className="files-list">
-                      {lesson.files.map((file) => (
-                        <div key={file.file_id} className="file-item">
-                          <div className={`file-icon ${getFileIconClass(file.file_type)}`}>
-                            <i className={getFileIcon(file.file_type)}></i>
-                          </div>
-                          <div className="file-details">
-                            <h5 className="file-name">{file.original_name}</h5>
-                            <p className="file-size">{formatFileSize(file.file_size)}</p>
-                          </div>
-                          <div className="file-actions">
-                            <button 
-                              className="action-btn view-btn"
-                              onClick={() => window.open(`${apiURL}/api/courses/lessons/files/${file.file_id}`, '_blank')}
-                              title="ดาวน์โหลด"
-                            >
-                              <i className="fas fa-download"></i>
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="files-empty">
-                      <i className="fas fa-file-alt"></i>
-                      <p>ยังไม่มีไฟล์แนบสำหรับบทเรียนนี้</p>
-                    </div>
-                  )}
-                  <button 
-                    className="add-files-btn modern-btn" 
-                    onClick={() => {
-                      const event = new CustomEvent('editLessonFiles', { detail: lesson });
-                      window.dispatchEvent(event);
-                    }}
-                  >
-                    <i className="fas fa-plus"></i>
-                    <span>{lesson.files && lesson.files.length > 0 ? 'เปลี่ยนไฟล์' : 'เพิ่มไฟล์แนบ'}</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
 
-          {/* Quiz Section Bar */}
-           <QuizSectionBar lesson={lesson} />
           
         </div>
       </div>
@@ -1083,90 +926,491 @@ const LessonItem: React.FC<{
   );
 };
 
-// Lessons Panel Component
-const LessonsPanel: React.FC<{
-  subject: Subject;
-  lessons: Lesson[];
-  setLessons: (lessons: Lesson[]) => void;
-}> = ({ subject, lessons, setLessons }) => {
-  const [showAddLessonModal, setShowAddLessonModal] = useState(false);
-  const [showEditTitleModal, setShowEditTitleModal] = useState(false);
-  const [showEditVideoModal, setShowEditVideoModal] = useState(false);
-  const [showEditFilesModal, setShowEditFilesModal] = useState(false);
-  const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
+// Big Lesson Item Component with Sub Lessons
+const BigLessonItem: React.FC<{
+  bigLesson: BigLesson;
+  index: number;
+  onDelete: (bigLessonId: number) => void;
+  onUpdateTitle: (bigLessonId: number, newTitle: string) => void;
+  onRefresh: () => void;
+}> = ({ bigLesson, index, onDelete, onRefresh }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [subLessonsExpanded, setSubLessonsExpanded] = useState(false);
+  const [showAddSubLessonModal, setShowAddSubLessonModal] = useState(false);
+
+  // ✅ Stable callback for big lesson quiz update
+  const handleBigLessonQuizUpdate = React.useCallback(() => {
+    onRefresh();
+  }, [onRefresh]);
+
+  const handleDeleteSubLesson = async (lessonId: number) => {
+    if (!confirm('คุณต้องการลบบทเรียนย่อยนี้หรือไม่?')) return;
+    
+    try {
+      const apiURL = import.meta.env.VITE_API_URL;
+      const token = localStorage.getItem('token');
+      const response = await axios.delete(
+        `${apiURL}/api/big-lessons/${bigLesson.big_lesson_id}/lessons/${lessonId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (response.data.success) {
+        onRefresh();
+        showNotification('ลบบทเรียนย่อยสำเร็จ', 'success');
+      }
+    } catch (error) {
+      console.error('Error deleting sub lesson:', error);
+      showNotification('เกิดข้อผิดพลาดในการลบบทเรียนย่อย', 'error');
+    }
+  };
+
+  const handleUpdateSubLessonTitle = () => {
+    onRefresh();
+  };
+
+  const handleUpdateSubLessonVideo = () => {
+    onRefresh();
+  };
+
+  const showNotification = (message: string, type: 'success' | 'error') => {
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.innerHTML = `
+      <div class="notification-content">
+        <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
+        <span>${message}</span>
+      </div>
+    `;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+      notification.classList.add('show');
+    }, 100);
+    
+    setTimeout(() => {
+      notification.classList.remove('show');
+      setTimeout(() => {
+        document.body.removeChild(notification);
+      }, 300);
+    }, 3000);
+  };
+
+  return (
+    <>
+      <div className="lesson-item big-lesson-item">
+        <div 
+          className={`lesson-header ${isExpanded ? 'expanded' : ''}`}
+          onClick={() => setIsExpanded(!isExpanded)}
+        >
+          <div className="lesson-number">
+            <span>{bigLesson.order_number || index + 1}</span>
+          </div>
+          
+          <div className="lesson-info">
+            <h4 className="lesson-title">{bigLesson.title}</h4>
+            {bigLesson.description && (
+              <p className="lesson-description">
+                {bigLesson.description.length > 100 
+                  ? `${bigLesson.description.substring(0, 100)}...`
+                  : bigLesson.description
+                }
+              </p>
+            )}
+            
+            <div className="lesson-meta">
+              {bigLesson.lessons && bigLesson.lessons.length > 0 && (
+                <div className="meta-badge">
+                  <i className="fas fa-list"></i>
+                  <span>{bigLesson.lessons.length} บทเรียนย่อย</span>
+                </div>
+              )}
+              {bigLesson.quiz_id && (
+                <div className="meta-badge">
+                  <i className="fas fa-question-circle"></i>
+                  <span>แบบทดสอบ</span>
+                </div>
+              )}
+            </div>
+          </div>
+          
+          <div className="lesson-actions">
+            <button
+              className="action-btn edit-btn"
+              title="แก้ไขชื่อ"
+              onClick={(e) => {
+                e.stopPropagation();
+                const event = new CustomEvent('editBigLessonTitle', { detail: bigLesson });
+                window.dispatchEvent(event);
+              }}
+            >
+              <i className="fas fa-edit"></i>
+            </button>
+            <button 
+              className="action-btn delete-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(bigLesson.big_lesson_id);
+              }}
+              title="ลบ"
+            >
+              <i className="fas fa-trash"></i>
+            </button>
+          </div>
+          
+          <div className="lesson-expand-icon">
+            <i className="fas fa-chevron-down"></i>
+          </div>
+        </div>
+
+        <div className={`lesson-content ${isExpanded ? 'expanded' : ''}`}>
+          <div className="lesson-content-sections">
+            
+            {/* Add Sub Lesson Section */}
+            <div className="content-section-bar">
+              <div className="section-bar-header add-section">
+                <div className="section-bar-icon add-icon">
+                  <i className="fas fa-plus-circle"></i>
+                </div>
+                <div className="section-bar-info">
+                  <h5 className="section-bar-title">เพิ่มบทเรียนย่อย</h5>
+                  <p className="section-bar-subtitle">สร้างบทเรียนย่อยใหม่</p>
+                </div>
+                <button 
+                  className="add-sub-lesson-btn modern-btn primary"
+                  onClick={() => setShowAddSubLessonModal(true)}
+                >
+                  <i className="fas fa-plus"></i>
+                  <span>เพิ่มบทเรียนย่อย</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Sub Lessons Section Bar */}
+            <div className="content-section-bar">
+              <div 
+                className={`section-bar-header ${subLessonsExpanded ? 'expanded' : ''}`}
+                onClick={() => setSubLessonsExpanded(!subLessonsExpanded)}
+              >
+                <div className="section-bar-icon lessons-icon">
+                  <i className="fas fa-list-ul"></i>
+                </div>
+                <div className="section-bar-info">
+                  <h5 className="section-bar-title">บทเรียนย่อย</h5>
+                  <p className="section-bar-subtitle">
+                    {bigLesson.lessons && bigLesson.lessons.length > 0 
+                      ? `มีบทเรียนย่อย ${bigLesson.lessons.length} บทเรียน` 
+                      : 'ยังไม่มีบทเรียนย่อย'
+                    }
+                  </p>
+                </div>
+                <div className="section-bar-count">
+                  {bigLesson.lessons?.length || 0}
+                </div>
+                <div className="section-bar-expand">
+                  <i className="fas fa-chevron-down"></i>
+                </div>
+              </div>
+              
+              <div className={`section-bar-content ${subLessonsExpanded ? 'expanded' : ''}`}>
+                <div className="section-content-inner">
+                  <div className="sub-lessons-section">
+                    {bigLesson.lessons && bigLesson.lessons.length > 0 ? (
+                      <div className="sub-lessons-list">
+                        {bigLesson.lessons.map((lesson, subIndex) => (
+                          <SubLessonItem
+                            key={`sub-lesson-${lesson.lesson_id}`}
+                            lesson={lesson}
+                            index={subIndex}
+                            bigLessonId={bigLesson.big_lesson_id}
+                            onDelete={handleDeleteSubLesson}
+                            onUpdateTitle={handleUpdateSubLessonTitle}
+                            onUpdateVideo={handleUpdateSubLessonVideo}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="sub-lessons-empty">
+                        <i className="fas fa-list-ul"></i>
+                        <p>ยังไม่มีบทเรียนย่อยในบทเรียนนี้</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Big Lesson Files Section */}
+            <div className="content-section-bar">
+              <div className="section-bar-header">
+                <div className="section-bar-icon files-icon">
+                  <i className="fas fa-folder"></i>
+                </div>
+                <div className="section-bar-info">
+                  <h5 className="section-bar-title">ไฟล์ประกอบบทเรียน</h5>
+                  <p className="section-bar-subtitle">ไฟล์เอกสารประกอบบทเรียนหลัก</p>
+                </div>
+                <div className="section-bar-count">0</div>
+                <button className="add-files-btn modern-btn">
+                  <i className="fas fa-plus"></i>
+                  <span>เพิ่มไฟล์</span>
+                </button>
+              </div>
+            </div>
+
+            {/* ✅ Big Lesson Quiz Section - ใช้ QuizSectionBar */}
+            <QuizSectionBar
+              bigLessonId={bigLesson.big_lesson_id}
+              currentQuizId={bigLesson.quiz_id}
+              onQuizUpdate={handleBigLessonQuizUpdate}
+            />
+            
+          </div>
+        </div>
+      </div>
+
+      {/* Add Sub Lesson Modal */}
+      <SimpleAddSubLessonModal
+        show={showAddSubLessonModal}
+        onClose={() => setShowAddSubLessonModal(false)}
+        onSubmit={() => {
+          onRefresh();
+        }}
+        bigLessonId={bigLesson.big_lesson_id}
+      />
+    </>
+  );
+};
+
+// Edit Big Lesson Title Modal
+const EditBigLessonTitleModal: React.FC<{
+  show: boolean;
+  onClose: () => void;
+  bigLesson: BigLesson | null;
+  onUpdate: (bigLessonId: number, newTitle: string) => void;
+}> = ({ show, onClose, bigLesson, onUpdate }) => {
+  const [title, setTitle] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    const handleEditLessonTitle = (event: any) => {
-      setSelectedLesson(event.detail);
-      setShowEditTitleModal(true);
+    if (bigLesson) {
+      setTitle(bigLesson.title);
+    }
+  }, [bigLesson]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!title.trim()) {
+      setError('กรุณากรอกชื่อบทเรียน');
+      return;
+    }
+
+    if (!bigLesson) return;
+
+    setIsSubmitting(true);
+    setError('');
+
+    try {
+      const apiURL = import.meta.env.VITE_API_URL;
+      const token = localStorage.getItem('token');
+      
+      const response = await axios.put(
+        `${apiURL}/api/big-lessons/${bigLesson.big_lesson_id}`,
+        {
+          title: title.trim()
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (response.data.success) {
+                onUpdate(bigLesson.big_lesson_id, title.trim());
+        onClose();
+        showNotification('แก้ไขชื่อบทเรียนสำเร็จ', 'success');
+      }
+    } catch (error) {
+      console.error('Error updating big lesson title:', error);
+      setError('เกิดข้อผิดพลาดในการแก้ไขชื่อบทเรียน');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const showNotification = (message: string, type: 'success' | 'error') => {
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.innerHTML = `
+      <div class="notification-content">
+        <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
+        <span>${message}</span>
+      </div>
+    `;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+      notification.classList.add('show');
+    }, 100);
+    
+    setTimeout(() => {
+      notification.classList.remove('show');
+      setTimeout(() => {
+        document.body.removeChild(notification);
+      }, 300);
+    }, 3000);
+  };
+
+  if (!show || !bigLesson) return null;
+
+  return (
+    <div className="modal fade show" style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+      <div className="modal-dialog modal-dialog-centered">
+        <div className="modal-content border-0 shadow-lg">
+          <div className="modal-header bg-warning">
+            <h5 className="modal-title text-dark">แก้ไขชื่อบทเรียน</h5>
+            <button
+              type="button"
+              className="btn-close"
+              onClick={onClose}
+            ></button>
+          </div>
+          <form onSubmit={handleSubmit}>
+            <div className="modal-body">
+              {error && (
+                <div className="alert alert-danger" role="alert">
+                  {error}
+                </div>
+              )}
+              <div className="mb-3">
+                <label htmlFor="editBigLessonTitle" className="form-label">
+                  ชื่อบทเรียน <span className="text-danger">*</span>
+                </label>
+                <input
+                  type="text"
+                  className="form-control"
+                  id="editBigLessonTitle"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="กรอกชื่อบทเรียน"
+                  disabled={isSubmitting}
+                />
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={onClose}
+                disabled={isSubmitting}
+              >
+                ยกเลิก
+              </button>
+              <button
+                type="submit"
+                className="btn btn-warning"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <>
+                    <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                    กำลังบันทึก...
+                  </>
+                ) : (
+                  <>
+                    <i className="fas fa-save me-2"></i>
+                    บันทึก
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Big Lessons Panel Component
+const BigLessonsPanel: React.FC<{
+  subject: Subject;
+  bigLessons: BigLesson[];
+  setBigLessons: (bigLessons: BigLesson[]) => void;
+  onRefresh: () => void;
+}> = ({ subject, bigLessons, setBigLessons, onRefresh }) => {
+  const [showAddBigLessonModal, setShowAddBigLessonModal] = useState(false);
+  const [showEditBigLessonTitleModal, setShowEditBigLessonTitleModal] = useState(false);
+  const [showEditSubLessonTitleModal, setShowEditSubLessonTitleModal] = useState(false);
+  const [showEditSubLessonVideoModal, setShowEditSubLessonVideoModal] = useState(false);
+  const [selectedBigLesson, setSelectedBigLesson] = useState<BigLesson | null>(null);
+  const [selectedSubLesson, setSelectedSubLesson] = useState<Lesson | null>(null);
+
+  useEffect(() => {
+    const handleEditBigLessonTitle = (event: any) => {
+      setSelectedBigLesson(event.detail);
+      setShowEditBigLessonTitleModal(true);
     };
 
-    const handleEditLessonVideo = (event: any) => {
-      setSelectedLesson(event.detail);
-      setShowEditVideoModal(true);
+    const handleEditSubLessonTitle = (event: any) => {
+      setSelectedSubLesson(event.detail);
+      setShowEditSubLessonTitleModal(true);
     };
 
-    const handleEditLessonFiles = (event: any) => {
-      setSelectedLesson(event.detail);
-      setShowEditFilesModal(true);
+    const handleEditSubLessonVideo = (event: any) => {
+      setSelectedSubLesson(event.detail);
+      setShowEditSubLessonVideoModal(true);
     };
 
-    window.addEventListener('editLessonTitle', handleEditLessonTitle);
-    window.addEventListener('editLessonVideo', handleEditLessonVideo);
-    window.addEventListener('editLessonFiles', handleEditLessonFiles);
+    window.addEventListener('editBigLessonTitle', handleEditBigLessonTitle);
+    window.addEventListener('editSubLessonTitle', handleEditSubLessonTitle);
+    window.addEventListener('editSubLessonVideo', handleEditSubLessonVideo);
 
     return () => {
-      window.removeEventListener('editLessonTitle', handleEditLessonTitle);
-      window.removeEventListener('editLessonVideo', handleEditLessonVideo);
-      window.removeEventListener('editLessonFiles', handleEditLessonFiles);
+      window.removeEventListener('editBigLessonTitle', handleEditBigLessonTitle);
+      window.removeEventListener('editSubLessonTitle', handleEditSubLessonTitle);
+      window.removeEventListener('editSubLessonVideo', handleEditSubLessonVideo);
     };
   }, []);
 
-  const handleAddLesson = () => {
-    setShowAddLessonModal(true);
+  const handleAddBigLesson = () => {
+    setShowAddBigLessonModal(true);
   };
 
-  const handleDeleteLesson = async (lessonId: number) => {
+  const handleDeleteBigLesson = async (bigLessonId: number) => {
     if (!confirm('คุณต้องการลบบทเรียนนี้หรือไม่?')) return;
     
     try {
       const apiURL = import.meta.env.VITE_API_URL;
       const token = localStorage.getItem('token');
       const response = await axios.delete(
-        `${apiURL}/api/courses/lessons/${lessonId}`,
+        `${apiURL}/api/big-lessons/${bigLessonId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
       if (response.data.success) {
-        setLessons(lessons.filter(lesson => lesson.lesson_id !== lessonId));
+        setBigLessons(bigLessons.filter(bigLesson => bigLesson.big_lesson_id !== bigLessonId));
         showNotification('ลบบทเรียนสำเร็จ', 'success');
       }
     } catch (error) {
-      console.error('Error deleting lesson:', error);
+      console.error('Error deleting big lesson:', error);
       showNotification('เกิดข้อผิดพลาดในการลบบทเรียน', 'error');
     }
   };
 
-  const handleUpdateLessonTitle = (lessonId: number, newTitle: string) => {
-    setLessons(lessons.map(lesson => 
-      lesson.lesson_id === lessonId 
-        ? { ...lesson, title: newTitle }
-        : lesson
+  const handleUpdateBigLessonTitle = (bigLessonId: number, newTitle: string) => {
+    setBigLessons(bigLessons.map(bigLesson => 
+      bigLesson.big_lesson_id === bigLessonId 
+        ? { ...bigLesson, title: newTitle }
+        : bigLesson
     ));
   };
 
-   const handleUpdateLessonVideo = (lessonId: number, videoUrl: string) => {
-    setLessons(lessons.map(lesson => 
-      lesson.lesson_id === lessonId 
-        ? { ...lesson, video_url: videoUrl }
-        : lesson
-    ));
+  const handleUpdateSubLessonTitle = () => {
+    onRefresh();
   };
 
-  const handleUpdateLessonFiles = (lessonId: number) => {
-    console.log(`Updating lesson files for lesson ID: ${lessonId}`);
+  const handleUpdateSubLessonVideo = () => {
+    onRefresh();
   };
-
+ 
   const showNotification = (message: string, type: 'success' | 'error') => {
     const notification = document.createElement('div');
     notification.className = `notification ${type}`;
@@ -1198,7 +1442,7 @@ const LessonsPanel: React.FC<{
           <p>รายการบทเรียนในรายวิชา {subject.subject_name}</p>
         </div>
         
-        {lessons.length === 0 ? (
+        {bigLessons.length === 0 ? (
           <div className="empty-state">
             <div className="empty-state-icon">
               <i className="fas fa-play-circle"></i>
@@ -1207,7 +1451,7 @@ const LessonsPanel: React.FC<{
             <p>ยังไม่มีบทเรียนในรายวิชานี้</p>
             <button 
               className="add-first-btn modern-btn primary large"
-              onClick={handleAddLesson}
+              onClick={handleAddBigLesson}
             >
               <div className="btn-content">
                 <i className="fas fa-plus"></i>
@@ -1219,22 +1463,21 @@ const LessonsPanel: React.FC<{
         ) : (
           <div className="lessons-container">
             <div className="lessons-list">
-              {/* Add Lesson Card */}
-              <AddLessonCard 
+              {/* Add Big Lesson Card */}
+              <AddBigLessonCard 
                 subjectId={subject.subject_id}
-                onClick={handleAddLesson}
+                onClick={handleAddBigLesson}
               />
               
-              {/* Lesson Items with Accordion Bars */}
-              {lessons.map((lesson, index) => (
-                <LessonItem
-                  key={`lesson-${lesson.lesson_id}`}
-                  lesson={lesson}
+              {/* Big Lesson Items */}
+              {bigLessons.map((bigLesson, index) => (
+                <BigLessonItem
+                  key={`big-lesson-${bigLesson.big_lesson_id}`}
+                  bigLesson={bigLesson}
                   index={index}
-                  onDelete={handleDeleteLesson}
-                  onUpdateTitle={handleUpdateLessonTitle}
-                  onUpdateVideo={handleUpdateLessonVideo}
-                  onUpdateFiles={handleUpdateLessonFiles}
+                  onDelete={handleDeleteBigLesson}
+                  onUpdateTitle={handleUpdateBigLessonTitle}
+                  onRefresh={onRefresh}
                 />
               ))}
             </div>
@@ -1243,43 +1486,43 @@ const LessonsPanel: React.FC<{
       </div>
 
       {/* Modals */}
-      <SimpleAddLessonModal
-        show={showAddLessonModal}
-        onClose={() => setShowAddLessonModal(false)}
-        onSubmit={(title) => {
-          console.log('Created lesson:', title);
+      <SimpleAddBigLessonModal
+        show={showAddBigLessonModal}
+        onClose={() => setShowAddBigLessonModal(false)}
+        onSubmit={() => {
+          onRefresh();
         }}
         subjectId={subject.subject_id}
       />
 
-      <EditLessonTitleModal
-        show={showEditTitleModal}
+      <EditBigLessonTitleModal
+        show={showEditBigLessonTitleModal}
         onClose={() => {
-          setShowEditTitleModal(false);
-          setSelectedLesson(null);
+          setShowEditBigLessonTitleModal(false);
+          setSelectedBigLesson(null);
         }}
-        lesson={selectedLesson}
-        onUpdate={handleUpdateLessonTitle}
+        bigLesson={selectedBigLesson}
+        onUpdate={handleUpdateBigLessonTitle}
+      />
+
+      <EditLessonTitleModal
+        show={showEditSubLessonTitleModal}
+        onClose={() => {
+          setShowEditSubLessonTitleModal(false);
+          setSelectedSubLesson(null);
+        }}
+        lesson={selectedSubLesson}
+        onUpdate={handleUpdateSubLessonTitle}
       />
 
       <EditVideoModal
-        show={showEditVideoModal}
+        show={showEditSubLessonVideoModal}
         onClose={() => {
-          setShowEditVideoModal(false);
-          setSelectedLesson(null);
+          setShowEditSubLessonVideoModal(false);
+          setSelectedSubLesson(null);
         }}
-        lesson={selectedLesson}
-        onUpdate={handleUpdateLessonVideo}
-      />
-
-      <EditFilesModal
-        show={showEditFilesModal}
-        onClose={() => {
-          setShowEditFilesModal(false);
-          setSelectedLesson(null);
-        }}
-        lesson={selectedLesson}
-        onUpdate={handleUpdateLessonFiles}
+        lesson={selectedSubLesson}
+        onUpdate={handleUpdateSubLessonVideo}
       />
     </>
   );
@@ -1289,33 +1532,38 @@ const LessonsPanel: React.FC<{
 const AdminLessonsArea: React.FC<AdminLessonsAreaProps> = ({ 
   subject
 }) => {
-  const [lessons, setLessons] = useState<Lesson[]>([]);
+  const [bigLessons, setBigLessons] = useState<BigLesson[]>([]);
   const [activeTab, setActiveTab] = useState('lessons');
+  const [loading, setLoading] = useState(false);
+
+  const fetchBigLessons = async () => {
+    setLoading(true);
+    try {
+      const apiURL = import.meta.env.VITE_API_URL;
+      const token = localStorage.getItem('token');
+      
+      const response = await axios.get(
+        `${apiURL}/api/big-lessons/subject/${subject.subject_id}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (response.data.success) {
+        setBigLessons(response.data.bigLessons || []);
+      }
+    } catch (error) {
+      console.error('Error fetching big lessons:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    // ใช้ข้อมูลบทเรียนจาก subject.lessons ที่ได้จาก API หลัก
-    if (subject.lessons) {
-      const formattedLessons: Lesson[] = subject.lessons.map((lesson: any) => ({
-        lesson_id: lesson.lesson_id,
-        title: lesson.title,
-        description: lesson.description || '',
-        content: lesson.content || '',
-        video_url: lesson.video_url,
-        order_number: lesson.order_number,
-        status: lesson.status || 'active',
-        created_at: lesson.created_at || new Date().toISOString(),
-        can_preview: lesson.can_preview || false,
-        has_quiz: lesson.has_quiz || false,
-        quiz_id: lesson.quiz_id,
-        file_count: lesson.file_count || '0',
-        files: lesson.files || [],
-        quiz: lesson.quiz || null
-      }));
-      setLessons(formattedLessons);
-    } else {
-      setLessons([]);
-    }
-  }, [subject.lessons]);
+    fetchBigLessons();
+  }, [subject.subject_id]);
+
+  const handleRefresh = () => {
+    fetchBigLessons();
+  };
 
   return (
     <div className="admin-lessons-area">
@@ -1355,11 +1603,23 @@ const AdminLessonsArea: React.FC<AdminLessonsAreaProps> = ({
 
         <div className="tabs-content">
           {activeTab === 'lessons' && (
-            <LessonsPanel
-              subject={subject}
-              lessons={lessons}
-              setLessons={setLessons}
-            />
+            <>
+              {loading ? (
+                <div className="loading-state">
+                  <div className="spinner-border text-primary" role="status">
+                    <span className="visually-hidden">Loading...</span>
+                  </div>
+                  <p>กำลังโหลดบทเรียน...</p>
+                </div>
+              ) : (
+                <BigLessonsPanel
+                  subject={subject}
+                  bigLessons={bigLessons}
+                  setBigLessons={setBigLessons}
+                  onRefresh={handleRefresh}
+                />
+              )}
+            </>
           )}
 
           {activeTab === 'instructors' && (
@@ -1367,7 +1627,6 @@ const AdminLessonsArea: React.FC<AdminLessonsAreaProps> = ({
               subject={subject}
             />
           )}
-
           {activeTab === 'tests' && (
             <div className="tests-panel">
               <div className="tests-header">
@@ -1381,8 +1640,6 @@ const AdminLessonsArea: React.FC<AdminLessonsAreaProps> = ({
                     subject={subject}
                   />
                 </div>
-                
-                
               </div>
             </div>
           )}
@@ -1393,3 +1650,4 @@ const AdminLessonsArea: React.FC<AdminLessonsAreaProps> = ({
 };
 
 export default AdminLessonsArea;
+

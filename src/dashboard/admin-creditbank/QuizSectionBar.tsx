@@ -35,6 +35,7 @@ interface Lesson {
   description: string;
   content: string;
   video_url: string | null;
+  video_file_id: string | null; // ✅ เพิ่ม field นี้
   order_number: number;
   status: string;
   created_at: string;
@@ -47,21 +48,68 @@ interface Lesson {
 }
 
 interface QuizSectionBarProps {
-  lesson: Lesson;
-  onQuizUpdate?: (updatedLesson: Lesson) => void;
+  // ✅ รองรับทั้ง lesson และ big lesson
+  lesson?: Lesson;
+  bigLessonId?: number;
+  currentQuizId?: number | null;
+  onQuizUpdate?: (updatedLesson?: Lesson) => void;
 }
 
-const QuizSectionBar: React.FC<QuizSectionBarProps> = ({ lesson, onQuizUpdate }) => {
+const QuizSectionBar: React.FC<QuizSectionBarProps> = ({ 
+  lesson, 
+  bigLessonId, 
+  currentQuizId, 
+  onQuizUpdate 
+}) => {
   const [quizExpanded, setQuizExpanded] = useState(false);
   const [quizQuestionsExpanded, setQuizQuestionsExpanded] = useState(false);
   const [showAddQuestionForm, setShowAddQuestionForm] = useState(false);
-  const [questions, setQuestions] = useState<QuizQuestion[]>(lesson.quiz?.questions || []);
+  const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [quizData, setQuizData] = useState<any>(null);
 
-  // ✅ เพิ่ม function สำหรับสร้าง quiz ใหม่
-  const createQuizForLesson = async () => {
+  // ✅ ตรวจสอบว่าเป็น Big Lesson หรือ Sub Lesson
+  const isBigLesson = !!bigLessonId && !lesson;
+  const isSubLesson = !!lesson;
+
+  // ✅ ได้ quiz ID จากแหล่งที่เหมาะสม
+  const getQuizId = () => {
+    if (isSubLesson && lesson) {
+      return lesson.quiz?.quiz_id || lesson.quiz_id || quizData?.quiz_id;
+    }
+    if (isBigLesson) {
+      return currentQuizId || quizData?.quiz_id;
+    }
+    return null;
+  };
+
+  // ✅ ตรวจสอบว่ามี quiz หรือไม่
+  const hasQuiz = () => {
+    if (isSubLesson && lesson) {
+      return lesson.has_quiz || !!lesson.quiz || !!quizData;
+    }
+    if (isBigLesson) {
+      return !!currentQuizId || !!quizData;
+    }
+    return false;
+  };
+
+  // ✅ ได้ชื่อ quiz
+  const getQuizTitle = () => {
+    if (isSubLesson && lesson) {
+      return lesson.quiz?.title || quizData?.title || `แบบทดสอบ - ${lesson.title}`;
+    }
+    if (isBigLesson) {
+      return quizData?.title || 'แบบทดสอบประกอบบทเรียน';
+    }
+    return 'แบบทดสอบ';
+  };
+
+  // ✅ สร้าง quiz สำหรับ Sub Lesson
+  const createQuizForSubLesson = async () => {
+    if (!lesson) return null;
+
     try {
       const apiUrl = import.meta.env.VITE_API_URL;
       const token = localStorage.getItem('token');
@@ -88,8 +136,6 @@ const QuizSectionBar: React.FC<QuizSectionBarProps> = ({ lesson, onQuizUpdate })
         }
       };
 
-      console.log('Creating quiz with data:', quizData);
-
       const response = await axios.post(
         `${apiUrl}/api/courses/quizzes`,
         quizData,
@@ -101,8 +147,6 @@ const QuizSectionBar: React.FC<QuizSectionBarProps> = ({ lesson, onQuizUpdate })
         }
       );
 
-      console.log('Create quiz response:', response.data);
-
       if (response.data && response.data.success && response.data.quiz) {
         const newQuiz = {
           quiz_id: response.data.quiz.quiz_id,
@@ -113,7 +157,6 @@ const QuizSectionBar: React.FC<QuizSectionBarProps> = ({ lesson, onQuizUpdate })
 
         setQuizData(newQuiz);
 
-        // อัปเดต lesson ด้วย quiz ใหม่
         if (onQuizUpdate) {
           const updatedLesson = {
             ...lesson,
@@ -129,7 +172,74 @@ const QuizSectionBar: React.FC<QuizSectionBarProps> = ({ lesson, onQuizUpdate })
         throw new Error('ไม่สามารถสร้างแบบทดสอบได้');
       }
     } catch (error: any) {
-      console.error('Error creating quiz:', error);
+      console.error('Error creating quiz for sub lesson:', error);
+      const errorMessage = error.response?.data?.message || 'ไม่สามารถสร้างแบบทดสอบได้';
+      setError(errorMessage);
+      throw error;
+    }
+  };
+
+  // ✅ สร้าง quiz สำหรับ Big Lesson
+  const createQuizForBigLesson = async () => {
+    if (!bigLessonId) return null;
+
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL;
+      const token = localStorage.getItem('token');
+      
+      const quizData = {
+        title: 'แบบทดสอบประกอบบทเรียน',
+        description: 'แบบทดสอบสำหรับบทเรียนหลัก',
+        type: 'big_lesson',
+        big_lesson_id: bigLessonId,
+        status: 'draft',
+        timeLimit: {
+          enabled: false,
+          value: 60,
+          unit: 'minutes'
+        },
+        passingScore: {
+          enabled: false,
+          value: 0
+        },
+        attempts: {
+          limited: true,
+          unlimited: false,
+          value: 1
+        }
+      };
+
+      const response = await axios.post(
+        `${apiUrl}/api/courses/quizzes`,
+        quizData,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (response.data && response.data.success && response.data.quiz) {
+        const newQuiz = {
+          quiz_id: response.data.quiz.quiz_id,
+          title: response.data.quiz.title,
+          description: response.data.quiz.description,
+          questions: []
+        };
+
+        setQuizData(newQuiz);
+
+        if (onQuizUpdate) {
+          onQuizUpdate();
+        }
+
+        return newQuiz.quiz_id;
+      } else {
+        throw new Error('ไม่สามารถสร้างแบบทดสอบได้');
+      }
+    } catch (error: any) {
+      console.error('Error creating quiz for big lesson:', error);
       const errorMessage = error.response?.data?.message || 'ไม่สามารถสร้างแบบทดสอบได้';
       setError(errorMessage);
       throw error;
@@ -139,33 +249,26 @@ const QuizSectionBar: React.FC<QuizSectionBarProps> = ({ lesson, onQuizUpdate })
   // Debug logging
   useEffect(() => {
     console.log('=== QuizSectionBar Debug ===');
-    console.log('Lesson data:', lesson);
-    console.log('lesson.quiz:', lesson.quiz);
-    console.log('lesson.quiz_id:', lesson.quiz_id);
-    console.log('lesson.has_quiz:', lesson.has_quiz);
-    console.log('quizData:', quizData);
-    console.log('Has quiz?', !!lesson.quiz || !!quizData);
-    console.log('Quiz ID sources:', {
-      'lesson.quiz?.quiz_id': lesson.quiz?.quiz_id,
-      'lesson.quiz_id': lesson.quiz_id,
-      'quizData?.quiz_id': quizData?.quiz_id
-    });
+    console.log('Props:', { lesson, bigLessonId, currentQuizId });
+    console.log('Type:', { isBigLesson, isSubLesson });
+    console.log('Quiz ID:', getQuizId());
+    console.log('Has quiz:', hasQuiz());
+    console.log('Quiz title:', getQuizTitle());
     console.log('===========================');
-  }, [lesson, quizData]);
+  }, [lesson, bigLessonId, currentQuizId, quizData]);
 
   // Fetch questions when quiz is expanded
   useEffect(() => {
-    const currentQuiz = lesson.quiz || quizData;
-    const hasQuizId = currentQuiz?.quiz_id || lesson.quiz_id;
+    const targetQuizId = getQuizId();
     
-    if (quizExpanded && hasQuizId && questions.length === 0) {
-      console.log('Fetching questions for expanded quiz:', hasQuizId);
-      fetchQuizQuestions(hasQuizId);
+    if (quizExpanded && targetQuizId && questions.length === 0) {
+      console.log('Fetching questions for expanded quiz:', targetQuizId);
+      fetchQuizQuestions(targetQuizId);
     }
-  }, [quizExpanded, lesson.quiz?.quiz_id, lesson.quiz_id, quizData?.quiz_id, questions.length]);
+  }, [quizExpanded, getQuizId(), questions.length]);
 
   const fetchQuizQuestions = async (quizId?: number) => {
-    const targetQuizId = quizId || lesson.quiz?.quiz_id || lesson.quiz_id || quizData?.quiz_id;
+    const targetQuizId = quizId || getQuizId();
     if (!targetQuizId) return;
     
     setLoading(true);
@@ -191,7 +294,7 @@ const QuizSectionBar: React.FC<QuizSectionBarProps> = ({ lesson, onQuizUpdate })
           console.log('Quiz info:', response.data.quiz);
           setQuizData(response.data.quiz);
           
-          if (onQuizUpdate) {
+          if (onQuizUpdate && isSubLesson && lesson) {
             const updatedLesson = {
               ...lesson,
               has_quiz: true,
@@ -242,17 +345,19 @@ const QuizSectionBar: React.FC<QuizSectionBarProps> = ({ lesson, onQuizUpdate })
       console.log('=== handleAddQuestion ===');
       console.log('Question data being sent:', questionData);
       
-      const currentQuiz = lesson.quiz || quizData;
-      let targetQuizId = currentQuiz?.quiz_id || lesson.quiz_id;
+      let targetQuizId = getQuizId();
       
-      console.log('Current quiz:', currentQuiz);
       console.log('Target quiz ID:', targetQuizId);
 
       // ✅ ถ้าไม่มี quiz ให้สร้างใหม่
       if (!targetQuizId) {
         console.log('No quiz found, creating new quiz...');
         try {
-          targetQuizId = await createQuizForLesson();
+          if (isSubLesson) {
+            targetQuizId = await createQuizForSubLesson();
+          } else if (isBigLesson) {
+            targetQuizId = await createQuizForBigLesson();
+          }
           console.log('Created new quiz with ID:', targetQuizId);
         } catch (createError) {
           console.error('Failed to create quiz:', createError);
@@ -280,7 +385,7 @@ const QuizSectionBar: React.FC<QuizSectionBarProps> = ({ lesson, onQuizUpdate })
         })) || [],
         shuffleChoices: questionData.shuffleChoices || false,
         showExplanation: questionData.showExplanation || false,
-        autoGrade: questionData.autoGrade !== false,
+                autoGrade: questionData.autoGrade !== false,
         quizzes: [targetQuizId]
       };
 
@@ -319,19 +424,23 @@ const QuizSectionBar: React.FC<QuizSectionBarProps> = ({ lesson, onQuizUpdate })
         
         // อัปเดต quiz data
         const updatedQuiz = {
-          ...(currentQuiz || quizData),
+          ...(quizData || {}),
           quiz_id: targetQuizId,
           questions: [...questions, newQuestion]
         };
 
         if (onQuizUpdate) {
-          const updatedLesson = {
-            ...lesson,
-            has_quiz: true,
-            quiz_id: targetQuizId,
-            quiz: updatedQuiz
-          };
-          onQuizUpdate(updatedLesson);
+          if (isSubLesson && lesson) {
+            const updatedLesson = {
+              ...lesson,
+              has_quiz: true,
+              quiz_id: targetQuizId,
+              quiz: updatedQuiz
+            };
+            onQuizUpdate(updatedLesson);
+          } else if (isBigLesson) {
+            onQuizUpdate();
+          }
         }
         
         setShowAddQuestionForm(false);
@@ -349,12 +458,18 @@ const QuizSectionBar: React.FC<QuizSectionBarProps> = ({ lesson, onQuizUpdate })
     }
   };
 
-
-  // ✅ เพิ่ม function สำหรับสร้าง quiz ใหม่จากปุ่ม
+  // ✅ สร้าง quiz ใหม่จากปุ่ม
   const handleCreateQuiz = async () => {
     try {
       setLoading(true);
-      const newQuizId = await createQuizForLesson();
+      let newQuizId = null;
+      
+      if (isSubLesson) {
+        newQuizId = await createQuizForSubLesson();
+      } else if (isBigLesson) {
+        newQuizId = await createQuizForBigLesson();
+      }
+      
       console.log('Quiz created successfully with ID:', newQuizId);
       
       // เปิด quiz section หลังจากสร้างเสร็จ
@@ -429,7 +544,6 @@ const QuizSectionBar: React.FC<QuizSectionBarProps> = ({ lesson, onQuizUpdate })
             )}
           </div>
         </div>
-      
       </div>
       
       {question.choices && question.choices.length > 0 && (
@@ -449,11 +563,16 @@ const QuizSectionBar: React.FC<QuizSectionBarProps> = ({ lesson, onQuizUpdate })
     </div>
   );
 
-  const currentQuiz = lesson.quiz || quizData;
-  const hasQuiz = lesson.has_quiz || !!lesson.quiz || !!quizData;
-  const quizTitle = currentQuiz?.title || quizData?.title || 'แบบทดสอบ';
-  const currentQuizId = currentQuiz?.quiz_id || lesson.quiz_id || quizData?.quiz_id;
- console.log('currentQuizId:', currentQuizId);
+  // ✅ ตรวจสอบว่ามีข้อมูลที่จำเป็นหรือไม่
+  if (!isSubLesson && !isBigLesson) {
+    console.warn('QuizSectionBar: Missing required props');
+    return null;
+  }
+
+  const currentHasQuiz = hasQuiz();
+  const currentQuizTitle = getQuizTitle();
+
+
   if (showAddQuestionForm) {
     return (
       <div className="content-section-bar">
@@ -464,7 +583,7 @@ const QuizSectionBar: React.FC<QuizSectionBarProps> = ({ lesson, onQuizUpdate })
           <div className="section-bar-info">
             <h5 className="section-bar-title">เพิ่มคำถามใหม่</h5>
             <p className="section-bar-subtitle">
-              เพิ่มคำถามในแบบทดสอบ: {quizTitle}
+              เพิ่มคำถามในแบบทดสอบ: {currentQuizTitle}
             </p>
           </div>
           <div className="section-bar-expand">
@@ -505,8 +624,6 @@ const QuizSectionBar: React.FC<QuizSectionBarProps> = ({ lesson, onQuizUpdate })
 
   return (
     <div className="content-section-bar">
-      {/* Debug info - เฉพาะ development */}
-      
       <div 
         className={`section-bar-header ${quizExpanded ? 'expanded' : ''}`}
         onClick={() => setQuizExpanded(!quizExpanded)}
@@ -515,10 +632,12 @@ const QuizSectionBar: React.FC<QuizSectionBarProps> = ({ lesson, onQuizUpdate })
           <i className="fas fa-question-circle"></i>
         </div>
         <div className="section-bar-info">
-          <h5 className="section-bar-title">แบบทดสอบ</h5>
+          <h5 className="section-bar-title">
+            {isBigLesson ? 'แบบทดสอบประกอบบทเรียน' : 'แบบทดสอบ'}
+          </h5>
           <p className="section-bar-subtitle">
-            {hasQuiz 
-              ? `แบบทดสอบ: ${quizTitle}` 
+            {currentHasQuiz 
+              ? `แบบทดสอบ: ${currentQuizTitle}` 
               : 'ยังไม่มีแบบทดสอบ'
             }
           </p>
@@ -534,10 +653,10 @@ const QuizSectionBar: React.FC<QuizSectionBarProps> = ({ lesson, onQuizUpdate })
       <div className={`section-bar-content ${quizExpanded ? 'expanded' : ''}`}>
         <div className="section-content-inner">
           <div className="quiz-section">
-            {hasQuiz ? (
+            {currentHasQuiz ? (
               <div className="quiz-info-card">
                 <div className="quiz-header">
-                  <h5 className="quiz-title">{quizTitle}</h5>
+                  <h5 className="quiz-title">{currentQuizTitle}</h5>
                   <div className="quiz-header-actions">
                     <button 
                       className="btn btn-sm btn-success me-2"
@@ -570,9 +689,9 @@ const QuizSectionBar: React.FC<QuizSectionBarProps> = ({ lesson, onQuizUpdate })
                   </div>
                 </div>
                 
-                {currentQuiz?.description && (
+                {quizData?.description && (
                   <p style={{ color: '#718096', marginBottom: '1rem' }}>
-                    {currentQuiz.description}
+                    {quizData.description}
                   </p>
                 )}
 
@@ -618,13 +737,16 @@ const QuizSectionBar: React.FC<QuizSectionBarProps> = ({ lesson, onQuizUpdate })
                     </div>
                   )}
                 </div>
-                
-
               </div>
             ) : (
               <div className="quiz-empty">
                 <i className="fas fa-question-circle fa-3x mb-3"></i>
-                <p className="mb-3">ยังไม่มีแบบทดสอบสำหรับบทเรียนนี้</p>
+                <p className="mb-3">
+                  {isBigLesson 
+                    ? 'ยังไม่มีแบบทดสอบสำหรับบทเรียนหลักนี้' 
+                    : 'ยังไม่มีแบบทดสอบสำหรับบทเรียนนี้'
+                  }
+                </p>
                 <button 
                   className="btn btn-primary"
                   onClick={handleCreateQuiz}
@@ -650,38 +772,6 @@ const QuizSectionBar: React.FC<QuizSectionBarProps> = ({ lesson, onQuizUpdate })
 
       {/* ✅ Custom Styles */}
       <style>{`
-        /* Debug styles */
-        .debug-info {
-          background: #f0f8ff;
-          border: 1px solid #b3d9ff;
-          padding: 12px;
-          margin: 10px 0;
-          font-size: 12px;
-          border-radius: 6px;
-        }
-
-        .debug-info details {
-          margin-bottom: 0.5rem;
-        }
-
-        .debug-info summary {
-          cursor: pointer;
-          font-weight: bold;
-          color: #0066cc;
-          padding: 4px 0;
-        }
-
-        .debug-info pre {
-          background: #fff;
-          padding: 8px;
-          border-radius: 4px;
-          font-size: 11px;
-          overflow-x: auto;
-          margin: 8px 0 0 0;
-          border: 1px solid #e0e0e0;
-          font-family: 'Courier New', monospace;
-        }
-
         /* Form Container Styles */
         .add-question-form-container {
           max-height: 80vh;
@@ -689,14 +779,14 @@ const QuizSectionBar: React.FC<QuizSectionBarProps> = ({ lesson, onQuizUpdate })
           overflow-x: hidden;
           padding: 1rem;
           background: #f8f9fa;
-          border-radius: 8px;
+                    border-radius: 8px;
           margin: 1rem;
         }
 
         .form-wrapper {
           background: white;
           border-radius: 8px;
-                   padding: 1.5rem;
+          padding: 1.5rem;
           box-shadow: 0 2px 4px rgba(0,0,0,0.1);
           max-width: 100%;
         }
@@ -947,6 +1037,121 @@ const QuizSectionBar: React.FC<QuizSectionBarProps> = ({ lesson, onQuizUpdate })
           font-size: 0.8125rem;
         }
 
+        /* Quiz Empty State */
+        .quiz-empty {
+          text-align: center;
+          padding: 3rem 1rem;
+          color: #718096;
+        }
+
+        .quiz-empty i {
+          color: #cbd5e0;
+          margin-bottom: 1rem;
+        }
+
+        .quiz-empty p {
+          font-size: 1.1rem;
+          margin-bottom: 1.5rem;
+          color: #4a5568;
+        }
+
+        /* Section Bar Styles */
+        .content-section-bar {
+          margin-bottom: 1rem;
+        }
+
+        .section-bar-header {
+          padding: 1rem;
+          border: 1px solid #e2e8f0;
+          border-radius: 8px;
+          background: white;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+        }
+
+        .section-bar-header:hover {
+          border-color: #cbd5e0;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .section-bar-header.expanded {
+          border-bottom-left-radius: 0;
+          border-bottom-right-radius: 0;
+          border-bottom-color: transparent;
+        }
+
+        .section-bar-icon {
+          width: 40px;
+          height: 40px;
+          border-radius: 8px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: #edf2f7;
+          color: #4a5568;
+          flex-shrink: 0;
+        }
+
+        .section-bar-icon.quiz-icon {
+          background: #e6fffa;
+          color: #319795;
+        }
+
+        .section-bar-info {
+          flex: 1;
+        }
+
+        .section-bar-title {
+          font-size: 1.1rem;
+          font-weight: 600;
+          color: #2d3748;
+          margin: 0;
+        }
+
+        .section-bar-subtitle {
+          font-size: 0.875rem;
+          color: #718096;
+          margin: 0;
+        }
+
+        .section-bar-count {
+          background: #edf2f7;
+          color: #4a5568;
+          padding: 0.25rem 0.75rem;
+          border-radius: 20px;
+          font-size: 0.875rem;
+          font-weight: 600;
+          min-width: 40px;
+          text-align: center;
+        }
+
+        .section-bar-expand {
+          color: #718096;
+          transition: transform 0.2s ease;
+        }
+
+        .section-bar-header.expanded .section-bar-expand {
+          transform: rotate(180deg);
+        }
+
+        .section-bar-content {
+          border: 1px solid #e2e8f0;
+          border-top: none;
+          border-bottom-left-radius: 8px;
+          border-bottom-right-radius: 8px;
+          background: white;
+          max-height: 0;
+          overflow: hidden;
+          transition: max-height 0.3s ease;
+        }
+
+        .section-bar-content.expanded {
+          max-height: none;
+        }
+
         /* Responsive Design */
         @media (max-width: 768px) {
           .add-question-form-container {
@@ -1062,175 +1267,6 @@ const QuizSectionBar: React.FC<QuizSectionBarProps> = ({ lesson, onQuizUpdate })
           border-left: 4px solid #38a169;
         }
 
-        /* Form Specific Improvements */
-        .add-question-form-container .form-group {
-          margin-bottom: 1rem;
-        }
-
-        .add-question-form-container .form-control {
-          border-radius: 6px;
-          border: 1px solid #e2e8f0;
-          padding: 0.75rem;
-          transition: border-color 0.2s ease;
-        }
-
-        .add-question-form-container .form-control:focus {
-          border-color: #4299e1;
-          box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
-          outline: none;
-        }
-
-        .add-question-form-container .btn {
-          border-radius: 6px;
-          padding: 0.75rem 1.5rem;
-          font-weight: 500;
-          transition: all 0.2s ease;
-        }
-
-        .add-question-form-container .btn-primary {
-          background-color: #4299e1;
-          border-color: #4299e1;
-        }
-
-        .add-question-form-container .btn-primary:hover {
-          background-color: #3182ce;
-          border-color: #3182ce;
-          transform: translateY(-1px);
-        }
-
-        .add-question-form-container .btn-secondary {
-          background-color: #718096;
-          border-color: #718096;
-        }
-
-        .add-question-form-container .btn-secondary:hover {
-          background-color: #4a5568;
-          border-color: #4a5568;
-        }
-
-        /* Better Typography */
-        .quiz-title {
-          font-size: 1.25rem;
-          font-weight: 600;
-          color: #2d3748;
-          margin: 0;
-        }
-
-        .section-bar-title {
-          font-size: 1.1rem;
-          font-weight: 600;
-          color: #2d3748;
-          margin: 0;
-        }
-
-        .section-bar-subtitle {
-          font-size: 0.875rem;
-          color: #718096;
-          margin: 0;
-        }
-
-        /* Better Spacing */
-        .content-section-bar {
-          margin-bottom: 1rem;
-        }
-
-        .section-bar-header {
-          padding: 1rem;
-          border: 1px solid #e2e8f0;
-          border-radius: 8px;
-          background: white;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          display: flex;
-          align-items: center;
-          gap: 1rem;
-        }
-
-        .section-bar-header:hover {
-          border-color: #cbd5e0;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        }
-
-        .section-bar-header.expanded {
-          border-bottom-left-radius: 0;
-          border-bottom-right-radius: 0;
-          border-bottom-color: transparent;
-        }
-
-        .section-bar-icon {
-          width: 40px;
-          height: 40px;
-          border-radius: 8px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: #edf2f7;
-          color: #4a5568;
-          flex-shrink: 0;
-        }
-
-        .section-bar-icon.quiz-icon {
-          background: #e6fffa;
-          color: #319795;
-        }
-
-        .section-bar-info {
-          flex: 1;
-        }
-
-        .section-bar-count {
-          background: #edf2f7;
-          color: #4a5568;
-          padding: 0.25rem 0.75rem;
-          border-radius: 20px;
-          font-size: 0.875rem;
-          font-weight: 600;
-          min-width: 40px;
-          text-align: center;
-        }
-
-        .section-bar-expand {
-          color: #718096;
-          transition: transform 0.2s ease;
-        }
-
-        .section-bar-header.expanded .section-bar-expand {
-          transform: rotate(180deg);
-        }
-
-        .section-bar-content {
-          border: 1px solid #e2e8f0;
-          border-top: none;
-          border-bottom-left-radius: 8px;
-          border-bottom-right-radius: 8px;
-          background: white;
-          max-height: 0;
-          overflow: hidden;
-          transition: max-height 0.3s ease;
-        }
-
-        .section-bar-content.expanded {
-          max-height: none;
-        }
-
-        /* Empty State Improvements */
-        .quiz-empty {
-          text-align: center;
-          padding: 3rem 1rem;
-          color: #718096;
-        }
-
-        .quiz-empty i {
-          color: #cbd5e0;
-          margin-bottom: 1rem;
-        }
-
-        .quiz-empty p {
-          font-size: 1.1rem;
-          margin-bottom: 1.5rem;
-          color: #4a5568;
-        }
-
         /* Button Disabled States */
         .btn:disabled {
           opacity: 0.6;
@@ -1240,10 +1276,26 @@ const QuizSectionBar: React.FC<QuizSectionBarProps> = ({ lesson, onQuizUpdate })
         .btn:disabled:hover {
           transform: none;
         }
+
+        /* Quiz Info Card */
+        .quiz-info-card {
+          background: #f8f9fa;
+          border-radius: 8px;
+          padding: 1.5rem;
+          border: 1px solid #e9ecef;
+        }
+
+        .quiz-title {
+          font-size: 1.25rem;
+          font-weight: 600;
+          color: #2d3748;
+          margin: 0;
+        }
       `}</style>
     </div>
   );
 };
 
 export default QuizSectionBar;
+
 

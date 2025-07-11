@@ -31,6 +31,7 @@ interface Lesson {
   description: string;
   content: string;
   video_url: string | null;
+  video_file_id: string | null; // ✅ เพิ่ม field นี้
   order_number: number;
   status: string;
   created_at: string;
@@ -38,6 +39,32 @@ interface Lesson {
   has_quiz?: boolean;
   quiz_id?: number | null;
   file_count?: string;
+  files?: LessonFile[];
+  quiz?: LessonQuiz;
+  big_lesson_id?: number;
+  duration?: number;
+}
+
+// ✅ เพิ่ม interface ที่ขาดหายไป
+interface LessonFile {
+  file_id: string;
+  original_name: string;
+  file_size: number;
+  file_type: string;
+  file_path: string;
+}
+
+interface LessonQuiz {
+  quiz_id: number;
+  title: string;
+  description: string;
+  questions?: QuizQuestion[];
+}
+
+interface QuizQuestion {
+  question_id: number;
+  question_text: string;
+  question_type: string;
 }
 
 interface Instructor {
@@ -78,7 +105,7 @@ interface AdminSubjectAreaProps {
   onBack: () => void;
 }
 
-// Editable Subject Detail component
+// เหลือโค้ดเดิมทั้งหมด...
 const EditableSubjectDetail: React.FC<{
   subject: Subject;
   course: Course;
@@ -366,168 +393,100 @@ const EditableSubjectDetail: React.FC<{
                   value={editVideoUrl}
                   onChange={(e) => setEditVideoUrl(e.target.value)}
                   className="edit-video-input modern-input"
-                  placeholder="URL วิดีโอ (YouTube)"
+                  placeholder="URL วิดีโอ YouTube"
                 />
               ) : (
-                <>
+                <div className="video-display">
                   {subject.video_url ? (
                     <div className="video-container">
                       <iframe
                         src={getVideoEmbedUrl(subject.video_url)}
-                        title={`วิดีโอแนะนำ ${subject.subject_name}`}
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        title="วิดีโอแนะนำรายวิชา"
+                        frameBorder="0"
+                                               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                         allowFullScreen
-                        className="subject-video-iframe"
                       ></iframe>
                     </div>
                   ) : (
                     <div className="no-video">
                       <i className="fas fa-video"></i>
-                      <p>ไม่มีวิดีโอแนะนำ</p>
+                      <span>ไม่มีวิดีโอแนะนำ</span>
                     </div>
                   )}
-                </>
+                </div>
               )}
             </div>
           </div>
         </div>
       </div>
-
-      {/* ใช้ AdminLessonsArea component แทนส่วน tabs เดิม */}
-      <AdminLessonsArea
-        subject={subject}
-        courseData={course}
-        onSubjectUpdate={onSubjectUpdate}
-      />
     </div>
   );
 };
 
-// Main AdminSubjectArea component
 const AdminSubjectArea: React.FC<AdminSubjectAreaProps> = ({ 
   subjectId, 
   courseData, 
   onSubjectUpdate, 
   onBack 
 }) => {
-  const apiURL = import.meta.env.VITE_API_URL;
-  
   const [subject, setSubject] = useState<Subject | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (subjectId) {
-      fetchSubjectData();
-    }
-  }, [subjectId]);
-
-  const fetchSubjectData = async () => {
-    setIsLoading(true);
-    setError(null);
-    
+  const fetchSubjectDetail = async () => {
     try {
+      setLoading(true);
+      const apiURL = import.meta.env.VITE_API_URL;
       const token = localStorage.getItem('token');
-      if (!token) {
-        setError('ไม่พบข้อมูลการเข้าสู่ระบบ กรุณาเข้าสู่ระบบใหม่');
-        return;
-      }
-
-      const subjectResponse = await axios.get(
+      
+      const response = await axios.get(
         `${apiURL}/api/courses/subjects/${subjectId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      if (subjectResponse.data.success) {
-        const subjectData = subjectResponse.data.subject;
-        
-        // Map lessons data properly
-        if (subjectData.lessons) {
-          subjectData.lessons = subjectData.lessons.map((lesson: any) => ({
-            lesson_id: lesson.lesson_id,
-            title: lesson.title,
-            description: lesson.description || '', // ให้เป็น string เสมอ
-            content: lesson.content || '', // ให้เป็น string เสมอ
-            video_url: lesson.video_url,
-            order_number: lesson.order_number,
-            status: lesson.status || 'active', // ให้เป็น string เสมอ
-            created_at: lesson.created_at || new Date().toISOString(), // ให้เป็น string เสมอ
-            can_preview: lesson.can_preview || false,
-            has_quiz: lesson.has_quiz || false,
-            quiz_id: lesson.quiz_id,
-            file_count: lesson.file_count || '0'
-          }));
-        }
-
-        // Map test data properly
-        if (subjectData.preTest) {
-          subjectData.pre_test = {
-            quiz_id: subjectData.preTest.quiz_id,
-            title: subjectData.preTest.title,
-            description: subjectData.preTest.description || '',
-            status: 'active',
-            passing_score_enabled: false,
-            passing_score_value: 0,
-            question_count: subjectData.preTest.question_count
-          };
-        }
-
-        if (subjectData.postTest) {
-          subjectData.post_test = {
-            quiz_id: subjectData.postTest.quiz_id,
-            title: subjectData.postTest.title,
-            description: subjectData.postTest.description || '',
-            status: 'active',
-            passing_score_enabled: false,
-            passing_score_value: 0,
-            question_count: subjectData.postTest.question_count
-          };
-        }
-
-        setSubject(subjectData);
+      if (response.data.success) {
+        setSubject(response.data.subject);
       } else {
-        setError('ไม่พบข้อมูลรายวิชา');
+        setError('ไม่สามารถโหลดข้อมูลรายวิชาได้');
       }
     } catch (error) {
-      console.error('Error fetching subject data:', error);
-      setError('เกิดข้อผิดพลาดในการดึงข้อมูลรายวิชา');
+      console.error('Error fetching subject detail:', error);
+      setError('เกิดข้อผิดพลาดในการโหลดข้อมูล');
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchSubjectDetail();
+  }, [subjectId]);
 
   const handleSubjectUpdate = (updatedSubject: Subject) => {
     setSubject(updatedSubject);
     onSubjectUpdate(updatedSubject);
   };
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="loading-container">
-        <div className="loading-spinner">
-          <div className="spinner-border text-primary" role="status">
-            <span className="visually-hidden">กำลังโหลด...</span>
-          </div>
-          <p className="loading-text">กำลังโหลดข้อมูลรายวิชา...</p>
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Loading...</span>
         </div>
+        <p>กำลังโหลดข้อมูลรายวิชา...</p>
       </div>
     );
   }
 
   if (error || !subject) {
     return (
-      <div className="alert alert-danger rounded-3 mb-4" role="alert">
-        <div className="d-flex align-items-center">
-          <i className="fas fa-exclamation-circle me-2"></i>
-          <div className="flex-grow-1">
-            {error || 'ไม่พบข้อมูลรายวิชา'}
-          </div>
-          <button 
-            className="btn btn-outline-danger btn-sm"
-            onClick={onBack}
-          >
-            <i className="fas fa-arrow-left me-1"></i>
-            กลับ
+      <div className="error-container">
+        <div className="error-content">
+          <i className="fas fa-exclamation-triangle"></i>
+          <h3>เกิดข้อผิดพลาด</h3>
+          <p>{error || 'ไม่พบข้อมูลรายวิชา'}</p>
+          <button className="btn btn-primary" onClick={onBack}>
+            <i className="fas fa-arrow-left me-2"></i>
+            กลับไปหน้าหลัก
           </button>
         </div>
       </div>
@@ -535,11 +494,35 @@ const AdminSubjectArea: React.FC<AdminSubjectAreaProps> = ({
   }
 
   return (
-    <EditableSubjectDetail
-      subject={subject}
-      course={courseData}
-      onSubjectUpdate={handleSubjectUpdate}
-    />
+    <div className="admin-subject-area">
+      {/* Back Button */}
+      <div className="back-navigation">
+        <button 
+          className="back-btn modern-btn secondary"
+          onClick={onBack}
+        >
+          <div className="btn-content">
+            <i className="fas fa-arrow-left"></i>
+            <span>กลับไปหน้าหลัก</span>
+          </div>
+          <div className="btn-ripple"></div>
+        </button>
+      </div>
+
+      {/* Subject Detail Header */}
+      <EditableSubjectDetail 
+        subject={subject}
+        course={courseData}
+        onSubjectUpdate={handleSubjectUpdate}
+      />
+
+      {/* Lessons Management Area */}
+      <AdminLessonsArea 
+        subject={subject}
+        courseData={courseData}
+        onSubjectUpdate={handleSubjectUpdate}
+      />
+    </div>
   );
 };
 
