@@ -162,7 +162,7 @@ const getCollapseKey = () => {
   // ✅ ได้ชื่อ quiz
   const getQuizTitle = () => {
     if (isSubLesson && lesson) {
-      return lesson.quiz?.title || quizData?.title || `แบบทดสอบ - ${lesson.title}`;
+      return lesson.quiz?.title || quizData?.title || `${lesson.title}`;
     }
     if (isBigLesson) {
       return quizData?.title || 'แบบทดสอบประกอบบทเรียน';
@@ -880,7 +880,7 @@ const handleDeleteQuiz = async () => {
           </h5>
           <p className="section-bar-subtitle">
             {currentHasQuiz 
-              ? `แบบทดสอบ: ${currentQuizTitle}` 
+              ? `${currentQuizTitle}` 
               : 'ยังไม่มีแบบทดสอบ'
             }
           </p>
@@ -907,7 +907,6 @@ const handleDeleteQuiz = async () => {
     disabled={loading}
   >
     <i className="fas fa-plus"></i>
-    <span>เพิ่มคำถาม</span>
   </button>
   
   {/* เพิ่มปุ่มลบแบบทดสอบ */}
@@ -918,14 +917,12 @@ const handleDeleteQuiz = async () => {
     title="ลบแบบทดสอบ"
   >
     <i className="fas fa-trash"></i>
-    <span>ลบแบบทดสอบ</span>
   </button>
   
   <button 
     className="expand-quiz-btn"
     onClick={() => setQuizQuestionsExpanded(!quizQuestionsExpanded)}
   >
-    <span>{quizQuestionsExpanded ? 'ซ่อน' : 'ดู'}คำถาม</span>
     <i className={`fas fa-chevron-${quizQuestionsExpanded ? 'up' : 'down'}`}></i>
   </button>
 </div>
