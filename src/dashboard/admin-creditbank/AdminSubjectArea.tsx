@@ -31,7 +31,7 @@ interface Lesson {
   description: string;
   content: string;
   video_url: string | null;
-  video_file_id: string | null;
+  video_file_id: string | null; // ✅ เพิ่ม field นี้
   order_number: number;
   status: string;
   created_at: string;
@@ -45,6 +45,7 @@ interface Lesson {
   duration?: number;
 }
 
+// ✅ เพิ่ม interface ที่ขาดหายไป
 interface LessonFile {
   file_id: string;
   original_name: string;
@@ -97,40 +98,19 @@ interface Course {
   course_code: string;
 }
 
-// ✅ ใช้ CollapseStates interface เดียวกันกับ AdminLessonsArea
-interface CollapseStates {
-  [componentKey: string]: {
-    [stateType: string]: boolean;
-  };
-}
-
-// ✅ อัปเดต AdminSubjectAreaProps
 interface AdminSubjectAreaProps {
   subjectId: number;
   courseData: Course;
   onSubjectUpdate: (updatedSubject: Subject) => void;
   onBack: () => void;
-  // ✅ ใช้ CollapseStates interface ใหม่
-  collapseStates?: CollapseStates;
-  updateCollapseState?: (componentKey: string, stateType: string, value: boolean) => void;
-  getCollapseState?: (componentKey: string, stateType: string) => boolean;
 }
 
-// EditableSubjectDetail component - เพิ่ม props เท่านั้น
+// เหลือโค้ดเดิมทั้งหมด...
 const EditableSubjectDetail: React.FC<{
   subject: Subject;
   course: Course;
   onSubjectUpdate: (updatedSubject: Subject) => void;
-  // ✅ ใช้ CollapseStates interface ใหม่
-  collapseStates?: CollapseStates;
-  updateCollapseState?: (componentKey: string, stateType: string, value: boolean) => void;
-  getCollapseState?: (componentKey: string, stateType: string) => boolean;
-}> = ({ 
-  subject, 
-  course, 
-  onSubjectUpdate,
-
-}) => {
+}> = ({ subject, course, onSubjectUpdate }) => {
   const apiURL = import.meta.env.VITE_API_URL;
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -219,17 +199,18 @@ const EditableSubjectDetail: React.FC<{
   };
 
 const getSubjectImageUrl = (subject: Subject): string => {
+  console.log('Subject data:', subject); // ✅ Debug
+  console.log('Cover image file ID:', subject.cover_image_file_id); // ✅ Debug
+  
   if (imagePreview) return imagePreview;
   if (subject.cover_image_file_id) {
-    // ✅ แก้ไข endpoint ให้เหมือนกับ SubjectDetailsArea.tsx
-    return `${apiURL}/api/courses/image/${subject.cover_image_file_id}`;
-  }
-  // ✅ หรือถ้าใช้ host server แล้ว
-  if (subject.cover_image && subject.cover_image.startsWith('/uploads/')) {
-    return `${apiURL}${subject.cover_image}`;
+    const imageUrl = `${apiURL}/api/courses/image/${subject.cover_image_file_id}`;
+    console.log('Generated image URL:', imageUrl); // ✅ Debug
+    return imageUrl;
   }
   return 'https://via.placeholder.com/400x250.png?text=ไม่มีรูปภาพ';
 };
+
   const getVideoEmbedUrl = (videoUrl: string | null): string => {
     if (!videoUrl) return '';
     if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
@@ -272,13 +253,24 @@ const getSubjectImageUrl = (subject: Subject): string => {
           <div className="subject-image-section">
             <div className="subject-image-container" onClick={() => isEditing && fileInputRef.current?.click()}>
               <img
-                src={getSubjectImageUrl(subject)}
-                alt={editSubjectName}
-                className="subject-detail-image"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = 'https://www.pngwing.com/en/search?q=no+Image';
-                }}
-              />
+  src={getSubjectImageUrl(subject)}
+  alt={editSubjectName}
+  className="subject-detail-image"
+  onError={(e) => {
+    const target = e.target as HTMLImageElement;
+    // ✅ ลองหลาย fallback URLs
+    if (target.src.includes('/api/courses/image/')) {
+      // ลอง endpoint อื่น
+      target.src = `${apiURL}/api/courses/subjects/image/${subject.cover_image_file_id}`;
+    } else if (target.src.includes('/api/courses/subjects/image/')) {
+      // ลอง endpoint อื่นอีก
+      target.src = `${apiURL}/api/files/${subject.cover_image_file_id}`;
+    } else {
+      // ใช้ placeholder สุดท้าย
+      target.src = 'https://via.placeholder.com/400x250.png?text=ไม่มีรูปภาพ';
+    }
+  }}
+/>
               {isEditing && (
                 <div className="image-edit-overlay">
                   <i className="fas fa-camera"></i>
@@ -401,7 +393,7 @@ const getSubjectImageUrl = (subject: Subject): string => {
                   placeholder="รายละเอียดรายวิชา"
                   rows={4}
                 />
-                            ) : (
+              ) : (
                 <div className="subject-description">
                   {subject.description || 'ไม่มีรายละเอียด'}
                 </div>
@@ -427,7 +419,7 @@ const getSubjectImageUrl = (subject: Subject): string => {
                         src={getVideoEmbedUrl(subject.video_url)}
                         title="วิดีโอแนะนำรายวิชา"
                         frameBorder="0"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                         allowFullScreen
                       ></iframe>
                     </div>
@@ -451,39 +443,48 @@ const AdminSubjectArea: React.FC<AdminSubjectAreaProps> = ({
   subjectId, 
   courseData, 
   onSubjectUpdate, 
-  onBack,
-  // ✅ รับ collapse state props
-  collapseStates,
-  updateCollapseState,
-  getCollapseState
+  onBack 
 }) => {
   const [subject, setSubject] = useState<Subject | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchSubjectDetail = async () => {
+ const fetchSubjectDetail = async () => {
+  try {
+    setLoading(true);
+    const apiURL = import.meta.env.VITE_API_URL;
+    const token = localStorage.getItem('token');
+    
+    // ✅ ลองใช้ endpoint ที่อาจจะส่ง cover_image_file_id มาด้วย
+    let response;
     try {
-      setLoading(true);
-      const apiURL = import.meta.env.VITE_API_URL;
-      const token = localStorage.getItem('token');
-      
-      const response = await axios.get(
+      // ลอง endpoint แรก
+      response = await axios.get(
         `${apiURL}/api/courses/subjects/${subjectId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-
-      if (response.data.success) {
-        setSubject(response.data.subject);
-      } else {
-        setError('ไม่สามารถโหลดข้อมูลรายวิชาได้');
-      }
     } catch (error) {
-      console.error('Error fetching subject detail:', error);
-      setError('เกิดข้อผิดพลาดในการโหลดข้อมูล');
-    } finally {
-      setLoading(false);
+      // ถ้าไม่ได้ ลอง endpoint อื่น
+      response = await axios.get(
+        `${apiURL}/api/subjects/${subjectId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
     }
-  };
+
+    console.log('Full API Response:', response.data); // ✅ Debug ทั้งหมด
+
+    if (response.data.success) {
+      setSubject(response.data.subject);
+    } else {
+      setError('ไม่สามารถโหลดข้อมูลรายวิชาได้');
+    }
+  } catch (error) {
+    console.error('Error fetching subject detail:', error);
+    setError('เกิดข้อผิดพลาดในการโหลดข้อมูล');
+  } finally {
+    setLoading(false);
+  }
+};
 
   useEffect(() => {
     fetchSubjectDetail();
@@ -542,10 +543,6 @@ const AdminSubjectArea: React.FC<AdminSubjectAreaProps> = ({
         subject={subject}
         course={courseData}
         onSubjectUpdate={handleSubjectUpdate}
-        // ✅ ส่ง collapse state props ต่อ
-        collapseStates={collapseStates}
-        updateCollapseState={updateCollapseState}
-        getCollapseState={getCollapseState}
       />
 
       {/* Lessons Management Area */}
@@ -553,14 +550,9 @@ const AdminSubjectArea: React.FC<AdminSubjectAreaProps> = ({
         subject={subject}
         courseData={courseData}
         onSubjectUpdate={handleSubjectUpdate}
-        // ✅ ส่ง collapse state props ต่อไปยัง AdminLessonsArea
-        collapseStates={collapseStates}
-        updateCollapseState={updateCollapseState}
-        getCollapseState={getCollapseState}
       />
     </div>
   );
 };
 
 export default AdminSubjectArea;
-
