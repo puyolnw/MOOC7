@@ -1300,7 +1300,6 @@
  .dashboard__area .instructors-panel {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
 }
 
  .dashboard__area .instructors-header {

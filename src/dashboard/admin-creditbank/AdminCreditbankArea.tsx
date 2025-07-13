@@ -7,7 +7,7 @@ import DashboardBanner from "../dashboard-common/AdminBanner";
 import AdminSubjectArea from "./AdminSubjectArea";
 import "./mega.css";
 
-// ... (interfaces remain the same)
+
 interface Course {
   course_id: number;
   course_code: string;
@@ -347,7 +347,7 @@ const AddCourseCard: React.FC<{
         <div className="add-course-icon">
           <i className="fas fa-plus"></i>
         </div>
-        <h3 className="add-course-title">เพิ่มหลักสูตรใหม่</h3>
+    
         <p className="add-course-description">
           สร้างหลักสูตรใหม่สำหรับสาขา {selectedDepartment.department_name}
         </p>
@@ -431,12 +431,12 @@ const CourseList: React.FC<{
 
       <div className="courses-grid">
         {/* Add Course Card เป็นอันแรก */}
-                <AddCourseCard 
+        <AddCourseCard 
           selectedDepartment={selectedDepartment}
           onClick={onAddCourse}
         />
         
-        {courses.map((course, index) => (
+                {courses.map((course, index) => (
           <div 
             key={`course-${course.course_id}-${index}`} 
             className="course-card"
@@ -662,6 +662,8 @@ const EditableCourseDetail: React.FC<{
     setImagePreview(null);
   };
 
+
+
   const getCourseImageUrl = (course: Course): string => {
     if (imagePreview) return imagePreview;
     if (course.cover_image_file_id) {
@@ -794,7 +796,7 @@ const EditableCourseDetail: React.FC<{
               )}
             </div>
 
-            {/* Course Description */}
+                     {/* Course Description */}
             <div className="course-description-section">
               <h3>รายละเอียดหลักสูตร</h3>
               {isEditing ? (
@@ -812,7 +814,7 @@ const EditableCourseDetail: React.FC<{
               )}
             </div>
 
-                       {/* Study Result */}
+            {/* Study Result */}
             <div className="study-result-section">
               <h3>ผลลัพธ์การเรียนรู้</h3>
               {isEditing ? (
@@ -930,16 +932,16 @@ const EditableCourseDetail: React.FC<{
                 
                 <div className="subject-card-image">
                   <img
-                    src={subject.cover_image_file_id 
-                      ? `${apiURL}/api/courses/subjects/image/${subject.cover_image_file_id}`
-                      : 'https://via.placeholder.com/300x200.png?text=ไม่มีรูปภาพ'
-                    }
-                    alt={subject.subject_name}
-                    className="subject-image"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = 'https://via.placeholder.com/300x200.png?text=ไม่มีรูปภาพ';
-                    }}
-                  />
+  src={subject.cover_image_file_id 
+    ? `${apiURL}/api/courses/image/${subject.cover_image_file_id}`
+    : 'https://via.placeholder.com/300x200.png?text=ไม่มีรูปภาพ'
+  }
+  alt={subject.subject_name}
+  className="subject-image"
+  onError={(e) => {
+    (e.target as HTMLImageElement).src = 'https://via.placeholder.com/300x200.png?text=ไม่มีรูปภาพ';
+  }}
+/>
                 </div>
                 
                 <div className="subject-card-content">
@@ -994,17 +996,17 @@ const EditableCourseDetail: React.FC<{
                   )}
                 </div>
                 
-                <div className="subject-card-footer d-flex justify-content-end align-items-center pt-3">
-                  <div className="subject-actions">
-                    <button
-                      className="btn btn-primary btn-sm d-flex align-items-center"
-                      onClick={() => onSubjectSelect(subject)}
-                    >
-                      <i className="fas fa-eye me-2"></i>
-                      ดูรายละเอียด
-                    </button>
-                  </div>
-                </div>
+<div className="subject-card-footer d-flex justify-content-end align-items-center pt-3">
+  <div className="subject-actions">
+    <button
+      className="btn btn-primary btn-sm d-flex align-items-center"
+      onClick={() => onSubjectSelect(subject)}
+    >
+      <i className="fas fa-eye me-2"></i>
+      ดูรายละเอียด
+    </button>
+  </div>
+</div>
               </div>
             ))}
           </div>
@@ -1097,32 +1099,6 @@ const SimplePagination: React.FC<PaginationProps> = ({ currentPage, totalPages, 
   );
 };
 
-// ✅ Interface สำหรับ Collapse States
-interface CollapseStates {
-  [key: string]: {
-    quizExpanded?: boolean;
-    quizQuestionsExpanded?: boolean;
-    filesExpanded?: boolean;
-    lessonsExpanded?: boolean;
-    instructorsExpanded?: boolean;
-    prerequisitesExpanded?: boolean;
-    [key: string]: boolean | undefined;
-  };
-}
-
-// ✅ Helper function สำหรับจัดการ URL
-const updateURL = (faculty: string, department: Department, course: Course, subject: Subject) => {
-  const params = new URLSearchParams();
-  params.set('view', 'subject-detail');
-  params.set('faculty', encodeURIComponent(faculty));
-  params.set('department', department.department_id.toString());
-  params.set('course', course.course_id.toString());
-  params.set('subject', subject.subject_id.toString());
-  
-  const newURL = `${window.location.pathname}?${params.toString()}`;
-  window.history.pushState(null, '', newURL);
-};
-
 // Main AdminCreditbankArea component
 const AdminCreditbankArea: React.FC = () => {
   const apiURL = import.meta.env.VITE_API_URL;
@@ -1155,55 +1131,6 @@ const AdminCreditbankArea: React.FC = () => {
   // Add state for initialization
   const [isInitialized, setIsInitialized] = useState(false);
 
-  // ✅ Collapse States Management
-  const [collapseStates, setCollapseStates] = useState<CollapseStates>({});
-
-  // ✅ ฟังก์ชันสำหรับจัดการ collapse states
-  const updateCollapseState = (key: string, stateType: string, value: boolean) => {
-    setCollapseStates(prev => ({
-      ...prev,
-      [key]: {
-        ...prev[key],
-        [stateType]: value
-      }
-    }));
-    
-    // บันทึกลง localStorage
-    const storageKey = `collapse-states-${key}`;
-    const currentStates = JSON.parse(localStorage.getItem(storageKey) || '{}');
-    currentStates[stateType] = value;
-    localStorage.setItem(storageKey, JSON.stringify(currentStates));
-  };
-
-  const getCollapseState = (key: string, stateType: string): boolean => {
-    return collapseStates[key]?.[stateType] || false;
-  };
-
-    // ✅ โหลด collapse states จาก localStorage
-  const loadCollapseStates = (key: string) => {
-    const storageKey = `collapse-states-${key}`;
-    const savedStates = localStorage.getItem(storageKey);
-    if (savedStates) {
-      try {
-        const parsedStates = JSON.parse(savedStates);
-        setCollapseStates(prev => ({
-          ...prev,
-          [key]: parsedStates
-        }));
-      } catch (error) {
-        console.error('Error parsing saved collapse states:', error);
-      }
-    }
-  };
-
-  // ✅ บันทึก collapse states ปัจจุบันก่อนเปลี่ยน subject
-  const saveCurrentCollapseStates = (subjectKey: string) => {
-    if (collapseStates[subjectKey]) {
-      const storageKey = `collapse-states-${subjectKey}`;
-      localStorage.setItem(storageKey, JSON.stringify(collapseStates[subjectKey]));
-    }
-  };
-
   const handleAddCourse = () => {
     if (selectedDepartment) {
       navigate(`/admin-creditbank/create-new?department_id=${selectedDepartment.department_id}`);
@@ -1213,164 +1140,161 @@ const AdminCreditbankArea: React.FC = () => {
   };
 
   // Initialize from URL parameters on component mount
-  useEffect(() => {
-    const initializeFromURL = async () => {
-      const urlParams = new URLSearchParams(location.search);
-      const view = urlParams.get('view');
-      const faculty = urlParams.get('faculty');
-      const departmentId = urlParams.get('department');
-      const courseId = urlParams.get('course');
-      const subjectId = urlParams.get('subject');
+ // แก้ไข useEffect สำหรับ initialization
+useEffect(() => {
+  const initializeFromURL = async () => {
+    const urlParams = new URLSearchParams(location.search);
+    const view = urlParams.get('view');
+    const faculty = urlParams.get('faculty');
+    const departmentId = urlParams.get('department');
+    const courseId = urlParams.get('course');
+    const subjectId = urlParams.get('subject');
 
-      console.log('Initializing from URL:', { view, faculty, departmentId, courseId, subjectId });
+    console.log('Initializing from URL:', { view, faculty, departmentId, courseId, subjectId });
 
-      if (view && faculty) {
-        try {
-          setIsLoading(true);
+    if (view && faculty) {
+      try {
+        setIsLoading(true);
+        
+        // Set faculty
+        setSelectedFaculty(decodeURIComponent(faculty));
+        
+        if (view === 'departments') {
+          setCurrentView('departments');
+          await fetchDepartmentsByFaculty(decodeURIComponent(faculty));
+        } else if (view === 'courses' && departmentId) {
+          // Need to fetch department data first
+          const token = localStorage.getItem('token');
+          const deptResponse = await axios.get(
+            `${apiURL}/api/departments/${departmentId}`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
           
-          // Set faculty
-          setSelectedFaculty(decodeURIComponent(faculty));
+          if (deptResponse.data.success) {
+            const department = deptResponse.data.department;
+            setSelectedDepartment(department);
+            setCurrentView('courses');
+            await fetchCoursesByDepartment(parseInt(departmentId));
+          }
+        } else if (view === 'subjects' && departmentId && courseId) {
+          // Fetch department and course data
+          const token = localStorage.getItem('token');
           
-          if (view === 'departments') {
-            setCurrentView('departments');
-            await fetchDepartmentsByFaculty(decodeURIComponent(faculty));
-          } else if (view === 'courses' && departmentId) {
-            // Need to fetch department data first
-            const token = localStorage.getItem('token');
-            const deptResponse = await axios.get(
-              `${apiURL}/api/departments/${departmentId}`,
-              { headers: { Authorization: `Bearer ${token}` } }
-            );
-            
-            if (deptResponse.data.success) {
-              const department = deptResponse.data.department;
-              setSelectedDepartment(department);
-              setCurrentView('courses');
-              await fetchCoursesByDepartment(parseInt(departmentId));
-            }
-          } else if (view === 'subjects' && departmentId && courseId) {
-            // Fetch department and course data
-            const token = localStorage.getItem('token');
-            
-            const [deptResponse, courseResponse] = await Promise.all([
+          const [deptResponse, courseResponse] = await Promise.all([
+            axios.get(`${apiURL}/api/departments/${departmentId}`, {
+              headers: { Authorization: `Bearer ${token}` }
+            }),
+            axios.get(`${apiURL}/api/courses/${courseId}`, {
+              headers: { Authorization: `Bearer ${token}` }
+            })
+          ]);
+          
+          if (deptResponse.data.success && courseResponse.data.success) {
+            setSelectedDepartment(deptResponse.data.department);
+            setSelectedCourse(courseResponse.data.course);
+            setCurrentView('subjects');
+          }
+        } else if (view === 'subject-detail' && departmentId && courseId && subjectId) {
+          // Fetch department, course, and subject data
+          const token = localStorage.getItem('token');
+          
+          console.log('Fetching data for subject-detail view...');
+          
+          try {
+            const [deptResponse, courseResponse, subjectResponse] = await Promise.all([
               axios.get(`${apiURL}/api/departments/${departmentId}`, {
                 headers: { Authorization: `Bearer ${token}` }
               }),
               axios.get(`${apiURL}/api/courses/${courseId}`, {
                 headers: { Authorization: `Bearer ${token}` }
+              }),
+              axios.get(`${apiURL}/api/courses/subjects/${subjectId}`, {
+                headers: { Authorization: `Bearer ${token}` }
               })
             ]);
             
-            if (deptResponse.data.success && courseResponse.data.success) {
-              setSelectedDepartment(deptResponse.data.department);
-              setSelectedCourse(courseResponse.data.course);
-              setCurrentView('subjects');
-            }
-          } else if (view === 'subject-detail' && departmentId && courseId && subjectId) {
-            // Fetch department, course, and subject data
-            const token = localStorage.getItem('token');
+            console.log('API Responses:', {
+              dept: deptResponse.data,
+              course: courseResponse.data,
+              subject: subjectResponse.data
+            });
             
-            console.log('Fetching data for subject-detail view...');
-            
-            try {
-              const [deptResponse, courseResponse, subjectResponse] = await Promise.all([
-                axios.get(`${apiURL}/api/departments/${departmentId}`, {
-                  headers: { Authorization: `Bearer ${token}` }
-                }),
-                axios.get(`${apiURL}/api/courses/${courseId}`, {
-                  headers: { Authorization: `Bearer ${token}` }
-                }),
-                axios.get(`${apiURL}/api/courses/subjects/${subjectId}`, {
-                  headers: { Authorization: `Bearer ${token}` }
-                })
-              ]);
+            if (deptResponse.data.success && courseResponse.data.success && subjectResponse.data.success) {
+              const department = deptResponse.data.department;
+              const course = courseResponse.data.course;
+              const subject = subjectResponse.data.subject;
               
-              console.log('API Responses:', {
-                dept: deptResponse.data,
-                course: courseResponse.data,
-                subject: subjectResponse.data
-              });
+              // Map subject data properly
+              const mappedSubject: Subject = {
+                subject_id: subject.subject_id,
+                subject_code: subject.subject_code || '',
+                subject_name: subject.subject_name || subject.title || '',
+                description: subject.description || '',
+                credits: subject.credits || 0,
+                cover_image: subject.cover_image,
+                cover_image_file_id: subject.cover_image_file_id,
+                video_url: subject.video_url,
+                status: subject.status || 'active',
+                lesson_count: subject.lesson_count || 0,
+                quiz_count: subject.quiz_count || 0,
+                instructors: subject.instructors || [],
+                prerequisites: subject.prerequisites || [],
+                pre_test: subject.pre_test || subject.preTest || null,
+                post_test: subject.post_test || subject.postTest || null,
+                order_number: subject.order_number || 0,
+                lessons: subject.lessons || []
+              };
               
-              if (deptResponse.data.success && courseResponse.data.success && subjectResponse.data.success) {
-                const department = deptResponse.data.department;
-                const course = courseResponse.data.course;
-                const subject = subjectResponse.data.subject;
-                
-                // Map subject data properly
-                const mappedSubject: Subject = {
-                  subject_id: subject.subject_id,
-                  subject_code: subject.subject_code || '',
-                  subject_name: subject.subject_name || subject.title || '',
-                  description: subject.description || '',
-                  credits: subject.credits || 0,
-                  cover_image: subject.cover_image,
-                  cover_image_file_id: subject.cover_image_file_id,
-                  video_url: subject.video_url,
-                  status: subject.status || 'active',
-                  lesson_count: subject.lesson_count || 0,
-                  quiz_count: subject.quiz_count || 0,
-                  instructors: subject.instructors || [],
-                  prerequisites: subject.prerequisites || [],
-                  pre_test: subject.pre_test || subject.preTest || null,
-                  post_test: subject.post_test || subject.postTest || null,
-                  order_number: subject.order_number || 0,
-                  lessons: subject.lessons || []
-                };
-                
-                setSelectedDepartment(department);
-                setSelectedCourse(course);
-                setSelectedSubject(mappedSubject);
-                setCurrentView('subject-detail');
-                
-                // ✅ โหลด collapse states สำหรับ subject นี้
-                const subjectKey = `subject-${mappedSubject.subject_id}`;
-                loadCollapseStates(subjectKey);
-                
-                console.log('Successfully set subject-detail view');
-              } else {
-                console.error('API responses not successful');
-                throw new Error('Failed to fetch required data');
-              }
-            } catch (error) {
-              console.error('Error fetching data for subject-detail:', error);
-              // ถ้าเกิดข้อผิดพลาด ให้กลับไปหน้า faculties
-              setCurrentView('faculties');
-              setSelectedFaculty(null);
-              setSelectedDepartment(null);
-              setSelectedCourse(null);
-              setSelectedSubject(null);
-              setError('ไม่สามารถโหลดข้อมูลรายวิชาได้');
+              setSelectedDepartment(department);
+              setSelectedCourse(course);
+              setSelectedSubject(mappedSubject);
+              setCurrentView('subject-detail');
+              
+              console.log('Successfully set subject-detail view');
+            } else {
+              console.error('API responses not successful');
+              throw new Error('Failed to fetch required data');
             }
-          } else {
-            console.log('Conditions not met, going to faculties');
+          } catch (error) {
+            console.error('Error fetching data for subject-detail:', error);
+            // ถ้าเกิดข้อผิดพลาด ให้กลับไปหน้า faculties
             setCurrentView('faculties');
+            setSelectedFaculty(null);
+            setSelectedDepartment(null);
+            setSelectedCourse(null);
+            setSelectedSubject(null);
+            setError('ไม่สามารถโหลดข้อมูลรายวิชาได้');
           }
-        } catch (error) {
-          console.error('Error initializing from URL:', error);
-          // If there's an error, fall back to faculties view
+        } else {
+          console.log('Conditions not met, going to faculties');
           setCurrentView('faculties');
-          setSelectedFaculty(null);
-          setSelectedDepartment(null);
-          setSelectedCourse(null);
-          setSelectedSubject(null);
-          setError('เกิดข้อผิดพลาดในการโหลดข้อมูล');
-        } finally {
-          setIsLoading(false);
         }
-      } else {
-        console.log('No view or faculty in URL, going to faculties');
-        // ถ้าไม่มี parameters ให้ไปหน้า faculties
+      } catch (error) {
+        console.error('Error initializing from URL:', error);
+        // If there's an error, fall back to faculties view
         setCurrentView('faculties');
+        setSelectedFaculty(null);
+        setSelectedDepartment(null);
+        setSelectedCourse(null);
+        setSelectedSubject(null);
+        setError('เกิดข้อผิดพลาดในการโหลดข้อมูล');
+      } finally {
         setIsLoading(false);
       }
-      
-      setIsInitialized(true);
-    };
-
-    if (!isInitialized) {
-      initializeFromURL();
+    } else {
+      console.log('No view or faculty in URL, going to faculties');
+      // ถ้าไม่มี parameters ให้ไปหน้า faculties
+      setCurrentView('faculties');
+      setIsLoading(false);
     }
-  }, [location.search, isInitialized, apiURL]);
+    
+    setIsInitialized(true);
+  };
+
+  if (!isInitialized) {
+    initializeFromURL();
+  }
+}, [location.search, isInitialized, apiURL]);
 
   // Load faculties on component mount
   useEffect(() => {
@@ -1389,12 +1313,6 @@ const AdminCreditbankArea: React.FC = () => {
         setSelectedDepartment(department);
         setSelectedCourse(course);
         setSelectedSubject(subject);
-        
-        // ✅ โหลด collapse states เมื่อกลับมาที่ subject
-        if (view === 'subject-detail' && subject) {
-          const subjectKey = `subject-${subject.subject_id}`;
-          loadCollapseStates(subjectKey);
-        }
         
         // Load appropriate data based on state
         if (view === 'departments' && faculty) {
@@ -1549,7 +1467,7 @@ const AdminCreditbankArea: React.FC = () => {
         return;
       }
 
-          const response = await axios.get(
+      const response = await axios.get(
         `${apiURL}/api/courses?department_id=${departmentId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -1614,29 +1532,13 @@ const AdminCreditbankArea: React.FC = () => {
     updateBrowserHistory('subjects', selectedFaculty, selectedDepartment, course, null);
   };
 
-  // ✅ แก้ไข handleSubjectSelect เพื่อจัดการ collapse states
   const handleSubjectSelect = (subject: Subject) => {
-    // ✅ บันทึก collapse states ปัจจุบันก่อนเปลี่ยน subject
-    if (selectedSubject) {
-      const currentSubjectKey = `subject-${selectedSubject.subject_id}`;
-      saveCurrentCollapseStates(currentSubjectKey);
-    }
-
     setSelectedSubject(subject);
-    updateURL(selectedFaculty!, selectedDepartment!, selectedCourse!, subject);
-    
-    // ✅ โหลด collapse states สำหรับ subject ใหม่
-    const newSubjectKey = `subject-${subject.subject_id}`;
-    loadCollapseStates(newSubjectKey);
+    setCurrentView('subject-detail');
+    updateBrowserHistory('subject-detail', selectedFaculty, selectedDepartment, selectedCourse, subject);
   };
 
   const handleBackToFaculties = () => {
-    // ✅ บันทึก collapse states ก่อนออก
-    if (selectedSubject) {
-      const subjectKey = `subject-${selectedSubject.subject_id}`;
-      saveCurrentCollapseStates(subjectKey);
-    }
-    
     setCurrentView('faculties');
     setSelectedFaculty(null);
     setSelectedDepartment(null);
@@ -1647,12 +1549,6 @@ const AdminCreditbankArea: React.FC = () => {
   };
 
   const handleBackToDepartments = () => {
-    // ✅ บันทึก collapse states ก่อนออก
-    if (selectedSubject) {
-      const subjectKey = `subject-${selectedSubject.subject_id}`;
-      saveCurrentCollapseStates(subjectKey);
-    }
-    
     setCurrentView('departments');
     setSelectedDepartment(null);
     setSelectedCourse(null);
@@ -1662,12 +1558,6 @@ const AdminCreditbankArea: React.FC = () => {
   };
 
   const handleBackToCourses = () => {
-    // ✅ บันทึก collapse states ก่อนออก
-    if (selectedSubject) {
-      const subjectKey = `subject-${selectedSubject.subject_id}`;
-      saveCurrentCollapseStates(subjectKey);
-    }
-    
     setCurrentView('courses');
     setSelectedCourse(null);
     setSelectedSubject(null);
@@ -1676,12 +1566,6 @@ const AdminCreditbankArea: React.FC = () => {
   };
 
   const handleBackToSubjects = () => {
-    // ✅ บันทึก collapse states ก่อนออก
-    if (selectedSubject) {
-      const subjectKey = `subject-${selectedSubject.subject_id}`;
-      saveCurrentCollapseStates(subjectKey);
-    }
-    
     setSelectedSubject(null);
     setCurrentView('subjects');
     updateBrowserHistory('subjects', selectedFaculty, selectedDepartment, selectedCourse, null);
@@ -1758,24 +1642,13 @@ const AdminCreditbankArea: React.FC = () => {
     }
   }, [searchTerm, currentView]);
 
-  // Load saved search term
+   // Load saved search term
   useEffect(() => {
     const savedSearch = localStorage.getItem(`search_${currentView}`);
     if (savedSearch && currentView === 'courses') {
       setSearchTerm(savedSearch);
     }
   }, [currentView]);
-
-  // ✅ Cleanup function เมื่อ component unmount
-  useEffect(() => {
-    return () => {
-      // บันทึก collapse states สุดท้ายก่อน unmount
-      if (selectedSubject) {
-        const subjectKey = `subject-${selectedSubject.subject_id}`;
-        saveCurrentCollapseStates(subjectKey);
-      }
-    };
-  }, [selectedSubject, collapseStates]);
 
   // Don't render anything until initialized
   if (!isInitialized) {
@@ -1870,10 +1743,6 @@ const AdminCreditbankArea: React.FC = () => {
                     courseData={selectedCourse}
                     onSubjectUpdate={handleSubjectUpdate}
                     onBack={handleBackToSubjects}
-                    // ✅ ส่ง collapse state functions ไปยัง AdminSubjectArea
-      
-                    updateCollapseState={updateCollapseState}
-                    getCollapseState={getCollapseState}
                   />
                 ) : currentView === 'subjects' && selectedCourse ? (
                   <EditableCourseDetail
@@ -1923,7 +1792,7 @@ const AdminCreditbankArea: React.FC = () => {
                   </div>
                 )}
 
-                               {/* Keyboard Shortcuts Help */}
+                {/* Keyboard Shortcuts Help */}
                 <div className="keyboard-shortcuts-help">
                   <div className="collapse" id="keyboardShortcuts">
                     <div className="shortcuts-content">
@@ -1946,3 +1815,5 @@ const AdminCreditbankArea: React.FC = () => {
 };
 
 export default AdminCreditbankArea;
+
+

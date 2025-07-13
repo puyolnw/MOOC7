@@ -9,7 +9,11 @@ interface LessonFile {
   file_type: string;
   file_path: string;
 }
-
+interface CollapseStates {
+    [key: string]: {
+      [stateType: string]: boolean;
+    };
+  }
 interface QuizQuestion {
   question_id: number;
   question_text: string;
@@ -35,7 +39,7 @@ interface Lesson {
   description: string;
   content: string;
   video_url: string | null;
-  video_file_id: string | null; // ✅ เพิ่ม field นี้
+  video_file_id: string | null;
   order_number: number;
   status: string;
   created_at: string;
@@ -45,33 +49,92 @@ interface Lesson {
   file_count?: string;
   files?: LessonFile[];
   quiz?: LessonQuiz;
-   big_lesson_id?: number; 
+  big_lesson_id?: number; // ✅ เพิ่ม field นี้
 }
 
 interface QuizSectionBarProps {
-  // ✅ รองรับทั้ง lesson และ big lesson
   lesson?: Lesson;
   bigLessonId?: number;
   currentQuizId?: number | null;
   onQuizUpdate?: (updatedLesson?: Lesson) => void;
+  // ✅ เพิ่ม collapse state props
+  collapseStates?: CollapseStates;
+  updateCollapseState?: (key: string, stateType: string, value: boolean) => void;
+  getCollapseState?: (key: string, stateType: string) => boolean;
 }
 
-const QuizSectionBar: React.FC<QuizSectionBarProps> = ({ 
-  lesson, 
-  bigLessonId, 
-  currentQuizId, 
-  onQuizUpdate 
+const QuizSectionBar: React.FC<QuizSectionBarProps> = ({
+  lesson,
+  bigLessonId,
+  currentQuizId,
+  onQuizUpdate,
+  updateCollapseState,
+  getCollapseState
 }) => {
-  const [quizExpanded, setQuizExpanded] = useState(false);
-  const [quizQuestionsExpanded, setQuizQuestionsExpanded] = useState(false);
+
   const [showAddQuestionForm, setShowAddQuestionForm] = useState(false);
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [quizData, setQuizData] = useState<any>(null);
+const getCollapseKey = () => {
+    if (lesson) {
+      return `quiz-sub-lesson-${lesson.lesson_id}`;
+    } else if (bigLessonId) {
+      return `quiz-big-lesson-${bigLessonId}`;
+    }
+    return 'quiz-unknown';
+  };
+
+  const collapseKey = getCollapseKey();  // ✅ ปรับปรุงการตรวจสอบ bigLessonId
+  const getValidBigLessonId = (): number | null => {
+    // ตรวจสอบจาก props ก่อน
+    if (bigLessonId && typeof bigLessonId === 'number' && bigLessonId > 0) {
+      return bigLessonId;
+    }
+    
+    // ถ้าเป็น string ให้แปลงเป็น number
+    if (typeof bigLessonId === 'string' && bigLessonId !== 'undefined' && bigLessonId !== 'null') {
+      const parsed = parseInt(bigLessonId, 10);
+      if (!isNaN(parsed) && parsed > 0) {
+        return parsed;
+      }
+    }
+    
+    // ตรวจสอบจาก lesson.big_lesson_id
+    if (lesson?.big_lesson_id && typeof lesson.big_lesson_id === 'number' && lesson.big_lesson_id > 0) {
+      return lesson.big_lesson_id;
+    }
+    
+    return null;
+  };
+   // Local state fallbacks
+  const [localQuizExpanded, setLocalQuizExpanded] = useState(false);
+  const [localQuizQuestionsExpanded, setLocalQuizQuestionsExpanded] = useState(false);
+
+  // Use collapse state functions or fallback to local state
+  const quizExpanded = getCollapseState ? getCollapseState(collapseKey, 'expanded') : localQuizExpanded;
+  const quizQuestionsExpanded = getCollapseState ? getCollapseState(collapseKey, 'questions') : localQuizQuestionsExpanded;
+
+  const setQuizExpanded = (value: boolean) => {
+    if (updateCollapseState) {
+      updateCollapseState(collapseKey, 'expanded', value);
+    } else {
+      setLocalQuizExpanded(value);
+    }
+  };
+
+  const setQuizQuestionsExpanded = (value: boolean) => {
+    if (updateCollapseState) {
+      updateCollapseState(collapseKey, 'questions', value);
+    } else {
+      setLocalQuizQuestionsExpanded(value);
+    }
+  };
+
 
   // ✅ ตรวจสอบว่าเป็น Big Lesson หรือ Sub Lesson
-  const isBigLesson = !!bigLessonId && !lesson;
+  const isBigLesson = !!getValidBigLessonId() && !lesson;
   const isSubLesson = !!lesson;
 
   // ✅ ได้ quiz ID จากแหล่งที่เหมาะสม
@@ -106,57 +169,24 @@ const QuizSectionBar: React.FC<QuizSectionBarProps> = ({
     }
     return 'แบบทดสอบ';
   };
-
-  // ✅ สร้าง quiz สำหรับ Sub Lesson
-// ✅ สร้าง quiz สำหรับ Sub Lesson
-const createQuizForSubLesson = async () => {
-  if (!lesson) return null;
+// เพิ่มฟังก์ชันลบ quiz สำหรับ Big Lesson
+const deleteQuizForBigLesson = async () => {
+  const validBigLessonId = getValidBigLessonId();
+  
+  if (!validBigLessonId) {
+    console.error('[deleteQuizForBigLesson] No valid big lesson ID');
+    setError('ไม่พบ Big Lesson ID ที่ถูกต้อง');
+    return false;
+  }
 
   try {
     const apiUrl = import.meta.env.VITE_API_URL;
     const token = localStorage.getItem('token');
-    
-    // ✅ ต้องมี big_lesson_id จาก lesson
-    const currentBigLessonId = lesson.big_lesson_id;
-    
-    if (!currentBigLessonId) {
-      setError('ไม่พบข้อมูล Big Lesson ID สำหรับบทเรียนนี้');
-      return null;
-    }
-    
-    console.log('Creating quiz for sub lesson:', {
-      lessonId: lesson.lesson_id,
-      bigLessonId: currentBigLessonId,
-      lessonTitle: lesson.title
-    });
-    
-    const quizData = {
-      title: `แบบทดสอบ - ${lesson.title}`,
-      description: `แบบทดสอบสำหรับบทเรียน: ${lesson.title}`,
-      type: 'lesson',
-      status: 'draft',
-      timeLimit: {
-        enabled: false,
-        value: 60,
-        unit: 'minutes'
-      },
-      passingScore: {
-        enabled: false,
-        value: 0
-      },
-      attempts: {
-        limited: true,
-        unlimited: false,
-        value: 1
-      }
-    };
 
-    console.log('Quiz data to send:', quizData);
+    console.log('[deleteQuizForBigLesson] Deleting quiz for big lesson:', validBigLessonId);
 
-    // ✅ ใช้ API ใหม่
-    const response = await axios.post(
-      `${apiUrl}/api/big-lessons/${currentBigLessonId}/lessons/${lesson.lesson_id}/create-sub-quiz`,
-      quizData,
+    const response = await axios.delete(
+      `${apiUrl}/api/big-lessons/${validBigLessonId}/delete-quiz`,
       {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -165,56 +195,241 @@ const createQuizForSubLesson = async () => {
       }
     );
 
-    console.log('Create sub lesson quiz response:', response.data);
-
-    if (response.data && response.data.success && response.data.quiz) {
-      const newQuiz = {
-        quiz_id: response.data.quiz.quiz_id,
-        title: response.data.quiz.title,
-        description: response.data.quiz.description,
-        questions: []
-      };
-
-      setQuizData(newQuiz);
-
+    if (response.data && response.data.success) {
+      console.log('[deleteQuizForBigLesson] Quiz deleted successfully');
+      
+      // รีเซ็ตข้อมูล
+      setQuizData(null);
+      setQuestions([]);
+      setQuizExpanded(false);
+      setQuizQuestionsExpanded(false);
+      
       if (onQuizUpdate) {
-        const updatedLesson = {
-          ...lesson,
-          has_quiz: true,
-          quiz_id: newQuiz.quiz_id,
-          quiz: newQuiz
-        };
-        onQuizUpdate(updatedLesson);
+        onQuizUpdate();
       }
-
-      console.log('Sub lesson quiz created successfully with ID:', newQuiz.quiz_id);
-      return newQuiz.quiz_id;
+      
+      return true;
     } else {
-      throw new Error('ไม่สามารถสร้างแบบทดสอบได้');
+      throw new Error(response.data?.message || 'ไม่สามารถลบแบบทดสอบได้');
     }
   } catch (error: any) {
-    console.error('Error creating quiz for sub lesson:', error);
-    console.error('Error response:', error.response?.data);
-    const errorMessage = error.response?.data?.message || 'ไม่สามารถสร้างแบบทดสอบได้';
+    console.error('Error deleting quiz for big lesson:', error);
+    const errorMessage = error.response?.data?.message || 'ไม่สามารถลบแบบทดสอบได้';
     setError(errorMessage);
-    throw error;
+    return false;
   }
 };
 
+// เพิ่มฟังก์ชันลบ quiz สำหรับ Sub Lesson
+const deleteQuizForSubLesson = async () => {
+  if (!lesson) {
+    console.error('[deleteQuizForSubLesson] No lesson data provided');
+    setError('ไม่มีข้อมูลบทเรียนย่อย');
+    return false;
+  }
 
-  // ✅ สร้าง quiz สำหรับ Big Lesson
-  const createQuizForBigLesson = async () => {
-    if (!bigLessonId) return null;
+  const validBigLessonId = getValidBigLessonId();
+  
+  if (!validBigLessonId || !lesson.lesson_id) {
+    const errorMsg = `ข้อมูลไม่ครบถ้วน - Big Lesson ID: ${validBigLessonId}, Lesson ID: ${lesson.lesson_id}`;
+    console.error('[deleteQuizForSubLesson]', errorMsg);
+    setError('ไม่พบข้อมูล Big Lesson ID หรือ Lesson ID ที่ถูกต้อง');
+    return false;
+  }
+
+  try {
+    const apiUrl = import.meta.env.VITE_API_URL;
+    const token = localStorage.getItem('token');
+
+    console.log('[deleteQuizForSubLesson] Deleting quiz for sub lesson:', lesson.lesson_id);
+
+    const response = await axios.delete(
+      `${apiUrl}/api/big-lessons/${validBigLessonId}/lessons/${lesson.lesson_id}/delete-quiz`,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    if (response.data && response.data.success) {
+      console.log('[deleteQuizForSubLesson] Quiz deleted successfully');
+      
+      // รีเซ็ตข้อมูล
+      setQuizData(null);
+      setQuestions([]);
+      setQuizExpanded(false);
+      setQuizQuestionsExpanded(false);
+      
+      if (onQuizUpdate) {
+        const updatedLesson = {
+          ...lesson,
+          has_quiz: false,
+          quiz_id: null,
+          quiz: undefined
+        };
+        onQuizUpdate(updatedLesson);
+      }
+      
+      return true;
+    } else {
+      throw new Error(response.data?.message || 'ไม่สามารถลบแบบทดสอบได้');
+    }
+  } catch (error: any) {
+    console.error('Error deleting quiz for sub lesson:', error);
+    const errorMessage = error.response?.data?.message || 'ไม่สามารถลบแบบทดสอบได้';
+    setError(errorMessage);
+    return false;
+  }
+};
+
+// เพิ่มฟังก์ชันจัดการการลบ quiz
+const handleDeleteQuiz = async () => {
+  // แสดง confirmation dialog
+  const confirmed = window.confirm(
+    `คุณต้องการลบแบบทดสอบ "${currentQuizTitle}" หรือไม่?\n\nการลบจะไม่สามารถกู้คืนได้`
+  );
+  
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    setLoading(true);
+    setError('');
+    
+    let success = false;
+    
+    if (isSubLesson) {
+      success = await deleteQuizForSubLesson();
+    } else if (isBigLesson) {
+      success = await deleteQuizForBigLesson();
+    }
+    
+    if (success) {
+      console.log('Quiz deleted successfully');
+      // อาจจะแสดงข้อความสำเร็จถ้าต้องการ
+    }
+  } catch (error) {
+    console.error('Failed to delete quiz:', error);
+  } finally {
+    setLoading(false);
+  }
+};
+
+  // ✅ สร้าง quiz สำหรับ Sub Lesson
+  const createQuizForSubLesson = async () => {
+    
+
+    if (!lesson) {
+      console.error('[createQuizForSubLesson] No lesson data provided');
+      setError('ไม่มีข้อมูลบทเรียนย่อย');
+      return null;
+    }
+
+    const validBigLessonId = getValidBigLessonId();
+    
+
+    if (!validBigLessonId || !lesson.lesson_id) {
+      const errorMsg = `ข้อมูลไม่ครบถ้วน - Big Lesson ID: ${validBigLessonId}, Lesson ID: ${lesson.lesson_id}`;
+      console.error('[createQuizForSubLesson]', errorMsg);
+      setError('ไม่พบข้อมูล Big Lesson ID หรือ Lesson ID ที่ถูกต้อง');
+      return null;
+    }
 
     try {
       const apiUrl = import.meta.env.VITE_API_URL;
       const token = localStorage.getItem('token');
-      
+
+      const quizData = {
+        title: `แบบทดสอบ - ${lesson.title}`,
+        description: `แบบทดสอบสำหรับบทเรียน: ${lesson.title}`,
+        type: 'lesson',
+        lessons: [lesson.lesson_id],
+        status: 'draft',
+        timeLimit: {
+          enabled: false,
+          value: 60,
+          unit: 'minutes'
+        },
+        passingScore: {
+          enabled: false,
+          value: 0
+        },
+        attempts: {
+          limited: true,
+          unlimited: false,
+          value: 1
+        }
+      };
+      const response = await axios.post(
+        `${apiUrl}/api/big-lessons/${validBigLessonId}/lessons/${lesson.lesson_id}/create-sub-quiz`,
+        quizData,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+     
+
+      if (response.data && response.data.success && response.data.quiz) {
+        const newQuiz = {
+          quiz_id: response.data.quiz.quiz_id,
+          title: response.data.quiz.title,
+          description: response.data.quiz.description,
+          questions: []
+        };
+
+        setQuizData(newQuiz);
+
+        if (onQuizUpdate) {
+          const updatedLesson = {
+            ...lesson,
+            has_quiz: true,
+            quiz_id: newQuiz.quiz_id,
+            quiz: newQuiz,
+            big_lesson_id: validBigLessonId // ✅ เก็บ valid big lesson id
+          };
+          onQuizUpdate(updatedLesson);
+        }
+
+        console.log('[createQuizForSubLesson] Quiz created successfully with ID:', newQuiz.quiz_id);
+        return newQuiz.quiz_id;
+      } else {
+        throw new Error(response.data?.message || 'ไม่สามารถสร้างแบบทดสอบได้');
+      }
+    } catch (error: any) {
+      console.error('Error creating quiz for sub lesson:', error);
+      console.error('Error response:', error.response?.data);
+      const errorMessage = error.response?.data?.message || error.message || 'ไม่สามารถสร้างแบบทดสอบได้';
+      setError(errorMessage);
+      throw error;
+    }
+  };
+
+  // ✅ สร้าง quiz สำหรับ Big Lesson
+  const createQuizForBigLesson = async () => {
+    const validBigLessonId = getValidBigLessonId();
+    
+    if (!validBigLessonId) {
+      console.error('[createQuizForBigLesson] No valid big lesson ID');
+      setError('ไม่พบ Big Lesson ID ที่ถูกต้อง');
+      return null;
+    }
+
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL;
+      const token = localStorage.getItem('token');
+
       const quizData = {
         title: 'แบบทดสอบประกอบบทเรียน',
         description: 'แบบทดสอบสำหรับบทเรียนหลัก',
         type: 'big_lesson',
-        big_lesson_id: bigLessonId,
+        big_lesson_id: validBigLessonId,
         status: 'draft',
         timeLimit: {
           enabled: false,
@@ -232,8 +447,10 @@ const createQuizForSubLesson = async () => {
         }
       };
 
+      console.log('[createQuizForBigLesson] Sending request to:', `${apiUrl}/api/big-lessons/${validBigLessonId}/create-quiz`);
+
       const response = await axios.post(
-        `${apiUrl}/api/big-lessons/${bigLessonId}/create-quiz`,
+        `${apiUrl}/api/big-lessons/${validBigLessonId}/create-quiz`,
         quizData,
         {
           headers: {
@@ -257,9 +474,10 @@ const createQuizForSubLesson = async () => {
           onQuizUpdate();
         }
 
+        console.log('[createQuizForBigLesson] Quiz created successfully with ID:', newQuiz.quiz_id);
         return newQuiz.quiz_id;
       } else {
-        throw new Error('ไม่สามารถสร้างแบบทดสอบได้');
+        throw new Error(response.data?.message || 'ไม่สามารถสร้างแบบทดสอบได้');
       }
     } catch (error: any) {
       console.error('Error creating quiz for big lesson:', error);
@@ -268,30 +486,18 @@ const createQuizForSubLesson = async () => {
       throw error;
     }
   };
-// ✅ เพิ่ม useEffect เพื่อเก็บ state ใน localStorage
-useEffect(() => {
-  const savedState = localStorage.getItem(`quiz-expanded-${lesson?.lesson_id || bigLessonId}`);
-  if (savedState) {
-    setQuizExpanded(JSON.parse(savedState));
-  }
-}, [lesson?.lesson_id, bigLessonId]);
 
-// ✅ บันทึก state เมื่อมีการเปลี่ยนแปลง
-useEffect(() => {
-  localStorage.setItem(`quiz-expanded-${lesson?.lesson_id || bigLessonId}`, JSON.stringify(quizExpanded));
-}, [quizExpanded, lesson?.lesson_id, bigLessonId]);
-
-// ✅ เพิ่ม useEffect สำหรับ questions expanded
-useEffect(() => {
-  const savedQuestionsState = localStorage.getItem(`quiz-questions-expanded-${lesson?.lesson_id || bigLessonId}`);
-  if (savedQuestionsState) {
-    setQuizQuestionsExpanded(JSON.parse(savedQuestionsState));
-  }
-}, [lesson?.lesson_id, bigLessonId]);
-
-useEffect(() => {
-  localStorage.setItem(`quiz-questions-expanded-${lesson?.lesson_id || bigLessonId}`, JSON.stringify(quizQuestionsExpanded));
-}, [quizQuestionsExpanded, lesson?.lesson_id, bigLessonId]);
+  // Debug logging
+  useEffect(() => {
+    console.log('=== QuizSectionBar Debug ===');
+    console.log('Props:', { lesson, bigLessonId, currentQuizId });
+    console.log('Valid Big Lesson ID:', getValidBigLessonId());
+    console.log('Type:', { isBigLesson, isSubLesson });
+    console.log('Quiz ID:', getQuizId());
+    console.log('Has quiz:', hasQuiz());
+    console.log('Quiz title:', getQuizTitle());
+    console.log('===========================');
+  }, [lesson, bigLessonId, currentQuizId, quizData]);
 
   // Fetch questions when quiz is expanded
   useEffect(() => {
@@ -342,7 +548,7 @@ useEffect(() => {
                 questions: response.data.questions || []
               }
             };
-            onQuizUpdate(updatedLesson);
+                       onQuizUpdate(updatedLesson);
           }
         }
         
@@ -375,140 +581,6 @@ useEffect(() => {
       setLoading(false);
     }
   };
-
-  // ✅ เพิ่มฟังก์ชันลบ quiz
-const handleDeleteQuiz = async () => {
-  const targetQuizId = getQuizId();
-  
-  if (!targetQuizId) {
-    setError('ไม่พบ Quiz ID');
-    return;
-  }
-
-  // ยืนยันการลบ
-  const confirmMessage = isSubLesson 
-    ? `คุณต้องการลบแบบทดสอบ "${getQuizTitle()}" หรือไม่?\n\nการลบจะทำให้บทเรียนย่อยนี้ไม่มีแบบทดสอบ`
-    : `คุณต้องการลบแบบทดสอบ "${getQuizTitle()}" หรือไม่?\n\nการลบจะทำให้บทเรียนหลักนี้ไม่มีแบบทดสอบ`;
-  
-  if (!confirm(confirmMessage)) {
-    return;
-  }
-
-  setLoading(true);
-  setError('');
-
-  try {
-    const apiUrl = import.meta.env.VITE_API_URL;
-    const token = localStorage.getItem('token');
-
-    if (isSubLesson && lesson) {
-      // ลบ quiz ของ sub lesson
-      const currentBigLessonId = lesson.big_lesson_id;
-      
-      if (!currentBigLessonId) {
-        setError('ไม่พบข้อมูล Big Lesson ID');
-        return;
-      }
-
-      console.log('Deleting sub lesson quiz:', {
-        bigLessonId: currentBigLessonId,
-        lessonId: lesson.lesson_id,
-        quizId: targetQuizId
-      });
-
-      const response = await axios.delete(
-        `${apiUrl}/api/big-lessons/${currentBigLessonId}/lessons/${lesson.lesson_id}/delete-quiz`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        }
-      );
-
-      if (response.data && response.data.success) {
-        // อัปเดต state
-        setQuizData(null);
-        setQuestions([]);
-        
-        if (onQuizUpdate) {
-          const updatedLesson = {
-            ...lesson,
-            has_quiz: false,
-            quiz_id: null,
-            quiz: undefined
-          };
-          onQuizUpdate(updatedLesson);
-        }
-
-        showNotification('ลบแบบทดสอบสำเร็จ', 'success');
-        console.log('Sub lesson quiz deleted successfully');
-      }
-    } else if (isBigLesson && bigLessonId) {
-      // ลบ quiz ของ big lesson
-      console.log('Deleting big lesson quiz:', {
-        bigLessonId,
-        quizId: targetQuizId
-      });
-
-      const response = await axios.delete(
-        `${apiUrl}/api/big-lessons/${bigLessonId}/delete-quiz`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        }
-      );
-
-      if (response.data && response.data.success) {
-        // อัปเดต state
-        setQuizData(null);
-        setQuestions([]);
-        
-        if (onQuizUpdate) {
-          onQuizUpdate();
-        }
-
-        showNotification('ลบแบบทดสอบสำเร็จ', 'success');
-        console.log('Big lesson quiz deleted successfully');
-      }
-    }
-  } catch (error: any) {
-    console.error('Error deleting quiz:', error);
-    console.error('Error response:', error.response?.data);
-    const errorMessage = error.response?.data?.message || 'ไม่สามารถลบแบบทดสอบได้';
-    setError(errorMessage);
-    showNotification(errorMessage, 'error');
-  } finally {
-    setLoading(false);
-  }
-};
-
-// ✅ ฟังก์ชันแสดง notification
-const showNotification = (message: string, type: 'success' | 'error') => {
-  const notification = document.createElement('div');
-  notification.className = `notification ${type}`;
-  notification.innerHTML = `
-    <div class="notification-content">
-      <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
-      <span>${message}</span>
-    </div>
-  `;
-  document.body.appendChild(notification);
-  
-  setTimeout(() => {
-    notification.classList.add('show');
-  }, 100);
-  
-  setTimeout(() => {
-    notification.classList.remove('show');
-    setTimeout(() => {
-      if (document.body.contains(notification)) {
-        document.body.removeChild(notification);
-      }
-    }, 300);
-  }, 3000);
-};
-
 
   const handleAddQuestion = async (questionData: any) => {
     try {
@@ -555,7 +627,7 @@ const showNotification = (message: string, type: 'success' | 'error') => {
         })) || [],
         shuffleChoices: questionData.shuffleChoices || false,
         showExplanation: questionData.showExplanation || false,
-                autoGrade: questionData.autoGrade !== false,
+        autoGrade: questionData.autoGrade !== false,
         quizzes: [targetQuizId]
       };
 
@@ -643,7 +715,9 @@ const showNotification = (message: string, type: 'success' | 'error') => {
       console.log('Quiz created successfully with ID:', newQuizId);
       
       // เปิด quiz section หลังจากสร้างเสร็จ
-      setQuizExpanded(true);
+      if (newQuizId) {
+        setQuizExpanded(true);
+      }
     } catch (error) {
       console.error('Failed to create quiz:', error);
     } finally {
@@ -654,7 +728,7 @@ const showNotification = (message: string, type: 'success' | 'error') => {
   const getQuestionTypeText = (type: string): string => {
     switch (type) {
       case 'multiple_choice':
-      case 'MC': 
+      case 'MC':
         return 'ปรนัย (หลายตัวเลือก)';
       case 'single_choice':
       case 'SC':
@@ -667,7 +741,7 @@ const showNotification = (message: string, type: 'success' | 'error') => {
         return 'อัตนัย (เติมคำ)';
       case 'essay':
         return 'อัตนัย (เรียงความ)';
-      default: 
+      default:
         return type;
     }
   };
@@ -741,7 +815,6 @@ const showNotification = (message: string, type: 'success' | 'error') => {
 
   const currentHasQuiz = hasQuiz();
   const currentQuizTitle = getQuizTitle();
-
 
   if (showAddQuestionForm) {
     return (
@@ -826,41 +899,37 @@ const showNotification = (message: string, type: 'success' | 'error') => {
             {currentHasQuiz ? (
               <div className="quiz-info-card">
                 <div className="quiz-header">
-  <h5 className="quiz-title">{currentQuizTitle}</h5>
-  <div className="quiz-header-actions">
-    <button 
-      className="btn btn-sm btn-success me-2"
-      onClick={() => setShowAddQuestionForm(true)}
-      disabled={loading}
-    >
-      <i className="fas fa-plus"></i>
-      <span>เพิ่มคำถาม</span>
-    </button>
-    
-    {/* ✅ เพิ่มปุ่มลบ quiz */}
-    <button 
-      className="btn btn-sm btn-danger me-2"
-      onClick={handleDeleteQuiz}
-      disabled={loading}
-      title="ลบแบบทดสอบ"
-    >
-      {loading ? (
-        <div className="spinner-border spinner-border-sm" role="status"></div>
-      ) : (
-        <i className="fas fa-trash"></i>
-      )}
-      <span>ลบแบบทดสอบ</span>
-    </button>
-    
-    <button 
-      className="expand-quiz-btn"
-      onClick={() => setQuizQuestionsExpanded(!quizQuestionsExpanded)}
-    >
-      <span>{quizQuestionsExpanded ? 'ซ่อน' : 'ดู'}คำถาม</span>
-      <i className={`fas fa-chevron-${quizQuestionsExpanded ? 'up' : 'down'}`}></i>
-    </button>
-  </div>
+                  <h5 className="quiz-title">{currentQuizTitle}</h5>
+                  <div className="quiz-header-actions">
+  <button 
+    className="btn btn-sm btn-success me-2"
+    onClick={() => setShowAddQuestionForm(true)}
+    disabled={loading}
+  >
+    <i className="fas fa-plus"></i>
+    <span>เพิ่มคำถาม</span>
+  </button>
+  
+  {/* เพิ่มปุ่มลบแบบทดสอบ */}
+  <button 
+    className="btn btn-sm btn-danger me-2"
+    onClick={handleDeleteQuiz}
+    disabled={loading}
+    title="ลบแบบทดสอบ"
+  >
+    <i className="fas fa-trash"></i>
+    <span>ลบแบบทดสอบ</span>
+  </button>
+  
+  <button 
+    className="expand-quiz-btn"
+    onClick={() => setQuizQuestionsExpanded(!quizQuestionsExpanded)}
+  >
+    <span>{quizQuestionsExpanded ? 'ซ่อน' : 'ดู'}คำถาม</span>
+    <i className={`fas fa-chevron-${quizQuestionsExpanded ? 'up' : 'down'}`}></i>
+  </button>
 </div>
+                </div>
                 
                 <div className="quiz-stats">
                   <div className="quiz-stat">
@@ -965,7 +1034,7 @@ const showNotification = (message: string, type: 'success' | 'error') => {
           overflow-x: hidden;
           padding: 1rem;
           background: #f8f9fa;
-                    border-radius: 8px;
+          border-radius: 8px;
           margin: 1rem;
         }
 
@@ -1477,90 +1546,10 @@ const showNotification = (message: string, type: 'success' | 'error') => {
           color: #2d3748;
           margin: 0;
         }
-          .notification {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  padding: 1rem 1.5rem;
-  border-radius: 8px;
-  color: white;
-  font-weight: 500;
-  z-index: 9999;
-  transform: translateX(400px);
-  transition: transform 0.3s ease;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  min-width: 300px;
-}
-
-.notification.show {
-  transform: translateX(0);
-}
-
-.notification.success {
-  background: linear-gradient(135deg, #10b981, #059669);
-}
-
-.notification.error {
-  background: linear-gradient(135deg, #ef4444, #dc2626);
-}
-
-.notification-content {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.notification-content i {
-  font-size: 1.25rem;
-}
-
-/* Button Styles */
-.btn-danger {
-  background: linear-gradient(135deg, #ef4444, #dc2626);
-  border: none;
-  color: white;
-  transition: all 0.2s ease;
-}
-
-.btn-danger:hover {
-  background: linear-gradient(135deg, #dc2626, #b91c1c);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(239, 68, 68, 0.3);
-}
-
-.btn-danger:disabled {
-  opacity: 0.6;
-  transform: none;
-  box-shadow: none;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .notification {
-    right: 10px;
-    left: 10px;
-    min-width: auto;
-    transform: translateY(-100px);
-  }
-  
-  .notification.show {
-    transform: translateY(0);
-  }
-  
-  .quiz-header-actions {
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-  
-  .quiz-header-actions .btn {
-    width: 100%;
-  }
-}
       `}</style>
     </div>
   );
 };
 
 export default QuizSectionBar;
-
 

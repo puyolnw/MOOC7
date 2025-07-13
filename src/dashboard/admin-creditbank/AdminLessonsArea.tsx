@@ -782,6 +782,7 @@ const AddBigLessonCard: React.FC<{
 };
 
 // Sub Lesson Item Component
+
 const SubLessonItem: React.FC<{
   lesson: Lesson;
   index: number;
@@ -793,7 +794,7 @@ const SubLessonItem: React.FC<{
   collapseStates?: CollapseStates;
   updateCollapseState?: (key: string, stateType: string, value: boolean) => void;
   getCollapseState?: (key: string, stateType: string) => boolean;
-}> = ({ lesson, index, bigLessonId, onDelete, updateCollapseState, getCollapseState }) => {
+}> = ({ lesson, index, bigLessonId, onDelete, collapseStates, updateCollapseState, getCollapseState }) => {
   // ✅ ใช้ collapse state functions หรือ fallback เป็น local state
   const collapseKey = `sub-lesson-${lesson.lesson_id}`;
   const [localIsExpanded, setLocalIsExpanded] = useState(false);
@@ -853,7 +854,7 @@ const SubLessonItem: React.FC<{
             {lesson.video_url && (
               <div className="meta-badge">
                 <i className="fas fa-play"></i>
-                                <span>วิดีโอ</span>
+                <span>วิดีโอ</span>
               </div>
             )}
             {lesson.video_file_id && (
@@ -896,7 +897,7 @@ const SubLessonItem: React.FC<{
         </div>
       </div>
 
-            <div className={`lesson-content ${isExpanded ? 'expanded' : ''}`}>
+      <div className={`lesson-content ${isExpanded ? 'expanded' : ''}`}>
         <div className="lesson-content-sections">
           
           {/* Video Section Bar */}
@@ -911,7 +912,7 @@ const SubLessonItem: React.FC<{
               <div className="section-bar-info">
                 <h5 className="section-bar-title">วิดีโอบทเรียน</h5>
                 <p className="section-bar-subtitle">
-                  {lesson.video_url ? 'มีวิดีโอบทเรียน' :                   'ยังไม่มีวิดีโอ'}
+                  {lesson.video_url ? 'มีวิดีโอบทเรียน' : 'ยังไม่มีวิดีโอ'}
                 </p>
               </div>
               <div className="section-bar-count">
@@ -940,15 +941,15 @@ const SubLessonItem: React.FC<{
                       <p>ยังไม่มีวิดีโอสำหรับบทเรียนนี้</p>
                     </div>
                   )}
-                            <button 
-            className="add-video-btn modern-btn" 
-            onClick={() => {
-              const event = new CustomEvent('editSubLessonVideo', { 
-                detail: { ...lesson, big_lesson_id: bigLessonId } 
-              });
-              window.dispatchEvent(event);
-            }}
-          >
+                  <button 
+                    className="add-video-btn modern-btn" 
+                    onClick={() => {
+                      const event = new CustomEvent('editSubLessonVideo', { 
+                        detail: { ...lesson, big_lesson_id: bigLessonId } 
+                      });
+                      window.dispatchEvent(event);
+                    }}
+                  >
                     <i className="fas fa-plus"></i>
                     <span>{lesson.video_url ? 'เปลี่ยนวิดีโอ' : 'เพิ่มวิดีโอ'}</span>
                   </button>
@@ -960,11 +961,16 @@ const SubLessonItem: React.FC<{
           {/* ✅ Sub Lesson Quiz Section */}
           <QuizSectionBar
             lesson={lesson}
+            bigLessonId={bigLessonId}
             onQuizUpdate={(_updatedLesson) => {
               // Refresh data after quiz update
               const event = new CustomEvent('refreshBigLessons');
               window.dispatchEvent(event);
             }}
+            // ✅ เพิ่ม collapse state props
+            collapseStates={collapseStates}
+            updateCollapseState={updateCollapseState}
+            getCollapseState={getCollapseState}
           />
           
         </div>
@@ -1189,19 +1195,19 @@ const BigLessonItem: React.FC<{
                     {bigLesson.lessons && bigLesson.lessons.length > 0 ? (
                       <div className="sub-lessons-list">
                         {bigLesson.lessons.map((lesson, subIndex) => (
-                          <SubLessonItem
-                            key={`sub-lesson-${lesson.lesson_id}`}
-                            lesson={lesson}
-                            index={subIndex}
-                            bigLessonId={bigLesson.big_lesson_id}
-                            onDelete={handleDeleteSubLesson}
-                            onUpdateTitle={handleUpdateSubLessonTitle}
-                            onUpdateVideo={handleUpdateSubLessonVideo}
-                            collapseStates={collapseStates}
-                            updateCollapseState={updateCollapseState}
-                            getCollapseState={getCollapseState}
-                          />
-                        ))}
+  <SubLessonItem
+    key={`sub-lesson-${lesson.lesson_id}`}
+    lesson={lesson}
+    index={subIndex}
+    bigLessonId={bigLesson.big_lesson_id}  // ✅ เพิ่มบรรทัดนี้
+    onDelete={handleDeleteSubLesson}
+    onUpdateTitle={handleUpdateSubLessonTitle}
+    onUpdateVideo={handleUpdateSubLessonVideo}
+    collapseStates={collapseStates}
+    updateCollapseState={updateCollapseState}
+    getCollapseState={getCollapseState}
+  />
+))}
                       </div>
                     ) : (
                       <div className="sub-lessons-empty">
@@ -1225,10 +1231,14 @@ const BigLessonItem: React.FC<{
 
             {/* ✅ Big Lesson Quiz Section - ใช้ QuizSectionBar */}
             <QuizSectionBar
-              bigLessonId={bigLesson.big_lesson_id}
-              currentQuizId={bigLesson.quiz_id}
-              onQuizUpdate={handleBigLessonQuizUpdate}
-            />
+  bigLessonId={bigLesson.big_lesson_id}
+  currentQuizId={bigLesson.quiz_id}
+  onQuizUpdate={handleBigLessonQuizUpdate}
+  // ✅ เพิ่ม collapse state props
+  collapseStates={collapseStates}
+  updateCollapseState={updateCollapseState}
+  getCollapseState={getCollapseState}
+/>
             
           </div>
         </div>
@@ -2022,6 +2032,7 @@ const UploadFileModal: React.FC<{
 // Main AdminLessonsArea component
 const AdminLessonsArea: React.FC<AdminLessonsAreaProps> = ({ 
   subject,
+
   // ✅ เพิ่ม collapse state props
   collapseStates,
   updateCollapseState,
@@ -2030,8 +2041,58 @@ const AdminLessonsArea: React.FC<AdminLessonsAreaProps> = ({
   const [bigLessons, setBigLessons] = useState<BigLesson[]>([]);
   const [activeTab, setActiveTab] = useState('lessons');
   const [loading, setLoading] = useState(false);
+  const [localCollapseStates, setLocalCollapseStates] = useState<CollapseStates>({});
+  const handleUpdateCollapseState = useCallback((key: string, stateType: string, value: boolean) => {
+    if (updateCollapseState) {
+      updateCollapseState(key, stateType, value);
+    } else {
+      setLocalCollapseStates(prev => ({
+        ...prev,
+        [key]: {
+          ...prev[key],
+          [stateType]: value
+        }
+      }));
+      
+      // ✅ เก็บใน localStorage
+      try {
+        const storageKey = `collapse_states_subject_${subject.subject_id}`;
+        const currentStates = JSON.parse(localStorage.getItem(storageKey) || '{}');
+        const updatedStates = {
+          ...currentStates,
+          [key]: {
+            ...currentStates[key],
+            [stateType]: value
+          }
+        };
+        localStorage.setItem(storageKey, JSON.stringify(updatedStates));
+      } catch (error) {
+        console.error('Error saving collapse state to localStorage:', error);
+      }
+    }
+  }, [updateCollapseState, subject.subject_id]);
 
-  const fetchBigLessons = useCallback(async () => {
+  const handleGetCollapseState = useCallback((key: string, stateType: string): boolean => {
+    if (getCollapseState) {
+      return getCollapseState(key, stateType);
+    } else {
+      // ✅ ลองดึงจาก localStorage ก่อน
+      try {
+        const storageKey = `collapse_states_subject_${subject.subject_id}`;
+        const savedStates = JSON.parse(localStorage.getItem(storageKey) || '{}');
+        if (savedStates[key] && typeof savedStates[key][stateType] === 'boolean') {
+          return savedStates[key][stateType];
+        }
+      } catch (error) {
+        console.error('Error loading collapse state from localStorage:', error);
+      }
+      
+      // ✅ ถ้าไม่มีใน localStorage ให้ดูจาก local state
+      return localCollapseStates[key]?.[stateType] || false;
+    }
+  }, [getCollapseState, localCollapseStates, subject.subject_id]);
+
+   const fetchBigLessons = useCallback(async () => {
     setLoading(true);
     try {
       const apiURL = import.meta.env.VITE_API_URL;
@@ -2052,15 +2113,29 @@ const AdminLessonsArea: React.FC<AdminLessonsAreaProps> = ({
     }
   }, [subject.subject_id]);
 
-  useEffect(() => {
+   useEffect(() => {
+    if (!collapseStates) {
+      try {
+        const storageKey = `collapse_states_subject_${subject.subject_id}`;
+        const savedStates = JSON.parse(localStorage.getItem(storageKey) || '{}');
+        setLocalCollapseStates(savedStates);
+      } catch (error) {
+        console.error('Error loading collapse states from localStorage:', error);
+      }
+    }
+  }, [subject.subject_id, collapseStates]);
+
+    
+  
+
+  const handleRefresh = useCallback(() => {
     fetchBigLessons();
   }, [fetchBigLessons]);
 
-  const handleRefresh = () => {
+  useEffect(() => {
     fetchBigLessons();
-  };
-
-  return (
+  }, [fetchBigLessons]);
+   return (
     <div className="admin-lessons-area">
       <div className="subject-detail-tabs">
         <div className="tabs-header modern-tabs">
@@ -2112,9 +2187,10 @@ const AdminLessonsArea: React.FC<AdminLessonsAreaProps> = ({
                   bigLessons={bigLessons}
                   setBigLessons={setBigLessons}
                   onRefresh={handleRefresh}
-                  collapseStates={collapseStates}
-                  updateCollapseState={updateCollapseState}
-                  getCollapseState={getCollapseState}
+                  // ✅ ส่ง collapse state functions
+                  collapseStates={collapseStates || localCollapseStates}
+                  updateCollapseState={handleUpdateCollapseState}
+                  getCollapseState={handleGetCollapseState}
                 />
               )}
             </>
@@ -2146,6 +2222,9 @@ const AdminLessonsArea: React.FC<AdminLessonsAreaProps> = ({
     </div>
   );
 };
+
+
+
 
 
 export default AdminLessonsArea;

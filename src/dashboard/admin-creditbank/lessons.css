@@ -120,13 +120,14 @@
   transform: translateX(-50%);
   width: 80px;
   height: 4px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+
   border-radius: 2px;
 }
 
 .admin-lessons-area .lessons-header h3,
 .admin-lessons-area .instructors-header h3,
 .admin-lessons-area .tests-header h3 {
+  padding-top : 1rem; 
   color: #2d3748;
   font-size: 2rem;
   font-weight: 700;

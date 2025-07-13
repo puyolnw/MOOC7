@@ -363,132 +363,78 @@ const InsSection: React.FC<InsSectionProps> = ({ subject, onSubjectUpdate }) => 
 
   return (
     <>
-      <div className="tab-panel instructors-panel">
+      <div className="instructors-panel">
+        {/* Header Section */}
         <div className="instructors-header">
-          <div className="d-flex justify-content-between align-items-center mb-4">
-            <div>
-              <h3 className="mb-2 d-flex align-items-center">
-                <i className="fas fa-chalkboard-teacher me-3 text-primary"></i>
+          <div className="header-content">
+            <div className="header-text">
+              <h2 className="panel-title">
+  
                 อาจารย์ผู้สอน
-              </h3>
-              <p className="text-muted mb-0">
-                รายชื่ออาจารย์ที่สอนในรายวิชา <strong>{currentSubject.subject_name}</strong>
+              </h2>
+              <p className="panel-subtitle">
+                รายชื่ออาจารย์ที่สอนในรายวิชา <span className="subject-name">{currentSubject.subject_name}</span>
               </p>
             </div>
             <button 
-              className="btn btn-primary btn-lg d-flex align-items-center"
+              className="add-instructor-btn"
               onClick={handleAddInstructor}
               type="button"
             >
-              <i className="fas fa-plus me-2"></i>
-              เพิ่มอาจารย์
+              <i className="fas fa-plus"></i>
+              <span>เพิ่มอาจารย์</span>
             </button>
           </div>
         </div>
         
+        {/* Content Section */}
         {!currentSubject.instructors || currentSubject.instructors.length === 0 ? (
-          <div className="empty-state text-center py-5">
-            <div className="empty-state-content">
-              <div className="empty-state-icon mb-4">
-                                <i className="fas fa-chalkboard-teacher text-muted"></i>
-              </div>
-              <h4 className="text-muted mb-3">ยังไม่มีอาจารย์ผู้สอน</h4>
-              <p className="text-muted mb-4">
-                ยังไม่มีอาจารย์ที่ได้รับมอบหมายให้สอนในรายวิชานี้
-              </p>
-              <button 
-                className="btn btn-primary btn-lg d-flex align-items-center mx-auto"
-                onClick={handleAddInstructor}
-                type="button"
-              >
-                <i className="fas fa-plus me-2"></i>
-                เพิ่มอาจารย์ผู้สอนคนแรก
-              </button>
+          <div className="empty-state">
+            <div className="empty-icon">
+              <i className="fas fa-chalkboard-teacher"></i>
             </div>
+            <h3>ยังไม่มีอาจารย์ผู้สอน</h3>
+                        <p>ยังไม่มีอาจารย์ที่ได้รับมอบหมายให้สอนในรายวิชานี้</p>
+            <button 
+              className="add-first-instructor-btn"
+              onClick={handleAddInstructor}
+              type="button"
+            >
+              <i className="fas fa-plus"></i>
+              <span>เพิ่มอาจารย์ผู้สอนคนแรก</span>
+            </button>
           </div>
         ) : (
-          <div className="instructors-container">
-            <div className="instructors-stats mb-4">
-              <div className="stats-card">
-                <div className="stats-icon">
-                  <i className="fas fa-users"></i>
-                </div>
-                <div className="stats-content">
-                  <h5 className="stats-number">{currentSubject.instructors.length}</h5>
-                  <p className="stats-label">อาจารย์ผู้สอน</p>
-                </div>
-              </div>
-            </div>
+          <div className="instructors-grid">
+            {currentSubject.instructors.map((instructor) => (
+              <div key={instructor.instructor_id} className="instructor-card">
+                <div className="instructor-card-header">
+  <div className="instructor-main-info">
+    {renderInstructorAvatar(instructor)}
+    <div className="instructor-basic-info">
+      <h4 className="instructor-name">{instructor.name}</h4>
+      <p className="instructor-position">ตำแหน่ง : {instructor.position}</p>
+    </div>
+  </div>
+  <button 
+    className="delete-btn"
+    onClick={() => handleDeleteInstructor(instructor.instructor_id)}
+    title="ลบอาจารย์ผู้สอน"
+  >
+    <i className="fas fa-times"></i>
+  </button>
+</div>
 
-            <div className="instructors-grid">
-              {currentSubject.instructors.map((instructor) => (
-                <div key={instructor.instructor_id} className="instructor-card">
-                  <div className="instructor-card-header">
-                    {renderInstructorAvatar(instructor)}
-                    <div className="instructor-actions">
-                      <div className="dropdown">
-                        <button
-                          className="btn btn-sm btn-outline-secondary dropdown-toggle"
-                          type="button"
-                          data-bs-toggle="dropdown"
-                          aria-expanded="false"
-                        >
-                          <i className="fas fa-ellipsis-v"></i>
-                        </button>
-                        <ul className="dropdown-menu">
-                          <li>
-                            <button
-                              className="dropdown-item text-danger"
-                              onClick={() => handleDeleteInstructor(instructor.instructor_id)}
-                            >
-                              <i className="fas fa-trash me-2"></i>
-                              ลบออกจากรายวิชา
-                            </button>
-                          </li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="instructor-card-body">
-                    <h5 className="instructor-name">
-                      {instructor.name || `${instructor.instructor_id}`}
-                    </h5>
-                    <p className="instructor-position">
-                      {instructor.position || 'ไม่ระบุตำแหน่ง'}
-                    </p>
-                    {instructor.ranking_name && (
-                      <p className="instructor-ranking">
-                        <i className="fas fa-medal me-1"></i>
-                        {instructor.ranking_name}
-                      </p>
-                    )}
-                    {instructor.department_name && (
-                      <p className="instructor-department">
-                        <i className="fas fa-building me-1"></i>
-                        {instructor.department_name}
-                      </p>
-                    )}
-                    {instructor.description && (
-                      <p className="instructor-description">
-                        {instructor.description.length > 100 
-                          ? `${instructor.description.substring(0, 100)}...`
-                          : instructor.description
-                        }
-                      </p>
-                    )}
-                  </div>
-                  
-                  <div className="instructor-card-footer">
-                    <div className="instructor-meta">
-                      <span className={`status-badge ${instructor.status}`}>
-                        {instructor.status === 'active' ? 'เปิดใช้งาน' : 'ปิดใช้งาน'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+<div className="instructor-info">
+
+  {instructor.bio && (
+    <p className="instructor-bio">{instructor.bio}</p>
+  )}
+</div>
+
+                
+              </div>
+            ))}
           </div>
         )}
       </div>
@@ -502,100 +448,168 @@ const InsSection: React.FC<InsSectionProps> = ({ subject, onSubjectUpdate }) => 
       />
 
       {/* Custom Styles */}
-      <style >{`
+      <style>{`
         .instructors-panel {
+          background: #fff;
+          border-radius: 12px;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+          overflow: hidden;
+        }
+
+        .instructors-header {
+          background: #fff;
           padding: 2rem;
-          background: #f8f9fa;
-          border-radius: 12px;
-          min-height: 500px;
+          color: #2d3748;
+          border-bottom: 1px solid #e2e8f0;
         }
 
-        .instructors-header h3 {
-          color: #2c3e50;
-          font-weight: 600;
-        }
+        .header-content {
 
-        .empty-state {
-          background: white;
-          border-radius: 12px;
-          padding: 3rem;
-          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-
-        .empty-state-icon {
-          font-size: 4rem;
-          opacity: 0.3;
-        }
-
-        .instructors-stats {
-          display: flex;
-          gap: 1rem;
-          margin-bottom: 2rem;
-        }
-
-        .stats-card {
-          background: white;
-          border-radius: 12px;
-          padding: 1.5rem;
-          display: flex;
+          justify-content: space-between;
           align-items: center;
-          gap: 1rem;
-          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-          border-left: 4px solid #007bff;
+          gap: 2rem;
+          flex-wrap: nowrap;
+          flex-direction: row;
         }
 
-        .stats-icon {
-          width: 60px;
-          height: 60px;
-          background: linear-gradient(135deg, #007bff, #0056b3);
-          border-radius: 12px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: white;
-          font-size: 1.5rem;
+        .header-text {
+          flex: 1;
         }
 
-        .stats-content h5 {
-          margin: 0;
-          font-size: 2rem;
+        .panel-title {
+          font-size: 1.75rem;
           font-weight: 700;
-          color: #2c3e50;
+          margin: 0 0 0.5rem 0;
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          color: #2d3748;
+          flex-direction: column;
         }
 
-        .stats-content p {
+        .panel-title i {
+          font-size: 1.5rem;
+          color: #667eea;
+        }
+
+        .panel-subtitle {
+          font-size: 1rem;
           margin: 0;
-          color: #6c757d;
-          font-size: 0.9rem;
+          line-height: 1.5;
+          color: #718096;
         }
 
+        .subject-name {
+          font-weight: 600;
+          color: #667eea;
+        }
+
+        .add-instructor-btn {
+          background: #667eea;
+          border: 2px solid #667eea;
+          color: white;
+          padding: 0.75rem 1.5rem;
+          border-radius: 8px;
+          font-weight: 600;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          transition: all 0.3s ease;
+          cursor: pointer;
+        }
+
+        .add-instructor-btn:hover {
+          background: #5a67d8;
+          border-color: #5a67d8;
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .add-instructor-btn i {
+          font-size: 1rem;
+        }
+
+        /* Empty State */
+        .empty-state {
+          text-align: center;
+          padding: 4rem 2rem;
+          color: #6c757d;
+        }
+
+        .empty-icon {
+          font-size: 4rem;
+          color: #dee2e6;
+          margin-bottom: 1.5rem;
+        }
+
+        .empty-state h3 {
+          font-size: 1.5rem;
+          font-weight: 600;
+          margin-bottom: 0.5rem;
+          color: #495057;
+        }
+
+        .empty-state p {
+          font-size: 1rem;
+          margin-bottom: 2rem;
+          max-width: 400px;
+          margin-left: auto;
+          margin-right: auto;
+          line-height: 1.6;
+          color: #6c757d;
+        }
+
+        .add-first-instructor-btn {
+          background: #667eea;
+          border: none;
+          color: white;
+          padding: 1rem 2rem;
+          border-radius: 8px;
+          font-weight: 600;
+          display: inline-flex;
+          align-items: center;
+          gap: 0.5rem;
+          transition: all 0.3s ease;
+          cursor: pointer;
+          font-size: 1rem;
+        }
+
+        .add-first-instructor-btn:hover {
+          background: #5a67d8;
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        /* Instructors Grid */
         .instructors-grid {
+          padding: 2rem;
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+          grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
           gap: 1.5rem;
         }
 
         .instructor-card {
-          background: white;
-          border-radius: 12px;
-          overflow: hidden;
-          box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-          transition: all 0.3s ease;
+          background: #fff;
           border: 1px solid #e9ecef;
+          border-radius: 12px;
+          padding: 1.5rem;
+          transition: all 0.3s ease;
+          position: relative;
+          overflow: hidden;
         }
 
         .instructor-card:hover {
-          transform: translateY(-5px);
-          box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+          transform: translateY(-4px);
+          box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+          border-color: #667eea;
         }
 
-        .instructor-card-header {
-          padding: 1.5rem;
-          background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-        }
+       .instructor-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
 
         .instructor-avatar-wrapper {
           position: relative;
@@ -606,8 +620,7 @@ const InsSection: React.FC<InsSectionProps> = ({ subject, onSubjectUpdate }) => 
           height: 80px;
           border-radius: 50%;
           overflow: hidden;
-          border: 4px solid white;
-          box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+          border: 3px solid #e9ecef;
           position: relative;
           background: #f8f9fa;
         }
@@ -621,26 +634,34 @@ const InsSection: React.FC<InsSectionProps> = ({ subject, onSubjectUpdate }) => 
         .avatar-placeholder {
           width: 100%;
           height: 100%;
-          background: linear-gradient(135deg, #6c757d, #495057);
           display: flex;
           align-items: center;
           justify-content: center;
+          background: #667eea;
           color: white;
           font-size: 2rem;
         }
 
         .instructor-status {
           position: absolute;
-          bottom: 5px;
-          right: 5px;
+          bottom: 0;
+          right: 0;
+          background: white;
+          border-radius: 50%;
+          padding: 2px;
         }
+          .instructor-main-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+}
 
         .status-dot {
           width: 16px;
           height: 16px;
           border-radius: 50%;
-          border: 3px solid white;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+          display: block;
         }
 
         .status-dot.active {
@@ -651,140 +672,155 @@ const InsSection: React.FC<InsSectionProps> = ({ subject, onSubjectUpdate }) => 
           background: #dc3545;
         }
 
-        .instructor-actions .dropdown-toggle {
+        .delete-btn {
+          background: #dc3545;
           border: none;
-          background: transparent;
-          color: #6c757d;
-          padding: 0.5rem;
-          border-radius: 8px;
-        }
-
-        .instructor-actions .dropdown-toggle:hover {
-          background: rgba(0,0,0,0.1);
-          color: #495057;
-        }
-
-        .instructor-card-body {
-          padding: 1.5rem;
-        }
-
-        .instructor-name {
-          font-size: 1.25rem;
-          font-weight: 600;
-          color: #2c3e50;
-          margin-bottom: 0.5rem;
-        }
-
-        .instructor-position {
-          color: #007bff;
-          font-weight: 500;
-          margin-bottom: 0.5rem;
-        }
-
-        .instructor-ranking {
-          color: #ffc107;
-          font-size: 0.9rem;
-          margin-bottom: 0.5rem;
-        }
-
-        .instructor-department {
-          color: #6c757d;
-          font-size: 0.9rem;
-          margin-bottom: 1rem;
-        }
-
-        .instructor-description {
-          color: #495057;
-          font-size: 0.9rem;
-          line-height: 1.5;
-          margin-bottom: 0;
-        }
-
-        .instructor-card-footer {
-          padding: 1rem 1.5rem;
-          background: #f8f9fa;
-          border-top: 1px solid #e9ecef;
-        }
-
-        .instructor-meta {
+          color: white;
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
           display: flex;
-          justify-content: space-between;
           align-items: center;
-        }
-
-        .status-badge {
-          padding: 0.375rem 0.75rem;
-          border-radius: 20px;
-          font-size: 0.75rem;
-          font-weight: 600;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-        }
-
-        .status-badge.active {
-          background: #d4edda;
-          color: #155724;
-        }
-
-        .status-badge.inactive {
-          background: #f8d7da;
-          color: #721c24;
-        }
-
-        .notification {
-          position: fixed;
-          top: 20px;
-          right: 20px;
-          z-index: 9999;
-          min-width: 300px;
-          padding: 1rem 1.25rem;
-          border-radius: 8px;
-          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-          transform: translateX(400px);
+          justify-content: center;
+          cursor: pointer;
           transition: all 0.3s ease;
+          opacity: 0.7;
         }
 
-        .notification.show {
-          transform: translateX(0);
+        .delete-btn:hover {
+          opacity: 1;
+          transform: scale(1.1);
+          box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
         }
 
-        .notification.success {
-          background: #d4edda;
-          color: #155724;
-          border-left: 4px solid #28a745;
-        }
 
-        .notification.error {
-          background: #f8d7da;
-          color: #721c24;
-          border-left: 4px solid #dc3545;
-        }
+.instructor-main-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+}
 
-        .notification-content {
+.instructor-basic-info {
+  flex: 1;
+}
+
+.instructor-basic-info .instructor-name {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0 0 0.25rem 0;
+  color: #2d3748;
+  line-height: 1.3;
+}
+
+.instructor-basic-info .instructor-position {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #667eea;
+  margin: 0;
+}
+
+/* Responsive สำหรับมือถือ */
+@media (max-width: 576px) {
+  .instructor-main-info {
+    gap: 0.75rem;
+  }
+  
+  .instructor-basic-info .instructor-name {
+    font-size: 1.125rem;
+  }
+  
+  .instructor-basic-info .instructor-position {
+    font-size: 0.875rem;
+  }
+}
+
+
+.instructor-basic-info {
+  flex: 1;
+}
+
+.instructor-basic-info .instructor-name {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0 0 0.25rem 0;
+  color: #2d3748;
+  line-height: 1.3;
+}
+
+.instructor-basic-info .instructor-position {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #667eea;
+  margin: 0;
+}
+
+.instructor-info {
+  text-align: left;
+}
+        .instructor-department {
+          font-size: 0.875rem;
+          color: #6c757d;
+          margin: 0 0 0.75rem 0;
           display: flex;
           align-items: center;
-          gap: 0.75rem;
+          gap: 0.5rem;
         }
 
+        .instructor-department i {
+          font-size: 0.75rem;
+          opacity: 0.7;
+        }
+
+        .instructor-bio {
+          font-size: 0.875rem;
+          color: #6c757d;
+          line-height: 1.5;
+          margin: 0;
+          display: -webkit-box;
+          -webkit-line-clamp: 3;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+
+        /* Modal Styles */
         .bg-gradient-primary {
-          background: linear-gradient(135deg, #007bff, #0056b3) !important;
+          background: #667eea !important;
         }
 
+        /* Responsive Design */
         @media (max-width: 768px) {
-          .instructors-panel {
-            padding: 1rem;
+          .header-content {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 1.5rem;
+          }
+
+          .add-instructor-btn {
+            justify-content: center;
+            width: 100%;
           }
 
           .instructors-grid {
             grid-template-columns: 1fr;
-            gap: 1rem;
+            padding: 1.5rem;
           }
 
-          .instructor-card-header {
-            padding: 1rem;
+          .instructors-header {
+            padding: 1.5rem;
           }
 
-          .instructor-card-body {
+          .panel-title {
+            font-size: 1.5rem;
+          }
+
+          .empty-state {
+            padding: 3rem 1.5rem;
+          }
+        }
+
+        @media (max-width: 576px) {
+          .instructor-card {
             padding: 1rem;
           }
 
@@ -793,9 +829,62 @@ const InsSection: React.FC<InsSectionProps> = ({ subject, onSubjectUpdate }) => 
             height: 60px;
           }
 
-          .avatar-placeholder {
-            font-size: 1.5rem;
+          .instructor-name {
+            font-size: 1.125rem;
           }
+
+          .delete-btn {
+            width: 28px;
+            height: 28px;
+          }
+        }
+
+        /* Notification Styles */
+        .notification {
+          position: fixed;
+          top: 20px;
+          right: 20px;
+          background: white;
+          border-radius: 8px;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+          padding: 1rem 1.5rem;
+          z-index: 9999;
+          transform: translateX(400px);
+          transition: all 0.3s ease;
+          border-left: 4px solid #28a745;
+        }
+
+        .notification.error {
+          border-left-color: #dc3545;
+        }
+
+        .notification.show {
+          transform: translateX(0);
+        }
+
+        .notification-content {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          color: #2d3748;
+          font-weight: 500;
+        }
+
+        .notification-content i {
+          font-size: 1.25rem;
+        }
+
+        .notification.success .notification-content i {
+          color: #28a745;
+        }
+
+        .notification.error .notification-content i {
+          color: #dc3545;
+        }
+
+        /* Animation */
+        .instructor-card {
+          animation: fadeInUp 0.5s ease-out;
         }
 
         @keyframes fadeInUp {
@@ -809,10 +898,23 @@ const InsSection: React.FC<InsSectionProps> = ({ subject, onSubjectUpdate }) => 
           }
         }
 
-        .instructor-card {
-          animation: fadeInUp 0.3s ease-out;
+        /* Loading States */
+        .loading-spinner {
+          display: inline-block;
+          width: 20px;
+          height: 20px;
+          border: 3px solid #f3f3f3;
+          border-top: 3px solid #667eea;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
         }
       `}</style>
+
     </>
   );
 };
