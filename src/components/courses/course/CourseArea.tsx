@@ -33,15 +33,19 @@ const CourseArea = () => {
   const [searchParams] = useSearchParams();
   const { selectedFaculty, setSelectedFaculty } = useFaculty();
   const [searchQuery, setSearchQuery] = useState<string>(searchParams.get('search') || "");
+  const [selectedDepartment, setSelectedDepartment] = useState<string>(searchParams.get('department') || "");
 
   // Debug: Log searchQuery
   console.log("CourseArea: searchQuery:", searchQuery);
 
-  // Sync searchQuery with URL
+  // Sync searchQuery and department with URL
   useEffect(() => {
     const searchFromQuery = searchParams.get('search') || "";
+    const departmentFromQuery = searchParams.get('department') || "";
     console.log("URL Search Param:", searchFromQuery);
+    console.log("URL Department Param:", departmentFromQuery);
     setSearchQuery(searchFromQuery);
+    setSelectedDepartment(departmentFromQuery);
   }, [searchParams]);
 
   useEffect(() => {
@@ -92,6 +96,13 @@ const CourseArea = () => {
             );
           }
 
+          // Filter by selected department
+          if (selectedDepartment) {
+            formattedCourses = formattedCourses.filter(
+              (course: any) => course.department_name === selectedDepartment
+            );
+          }
+
           setCourseExtraInfo(extraInfo);
           setCourses(formattedCourses);
         } else {
@@ -105,7 +116,7 @@ const CourseArea = () => {
       }
     };
     fetchCourses();
-  }, [apiURL, setCourses, selectedFaculty, searchQuery]);
+  }, [apiURL, setCourses, selectedFaculty, selectedDepartment, searchQuery]);
 
   // Reset pagination when courses change
   useEffect(() => {

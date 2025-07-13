@@ -31,7 +31,7 @@ const StudentDashboardArea = () => {
 
   const [courses, setCourses] = useState<CourseData[]>([]);
   console.log("Courses:", courses);
-  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3301/api";
+  const API_URL = import.meta.env.VITE_API_URL;
 
   const fetchDashboardData = async () => {
     const token = localStorage.getItem("token");

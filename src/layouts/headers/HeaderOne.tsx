@@ -89,19 +89,44 @@ const HeaderOne = () => {
                                   <>
                                     {role === "student" && (
                                       <>
-                                        <li><Link to="/student-dashboard">บัญชีของฉัน</Link></li>
-                                        <li><Link to="/student-enrolled-courses">หลักสูตรของฉัน</Link></li>
-                                        <li><Link to="/student-setting/${userId}">ตั้งค่า</Link></li>
+                                        <li className="logout-menu">
+                                          <Link to="/student-dashboard" className="logout-link">
+                                            <i className="fa-solid fa-user"></i>
+                                            <span className="logout-text">บัญชีของฉัน</span>
+                                          </Link>
+                                        </li>
+                                        <li className="logout-menu">
+                                          <Link to="/student-enrolled-courses" className="logout-link">
+                                            <i className="fa-solid fa-book"></i>
+                                            <span className="logout-text">หลักสูตรของฉัน</span>
+                                          </Link>
+                                        </li>
+                                        <li className="logout-menu">
+                                          <Link to="/student-setting/${userId}" className="logout-link">
+                                            <i className="fa-solid fa-gear"></i>
+                                            <span className="logout-text">ตั้งค่า</span>
+                                          </Link>
+                                        </li>
                                       </>
                                     )}
                                     {role === "instructor" && (
                                       <>
-                                        <li><Link to="/instructor-dashboard">บัญชีของฉัน</Link></li>
+                                        <li className="logout-menu">
+                                          <Link to="/instructor-dashboard" className="logout-link">
+                                            <i className="fa-solid fa-user"></i>
+                                            <span className="logout-text">บัญชีของฉัน</span>
+                                          </Link>
+                                        </li>
 
                                       </>
                                     )}
                                     {role === "admin" && (
-                                      <li><Link to="/admin-dashboard">Admin Panel</Link></li>
+                                      <li className="logout-menu">
+                                      <Link to="/admin-dashboard" className="logout-link">
+                                        <i className="fa-solid fa-user-tie"></i>
+                                        <span className="logout-text">แดชบอร์ดแอดมิน</span>
+                                      </Link>
+                                    </li>
                                     )}
 
                                     <li className="logout-menu">
@@ -113,8 +138,18 @@ const HeaderOne = () => {
                                   </>
                                 ) : (
                                   <>
-                                    <li><Link to="/registration">สมัครสมาชิก</Link></li>
-                                    <li><Link to="/login">เข้าสู่ระบบ</Link></li>
+                                    <li className="logout-menu">
+                                      <Link to="/registration" className="logout-link">
+                                        <i className="fa-solid fa-pen-to-square"></i>
+                                        <span className="logout-text">ลงทะเบียน</span>
+                                      </Link>
+                                    </li>
+                                    <li className="logout-menu">
+                                      <Link to="/login" className="logout-link">
+                                        <i className="fa-solid fa-user-tie"></i>
+                                        <span className="logout-text">เข้าสู่ระบบ</span>
+                                      </Link>
+                                    </li>
                                   </>
                                 )}
                               </ul>

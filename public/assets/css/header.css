@@ -1,17 +1,41 @@
+/* รีเซ็ต default styles */
+ul, li {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.parent-menu {
+  text-align: left !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start !important;
+}
+
+.logout-menu {
+  text-align: left !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  list-style: none !important;
+  width: 100%; /* ทำให้ <li> เต็มความกว้าง */
+}
+
 .logout-link {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 16px;
-    width: 100%;
-    font-size: 14px;
-    color: inherit;
-    text-decoration: none;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-  }
-  
-  .logout-text {
-    white-space: nowrap;
-  }
-  
+  display: flex;
+  align-items: center;
+  justify-content: flex-start !important;
+  gap: 8px;
+  padding: 8px 16px;
+  width: 100%;
+  font-size: 15px;
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.logout-text {
+  margin: 0;
+}

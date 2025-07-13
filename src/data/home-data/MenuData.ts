@@ -53,11 +53,11 @@ const useMenuData = () => {
                         title: "หลักสูตร",
                         link: "/courses",
                         sub_menus: Object.entries(facultyGroups).map(([faculty, depts]) => ({
-                            link: "/courses",
+                            link: `/courses?faculty=${encodeURIComponent(faculty)}`,
                             title: faculty,
                             dropdown: true,
                             mega_menus: depts.map(dept => ({
-                                link: `/courses?dept=${dept.department_id}`,
+                                link: `/courses?department=${dept.department_name}`,
                                 title: dept.department_name
                             }))
                         }))

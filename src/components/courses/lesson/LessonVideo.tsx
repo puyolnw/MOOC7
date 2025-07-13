@@ -351,7 +351,7 @@ const LessonVideo = ({
   }
 
   return (
-    <div className="video-lesson-container">
+    <div className="">
       <div className="lesson-title">
         <h3>{currentLesson}</h3>
       </div>
@@ -477,4 +477,3 @@ const LessonVideo = ({
 };
 
 export default LessonVideo;
-
