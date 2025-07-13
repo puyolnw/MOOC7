@@ -339,8 +339,9 @@ const RegistrationForm = () => {
                      {...register('academic_year', { valueAsNumber: true })}
                      id="academic-year"
                      className="input-like-select"
+                     defaultValue=""
                   >
-                     <option value="">เลือกชั้นปี</option>
+                     <option value="" disabled>เลือกชั้นปี</option>
                      <option value="1">1</option>
                      <option value="2">2</option>
                      <option value="3">3</option>
@@ -484,20 +485,39 @@ const RegistrationForm = () => {
                   </select>
                </div>
                <div className="form-grp">
-                  <label htmlFor="grade-level">ชั้นปี</label>
+                  <label htmlFor="grade-level">ชั้นมัธยม</label>
                   <select
                      id="grade-level"
                      value={schoolFields.grade_level}
                      onChange={e => setSchoolFields(f => ({ ...f, grade_level: e.target.value }))}
                      className="input-like-select"
+                     defaultValue=""
                   >
-                     <option value="">เลือกชั้นปี</option>
-                     <option value="ม.1">ม.1</option>
-                     <option value="ม.2">ม.2</option>
-                     <option value="ม.3">ม.3</option>
-                     <option value="ม.4">ม.4</option>
-                     <option value="ม.5">ม.5</option>
-                     <option value="ม.6">ม.6</option>
+                     <option value="" disabled>เลือกชั้นปี</option>
+                     {schoolFields.education_level === "มัธยมต้น" && (
+                        <>
+                           <option value="ม.1">มัธยมศึกษาปีที่ 1</option>
+                           <option value="ม.2">มัธยมศึกษาปีที่ 2</option>
+                           <option value="ม.3">มัธยมศึกษาปีที่ 3</option>
+                        </>
+                     )}
+                     {schoolFields.education_level === "มัธยมปลาย" && (
+                        <>
+                           <option value="ม.4">มัธยมศึกษาปีที่ 4</option>
+                           <option value="ม.5">มัธยมศึกษาปีที่ 5</option>
+                           <option value="ม.6">มัธยมศึกษาปีที่ 6</option>
+                        </>
+                     )}
+                     {!schoolFields.education_level && (
+                        <>
+                           <option value="ม.1">มัธยมศึกษาปีที่ 1</option>
+                           <option value="ม.2">มัธยมศึกษาปีที่ 2</option>
+                           <option value="ม.3">มัธยมศึกษาปีที่ 3</option>
+                           <option value="ม.4">มัธยมศึกษาปีที่ 4</option>
+                           <option value="ม.5">มัธยมศึกษาปีที่ 5</option>
+                           <option value="ม.6">มัธยมศึกษาปีที่ 6</option>
+                        </>
+                     )}
                   </select>
                </div>
                <div className="form-grp">
