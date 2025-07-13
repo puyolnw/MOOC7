@@ -8,7 +8,7 @@ const Registration = () => {
       <>
          <HeaderOne />
          <main className="main-area fix">
-            <BreadcrumbOne title="ลงทะเบียนสำหรับนักเรียน" sub_title="SingUp" />
+            <BreadcrumbOne title="ลงทะเบียน" sub_title="SingUp" />
             <RegistrationArea />
          </main>
          <FooterOne style={false} style_2={false} />

@@ -93,7 +93,12 @@ const CourseSidebar = ({ setCourses }: CourseSidebarProps) => {
       const newValue = value === departmentSelected ? '' : value;
       setDepartmentSelected(newValue);
       filterCourses({ department: newValue === 'ทั้งหมด' ? '' : newValue });
-      navigate('/courses'); // Clear query params for department filter
+      // เพิ่ม query parameter สำหรับ department
+      if (newValue && newValue !== 'ทั้งหมด') {
+        navigate(`/courses?department=${encodeURIComponent(newValue)}`);
+      } else {
+        navigate('/courses');
+      }
     }
   };
 

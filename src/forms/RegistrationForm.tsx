@@ -3,7 +3,7 @@ import * as yup from 'yup';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import axios from 'axios';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import BtnArrow from '../svg/BtnArrow';
 import '../../public/assets/css/option.css';
 
@@ -102,6 +102,8 @@ const RegistrationForm = () => {
       cpassword: '',
       address: '',
    });
+
+   const formRef = useRef<HTMLFormElement>(null);
 
    useEffect(() => {
       const fetchDepartments = async () => {
@@ -202,8 +204,70 @@ const RegistrationForm = () => {
       }
    };
 
+   // เพิ่มฟังก์ชันสำหรับนักเรียนมัธยม
+   const handleStudentSubmit = async (e: React.FormEvent) => {
+      e.preventDefault();
+      // Validate required fields
+      const requiredFields: (keyof typeof schoolFields)[] = [
+         'username', 'first_name', 'last_name', 'email', 'student_code',
+         'school_name', 'study_program', 'grade_level', 'password', 'cpassword', 'address', 'education_level'
+      ];
+      for (const key of requiredFields) {
+         if (!schoolFields[key]) {
+            toast.error('กรุณากรอกข้อมูลให้ครบถ้วน', { position: 'top-center', theme: 'light' });
+            return;
+         }
+      }
+      if (schoolFields.password !== schoolFields.cpassword) {
+         toast.error('รหัสผ่านไม่ตรงกัน', { position: 'top-center', theme: 'light' });
+         return;
+      }
+      try {
+         const payload = {
+            username: schoolFields.username,
+            first_name: schoolFields.first_name,
+            last_name: schoolFields.last_name,
+            email: schoolFields.email,
+            password: schoolFields.password,
+            cpassword: schoolFields.cpassword,
+            role_id: 1,
+            student_code: schoolFields.student_code,
+            school_name: schoolFields.school_name,
+            study_program: schoolFields.study_program === 'อื่น ๆ' ? schoolFields.study_program_other : schoolFields.study_program,
+            grade_level: schoolFields.grade_level,
+            address: schoolFields.address,
+            education_level: schoolFields.education_level,
+         };
+         const response = await axios.post(`${apiURL}/api/auth/register`, payload);
+         if (response.data.success) {
+            toast.success(response.data.message || 'สมัครสมาชิกสำเร็จ', {
+               position: 'top-center',
+               theme: 'light',
+               onClose: () => {
+                  window.location.href = '/login';
+               }
+            });
+            setSchoolFields({
+               username: '', first_name: '', last_name: '', email: '', student_code: '', school_name: '', study_program: '', study_program_other: '', education_level: '', grade_level: '', password: '', cpassword: '', address: ''
+            });
+            if (formRef.current) formRef.current.reset();
+         } else {
+            toast.error(response.data.message || 'เกิดข้อผิดพลาดในการสมัครสมาชิก', {
+               position: 'top-center',
+               theme: 'light',
+            });
+         }
+      } catch (error) {
+         if (axios.isAxiosError(error) && error.response) {
+            toast.error(error.response.data.message || 'เกิดข้อผิดพลาด', { position: 'top-center', theme: 'light' });
+         } else {
+            toast.error('เกิดข้อผิดพลาดที่ไม่คาดคิด', { position: 'top-center', theme: 'light' });
+         }
+      }
+   };
+
    return (
-      <form onSubmit={handleSubmit(onSubmit)} className="account__form">
+      <form onSubmit={tabIndex === 1 ? handleStudentSubmit : handleSubmit(onSubmit)} className="account__form" ref={formRef}>
          {/* Tab UI */}
          <div style={{ display: 'flex', gap: '1rem', marginBottom: 24 }}>
             {tab_title.map((title, idx) => (
@@ -531,14 +595,17 @@ const RegistrationForm = () => {
                   />
                </div>
                <div className="form-grp">
-                  <label htmlFor="password">รหัสผ่าน</label>
+                  <label htmlFor="cpassword">ยืนยันรหัสผ่าน</label>
                   <input
-                     type="cpassword"
+                     type="password"
                      id="cpassword"
                      value={schoolFields.cpassword}
-                     onChange={e => setSchoolFields(f => ({ ...f, password: e.target.value }))}
+                     onChange={e => setSchoolFields(f => ({ ...f, cpassword: e.target.value }))}
                      placeholder="ยืนยันรหัสผ่าน"
                   />
+                  {schoolFields.cpassword && schoolFields.cpassword !== schoolFields.password && (
+                    <p className="form_error">รหัสผ่านไม่ตรงกัน</p>
+                  )}
                </div>
                <div className="form-grp">
                   <label htmlFor="address">ที่อยู่</label>
@@ -553,7 +620,7 @@ const RegistrationForm = () => {
             </>
          )}
 
-         <button type="submit" className="btn btn-two arrow-btn" disabled={tabIndex === 1}>
+         <button type="submit" className="btn btn-two arrow-btn">
             ลงทะเบียน
             <BtnArrow />
          </button>

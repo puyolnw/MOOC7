@@ -8,8 +8,7 @@ interface CourseType {
    title: string;
    thumb: string;
    tag: string;
-   avatar_thumb: string;
-   avatar_name: string;
+   department_name: string;
    review: string;
    progress: number;
    book: string;
@@ -126,8 +125,7 @@ const DashboardCourse = () => {
                      title: courseDetails.title || courseDetails.course_title,
                      thumb: "/assets/img/courses/course_thumb01.jpg", // รูปภาพเริ่มต้น (จะถูกแทนที่ถ้ามี cover_image)
                      tag: courseDetails.category || "ทั่วไป",
-                     avatar_thumb: "/assets/img/courses/course_tutor01.png", // รูปภาพเริ่มต้นของผู้สอน
-                     avatar_name: "อาจารย์ผู้สอน", // ชื่อเริ่มต้นของผู้สอน
+                     department_name: courseDetails.department_name || "ไม่ระบุสาขา", // ชื่อสาขา
                      review: "4.5", // คะแนนเริ่มต้น
                      progress: progressDetails.overallPercentage, // ใช้ค่า progress จาก API ใหม่
                      book: `${progressDetails.totalLessons || 0} วิชา`,
@@ -253,7 +251,7 @@ const DashboardCourse = () => {
                            <h5 className="title"><Link to={`/course-details/${item.course_id}`}>{item.title}</Link></h5>
                            <div className="courses__item-content-bottom">
                               <div className="author-two">
-                                 <Link to="/instructor-details"><img src={item.avatar_thumb} alt="img" />{item.avatar_name}</Link>
+                                 สาขาวิชา : {item.department_name}
                               </div>
                            </div>
                            <div className="progress-item progress-item-two">

@@ -104,6 +104,13 @@
   box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
 }
 
+.dashboard__area .section-icon > * {
+  margin: 0; /* ลบ margin ของ element ลูก */
+  padding: 0; /* ลบ padding ของ element ลูก */
+  max-width: 80%; /* จำกัดขนาดสูงสุดของไอคอน */
+  max-height: 80%; /* จำกัดขนาดสูงสุดของไอคอน */
+}
+
 .section-icon i {
   font-size: 1.5rem;
   color: white;

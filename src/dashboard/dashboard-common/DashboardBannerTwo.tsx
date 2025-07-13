@@ -5,6 +5,19 @@ import axios from "axios";
 
 const apiUrl = import.meta.env.VITE_API_URL || process.env.REACT_APP_API_URL;
 
+// สร้าง axios instance ที่ไม่ throw error สำหรับ 404
+const silentAxios = axios.create();
+silentAxios.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    // ถ้าเป็น 404 error ให้ return response แทนที่จะ throw error
+    if (error.response?.status === 404) {
+      return Promise.reject({ ...error, silent: true });
+    }
+    return Promise.reject(error);
+  }
+);
+
 const DashboardBannerTwo = () => {
    const [student, setStudent] = useState<{ first_name?: string; last_name?: string } | null>(null);
    const [loading, setLoading] = useState(true);
@@ -26,15 +39,41 @@ const DashboardBannerTwo = () => {
          return;
       }
       setLoading(true);
-      axios
+      
+      // ลอง fetch จาก students ก่อน
+      silentAxios
          .get(`${apiUrl}/api/accounts/students/${userId}`, {
             headers: { Authorization: `Bearer ${token}` },
          })
          .then((res) => {
             setStudent(res.data.student);
          })
-         .catch(() => setStudent(null))
-         .finally(() => setLoading(false));
+         .catch((error: any) => {
+            // ถ้าไม่ใช่ silent error (404) ให้ log
+            if (!error.silent) {
+               console.error("Error fetching student:", error);
+            }
+            
+            // ถ้าไม่เจอ ลอง fetch จาก school_students
+            silentAxios
+               .get(`${apiUrl}/api/accounts/school_students/${userId}`, {
+                  headers: { Authorization: `Bearer ${token}` },
+               })
+               .then((res) => {
+                  setStudent(res.data.school_student);
+               })
+               .catch((schoolError: any) => {
+                  // ถ้าไม่ใช่ silent error (404) ให้ log
+                  if (!schoolError.silent) {
+                     console.error("Error fetching school student:", schoolError);
+                  }
+                  setStudent(null);
+               })
+               .finally(() => setLoading(false));
+         })
+         .finally(() => {
+            if (student) setLoading(false);
+         });
    }, [userId, token]);
 
    return (
