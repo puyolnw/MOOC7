@@ -12,30 +12,30 @@ interface DataType {
 const instructor_data: DataType[] = [
    {
       id: 1,
-      thumb: "/assets/img/instructor/instructor01.png",
+      thumb: "/assets/img/instructor/instructor001.png",
       title: "อาจารย์ ดร.วีระพน ภานุรักษ์",
       designation: "นำร่อง หลักสูตรแบบชุดวิชา",
 
    },
    {
       id: 2,
-      thumb: "/assets/img/instructor/instructor02.png",
-      title: "ผศ.ดร. ยุวเรศ หลุดพา",
-      designation: "รัฐประศาสนศาสตร์",
+      thumb: "/assets/img/instructor/in02.png",
+      title: "อาจารย์ภาสกร  ธนศิระธรรม",
+      designation: "สาขาเทคโนโลยีสารสนเทศ ",
 
    },
    {
       id: 3,
-      thumb: "/assets/img/instructor/instructor03.png",
-      title: "อาจารย์ ทรงพล นามคุณ",
-      designation: "เทคโนโลยีไฟฟ้า",
+      thumb: "/assets/img/instructor/in06.png",
+      title: "อาจารย์ทรงพล นามคุณ ",
+      designation: "วิศวกรรมคอมพิวเตอร์",
 
    },
    {
       id: 4,
-      thumb: "/assets/img/instructor/instructor04.png",
-      title: "อาจารย์ ณฐภศา เดชานุเบกษา" ,
-      designation: "ธุรกิจดิจิทัล",
+      thumb: "/assets/img/instructor/in09.png",
+      title: "ดร.ณพรรธนนท์ ทองปาน" ,
+      designation: "สาขาเทคโนโลยีคอมพิวเตอร์และดิจิทัล ",
    
    },
 ];
