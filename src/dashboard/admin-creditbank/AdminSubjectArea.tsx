@@ -31,7 +31,7 @@ interface Lesson {
   description: string;
   content: string;
   video_url: string | null;
-  video_file_id: string | null; // ✅ เพิ่ม field นี้
+  video_file_id: string | null;
   order_number: number;
   status: string;
   created_at: string;
@@ -45,7 +45,6 @@ interface Lesson {
   duration?: number;
 }
 
-// ✅ เพิ่ม interface ที่ขาดหายไป
 interface LessonFile {
   file_id: string;
   original_name: string;
@@ -98,19 +97,40 @@ interface Course {
   course_code: string;
 }
 
+// ✅ ใช้ CollapseStates interface เดียวกันกับ AdminLessonsArea
+interface CollapseStates {
+  [componentKey: string]: {
+    [stateType: string]: boolean;
+  };
+}
+
+// ✅ อัปเดต AdminSubjectAreaProps
 interface AdminSubjectAreaProps {
   subjectId: number;
   courseData: Course;
   onSubjectUpdate: (updatedSubject: Subject) => void;
   onBack: () => void;
+  // ✅ ใช้ CollapseStates interface ใหม่
+  collapseStates?: CollapseStates;
+  updateCollapseState?: (componentKey: string, stateType: string, value: boolean) => void;
+  getCollapseState?: (componentKey: string, stateType: string) => boolean;
 }
 
-// เหลือโค้ดเดิมทั้งหมด...
+// EditableSubjectDetail component - เพิ่ม props เท่านั้น
 const EditableSubjectDetail: React.FC<{
   subject: Subject;
   course: Course;
   onSubjectUpdate: (updatedSubject: Subject) => void;
-}> = ({ subject, course, onSubjectUpdate }) => {
+  // ✅ ใช้ CollapseStates interface ใหม่
+  collapseStates?: CollapseStates;
+  updateCollapseState?: (componentKey: string, stateType: string, value: boolean) => void;
+  getCollapseState?: (componentKey: string, stateType: string) => boolean;
+}> = ({ 
+  subject, 
+  course, 
+  onSubjectUpdate,
+
+}) => {
   const apiURL = import.meta.env.VITE_API_URL;
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -198,14 +218,18 @@ const EditableSubjectDetail: React.FC<{
     setImagePreview(null);
   };
 
-  const getSubjectImageUrl = (subject: Subject): string => {
-    if (imagePreview) return imagePreview;
-    if (subject.cover_image_file_id) {
-      return `${apiURL}/api/courses/subjects/image/${subject.cover_image_file_id}`;
-    }
-    return 'https://www.pngwing.com/en/search?q=no+Image';
-  };
-
+const getSubjectImageUrl = (subject: Subject): string => {
+  if (imagePreview) return imagePreview;
+  if (subject.cover_image_file_id) {
+    // ✅ แก้ไข endpoint ให้เหมือนกับ SubjectDetailsArea.tsx
+    return `${apiURL}/api/courses/image/${subject.cover_image_file_id}`;
+  }
+  // ✅ หรือถ้าใช้ host server แล้ว
+  if (subject.cover_image && subject.cover_image.startsWith('/uploads/')) {
+    return `${apiURL}${subject.cover_image}`;
+  }
+  return 'https://via.placeholder.com/400x250.png?text=ไม่มีรูปภาพ';
+};
   const getVideoEmbedUrl = (videoUrl: string | null): string => {
     if (!videoUrl) return '';
     if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
@@ -377,7 +401,7 @@ const EditableSubjectDetail: React.FC<{
                   placeholder="รายละเอียดรายวิชา"
                   rows={4}
                 />
-              ) : (
+                            ) : (
                 <div className="subject-description">
                   {subject.description || 'ไม่มีรายละเอียด'}
                 </div>
@@ -403,7 +427,7 @@ const EditableSubjectDetail: React.FC<{
                         src={getVideoEmbedUrl(subject.video_url)}
                         title="วิดีโอแนะนำรายวิชา"
                         frameBorder="0"
-                                               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                         allowFullScreen
                       ></iframe>
                     </div>
@@ -427,7 +451,11 @@ const AdminSubjectArea: React.FC<AdminSubjectAreaProps> = ({
   subjectId, 
   courseData, 
   onSubjectUpdate, 
-  onBack 
+  onBack,
+  // ✅ รับ collapse state props
+  collapseStates,
+  updateCollapseState,
+  getCollapseState
 }) => {
   const [subject, setSubject] = useState<Subject | null>(null);
   const [loading, setLoading] = useState(true);
@@ -514,6 +542,10 @@ const AdminSubjectArea: React.FC<AdminSubjectAreaProps> = ({
         subject={subject}
         course={courseData}
         onSubjectUpdate={handleSubjectUpdate}
+        // ✅ ส่ง collapse state props ต่อ
+        collapseStates={collapseStates}
+        updateCollapseState={updateCollapseState}
+        getCollapseState={getCollapseState}
       />
 
       {/* Lessons Management Area */}
@@ -521,9 +553,14 @@ const AdminSubjectArea: React.FC<AdminSubjectAreaProps> = ({
         subject={subject}
         courseData={courseData}
         onSubjectUpdate={handleSubjectUpdate}
+        // ✅ ส่ง collapse state props ต่อไปยัง AdminLessonsArea
+        collapseStates={collapseStates}
+        updateCollapseState={updateCollapseState}
+        getCollapseState={getCollapseState}
       />
     </div>
   );
 };
 
 export default AdminSubjectArea;
+
