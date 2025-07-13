@@ -485,7 +485,12 @@ const LessonQuiz = ({
             });
 
             formData.append("files_question_ids", JSON.stringify(grouped_files_question_ids));
-            formData.append("lesson_id", lessonId.toString());
+            
+            // ✅ ไม่ส่ง lesson_id สำหรับแบบทดสอบพิเศษ (pre/post test)
+            if (lessonId > 0) {
+                formData.append("lesson_id", lessonId.toString());
+            }
+            
             formData.append("startTime", new Date().toISOString());
             formData.append("endTime", new Date().toISOString());
 
@@ -521,50 +526,54 @@ const LessonQuiz = ({
                 if (isSpecialQuiz || result.isSpecialQuiz) {
                     setIsAwaitingReview(true);
                     
-                    // อัปเดต subject progress แม้จะรอตรวจ
-                    try {
-                        const subjectResponse = await axios.get(
-                            `${API_URL}/api/learn/lesson/${lessonId}/subject`,
-                            {
-                                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-                            }
-                        );
-                        
-                        if (subjectResponse.data.success && subjectResponse.data.subject_id) {
-                            await axios.post(
-                                `${API_URL}/api/subjects/${subjectResponse.data.subject_id}/update-progress`,
-                                {},
+                    // ✅ อัปเดต subject progress แม้จะรอตรวจ (เฉพาะเมื่อมี lesson_id)
+                    if (lessonId > 0) {
+                        try {
+                            const subjectResponse = await axios.get(
+                                `${API_URL}/api/learn/lesson/${lessonId}/subject`,
                                 {
                                     headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
                                 }
                             );
+                            
+                            if (subjectResponse.data.success && subjectResponse.data.subject_id) {
+                                await axios.post(
+                                    `${API_URL}/api/subjects/${subjectResponse.data.subject_id}/update-progress`,
+                                    {},
+                                    {
+                                        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+                                    }
+                                );
+                            }
+                        } catch (error) {
+                            console.error("Error updating subject progress:", error);
                         }
-                    } catch (error) {
-                        console.error("Error updating subject progress:", error);
                     }
                     
                     safeOnComplete(); // แจ้งว่าส่งแล้ว รอตรวจ
                 } else if (result.passed) {
-                    // อัปเดต subject progress เมื่อผ่านแบบทดสอบ
-                    try {
-                        const subjectResponse = await axios.get(
-                            `${API_URL}/api/learn/lesson/${lessonId}/subject`,
-                            {
-                                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-                            }
-                        );
-                        
-                        if (subjectResponse.data.success && subjectResponse.data.subject_id) {
-                            await axios.post(
-                                `${API_URL}/api/subjects/${subjectResponse.data.subject_id}/update-progress`,
-                                {},
+                    // ✅ อัปเดต subject progress เมื่อผ่านแบบทดสอบ (เฉพาะเมื่อมี lesson_id)
+                    if (lessonId > 0) {
+                        try {
+                            const subjectResponse = await axios.get(
+                                `${API_URL}/api/learn/lesson/${lessonId}/subject`,
                                 {
                                     headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
                                 }
                             );
+                            
+                            if (subjectResponse.data.success && subjectResponse.data.subject_id) {
+                                await axios.post(
+                                    `${API_URL}/api/subjects/${subjectResponse.data.subject_id}/update-progress`,
+                                    {},
+                                    {
+                                        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+                                    }
+                                );
+                            }
+                        } catch (error) {
+                            console.error("Error updating subject progress:", error);
                         }
-                    } catch (error) {
-                        console.error("Error updating subject progress:", error);
                     }
                     
                     safeOnComplete(); // ผ่านแบบทดสอบปกติ

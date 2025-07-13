@@ -55,10 +55,49 @@ interface CourseData {
             video_url: string;
             duration: number;
             quiz_id?: number | null;
+            is_big_lesson?: boolean;
+            big_lesson_id?: number;
+            sub_lessons?: {
+                lesson_id: number;
+                title: string;
+                description: string;
+                video_url: string;
+                duration: number;
+                quiz_id?: number | null;
+                order_number: number;
+                progress?: {
+                    video_completed: boolean;
+                    quiz_completed: boolean;
+                    overall_completed: boolean;
+                };
+                quiz?: {
+                    quiz_id: number;
+                    title: string;
+                    description: string;
+                    type: string;
+                    progress?: {
+                        completed: boolean;
+                        passed: boolean;
+                        awaiting_review: boolean;
+                    };
+                    questions: any[];
+                };
+            }[];
+            progress?: {
+                video_completed: boolean;
+                quiz_completed: boolean;
+                overall_completed: boolean;
+            };
             quiz?: {
                 quiz_id: number;
                 title: string;
                 description: string;
+                type: string;
+                progress?: {
+                    completed: boolean;
+                    passed: boolean;
+                    awaiting_review: boolean;
+                };
                 questions: any[];
             };
         }[];
@@ -127,70 +166,176 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
 
                 if (subject.lessons && subject.lessons.length > 0) {
                     subject.lessons.forEach((lesson: any, lessonIndex: number) => {
-                        const sectionItems: LessonItem[] = [];
-                        sectionItems.push({
-                            id: 0,
-                            lesson_id: lesson.lesson_id,
-                            title: `${lessonIndex + 1}.1 เนื้อหาวิดีโอ`,
-                            lock: false,
-                            completed: lesson.progress?.video_completed || false,
-                            type: "video",
-                            quizType: "none",
-                            duration: lesson.progress?.video_completed ? "100%" : "0%",
-                            video_url: lesson.video_url,
-                            quiz_id: lesson.quiz ? lesson.quiz.quiz_id : undefined,
-                            status: lesson.progress?.video_completed ? "passed" : "failed",
-                        });
+                        // ตรวจสอบว่าเป็น Big Lesson หรือไม่
+                        if (lesson.is_big_lesson) {
+                            // Big Lesson - แสดง Sub Lessons
+                            const sectionItems: LessonItem[] = [];
+                            
+                            // เพิ่ม Sub Lessons
+                            if (lesson.sub_lessons && lesson.sub_lessons.length > 0) {
+                                lesson.sub_lessons.forEach((subLesson: any, subIndex: number) => {
+                                    // เพิ่มวิดีโอ Sub Lesson
+                                    sectionItems.push({
+                                        id: subIndex * 2,
+                                        lesson_id: subLesson.lesson_id,
+                                        title: `${lessonIndex + 1}.${subIndex + 1} 📹 ${subLesson.title}`,
+                                        lock: false,
+                                        completed: subLesson.progress?.video_completed || false,
+                                        type: "video",
+                                        quizType: "none",
+                                        duration: subLesson.progress?.video_completed ? "100%" : "0%",
+                                        video_url: subLesson.video_url,
+                                        quiz_id: subLesson.quiz ? subLesson.quiz.quiz_id : undefined,
+                                        status: subLesson.progress?.video_completed ? "passed" : "failed",
+                                    });
 
-                        if (lesson.quiz) {
-                            let quizStatus: "passed" | "failed" | "awaiting_review" = "failed";
-                            if (lesson.quiz.progress?.passed) {
-                                quizStatus = "passed";
-                            } else if (lesson.quiz.progress?.completed && !lesson.quiz.progress?.passed) {
-                                quizStatus = "failed";
-                            } else if (lesson.quiz.progress?.awaiting_review || (lesson.quiz.type === "special_fill_in_blank" && lesson.quiz.progress?.completed && !lesson.quiz.progress?.passed)) {
-                                quizStatus = "awaiting_review";
+                                    // เพิ่มแบบทดสอบ Sub Lesson (ถ้ามี)
+                                    if (subLesson.quiz) {
+                                        let quizStatus: "passed" | "failed" | "awaiting_review" = "failed";
+                                        if (subLesson.quiz.progress?.passed) {
+                                            quizStatus = "passed";
+                                        } else if (subLesson.quiz.progress?.completed && !subLesson.quiz.progress?.passed) {
+                                            quizStatus = "failed";
+                                        } else if (subLesson.quiz.progress?.awaiting_review || (subLesson.quiz.type === "special_fill_in_blank" && subLesson.quiz.progress?.completed && !subLesson.quiz.progress?.passed)) {
+                                            quizStatus = "awaiting_review";
+                                        }
+                                        sectionItems.push({
+                                            id: subIndex * 2 + 1,
+                                            lesson_id: subLesson.lesson_id,
+                                            title: `${lessonIndex + 1}.${subIndex + 1}.2 แบบทดสอบท้ายบท`,
+                                            lock: false, // ปลดล็อคแบบทดสอบท้ายบท
+                                            completed:
+                                                subLesson.quiz.progress?.passed ||
+                                                subLesson.quiz.progress?.awaiting_review ||
+                                                false,
+                                            type: "quiz",
+                                            quizType: subLesson.quiz.type,
+                                            duration: subLesson.quiz.progress?.passed
+                                                ? "100%"
+                                                : subLesson.quiz.progress?.awaiting_review
+                                                ? "50%"
+                                                : "0%",
+                                            quiz_id: subLesson.quiz.quiz_id,
+                                            status: quizStatus,
+                                        });
+                                    }
+                                });
                             }
+
+                            // เพิ่ม Big Lesson Quiz (ถ้ามี)
+                            if (lesson.quiz) {
+                                let quizStatus: "passed" | "failed" | "awaiting_review" = "failed";
+                                if (lesson.quiz.progress?.passed) {
+                                    quizStatus = "passed";
+                                } else if (lesson.quiz.progress?.completed && !lesson.quiz.progress?.passed) {
+                                    quizStatus = "failed";
+                                } else if (lesson.quiz.progress?.awaiting_review || (lesson.quiz.type === "special_fill_in_blank" && lesson.quiz.progress?.completed && !lesson.quiz.progress?.passed)) {
+                                    quizStatus = "awaiting_review";
+                                }
+                                sectionItems.push({
+                                    id: sectionItems.length,
+                                    lesson_id: lesson.lesson_id,
+                                    title: `${lessonIndex + 1}.X แบบทดสอบท้ายบทใหญ่`,
+                                    lock: false,
+                                    completed:
+                                        lesson.quiz.progress?.passed ||
+                                        lesson.quiz.progress?.awaiting_review ||
+                                        false,
+                                    type: "quiz",
+                                    quizType: lesson.quiz.type,
+                                    duration: lesson.quiz.progress?.passed
+                                        ? "100%"
+                                        : lesson.quiz.progress?.awaiting_review
+                                        ? "50%"
+                                        : "0%",
+                                    quiz_id: lesson.quiz.quiz_id,
+                                    status: quizStatus,
+                                });
+                            }
+
+                            let count = "";
+                            if (lesson.quiz?.progress?.awaiting_review) {
+                                count = "รอตรวจ";
+                            } else {
+                                const allCompleted = sectionItems.every(item => item.completed);
+                                count = allCompleted ? "ผ่าน" : "ไม่ผ่าน";
+                            }
+
+                            sections.push({
+                                id: lesson.lesson_id,
+                                subject_id: subject.subject_id,
+                                title: `บทที่ ${lessonIndex + 1}: ${lesson.title}`,
+                                count: count,
+                                items: sectionItems,
+                                quiz_id: lesson.quiz ? lesson.quiz.quiz_id : undefined,
+                            });
+                        } else {
+                            // ระบบเดิม - Lesson ปกติ
+                            const sectionItems: LessonItem[] = [];
                             sectionItems.push({
-                                id: 1,
+                                id: 0,
                                 lesson_id: lesson.lesson_id,
-                                title: `${lessonIndex + 1}.2 แบบทดสอบท้ายบท`,
-                                lock: !lesson.progress?.video_completed,
-                                completed:
-                                    lesson.quiz.progress?.passed ||
-                                    lesson.quiz.progress?.awaiting_review ||
-                                    false,
-                                type: "quiz",
-                                quizType: lesson.quiz.type,
-                                duration: lesson.quiz.progress?.passed
-                                    ? "100%"
-                                    : lesson.quiz.progress?.awaiting_review
-                                    ? "50%"
-                                    : "0%",
-                                quiz_id: lesson.quiz.quiz_id,
-                                status: quizStatus,
+                                title: `${lessonIndex + 1}.1 📹 ${lesson.title}`,
+                                lock: false,
+                                completed: lesson.progress?.video_completed || false,
+                                type: "video",
+                                quizType: "none",
+                                duration: lesson.progress?.video_completed ? "100%" : "0%",
+                                video_url: lesson.video_url,
+                                quiz_id: lesson.quiz ? lesson.quiz.quiz_id : undefined,
+                                status: lesson.progress?.video_completed ? "passed" : "failed",
+                            });
+
+                            if (lesson.quiz) {
+                                let quizStatus: "passed" | "failed" | "awaiting_review" = "failed";
+                                if (lesson.quiz.progress?.passed) {
+                                    quizStatus = "passed";
+                                } else if (lesson.quiz.progress?.completed && !lesson.quiz.progress?.passed) {
+                                    quizStatus = "failed";
+                                } else if (lesson.quiz.progress?.awaiting_review || (lesson.quiz.type === "special_fill_in_blank" && lesson.quiz.progress?.completed && !lesson.quiz.progress?.passed)) {
+                                    quizStatus = "awaiting_review";
+                                }
+                                sectionItems.push({
+                                    id: 1,
+                                    lesson_id: lesson.lesson_id,
+                                    title: `${lessonIndex + 1}.2 แบบทดสอบท้ายบท`,
+                                    lock: false, // ปลดล็อคแบบทดสอบท้ายบท
+                                    completed:
+                                        lesson.quiz.progress?.passed ||
+                                        lesson.quiz.progress?.awaiting_review ||
+                                        false,
+                                    type: "quiz",
+                                    quizType: lesson.quiz.type,
+                                    duration: lesson.quiz.progress?.passed
+                                        ? "100%"
+                                        : lesson.quiz.progress?.awaiting_review
+                                        ? "50%"
+                                        : "0%",
+                                    quiz_id: lesson.quiz.quiz_id,
+                                    status: quizStatus,
+                                });
+                            }
+
+                            let count = "";
+                            if (lesson.quiz?.progress?.awaiting_review) {
+                                count = "รอตรวจ";
+                            } else {
+                                if (lesson.progress?.overall_completed) {
+                                    count = "ผ่าน";
+                                } else {
+                                    count = "ไม่ผ่าน";
+                                }
+                            }
+
+                            sections.push({
+                                id: lesson.lesson_id,
+                                subject_id: subject.subject_id,
+                                title: `บทที่ ${lessonIndex + 1}: ${lesson.title}`,
+                                count: count,
+                                items: sectionItems,
+                                quiz_id: lesson.quiz ? lesson.quiz.quiz_id : undefined,
                             });
                         }
-
-                        let count = "";
-                        if (lesson.quiz?.progress?.awaiting_review) {
-                            count = "รอตรวจ";
-                        } else {
-                            if (lesson.progress?.overall_completed) {
-                                count = "ผ่าน";
-                            } else {
-                                count = "ไม่ผ่าน";
-                            }
-                        }
-
-                        sections.push({
-                            id: lesson.lesson_id,
-                            subject_id: subject.subject_id,
-                            title: `บทที่ ${lessonIndex + 1}: ${lesson.title}`,
-                            count: count,
-                            items: sectionItems,
-                            quiz_id: lesson.quiz ? lesson.quiz.quiz_id : undefined,
-                        });
                     });
 
                     setLessonData(sections);
@@ -205,6 +350,7 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
                         setCurrentLessonData({
                             ...firstItem,
                             quiz_id: firstSection.quiz_id,
+                            big_lesson_id: firstSection.id, // เพิ่ม big_lesson_id
                         });
 
                         if (firstItem.video_url) {
@@ -286,11 +432,12 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
                             if (item.completed !== newCompleted) {
                                 item.completed = newCompleted;
                                 hasChanges = true;
+                                // ปลดล็อคทุกอย่าง ไม่ต้องล็อคแบบทดสอบท้ายบท
                                 const nextItem = section.items.find(
                                     (i) => i.id === item.id + 1 && i.type === "quiz"
                                 );
                                 if (nextItem) {
-                                    nextItem.lock = !item.completed;
+                                    nextItem.lock = false; // ปลดล็อคทุกอย่าง
                                 }
                             }
                         }
@@ -341,7 +488,7 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
                                 const nextItem = section.items[index + 1];
                                 section.items[index + 1] = {
                                     ...nextItem,
-                                    lock: false
+                                    lock: false // ปลดล็อคทุกอย่าง
                                 };
                             }
                             return updatedItem as LessonItem;
@@ -393,13 +540,14 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
                     setCurrentLessonId(`${currentSectionId}-${i}`);
                     setCurrentLesson(currentSection.items[i].title);
                     setCurrentView(currentSection.items[i].type);
-                    setCurrentLessonData({
-                        ...currentSection.items[i],
-                        quiz_id:
-                            currentSection.items[i].type === "quiz"
-                                ? currentSection.items[i].quiz_id
-                                : currentSection.quiz_id,
-                    });
+                                            setCurrentLessonData({
+                            ...currentSection.items[i],
+                            quiz_id:
+                                currentSection.items[i].type === "quiz"
+                                    ? currentSection.items[i].quiz_id
+                                    : currentSection.quiz_id,
+                            big_lesson_id: currentSection.id, // เพิ่ม big_lesson_id
+                        });
 
                     if (
                         currentSection.items[i].type === "video" &&
@@ -408,17 +556,31 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
                     ) {
                         const videoId = extractYoutubeId(currentSection.items[i].video_url);
                         if (videoId) setYoutubeId(videoId);
-                    } else if (
-                        currentSection.items[i].type === "quiz" &&
-                        courseData
-                    ) {
-                        const lesson = courseData.subjects[0].lessons.find(
-                            (l) => l.lesson_id === currentSectionId
-                        );
-                        if (lesson && lesson.quiz) {
-                            setCurrentQuizData(lesson.quiz);
+                                            } else if (
+                            currentSection.items[i].type === "quiz" &&
+                            courseData
+                        ) {
+                            const lesson = courseData.subjects[0].lessons.find(
+                                (l) => l.lesson_id === currentSectionId
+                            );
+                            
+                            // ตรวจสอบว่าเป็น Big Lesson หรือไม่
+                            if (lesson && lesson.is_big_lesson) {
+                                // ค้นหาใน Sub Lessons
+                                const subLesson = lesson.sub_lessons?.find(
+                                    (sl: any) => sl.lesson_id === currentSectionId
+                                );
+                                if (subLesson && subLesson.quiz) {
+                                    setCurrentQuizData(subLesson.quiz);
+                                } else if (lesson.quiz && lesson.quiz.quiz_id === currentSection.items[i].quiz_id) {
+                                    // Big Lesson Quiz
+                                    setCurrentQuizData(lesson.quiz);
+                                }
+                            } else if (lesson && lesson.quiz) {
+                                // Lesson ปกติ
+                                setCurrentQuizData(lesson.quiz);
+                            }
                         }
-                    }
 
                     foundNext = true;
                     break;
@@ -442,6 +604,7 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
                                 section.items[i].type === "quiz"
                                     ? section.items[i].quiz_id
                                     : section.quiz_id,
+                            big_lesson_id: section.id, // เพิ่ม big_lesson_id
                         });
 
                         if (
@@ -457,7 +620,21 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
                             const lesson = courseData.subjects[0].lessons.find(
                                 (l) => l.lesson_id === section.id
                             );
-                            if (lesson && lesson.quiz) {
+                            
+                            // ตรวจสอบว่าเป็น Big Lesson หรือไม่
+                            if (lesson && lesson.is_big_lesson) {
+                                // ค้นหาใน Sub Lessons
+                                const subLesson = lesson.sub_lessons?.find(
+                                    (sl: any) => sl.lesson_id === section.id
+                                );
+                                if (subLesson && subLesson.quiz) {
+                                    setCurrentQuizData(subLesson.quiz);
+                                } else if (lesson.quiz && lesson.quiz.quiz_id === section.items[i].quiz_id) {
+                                    // Big Lesson Quiz
+                                    setCurrentQuizData(lesson.quiz);
+                                }
+                            } else if (lesson && lesson.quiz) {
+                                // Lesson ปกติ
                                 setCurrentQuizData(lesson.quiz);
                             }
                         }
@@ -506,7 +683,7 @@ const handleSelectLesson = (
         // สร้าง fake lesson data สำหรับแบบทดสอบพิเศษ
         const specialQuizData = {
             id: itemId,
-            lesson_id: itemId, // ใช้ quiz_id เป็น lesson_id สำหรับแบบทดสอบพิเศษ
+            lesson_id: 0, // ไม่ใช้ lesson_id สำหรับแบบทดสอบพิเศษ
             title: title,
             lock: false,
             completed: false, // จะต้องเช็คจาก API จริง
@@ -531,8 +708,9 @@ const handleSelectLesson = (
     if (section) {
         const item = section.items.find((i) => i.id === itemId);
         if (item) {
-            if (item.lock) {
-                alert("คุณต้องเรียนบทเรียนก่อนหน้าให้เสร็จก่อน");
+            // ปลดล็อคทุกอย่าง ยกเว้นแบบทดสอบท้ายบท
+            if (item.lock && item.type === "quiz" && item.title.includes("แบบทดสอบท้ายบท")) {
+                alert("กรุณาเรียนบทก่อนหน้าให้เสร็จก่อนทำแบบทดสอบท้ายบท");
                 return;
             }
 
@@ -544,6 +722,7 @@ const handleSelectLesson = (
             setCurrentLessonData({
                 ...item,
                 quiz_id: type === "quiz" ? item.quiz_id : section.quiz_id,
+                big_lesson_id: section.id, // เพิ่ม big_lesson_id
             });
 
 
@@ -556,7 +735,21 @@ const handleSelectLesson = (
                 const lesson = courseData.subjects[0].lessons.find(
                     (l) => l.lesson_id === sectionId
                 );
-                if (lesson && lesson.quiz) {
+                
+                // ตรวจสอบว่าเป็น Big Lesson หรือไม่
+                if (lesson && lesson.is_big_lesson) {
+                    // ค้นหาใน Sub Lessons
+                    const subLesson = lesson.sub_lessons?.find(
+                        (sl) => sl.lesson_id === sectionId
+                    );
+                    if (subLesson && subLesson.quiz) {
+                        setCurrentQuizData(subLesson.quiz);
+                    } else if (lesson.quiz && lesson.quiz.quiz_id === item.quiz_id) {
+                        // Big Lesson Quiz
+                        setCurrentQuizData(lesson.quiz);
+                    }
+                } else if (lesson && lesson.quiz) {
+                    // Lesson ปกติ
                     setCurrentQuizData(lesson.quiz);
                 }
             }
@@ -668,6 +861,8 @@ const handleSelectLesson = (
                             <LessonNavTav
                                 description={courseData?.description || ""}
                                 instructors={courseData?.instructors || []}
+                                currentLessonId={currentLessonData?.lesson_id}
+                                currentBigLessonId={currentLessonData?.big_lesson_id}
                             />
                         </div>
                     </div>

@@ -53,17 +53,17 @@ const LessonFaq = ({
   const [error, setError] = useState<string | null>(null);
 
   // ฟังก์ชันเช็คว่าแบบทดสอบก่อนเรียนผ่านแล้วหรือยัง
-  const isPreTestPassed = () => {
-    const preTest = subjectQuizzes.find(q => q.type === "pre_test");
-    return preTest?.passed || false;
-  };
+  // const isPreTestPassed = () => {
+  //   const preTest = subjectQuizzes.find(q => q.type === "pre_test");
+  //   return preTest?.passed || false;
+  // };
 
-  // ฟังก์ชันเช็คว่าบทเรียนทั้งหมดเสร็จแล้วหรือยัง
-  const areAllLessonsCompleted = () => {
-    return lessonData.every(section => 
-      section.items.every(item => item.completed)
-    );
-  };
+  // // ฟังก์ชันเช็คว่าบทเรียนทั้งหมดเสร็จแล้วหรือยัง
+  // const areAllLessonsCompleted = () => {
+  //   return lessonData.every(section => 
+  //     section.items.every(item => item.completed)
+  //   );
+  // };
 
   // ฟังก์ชันเช็คว่าบทก่อนหน้าเสร็จแล้วหรือยัง
   const isPreviousLessonCompleted = (sectionIndex: number, itemIndex: number) => {
@@ -92,22 +92,21 @@ const LessonFaq = ({
 
   // ฟังก์ชันเช็คว่าควรล็อคบทเรียนหรือไม่
   const shouldLockLesson = (sectionIndex: number, itemIndex: number) => {
-    // ถ้าไม่มี pre-test ให้เรียนได้เลย
-    const hasPreTest = subjectQuizzes.some(q => q.type === "pre_test");
-    if (!hasPreTest) {
-      if (sectionIndex === 0 && itemIndex === 0) {
-        return false;
+    // ปลดล็อคทุกอย่าง ยกเว้นแบบทดสอบท้ายบท
+    const currentItem = lessonData[sectionIndex]?.items[itemIndex];
+    
+    // ถ้าเป็นแบบทดสอบท้ายบท ให้ล็อคไว้
+    if (currentItem && currentItem.type === "quiz") {
+      // ตรวจสอบว่าเป็นแบบทดสอบท้ายบทหรือไม่ (ไม่ใช่ pre/post test)
+      const isEndOfChapterQuiz = currentItem.title.includes("แบบทดสอบท้ายบท");
+      if (isEndOfChapterQuiz) {
+        // ล็อคแบบทดสอบท้ายบทไว้
+        return !isPreviousLessonCompleted(sectionIndex, itemIndex);
       }
-      return !isPreviousLessonCompleted(sectionIndex, itemIndex);
     }
-    // ถ้ามี pre-test ต้องผ่านก่อน
-    if (!isPreTestPassed()) {
-      return true;
-    }
-    if (sectionIndex === 0 && itemIndex === 0) {
-      return false;
-    }
-    return !isPreviousLessonCompleted(sectionIndex, itemIndex);
+    
+    // ปลดล็อคทุกอย่างอื่น
+    return false;
   };
 
   // ฟังก์ชันโหลดข้อมูลแบบทดสอบ pre/post test
@@ -157,24 +156,24 @@ const LessonFaq = ({
           });
         }
 
-        // แบบทดสอบหลังเรียน
-        if (response.data.post_test) {
-          const postTest = response.data.post_test;
-          quizzes.push({
-            quiz_id: postTest.quiz_id,
-            title: postTest.title || "แบบทดสอบหลังเรียน",
-            description: postTest.description,
-            type: "post_test",
-            locked: !areAllLessonsCompleted(),
-            completed: postTest.progress?.completed || false,
-            passed: postTest.progress?.passed || false,
-            status: postTest.progress?.awaiting_review ? "awaiting_review" :
-                    postTest.progress?.passed ? "passed" :
-                    postTest.progress?.completed ? "failed" : "not_started",
-            score: postTest.progress?.score,
-            max_score: postTest.progress?.max_score,
-          });
-        }
+          // แบบทดสอบหลังเรียน
+  if (response.data.post_test) {
+    const postTest = response.data.post_test;
+    quizzes.push({
+      quiz_id: postTest.quiz_id,
+      title: postTest.title || "แบบทดสอบหลังเรียน",
+      description: postTest.description,
+      type: "post_test",
+      locked: false, // ปลดล็อคแบบทดสอบหลังเรียน
+      completed: postTest.progress?.completed || false,
+      passed: postTest.progress?.passed || false,
+      status: postTest.progress?.awaiting_review ? "awaiting_review" :
+              postTest.progress?.passed ? "passed" :
+              postTest.progress?.completed ? "failed" : "not_started",
+      score: postTest.progress?.score,
+      max_score: postTest.progress?.max_score,
+    });
+  }
 
         setSubjectQuizzes(quizzes);
       } else {
@@ -201,7 +200,7 @@ const LessonFaq = ({
   useEffect(() => {
     setSubjectQuizzes(prev => prev.map(quiz => ({
       ...quiz,
-      locked: quiz.type === "post_test" ? !areAllLessonsCompleted() : false
+      locked: false // ปลดล็อคทุกแบบทดสอบ pre/post
     })));
   }, [lessonData]);
 
@@ -209,11 +208,8 @@ const LessonFaq = ({
     const isLocked = shouldLockLesson(sectionIndex, itemIndex);
     
     if (isLocked) {
-      if (sectionIndex === 0 && itemIndex === 0) {
-        alert("กรุณาทำแบบทดสอบก่อนเรียนให้ผ่านก่อน");
-      } else {
-        alert("กรุณาเรียนบทก่อนหน้าให้เสร็จก่อน");
-      }
+      // แสดงข้อความเฉพาะสำหรับแบบทดสอบท้ายบท
+      alert("กรุณาเรียนบทก่อนหน้าให้เสร็จก่อนทำแบบทดสอบท้ายบท");
       return;
     }
     
@@ -222,12 +218,9 @@ const LessonFaq = ({
 
   // แปลง SubjectQuiz เป็น LessonItem แล้วเรียก onSelectLesson
   const handleSubjectQuizClick = (quiz: SubjectQuiz) => {
+    // ปลดล็อคทุกแบบทดสอบ pre/post
     if (quiz.locked) {
-      if (quiz.type === "pre_test") {
-        alert("กรุณาทำแบบทดสอบก่อนเรียนก่อน");
-      } else {
-        alert("กรุณาเรียนบทเรียนให้ครบทุกบทก่อนทำแบบทดสอบหลังเรียน");
-      }
+      alert("แบบทดสอบนี้ยังไม่พร้อมใช้งาน");
       return;
     }
 
