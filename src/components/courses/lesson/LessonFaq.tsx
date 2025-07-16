@@ -92,20 +92,18 @@ const LessonFaq = ({
 
   // ฟังก์ชันเช็คว่าควรล็อคบทเรียนหรือไม่
   const shouldLockLesson = (sectionIndex: number, itemIndex: number) => {
-    // ปลดล็อคทุกอย่าง ยกเว้นแบบทดสอบท้ายบท
-    const currentItem = lessonData[sectionIndex]?.items[itemIndex];
-    
-    // ถ้าเป็นแบบทดสอบท้ายบท ให้ล็อคไว้
+    const section = lessonData[sectionIndex];
+    const currentItem = section?.items[itemIndex];
     if (currentItem && currentItem.type === "quiz") {
-      // ตรวจสอบว่าเป็นแบบทดสอบท้ายบทหรือไม่ (ไม่ใช่ pre/post test)
       const isEndOfChapterQuiz = currentItem.title.includes("แบบทดสอบท้ายบท");
       if (isEndOfChapterQuiz) {
-        // ล็อคแบบทดสอบท้ายบทไว้
+        // ถ้า section ไม่มี video เลย ให้ไม่ล็อค
+        const hasVideo = section.items.some(item => item.type === "video");
+        if (!hasVideo) return false;
+        // ถ้ามี video ให้เช็คว่าผ่านหรือยัง
         return !isPreviousLessonCompleted(sectionIndex, itemIndex);
       }
     }
-    
-    // ปลดล็อคทุกอย่างอื่น
     return false;
   };
 

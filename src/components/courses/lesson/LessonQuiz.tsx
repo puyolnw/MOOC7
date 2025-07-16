@@ -491,8 +491,10 @@ const LessonQuiz = ({
                 formData.append("lesson_id", lessonId.toString());
             }
             
-            formData.append("startTime", new Date().toISOString());
-            formData.append("endTime", new Date().toISOString());
+            const startTime = new Date().toISOString();
+            const endTime = new Date().toISOString();
+            formData.append("startTime", startTime);
+            formData.append("endTime", endTime);
 
             const response = await axios.post(
                 `${API_URL}/api/learn/quiz/${quizId}/submit`,
