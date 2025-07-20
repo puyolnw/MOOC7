@@ -1,6 +1,7 @@
 import Wrapper from '../../layouts/Wrapper';
-import InsLessons from '../../dashboard/instructor-dashboard/Lessons';
 import SEO from '../../components/SEO';
+import InsLessons from '../../dashboard/instructor-dashboard/Lessons';
+
 
 
 const InsLessonspage= () => {

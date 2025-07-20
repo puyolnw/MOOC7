@@ -132,9 +132,9 @@
 /* ===== CARDS GRID ===== */
  .dashboard__area .cards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(2, 1fr); /* เปลี่ยนจาก 3 เป็น 2 */
   gap: 1.5rem;
-  margin-top: 1rem;
+  margin-top: 1.5rem;
 }
 
  .dashboard__area .selection-card {
@@ -5272,4 +5272,400 @@
   font-size: 48px;
   margin-bottom: 15px;
   color: #dee2e6;
+}
+/* Modal Styles */
+.modal.fade.show {
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal-dialog {
+  margin: 1.75rem auto;
+  max-width: 500px;
+}
+
+.modal-content {
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+}
+
+.modal-header {
+  border-bottom: 1px solid #e9ecef;
+  padding: 1.5rem;
+  background-color: #f8f9fa;
+  border-radius: 12px 12px 0 0;
+}
+
+.modal-title {
+  font-weight: 600;
+  color: #2c3e50;
+  margin: 0;
+}
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+.modal-footer {
+  border-top: 1px solid #e9ecef;
+  padding: 1rem 1.5rem;
+  background-color: #f8f9fa;
+  border-radius: 0 0 12px 12px;
+}
+
+/* Form Styles in Modals */
+.modal .form-label {
+  font-weight: 500;
+  color: #495057;
+  margin-bottom: 0.5rem;
+}
+
+.modal .form-control {
+  border: 1px solid #ced4da;
+  border-radius: 8px;
+  padding: 0.75rem;
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.modal .form-control:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.modal .form-control:disabled {
+  background-color: #e9ecef;
+  opacity: 1;
+}
+
+.modal textarea.form-control {
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* Button Styles in Modals */
+.modal .btn {
+  border-radius: 8px;
+  padding: 0.5rem 1.5rem;
+  font-weight: 500;
+  transition: all 0.15s ease-in-out;
+}
+
+.modal .btn-primary {
+  background-color: #007bff;
+  border-color: #007bff;
+}
+
+.modal .btn-primary:hover {
+  background-color: #0056b3;
+  border-color: #0056b3;
+  transform: translateY(-1px);
+}
+
+.modal .btn-secondary {
+  background-color: #6c757d;
+  border-color: #6c757d;
+}
+
+.modal .btn-secondary:hover {
+  background-color: #545b62;
+  border-color: #545b62;
+}
+
+/* Enhanced Faculty/Department Cards with Action Buttons */
+.selection-card {
+  position: relative;
+  overflow: visible;
+}
+
+.card-actions {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+  z-index: 10;
+}
+
+.selection-card:hover .card-actions {
+  opacity: 1;
+}
+
+.card-actions .dropdown-toggle {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6c757d;
+  transition: all 0.2s ease-in-out;
+}
+
+.card-actions .dropdown-toggle:hover {
+  background: white;
+  color: #495057;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.card-actions .dropdown-toggle::after {
+  display: none;
+}
+
+.card-actions .dropdown-menu {
+  border: none;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+  padding: 0.5rem 0;
+  min-width: 140px;
+}
+
+.card-actions .dropdown-item {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  color: #495057;
+  transition: all 0.15s ease-in-out;
+}
+
+.card-actions .dropdown-item:hover {
+  background-color: #f8f9fa;
+  color: #007bff;
+}
+
+.card-actions .dropdown-item.text-danger:hover {
+  background-color: #f8d7da;
+  color: #dc3545;
+}
+
+.card-actions .dropdown-item i {
+  width: 16px;
+  margin-right: 8px;
+}
+
+/* Add Button Styles */
+.add-faculty-btn,
+.add-department-btn {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #007bff, #0056b3);
+  border: none;
+  color: white;
+  font-size: 24px;
+  box-shadow: 0 4px 20px rgba(0, 123, 255, 0.3);
+  transition: all 0.3s ease-in-out;
+  z-index: 1000;
+}
+
+.add-faculty-btn:hover,
+.add-department-btn:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 6px 25px rgba(0, 123, 255, 0.4);
+  color: white;
+}
+
+/* Section Header with Add Button */
+.section-header-with-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.section-header-with-actions .section-header {
+  margin-bottom: 0;
+}
+
+.section-header-with-actions .add-btn {
+  background: linear-gradient(135deg, #28a745, #20c997);
+  border: none;
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 25px;
+  font-weight: 500;
+  transition: all 0.3s ease-in-out;
+  box-shadow: 0 2px 10px rgba(40, 167, 69, 0.3);
+}
+
+.section-header-with-actions .add-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(40, 167, 69, 0.4);
+  color: white;
+}
+
+.section-header-with-actions .add-btn i {
+  margin-right: 8px;
+}
+
+/* Enhanced Stats Display */
+.card-stats-enhanced {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.stat-item-enhanced {
+  display: flex;
+  align-items: center;
+  font-size: 0.875rem;
+  color: #6c757d;
+}
+
+.stat-item-enhanced i {
+  margin-right: 6px;
+  color: #007bff;
+}
+
+.stat-item-enhanced.primary {
+  color: #007bff;
+  font-weight: 500;
+}
+
+.stat-item-enhanced.success {
+  color: #28a745;
+  font-weight: 500;
+}
+
+/* Loading States */
+.btn-loading {
+  position: relative;
+  pointer-events: none;
+}
+
+.btn-loading::after {
+  content: "";
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  top: 50%;
+  left: 50%;
+  margin-left: -8px;
+  margin-top: -8px;
+  border: 2px solid transparent;
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Alert Enhancements */
+.alert-enhanced {
+  border: none;
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.alert-enhanced.alert-danger {
+  background: linear-gradient(135deg, #f8d7da, #f5c6cb);
+  color: #721c24;
+}
+
+.alert-enhanced.alert-success {
+  background: linear-gradient(135deg, #d4edda, #c3e6cb);
+  color: #155724;
+}
+
+.alert-enhanced .btn-close {
+  background-size: 16px;
+  opacity: 0.7;
+}
+
+.alert-enhanced .btn-close:hover {
+  opacity: 1;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .add-faculty-btn,
+  .add-department-btn {
+    bottom: 20px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    font-size: 20px;
+  }
+
+  .section-header-with-actions {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .card-actions {
+    position: static;
+    opacity: 1;
+    margin-top: 1rem;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .modal-dialog {
+    margin: 1rem;
+    max-width: calc(100% - 2rem);
+  }
+
+  .modal-header,
+  .modal-body,
+  .modal-footer {
+    padding: 1rem;
+  }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  .modal-content {
+    background-color: #2c3e50;
+    color: #ecf0f1;
+  }
+
+  .modal-header,
+  .modal-footer {
+    background-color: #34495e;
+    border-color: #4a5f7a;
+  }
+
+  .modal .form-control {
+    background-color: #34495e;
+    border-color: #4a5f7a;
+    color: #ecf0f1;
+  }
+
+  .modal .form-control:focus {
+    background-color: #34495e;
+    border-color: #007bff;
+    color: #ecf0f1;
+  }
+
+  .card-actions .dropdown-toggle {
+    background: rgba(44, 62, 80, 0.9);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #bdc3c7;
+  }
+
+  .card-actions .dropdown-menu {
+    background-color: #2c3e50;
+    border-color: #4a5f7a;
+  }
+
+  .card-actions .dropdown-item {
+    color: #ecf0f1;
+  }
+
+  .card-actions .dropdown-item:hover {
+    background-color: #34495e;
+  }
 }

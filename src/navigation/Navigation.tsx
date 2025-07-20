@@ -24,7 +24,7 @@ import EditAccountInstructorspage from '../pages/Admin/account/edit/EditInstruct
 import AdminEditaccountStudentpage from '../pages/Admin/account/edit/EditStudent';
 import AdminStudentpage from '../pages/Admin/account/AccountStudent';
 import CreateAccountStudentspage from '../pages/Admin/account/create/AddStudents';
-
+import Inscrepage from '../pages/Instructor/ins';
 import SubjectDetailsPage from '../pages/SubjectDetails';
 import Home from '../pages/Home';
 import HomeTwo from '../pages/HomeTwo';
@@ -190,6 +190,7 @@ const AppNavigation = () => {
         <Route path="/instructor-lessons/create-new" element={<InsAddlessonspage />} />
         <Route path="/instructor-subjects/create-new" element={<InsAddSubjectspage />} />
         <Route path="/instructor-grading" element={<InsGradingpage />} />
+         <Route path="/ins-creditbank" element={<Inscrepage />} />
          <Route path="/instructor/subject/:subjectId/overview" element={<InstructorSubjectOverviewPage />} />
         </Route>
 

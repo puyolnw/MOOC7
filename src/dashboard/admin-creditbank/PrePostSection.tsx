@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import AddQuestionsforPrePost  from '../../forms/Course/Questions/AddQuestionsforPrePost';
 import styles from './PrePostSection.module.css';
+import Swal from 'sweetalert2'; // เพิ่ม SweetAlert2 สำหรับ confirm dialog
 
 interface Subject {
   subject_id: number;
@@ -44,13 +45,17 @@ interface PrePostSectionProps {
 const CombinedTestCard: React.FC<{
   subject: Subject;
   onQuestionAdd: (questionData: any) => Promise<void>;
+  onQuestionDelete: (questionId: number) => Promise<void>; // ✅ เพิ่ม prop สำหรับลบคำถาม
   onTestCreate: () => Promise<void>;
   loading: boolean;
-}> = ({ subject, onQuestionAdd, onTestCreate, loading }) => {
+  onError: (message: string) => void;
+  onSuccess: (message: string) => void;
+}> = ({ subject, onQuestionAdd, onQuestionDelete, onTestCreate, loading }) => {
   const [expanded, setExpanded] = useState(false);
   const [showQuestionForm, setShowQuestionForm] = useState(false);
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [questionsLoading, setQuestionsLoading] = useState(false);
+  const [deletingQuestionId, setDeletingQuestionId] = useState<number | null>(null); // ✅ เพิ่ม state สำหรับ loading ปุ่มลบ
 
   // ใช้ pre_test เป็นหลัก หรือ post_test ถ้าไม่มี pre_test
   const mainTest = subject.pre_test || subject.preTest || subject.post_test || subject.postTest;
@@ -104,18 +109,50 @@ const CombinedTestCard: React.FC<{
     }
   };
 
-  const handleQuestionAdd = async (questionData: any) => {
+  // ✅ ย้าย handleQuestionAdd ไปใช้ที่ parent component แทน
+  const handleQuestionAddWrapper = async (questionData: any) => {
     try {
-      console.log('Adding question:', questionData);
-      
       await onQuestionAdd(questionData);
-      setShowQuestionForm(false);
-      
-      // Refresh questions list
-      setQuestions([]);
+      // ✅ รีเฟรชคำถามหลังจากเพิ่มสำเร็จ
       await fetchQuestions();
+      setShowQuestionForm(false);
     } catch (error) {
-      console.error('Error adding question:', error);
+      // Error จะถูกจัดการใน parent component แล้ว
+      console.error('Error in question add wrapper:', error);
+    }
+  };
+
+  // ✅ เพิ่มฟังก์ชันสำหรับลบคำถาม
+  const handleQuestionDelete = async (questionId: number, questionTitle: string) => {
+    try {
+      // แสดง confirmation dialog
+      const result = await Swal.fire({
+        title: 'ยืนยันการลบคำถาม',
+        html: `
+          <div class="text-start">
+            <p><strong>คำถาม:</strong> ${questionTitle}</p>
+            <p class="text-danger"><i class="fas fa-exclamation-triangle"></i> การลบคำถามนี้จะไม่สามารถกู้คืนได้</p>
+          </div>
+        `,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'ลบคำถาม',
+        cancelButtonText: 'ยกเลิก',
+        reverseButtons: true
+      });
+
+      if (result.isConfirmed) {
+        setDeletingQuestionId(questionId);
+        await onQuestionDelete(questionId);
+        // รีเฟรชคำถามหลังจากลบสำเร็จ
+        await fetchQuestions();
+      }
+    } catch (error) {
+      console.error('Error in question delete wrapper:', error);
+    } finally {
+      setDeletingQuestionId(null);
     }
   };
 
@@ -164,6 +201,21 @@ const CombinedTestCard: React.FC<{
           </div>
         )}
       </div>
+      {/* ✅ เพิ่มปุ่มลบคำถาม */}
+      <div className={styles.questionActions}>
+        <button
+          className={`${styles.btn} ${styles.btnDanger} ${styles.btnSm}`}
+          onClick={() => handleQuestionDelete(question.question_id, question.question_text)}
+          disabled={deletingQuestionId === question.question_id}
+          title="ลบคำถาม"
+        >
+          {deletingQuestionId === question.question_id ? (
+            <div className={`${styles.spinnerBorder} ${styles.spinnerBorderSm}`}></div>
+          ) : (
+            <i className="fas fa-trash-alt"></i>
+          )}
+        </button>
+      </div>
     </div>
   );
 
@@ -183,10 +235,10 @@ const CombinedTestCard: React.FC<{
                   ยกเลิก
                 </button>
               </div>
-            <AddQuestionsforPrePost
-  onSubmit={handleQuestionAdd}
-  onCancel={handleCancel}
-/>
+              <AddQuestionsforPrePost 
+                onSubmit={handleQuestionAddWrapper}
+                onCancel={handleCancel}
+              />
             </div>
           </div>
         </div>
@@ -197,7 +249,7 @@ const CombinedTestCard: React.FC<{
   return (
     <div className={styles.testCardContainer}>
       <div className={`${styles.testCard} ${styles.combinedTest} ${expanded ? styles.expanded : ''}`}>
-        <div 
+        <div
           className={styles.testCardHeader}
           onClick={() => setExpanded(!expanded)}
         >
@@ -222,10 +274,10 @@ const CombinedTestCard: React.FC<{
           </div>
           <div className={styles.testStatus}>
             <span className={`${styles.statusBadge} ${styles[mainTest?.status || 'empty']}`}>
-              {mainTest ? 
-                (mainTest.status === 'active' ? 'เปิดใช้งาน' : 
-                 mainTest.status === 'inactive' ? 'ปิดใช้งาน' : 'ร่าง') : 
-                'ยังไม่มีแบบทดสอบ'
+              {mainTest ?
+                (mainTest.status === 'active' ? 'เปิดใช้งาน' :
+                 mainTest.status === 'inactive' ? 'ปิดใช้งาน' : 'ร่าง') :
+                                'ยังไม่มีแบบทดสอบ'
               }
             </span>
           </div>
@@ -239,7 +291,7 @@ const CombinedTestCard: React.FC<{
             {mainTest ? (
               <div className={styles.testContentSection}>
                 <div className={styles.testActions}>
-                  <button 
+                  <button
                     className={`${styles.btn} ${styles.btnSuccess} ${styles.btnSm}`}
                     onClick={() => setShowQuestionForm(true)}
                     disabled={loading}
@@ -249,7 +301,7 @@ const CombinedTestCard: React.FC<{
                   </button>
                   
                   {questions.length > 0 && (
-                    <button 
+                    <button
                       className={`${styles.btn} ${styles.btnInfo} ${styles.btnSm}`}
                       onClick={() => fetchQuestions()}
                       disabled={questionsLoading}
@@ -275,7 +327,7 @@ const CombinedTestCard: React.FC<{
                     </div>
                   ) : questions.length > 0 ? (
                     <div className={styles.questionsList}>
-                      {questions.map((question, index) => 
+                      {questions.map((question, index) =>
                         renderQuestionItem(question, index)
                       )}
                     </div>
@@ -283,7 +335,7 @@ const CombinedTestCard: React.FC<{
                     <div className={styles.noQuestions}>
                       <i className="fas fa-question-circle"></i>
                       <p>ยังไม่มีคำถามในแบบทดสอบนี้</p>
-                      <button 
+                      <button
                         className={`${styles.btn} ${styles.btnPrimary} ${styles.btnSm}`}
                         onClick={() => setShowQuestionForm(true)}
                       >
@@ -301,7 +353,7 @@ const CombinedTestCard: React.FC<{
                 </div>
                 <h5>ยังไม่มีแบบทดสอบ</h5>
                 <p>สร้างแบบทดสอบสำหรับรายวิชานี้</p>
-                <button 
+                <button
                   className={`${styles.btn} ${styles.btnPrimary}`}
                   onClick={() => onTestCreate()}
                   disabled={loading}
@@ -345,7 +397,7 @@ const PrePostSection: React.FC<PrePostSectionProps> = ({ subject, onSubjectUpdat
       const testData = {
         title: `แบบทดสอบประจำรายวิชา - ${subject.subject_name}`,
         description: `แบบทดสอบสำหรับรายวิชา ${subject.subject_name}`,
-        type: 'combined', // ใช้ type ใหม่
+        type: 'combined',
         subject_id: subject.subject_id,
         status: 'draft',
         timeLimit: {
@@ -387,10 +439,9 @@ const PrePostSection: React.FC<PrePostSectionProps> = ({ subject, onSubjectUpdat
           status: response.data.quiz.status,
           passing_score_enabled: false,
           passing_score_value: 0,
-                    questions: []
+          questions: []
         };
 
-        // อัปเดต subject ให้มี quiz เดียวกันทั้ง pre_test และ post_test
         const updatedSubject = {
           ...subject,
           pre_test: newQuiz,
@@ -421,12 +472,10 @@ const PrePostSection: React.FC<PrePostSectionProps> = ({ subject, onSubjectUpdat
     console.log('Question data:', questionData);
     
     try {
-      // ใช้ quiz เดียวกัน (pre_test หรือ post_test)
       const mainTest = subject.pre_test || subject.preTest || subject.post_test || subject.postTest;
       
       console.log('Main test:', mainTest);
-
-      // ตรวจสอบว่ามี quiz อยู่แล้วหรือไม่
+      
       if (!mainTest || !mainTest.quiz_id) {
         setError('ไม่พบแบบทดสอบ กรุณาสร้างแบบทดสอบก่อนเพิ่มคำถาม');
         return;
@@ -435,7 +484,21 @@ const PrePostSection: React.FC<PrePostSectionProps> = ({ subject, onSubjectUpdat
       const targetQuizId = mainTest.quiz_id;
       console.log('Target quiz ID:', targetQuizId);
 
-      // ส่งข้อมูลไปยัง API เพื่อเพิ่มคำถาม
+      const quizIds = [];
+      quizIds.push(targetQuizId);
+      
+      if (subject.pre_test && subject.post_test &&
+          subject.pre_test.quiz_id !== subject.post_test.quiz_id) {
+        if (!quizIds.includes(subject.pre_test.quiz_id)) {
+          quizIds.push(subject.pre_test.quiz_id);
+        }
+        if (!quizIds.includes(subject.post_test.quiz_id)) {
+          quizIds.push(subject.post_test.quiz_id);
+        }
+      }
+
+      console.log('Quiz IDs to add question:', quizIds);
+
       const formattedData = {
         title: questionData.title || questionData.question_text || '',
         description: questionData.description || '',
@@ -450,7 +513,7 @@ const PrePostSection: React.FC<PrePostSectionProps> = ({ subject, onSubjectUpdat
         shuffleChoices: questionData.shuffleChoices || false,
         showExplanation: questionData.showExplanation || false,
         autoGrade: questionData.autoGrade !== false,
-        quizzes: [targetQuizId]
+        quizzes: quizIds
       };
 
       console.log('Formatted data for API:', formattedData);
@@ -472,8 +535,13 @@ const PrePostSection: React.FC<PrePostSectionProps> = ({ subject, onSubjectUpdat
       console.log('Add question API response:', response.data);
       
       if (response.data?.success) {
-        showNotification('เพิ่มคำถามสำเร็จ', 'success');
-        console.log('Question added successfully!');
+        const quizCount = quizIds.length;
+        const message = quizCount > 1
+          ? `เพิ่มคำถามสำเร็จ (เพิ่มเข้า ${quizCount} แบบทดสอบ)`
+          : 'เพิ่มคำถามสำเร็จ';
+        
+        showNotification(message, 'success');
+        console.log(`Question added successfully to ${quizCount} quiz(es)!`);
         setError('');
       } else {
         throw new Error(response.data?.message || 'ไม่สามารถเพิ่มคำถามได้');
@@ -489,8 +557,44 @@ const PrePostSection: React.FC<PrePostSectionProps> = ({ subject, onSubjectUpdat
     }
   };
 
+  // ✅ เพิ่มฟังก์ชันสำหรับลบคำถาม
+  const handleQuestionDelete = async (questionId: number) => {
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL;
+      const token = localStorage.getItem('token');
+      
+      console.log('Deleting question ID:', questionId);
+      
+      const response = await axios.delete(
+        `${apiUrl}/api/courses/questions/${questionId}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+      
+      console.log('Delete question API response:', response.data);
+      
+      if (response.data?.success) {
+        showNotification(response.data.message || 'ลบคำถามสำเร็จ', 'success');
+        console.log('Question deleted successfully!');
+        setError('');
+      } else {
+        throw new Error(response.data?.message || 'ไม่สามารถลบคำถามได้');
+      }
+    } catch (error: any) {
+      console.error('Error deleting question:', error);
+      console.error('Error response:', error.response?.data);
+      
+      const errorMessage = error.response?.data?.message || 'ไม่สามารถลบคำถามได้';
+      setError(errorMessage);
+      showNotification(errorMessage, 'error');
+      throw error;
+    }
+  };
+
   const showNotification = (message: string, type: 'success' | 'error') => {
-    // ลบ notification เก่าก่อน (ถ้ามี)
     const existingNotification = document.querySelector('.notification');
     if (existingNotification) {
       document.body.removeChild(existingNotification);
@@ -505,7 +609,6 @@ const PrePostSection: React.FC<PrePostSectionProps> = ({ subject, onSubjectUpdat
       </div>
     `;
     
-    // เพิ่ม inline styles
     notification.style.cssText = `
       position: fixed;
       top: 20px;
@@ -517,8 +620,8 @@ const PrePostSection: React.FC<PrePostSectionProps> = ({ subject, onSubjectUpdat
       box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
       transform: translateX(400px);
       transition: all 0.3s ease;
-      ${type === 'success' ? 
-        'background: #c6f6d5; color: #22543d; border-left: 4px solid #38a169;' : 
+      ${type === 'success' ?
+        'background: #c6f6d5; color: #22543d; border-left: 4px solid #38a169;' :
         'background: #fed7d7; color: #742a2a; border-left: 4px solid #e53e3e;'
       }
     `;
@@ -548,13 +651,22 @@ const PrePostSection: React.FC<PrePostSectionProps> = ({ subject, onSubjectUpdat
     }, 3000);
   };
 
+  const handleError = (message: string) => {
+    setError(message);
+  };
+
+  const handleSuccess = (message: string) => {
+    showNotification(message, 'success');
+    setError('');
+  };
+
   return (
     <div className={styles.prepostSection}>
       {error && (
         <div className={`${styles.alert} ${styles.alertDanger}`}>
           <i className="fas fa-exclamation-circle"></i>
           <span>{error}</span>
-          <button 
+          <button
             className={`${styles.btn} ${styles.btnSm} ${styles.btnOutlineLight} ms-2`}
             onClick={() => setError('')}
           >
@@ -562,12 +674,15 @@ const PrePostSection: React.FC<PrePostSectionProps> = ({ subject, onSubjectUpdat
           </button>
         </div>
       )}
-
+      
       <CombinedTestCard
         subject={subject}
-        onQuestionAdd={handleQuestionAdd}
+                onQuestionAdd={handleQuestionAdd}
+        onQuestionDelete={handleQuestionDelete} // ✅ ส่ง prop สำหรับลบคำถาม
         onTestCreate={createTestForSubject}
         loading={loading}
+        onError={handleError}
+        onSuccess={handleSuccess}
       />
     </div>
   );

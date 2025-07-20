@@ -1,19 +1,19 @@
 import DashboardBreadcrumb from '../../../components/common/breadcrumb/DashboardBreadcrumb'
 import FooterOne from '../../../layouts/footers/FooterOne'
 import HeaderOne from '../../../layouts/headers/HeaderOne'
-import InstSubjectsArea from './InstSubjectsArea'
+import InsCreditbankArea from '../InsCreditbankArea'
 
-const InstSubjects = () => {
+const Inscredt = () => {
    return (
       <>
          <HeaderOne />
          <main className="main-area fix">
             <DashboardBreadcrumb />
-            <InstSubjectsArea />
+            <InsCreditbankArea />
          </main>
          <FooterOne />
       </>
    )
 }
 
-export default InstSubjects
+export default Inscredt

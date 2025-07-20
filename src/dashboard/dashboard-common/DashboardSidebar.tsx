@@ -74,6 +74,21 @@ const DashboardSidebar = () => {
                icon: "fas fa-home",
                title: "แดชบอร์ด",
             },
+             {
+            id: 3,
+            link: "/ins-creditbank",
+            icon: "fas fa-graduation-cap",
+            title: "คลังหลักสูตร",
+            hasSubmenu: true,
+            submenu: [
+               {
+                  id: 4,
+                  link: "/ins-creditbank",
+                  title: "เรียกดูหลักสูตร",
+               },
+
+            ],
+         },
          ],
       },
 

@@ -2,10 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 
-import DashboardSidebar from "../dashboard-common/AdminSidebar";
-import DashboardBanner from "../dashboard-common/AdminBanner";
-import AdminSubjectArea from "./AdminSubjectArea";
-import "./mega.css";
+import DashboardBanner from "../dashboard-common/DashboardBanner";
+import DashboardSidebar from "../dashboard-common/DashboardSidebar";
+import AdminSubjectArea from "../admin-creditbank/AdminSubjectArea";
+import "../admin-creditbank/mega.css";
 
 // เพิ่ม interface สำหรับ Faculty ใหม่
 interface FacultyWithStats {
@@ -1241,7 +1241,7 @@ const SimplePagination: React.FC<PaginationProps> = ({ currentPage, totalPages, 
 };
 
 // Main AdminCreditbankArea component
-const AdminCreditbankArea: React.FC = () => {
+const InsCreditbankArea: React.FC = () => {
   const apiURL = import.meta.env.VITE_API_URL;
   const navigate = useNavigate();
   const location = useLocation();
@@ -1282,7 +1282,7 @@ const AdminCreditbankArea: React.FC = () => {
 
   const handleAddCourse = () => {
     if (selectedDepartment) {
-      navigate(`/admin-creditbank/create-new?department_id=${selectedDepartment.department_id}`);
+      navigate(`/ins-creditbank/create-new?department_id=${selectedDepartment.department_id}`);
     } else {
       alert('เกิดข้อผิดพลาด: ไม่พบข้อมูลสาขาวิชา');
     }
@@ -1760,10 +1760,12 @@ const AdminCreditbankArea: React.FC = () => {
   const handleDeleteDepartment = async (department: Department) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.delete(
-        `${apiURL}/api/departments/${department.department_id}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+     const response = await axios.delete(
+  `${apiURL}/api/departments/${department.department_id}`,
+  { 
+    headers: { Authorization: `Bearer ${token}` } // ✅ ถูกต้อง
+  }
+);
 
       if (response.data.success) {
         setDepartments(prev => prev.filter(d => d.department_id !== department.department_id));
@@ -1789,9 +1791,10 @@ const AdminCreditbankArea: React.FC = () => {
         alert('ลบสาขาสำเร็จ');
       }
     } catch (error) {
-      console.error('Error deleting department:', error);
-      alert('เกิดข้อผิดพลาดในการลบสาขา');
-    }
+  console.error('Error deleting department:', error);
+  console.error('Response data:', ); // ดู error message จาก API
+
+}
   };
 
   // Navigation handlers
@@ -2295,11 +2298,11 @@ const EditFacultyModal: React.FC<{
       const apiURL = import.meta.env.VITE_API_URL;
       const token = localStorage.getItem('token');
       
-      const response = await axios.put(
-        `${apiURL}/api/departments/faculties/${encodeURIComponent(faculty.name)}`,
-        { name: facultyName.trim() },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+     const response = await axios.put(
+  `${apiURL}/api/departments/faculties/${encodeURIComponent(faculty.name)}`,
+  { newName: facultyName.trim() }, // ✅ ถูกต้อง
+  { headers: { Authorization: `Bearer ${token}` } }
+);
 
       if (response.data.success) {
         const updatedFaculty: FacultyWithStats = {
@@ -2394,15 +2397,15 @@ const AddDepartmentModal: React.FC<{
       const apiURL = import.meta.env.VITE_API_URL;
       const token = localStorage.getItem('token');
       
-      const response = await axios.post(
-        `${apiURL}/api/departments`,
-        { 
-          department_name: departmentName.trim(),
-          faculty: faculty,
-          description: description.trim() || null
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+       const response = await axios.post(
+      `${apiURL}/api/departments`,
+      { 
+        department_name: departmentName.trim(), // ✅ ถูกต้อง
+        faculty: faculty,                       // ✅ ถูกต้อง
+        description: description.trim() || null // ✅ ถูกต้อง
+      },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
 
       if (response.data.success) {
         const newDepartment: Department = {
@@ -2633,7 +2636,7 @@ const EditDepartmentModal: React.FC<{
   );
 };
 
-export default AdminCreditbankArea;
+export default InsCreditbankArea;
 
 
 
