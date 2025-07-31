@@ -1,4 +1,8 @@
 import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+
+// API URL configuration
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3301";
 
 
 interface DataType {
@@ -41,6 +45,41 @@ const instructor_data: DataType[] = [
 ];
 
 const Instructor = () => {
+   const [instructorImages, setInstructorImages] = useState<{[key: number]: string}>({});
+
+   useEffect(() => {
+     fetchInstructorImages();
+   }, []);
+
+   const fetchInstructorImages = async () => {
+     try {
+       const response = await fetch(`${API_URL}/api/img/page-config?page=instructor`);
+       if (response.ok) {
+         const result = await response.json();
+         if (result.success) {
+           const config = result.page_config;
+           const images: {[key: number]: string} = {};
+           
+           // Map instructor images from backend
+           for (let i = 1; i <= 4; i++) {
+             const fileIdKey = `instructor${i}_image_file_id`;
+             if (config[fileIdKey]) {
+               images[i] = `${API_URL}/api/img/display/${config[fileIdKey]}`;
+             }
+           }
+           setInstructorImages(images);
+         }
+       }
+     } catch (error) {
+       console.error('Error fetching instructor images:', error);
+       // ใช้รูปเดิมถ้าดึงไม่ได้
+     }
+   };
+
+   const getInstructorImage = (id: number, defaultThumb: string) => {
+     return instructorImages[id] || defaultThumb;
+   };
+
    return (
       <section className="instructor__area">
          <div className="container">
@@ -62,8 +101,17 @@ const Instructor = () => {
                            <div key={item.id} className="col-sm-6">
                               <div className="instructor__item">
                                  <div className="instructor__thumb">
-                                    <Link to="#"><img src={item.thumb} alt="img" /></Link>
-                                 </div>
+                                 <Link to="#">
+                                      <img 
+                                         src={getInstructorImage(item.id, item.thumb)} 
+                                         alt="img"
+                                         onError={(e) => {
+                                           const target = e.target as HTMLImageElement;
+                                           target.src = item.thumb;
+                                         }}
+                                       />
+                                     </Link>
+                                  </div>
                                  <div className="instructor__content">
                                     <h2 className="title"><Link to="
                                     #">{item.title}</Link></h2>

@@ -112,6 +112,21 @@ const sidebar_data: DataType[] = [
          },
       ],
    },
+      {
+      id: 3,
+      title: "ตั้งค่า",
+      class_name: "mt-40",
+      sidebar_details: [
+         {
+            id: 7,
+            link: "/admin-display",
+            icon: "fas fa-display",
+            title: "การแสดงผล",
+         },
+      
+       
+      ],
+   },
 ];
 
 const AdminSidebar = () => {

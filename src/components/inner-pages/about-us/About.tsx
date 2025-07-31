@@ -1,14 +1,71 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import SvgAnimation from "../../../hooks/SvgAnimation";
 import { Link } from "react-router-dom";
 import VideoPopup from "../../../modals/VideoPopup";
 import BtnArrow from "../../../svg/BtnArrow";
+
+// API URL configuration
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3301";
+
+interface AboutConfig {
+   title?: string;
+   subtitle?: string;
+   description?: string;
+   student_count?: string;
+   student_text?: string;
+   main_image_file_id?: string;
+   student_group_file_id?: string;
+}
 
 
 const About = () => {
 
    const [isVideoOpen, setIsVideoOpen] = useState(false);
    const svgIconRef = SvgAnimation('/assets/img/others/inner_about_shape.svg');
+   
+   const [aboutConfig, setAboutConfig] = useState<AboutConfig>({
+      title: 'คลังหน่วยกิต<span>หลักสูตรออนไลน์</span><br />มหาวิทยาลัยราชภัฏมหาสารคาม',
+      subtitle: 'เกี่ยวกับระบบ',
+      description: 'ระบบคลังหน่วยกิตนี้ พัฒนาขึ้นโดยอาจารย์และบุคลากรภายในมหาวิทยาลัยราชภัฏมหาสารคาม เพื่อให้นักศึกษาสามารถเข้าถึงข้อมูลหลักสูตร วิชาที่เปิดสอน และพัฒนาการเรียนรู้อย่างเป็นระบบและยืดหยุ่นตามความถนัดของแต่ละคน',
+      student_count: '36K+',
+      student_text: 'Enrolled Students'
+   });
+
+   useEffect(() => {
+      fetchAboutConfig();
+   }, []);
+
+   const fetchAboutConfig = async () => {
+      try {
+         const response = await fetch(`${API_URL}/api/img/page-config?page=about`);
+         if (response.ok) {
+            const result = await response.json();
+            if (result.success) {
+               const config = result.page_config;
+               setAboutConfig(prev => ({
+                  ...prev,
+                  title: config.title || prev.title,
+                  subtitle: config.subtitle || prev.subtitle,
+                  description: config.description || prev.description,
+                  student_count: config.student_count || prev.student_count,
+                  student_text: config.student_text || prev.student_text,
+                  main_image_file_id: config.main_image_file_id,
+                  student_group_file_id: config.student_group_file_id
+               }));
+            }
+         }
+      } catch (error) {
+         console.error('Error fetching about config:', error);
+         // ใช้ข้อมูล default ถ้าดึงไม่ได้
+      }
+   };
+
+   const getImageUrl = (fileId?: string, fallbackPath?: string) => {
+      if (fileId) {
+         return `${API_URL}/api/img/display/${fileId}`;
+      }
+      return fallbackPath || '/assets/img/others/inner_about_img.png';
+   };
 
    return (
       <>
@@ -17,7 +74,14 @@ const About = () => {
                <div className="row align-items-center justify-content-center">
                   <div className="col-lg-6 col-md-9">
                      <div className="about__images-three tg-svg" ref={svgIconRef}>
-                        <img src="/assets/img/others/inner_about_img.png" alt="มหาวิทยาลัยราชภัฏมหาสารคาม" />
+                     <img 
+                            src={getImageUrl(aboutConfig.main_image_file_id, '/assets/img/others/inner_about_img.png')} 
+                            alt="มหาวิทยาลัยราชภัฏมหาสารคาม"
+                            onError={(e) => {
+                               const target = e.target as HTMLImageElement;
+                               target.src = '/assets/img/others/inner_about_img.png';
+                            }}
+                         />
                         <span className="svg-icon" id="about-svg"></span>
                         <a onClick={() => setIsVideoOpen(true)} style={{ cursor: "pointer" }} className="popup-video">
                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="28" viewBox="0 0 22 28" fill="none">
@@ -29,20 +93,12 @@ const About = () => {
 
                   <div className="col-lg-6">
                      <div className="about__content-three">
-                        <div className="section__title mb-10">
-                           <span className="sub-title">เกี่ยวกับเรา</span>
-                           <h2 className="title">
-                           มหาวิทยาลัยราชภัฏมหาสารคาม
-                              <span className="position-relative title-shape-wrap">
-                                 <svg x="0px" y="0px" preserveAspectRatio="none" viewBox="0 0 209 59" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M4.74438 7.70565C69.7006 -1.18799 136.097 -2.38304 203.934 4.1205C207.178 4.48495 209.422 7.14626 208.933 10.0534C206.793 23.6481 205.415 36.5704 204.801 48.8204C204.756 51.3291 202.246 53.5582 199.213 53.7955C136.093 59.7623 74.1922 60.5985 13.5091 56.3043C10.5653 56.0924 7.84371 53.7277 7.42158 51.0325C5.20725 38.2627 2.76333 25.6511 0.0898448 13.1978C-0.465589 10.5873 1.61173 8.1379 4.73327 7.70565" fill="currentcolor" />
-                                 </svg>
-                                 พัฒนาการศึกษา
-                              </span>
-                              เพื่อท้องถิ่นสังคมไทย
-                           </h2>
-                        </div>
-                        <p className="desc">มหาวิทยาลัยราชภัฏมหาสารคาม เป็นสถาบันอุดมศึกษาเพื่อการพัฒนาท้องถิ่น มุ่งเน้นการผลิตบัณฑิตที่มีคุณภาพ มีความรู้คู่คุณธรรม สำนึกในความเป็นไทย มีความรักและผูกพันต่อท้องถิ่น อีกทั้งส่งเสริมการเรียนรู้ตลอดชีวิตในชุมชน เพื่อช่วยให้คนในท้องถิ่นรู้เท่าทันการเปลี่ยนแปลง</p>
+                     <div className="section__title mb-10">
+                     <span className="sub-title">{aboutConfig.subtitle}</span>
+                     <h2 className="title" dangerouslySetInnerHTML={{ __html: aboutConfig.title || '' }}>
+                     </h2>
+                     </div>
+                     <p className="desc">{aboutConfig.description}</p>
                         <ul className="about__info-list list-wrap">
                            <li className="about__info-list-item">
                               <i className="flaticon-angle-right"></i>

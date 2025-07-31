@@ -11,7 +11,7 @@ import AdminAddQuizzespage from '../pages/Admin/create/AddQuizzes';
 import AdminAddlessonspage from '../pages/Admin/create/AddLessons';
 import AdminAddSubjectspage from '../pages/Admin/create/AddSubjects';
 import AdminAddCoursepage from '../pages/Admin/create/AddCoures';
-
+import Admindisplaypage from '../pages/Admin/AdminDisplay';
 import AdminEditCorusepage from '../pages/Admin/edit/AdminEditCoruse'
 import AdminEditlessonspage from '../pages/Admin/edit/AdminEditLesson';
 import AdminEditQuizzespage from '../pages/Admin/edit/AdminEditQuiz';
@@ -92,6 +92,7 @@ import InsGradingpage from '../pages/Instructor/InsSpecialQuiz';
 import InstructorSubjectOverviewPage from '../pages/InstructorSubjectOverview';
 
 import Personelpage from '../pages/Personel';
+import ManagePics from '../pages/ManagePics';
 {/* ลองเพิ่ม */}
 // import AddQuestions from '../forms/Course/AddQuestions';
 
@@ -164,7 +165,9 @@ const AppNavigation = () => {
         <Route path="/admin-account/instructors/edit-instructor/:id" element={< EditAccountInstructorspage />} />
         <Route path="/admin-account/students/edit/:id" element={< AdminEditaccountStudentpage />} />
         <Route path="/admin-account/students/create-new" element={< CreateAccountStudentspage />} />
-        
+        <Route path="/admin/manage-pics" element={<ManagePics />} />
+         <Route path="/admin-display" element={<Admindisplaypage />} />
+
 
         </Route>
 

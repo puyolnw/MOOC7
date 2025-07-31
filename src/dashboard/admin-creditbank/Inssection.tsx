@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import InstructorSelector from '../../components/InstructorSelector';
 import '../../components/InstructorSelector.css';
@@ -48,9 +48,7 @@ const AddInstructorModal: React.FC<{
     }
   }, [show]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const handleSubmit = async () => {
     if (selectedInstructors.length === 0) {
       setError('กรุณาเลือกอาจารย์ผู้สอนอย่างน้อย 1 คน');
       return;
@@ -156,48 +154,19 @@ const AddInstructorModal: React.FC<{
               onClick={handleClose}
             ></button>
           </div>
-          <form onSubmit={handleSubmit}>
-            <div className="modal-body p-4">
-              {error && (
-                <div className="alert alert-danger d-flex align-items-center mb-4" role="alert">
-                  <i className="fas fa-exclamation-triangle me-2"></i>
-                  <div>{error}</div>
-                </div>
-              )}
-              
-              <InstructorSelector
-                selectedInstructors={selectedInstructors}
-                onInstructorsChange={setSelectedInstructors}
-                label="เลือกอาจารย์ผู้สอน"
-                placeholder="ค้นหาอาจารย์ด้วยชื่อ ตำแหน่ง หรือสาขาวิชา..."
-                error={error}
-              />
-              
-              <div className="alert alert-info mt-4 d-flex align-items-start">
-                <i className="fas fa-info-circle me-2 mt-1"></i>
-                <div>
-                  <strong>คำแนะนำ:</strong> 
-                  <ul className="mb-0 mt-2">
-                    <li>คุณสามารถเลือกอาจารย์ผู้สอนได้หลายคน</li>
-                    <li>ใช้ช่องค้นหาเพื่อหาอาจารย์ที่ต้องการ</li>
-                    <li>สามารถค้นหาได้ด้วยชื่อ ตำแหน่ง หรือสาขาวิชา</li>
-                  </ul>
-                </div>
+          <div className="modal-body p-4">
+            {error && (
+              <div className="alert alert-danger d-flex align-items-center mb-4" role="alert">
+                <i className="fas fa-exclamation-triangle me-2"></i>
+                <div>{error}</div>
               </div>
-            </div>
-            <div className="modal-footer bg-light">
+            )}
+            
+            <div className="mb-4">
               <button
                 type="button"
-                className="btn btn-secondary d-flex align-items-center"
-                onClick={handleClose}
-                disabled={isSubmitting}
-              >
-                <i className="fas fa-times me-2"></i>
-                ยกเลิก
-              </button>
-              <button
-                type="submit"
-                className="btn btn-primary d-flex align-items-center"
+                className="btn btn-primary d-flex align-items-center w-100"
+                onClick={handleSubmit}
                 disabled={isSubmitting || selectedInstructors.length === 0}
               >
                 {isSubmitting ? (
@@ -213,7 +182,38 @@ const AddInstructorModal: React.FC<{
                 )}
               </button>
             </div>
-          </form>
+            
+            <InstructorSelector
+              selectedInstructors={selectedInstructors}
+              onInstructorsChange={setSelectedInstructors}
+              label="เลือกอาจารย์ผู้สอน"
+              placeholder="ค้นหาอาจารย์ด้วยชื่อ ตำแหน่ง หรือสาขาวิชา..."
+              error={error}
+            />
+            
+            <div className="alert alert-info mt-4 d-flex align-items-start">
+              <i className="fas fa-info-circle me-2 mt-1"></i>
+              <div>
+                <strong>คำแนะนำ:</strong> 
+                <ul className="mb-0 mt-2">
+                  <li>คุณสามารถเลือกอาจารย์ผู้สอนได้หลายคน</li>
+                  <li>ใช้ช่องค้นหาเพื่อหาอาจารย์ที่ต้องการ</li>
+                  <li>สามารถค้นหาได้ด้วยชื่อ ตำแหน่ง หรือสาขาวิชา</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          <div className="modal-footer bg-light">
+            <button
+              type="button"
+              className="btn btn-secondary d-flex align-items-center"
+              onClick={handleClose}
+              disabled={isSubmitting}
+            >
+              <i className="fas fa-times me-2"></i>
+              ยกเลิก
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -296,7 +296,7 @@ const InsSection: React.FC<InsSectionProps> = ({ subject, onSubjectUpdate }) => 
     notification.className = `notification ${type}`;
     notification.innerHTML = `
       <div class="notification-content">
-        <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
+        <i className="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
         <span>${message}</span>
       </div>
     `;
@@ -369,7 +369,6 @@ const InsSection: React.FC<InsSectionProps> = ({ subject, onSubjectUpdate }) => 
           <div className="header-content">
             <div className="header-text">
               <h2 className="panel-title">
-  
                 อาจารย์ผู้สอน
               </h2>
               <p className="panel-subtitle">
@@ -394,45 +393,33 @@ const InsSection: React.FC<InsSectionProps> = ({ subject, onSubjectUpdate }) => 
               <i className="fas fa-chalkboard-teacher"></i>
             </div>
             <h3>ยังไม่มีอาจารย์ผู้สอน</h3>
-                        <p>ยังไม่มีอาจารย์ที่ได้รับมอบหมายให้สอนในรายวิชานี้</p>
-            <button 
-              className="add-first-instructor-btn"
-              onClick={handleAddInstructor}
-              type="button"
-            >
-              <i className="fas fa-plus"></i>
-              <span>เพิ่มอาจารย์ผู้สอนคนแรก</span>
-            </button>
+            <p>ยังไม่มีอาจารย์ที่ได้รับมอบหมายให้สอนในรายวิชานี้</p>
           </div>
         ) : (
           <div className="instructors-grid">
             {currentSubject.instructors.map((instructor) => (
               <div key={instructor.instructor_id} className="instructor-card">
                 <div className="instructor-card-header">
-  <div className="instructor-main-info">
-    {renderInstructorAvatar(instructor)}
-    <div className="instructor-basic-info">
-      <h4 className="instructor-name">{instructor.name}</h4>
-      <p className="instructor-position">ตำแหน่ง : {instructor.position}</p>
-    </div>
-  </div>
-  <button 
-    className="delete-btn"
-    onClick={() => handleDeleteInstructor(instructor.instructor_id)}
-    title="ลบอาจารย์ผู้สอน"
-  >
-    <i className="fas fa-times"></i>
-  </button>
-</div>
-
-<div className="instructor-info">
-
-  {instructor.bio && (
-    <p className="instructor-bio">{instructor.bio}</p>
-  )}
-</div>
-
-                
+                  <div className="instructor-main-info">
+                    {renderInstructorAvatar(instructor)}
+                    <div className="instructor-basic-info">
+                      <h4 className="instructor-name">{instructor.name}</h4>
+                      <p className="instructor-position">ตำแหน่ง : {instructor.position}</p>
+                    </div>
+                  </div>
+                  <button 
+                    className="delete-btn"
+                    onClick={() => handleDeleteInstructor(instructor.instructor_id)}
+                    title="ลบอาจารย์ผู้สอน"
+                  >
+                    <i className="fas fa-times"></i>
+                  </button>
+                </div>
+                <div className="instructor-info">
+                  {instructor.bio && (
+                    <p className="instructor-bio">{instructor.bio}</p>
+                  )}
+                </div>
               </div>
             ))}
           </div>
@@ -461,10 +448,13 @@ const InsSection: React.FC<InsSectionProps> = ({ subject, onSubjectUpdate }) => 
           padding: 2rem;
           color: #2d3748;
           border-bottom: 1px solid #e2e8f0;
+          position: sticky;
+          top: 0;
+          z-index: 10;
         }
 
         .header-content {
-
+          display: flex;
           justify-content: space-between;
           align-items: center;
           gap: 2rem;
@@ -505,8 +495,8 @@ const InsSection: React.FC<InsSectionProps> = ({ subject, onSubjectUpdate }) => 
         }
 
         .add-instructor-btn {
-          background: #667eea;
-          border: 2px solid #667eea;
+          background: #69b168ff;
+          border: 2px solid #7dcf8bff;
           color: white;
           padding: 0.75rem 1.5rem;
           border-radius: 8px;
@@ -559,27 +549,6 @@ const InsSection: React.FC<InsSectionProps> = ({ subject, onSubjectUpdate }) => 
           color: #6c757d;
         }
 
-        .add-first-instructor-btn {
-          background: #667eea;
-          border: none;
-          color: white;
-          padding: 1rem 2rem;
-          border-radius: 8px;
-          font-weight: 600;
-          display: inline-flex;
-          align-items: center;
-          gap: 0.5rem;
-          transition: all 0.3s ease;
-          cursor: pointer;
-          font-size: 1rem;
-        }
-
-        .add-first-instructor-btn:hover {
-          background: #5a67d8;
-          transform: translateY(-2px);
-          box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
-        }
-
         /* Instructors Grid */
         .instructors-grid {
           padding: 2rem;
@@ -604,12 +573,12 @@ const InsSection: React.FC<InsSectionProps> = ({ subject, onSubjectUpdate }) => 
           border-color: #667eea;
         }
 
-       .instructor-card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 1rem;
-}
+        .instructor-card-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          margin-bottom: 1rem;
+        }
 
         .instructor-avatar-wrapper {
           position: relative;
@@ -650,12 +619,13 @@ const InsSection: React.FC<InsSectionProps> = ({ subject, onSubjectUpdate }) => 
           border-radius: 50%;
           padding: 2px;
         }
-          .instructor-main-info {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  flex: 1;
-}
+
+        .instructor-main-info {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+          flex: 1;
+        }
 
         .status-dot {
           width: 16px;
@@ -693,71 +663,44 @@ const InsSection: React.FC<InsSectionProps> = ({ subject, onSubjectUpdate }) => 
           box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
         }
 
+        .instructor-basic-info {
+          flex: 1;
+        }
 
-.instructor-main-info {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  flex: 1;
-}
+        .instructor-basic-info .instructor-name {
+          font-size: 1.25rem;
+          font-weight: 700;
+          margin: 0 0 0.25rem 0;
+          color: #2d3748;
+          line-height: 1.3;
+        }
 
-.instructor-basic-info {
-  flex: 1;
-}
+        .instructor-basic-info .instructor-position {
+          font-size: 1rem;
+          font-weight: 500;
+          color: #667eea;
+          margin: 0;
+        }
 
-.instructor-basic-info .instructor-name {
-  font-size: 1.25rem;
-  font-weight: 700;
-  margin: 0 0 0.25rem 0;
-  color: #2d3748;
-  line-height: 1.3;
-}
+        /* Responsive สำหรับมือถือ */
+        @media (max-width: 576px) {
+          .instructor-main-info {
+            gap: 0.75rem;
+          }
+          
+          .instructor-basic-info .instructor-name {
+            font-size: 1.125rem;
+          }
+          
+          .instructor-basic-info .instructor-position {
+            font-size: 0.875rem;
+          }
+        }
 
-.instructor-basic-info .instructor-position {
-  font-size: 1rem;
-  font-weight: 500;
-  color: #667eea;
-  margin: 0;
-}
+        .instructor-info {
+          text-align: left;
+        }
 
-/* Responsive สำหรับมือถือ */
-@media (max-width: 576px) {
-  .instructor-main-info {
-    gap: 0.75rem;
-  }
-  
-  .instructor-basic-info .instructor-name {
-    font-size: 1.125rem;
-  }
-  
-  .instructor-basic-info .instructor-position {
-    font-size: 0.875rem;
-  }
-}
-
-
-.instructor-basic-info {
-  flex: 1;
-}
-
-.instructor-basic-info .instructor-name {
-  font-size: 1.25rem;
-  font-weight: 700;
-  margin: 0 0 0.25rem 0;
-  color: #2d3748;
-  line-height: 1.3;
-}
-
-.instructor-basic-info .instructor-position {
-  font-size: 1rem;
-  font-weight: 500;
-  color: #667eea;
-  margin: 0;
-}
-
-.instructor-info {
-  text-align: left;
-}
         .instructor-department {
           font-size: 0.875rem;
           color: #6c757d;
@@ -914,10 +857,8 @@ const InsSection: React.FC<InsSectionProps> = ({ subject, onSubjectUpdate }) => 
           100% { transform: rotate(360deg); }
         }
       `}</style>
-
     </>
   );
 };
 
 export default InsSection;
-

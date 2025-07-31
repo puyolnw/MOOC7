@@ -24,6 +24,17 @@ interface Student {
   department_id: number;
   education_level: string;
   department_name?: string;
+  academic_year?: number;
+  school_name?: string;
+  study_program?: string;
+  grade_level?: string;
+  created_at: string;
+  // Quiz/Test Results
+  total_quizzes_taken?: number;
+  average_score?: number;
+  completed_courses?: number;
+  enrolled_courses?: number;
+  progress_percentage?: number;
 }
 
 interface PaginationProps {
@@ -110,11 +121,18 @@ const AccountStudentArea: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [departmentFilter, setDepartmentFilter] = useState('all');
+  const [schoolFilter, setSchoolFilter] = useState('all');
+  const [yearFilter, setYearFilter] = useState('all');
+  const [gradeFilter, setGradeFilter] = useState('all');
+  const [performanceFilter, setPerformanceFilter] = useState('all');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
+  const [schools, setSchools] = useState<string[]>([]);
+  const [academicYears, setAcademicYears] = useState<number[]>([]);
+  const [showDetails, setShowDetails] = useState<number | null>(null);
 
   // ดึงข้อมูลนักศึกษาและแผนก
   useEffect(() => {
@@ -159,6 +177,14 @@ const AccountStudentArea: React.FC = () => {
           setStudents(updatedStudents);
           setFilteredStudents(updatedStudents);
           setDepartments(departmentResponse.data.departments || []);
+          
+          // สร้างรายการโรงเรียนและปีการศึกษา
+          const uniqueSchools = [...new Set(updatedStudents.map((s: Student) => s.school_name).filter(Boolean))] as string[];
+          const uniqueYears = [...new Set(updatedStudents.map((s: Student) => s.academic_year).filter(Boolean))] as number[];
+          uniqueYears.sort((a, b) => (b as number) - (a as number));
+          
+          setSchools(uniqueSchools);
+          setAcademicYears(uniqueYears);
           setTotalPages(Math.ceil(updatedStudents.length / itemsPerPage));
         } else {
           setError('ไม่สามารถดึงข้อมูลนักศึกษาได้');
@@ -188,7 +214,8 @@ const AccountStudentArea: React.FC = () => {
           student.last_name.toLowerCase().includes(searchLower) ||
           student.email.toLowerCase().includes(searchLower) ||
           student.student_code.toLowerCase().includes(searchLower) ||
-          (student.department_name || '').toLowerCase().includes(searchLower)
+          (student.department_name || '').toLowerCase().includes(searchLower) ||
+          (student.school_name || '').toLowerCase().includes(searchLower)
       );
     }
 
@@ -202,12 +229,41 @@ const AccountStudentArea: React.FC = () => {
       results = results.filter(student => String(student.department_id) === departmentFilter);
     }
 
+    // กรองตามโรงเรียน
+    if (schoolFilter !== 'all') {
+      results = results.filter(student => student.school_name === schoolFilter);
+    }
+
+    // กรองตามปีการศึกษา
+    if (yearFilter !== 'all') {
+      results = results.filter(student => String(student.academic_year) === yearFilter);
+    }
+
+    // กรองตามระดับชั้น
+    if (gradeFilter !== 'all') {
+      results = results.filter(student => student.grade_level === gradeFilter);
+    }
+
+    // กรองตามผลการเรียน
+    if (performanceFilter !== 'all') {
+      results = results.filter(student => {
+        const avgScore = student.average_score || 0;
+        switch (performanceFilter) {
+          case 'excellent': return avgScore >= 80;
+          case 'good': return avgScore >= 70 && avgScore < 80;
+          case 'fair': return avgScore >= 60 && avgScore < 70;
+          case 'poor': return avgScore < 60;
+          default: return true;
+        }
+      });
+    }
+
     setFilteredStudents(results);
     setTotalPages(Math.ceil(results.length / itemsPerPage));
     if (currentPage !== 1) {
       setCurrentPage(1);
     }
-  }, [searchTerm, statusFilter, departmentFilter, students, itemsPerPage]);
+  }, [searchTerm, statusFilter, departmentFilter, schoolFilter, yearFilter, gradeFilter, performanceFilter, students, itemsPerPage]);
 
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
@@ -364,8 +420,9 @@ const AccountStudentArea: React.FC = () => {
                   </Link>
                 </div>
 
-                <div className="row mb-4 search-filter-row">
-                  <div className="col-md-4 mb-3 mb-md-0">
+                {/* Search and Basic Filters */}
+                <div className="row mb-3 search-filter-row">
+                  <div className="col-md-6 mb-3 mb-md-0">
                     <div className="input-group">
                       <span className="input-group-text bg-white">
                         <i className="fas fa-search text-muted"></i>
@@ -373,37 +430,132 @@ const AccountStudentArea: React.FC = () => {
                       <input
                         type="text"
                         className="form-control border-start-0"
-                        placeholder="ค้นหานักศึกษา..."
+                        placeholder="ค้นหาชื่อ, รหัส, อีเมล, โรงเรียน..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                       />
                     </div>
                   </div>
-                  <div className="col-md-4 mb-3 mb-md-0">
-                    <select
-                      className="form-select"
-                      value={departmentFilter}
-                      onChange={(e) => setDepartmentFilter(e.target.value)}
-                    >
-                      <option value="all">ทุกสาขาวิชา</option>
-                      {departments.map((dept) => (
-                        <option key={dept.department_id} value={dept.department_id}>
-                          {dept.department_name}
-                        </option>
-                      ))}
-                    </select>
+                  <div className="col-md-6">
+                    <div className="d-flex justify-content-end">
+                      <button 
+                        className="btn btn-outline-secondary btn-sm"
+                        onClick={() => {
+                          setSearchTerm('');
+                          setStatusFilter('all');
+                          setDepartmentFilter('all');
+                          setSchoolFilter('all');
+                          setYearFilter('all');
+                          setGradeFilter('all');
+                          setPerformanceFilter('all');
+                        }}
+                      >
+                        <i className="fas fa-undo me-1"></i>ล้างตัวกรอง
+                      </button>
+                    </div>
                   </div>
-                  <div className="col-md-4">
-                    <select
-                      className="form-select"
-                      value={statusFilter}
-                      onChange={(e) => setStatusFilter(e.target.value)}
-                    >
-                      <option value="all">สถานะทั้งหมด</option>
-                      <option value="active">เปิดใช้งาน</option>
-                      <option value="inactive">ปิดใช้งาน</option>
-                      <option value="pending">รอการยืนยัน</option>
-                    </select>
+                </div>
+
+                {/* Advanced Filters */}
+                <div className="card mb-4">
+                  <div className="card-header bg-light">
+                    <h6 className="mb-0">
+                      <i className="fas fa-filter me-2"></i>ตัวกรองข้อมูล
+                    </h6>
+                  </div>
+                  <div className="card-body">
+                    <div className="row">
+                      <div className="col-md-3 mb-3">
+                        <label className="form-label small">สาขาวิชา</label>
+                        <select
+                          className="form-select form-select-sm"
+                          value={departmentFilter}
+                          onChange={(e) => setDepartmentFilter(e.target.value)}
+                        >
+                          <option value="all">ทุกสาขา</option>
+                          {departments.map((dept) => (
+                            <option key={dept.department_id} value={dept.department_id}>
+                              {dept.department_name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="col-md-3 mb-3">
+                        <label className="form-label small">สถานะ</label>
+                        <select
+                          className="form-select form-select-sm"
+                          value={statusFilter}
+                          onChange={(e) => setStatusFilter(e.target.value)}
+                        >
+                          <option value="all">ทุกสถานะ</option>
+                          <option value="active">เปิดใช้งาน</option>
+                          <option value="inactive">ปิดใช้งาน</option>
+                          <option value="pending">รอการยืนยัน</option>
+                        </select>
+                      </div>
+                      <div className="col-md-3 mb-3">
+                        <label className="form-label small">โรงเรียน</label>
+                        <select
+                          className="form-select form-select-sm"
+                          value={schoolFilter}
+                          onChange={(e) => setSchoolFilter(e.target.value)}
+                        >
+                          <option value="all">ทุกโรงเรียน</option>
+                          {schools.map((school) => (
+                            <option key={school} value={school}>
+                              {school}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="col-md-3 mb-3">
+                        <label className="form-label small">ปีการศึกษา</label>
+                        <select
+                          className="form-select form-select-sm"
+                          value={yearFilter}
+                          onChange={(e) => setYearFilter(e.target.value)}
+                        >
+                          <option value="all">ทุกปี</option>
+                          {academicYears.map((year) => (
+                            <option key={year} value={year}>
+                              {year}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    <div className="row">
+                      <div className="col-md-6 mb-3">
+                        <label className="form-label small">ระดับชั้น</label>
+                        <select
+                          className="form-select form-select-sm"
+                          value={gradeFilter}
+                          onChange={(e) => setGradeFilter(e.target.value)}
+                        >
+                          <option value="all">ทุกระดับ</option>
+                          <option value="ม.1">ม.1</option>
+                          <option value="ม.2">ม.2</option>
+                          <option value="ม.3">ม.3</option>
+                          <option value="ม.4">ม.4</option>
+                          <option value="ม.5">ม.5</option>
+                          <option value="ม.6">ม.6</option>
+                        </select>
+                      </div>
+                      <div className="col-md-6 mb-3">
+                        <label className="form-label small">ผลการเรียน</label>
+                        <select
+                          className="form-select form-select-sm"
+                          value={performanceFilter}
+                          onChange={(e) => setPerformanceFilter(e.target.value)}
+                        >
+                          <option value="all">ทุกระดับ</option>
+                          <option value="excellent">ดีเยี่ยม (80+ คะแนน)</option>
+                          <option value="good">ดี (70-79 คะแนน)</option>
+                          <option value="fair">พอใช้ (60-69 คะแนน)</option>
+                          <option value="poor">ต้องปรับปรุง ({'<'} 60 คะแนน)</option>
+                        </select>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -432,51 +584,214 @@ const AccountStudentArea: React.FC = () => {
                 ) : (
                   <>
                     <div className="table-responsive">
-                      <table className="table table-hover table-sm mb-0 align-middle table-striped">
-                        <thead className="table-light">
+                      <table className="table table-hover table-sm mb-0 align-middle">
+                        <thead className="table-dark">
                           <tr>
-                            <th scope="col" style={{ width: '50px' }}>#</th>
-                            <th scope="col">รหัสนักศึกษา</th>
-                            <th scope="col">ชื่อผู้ใช้</th>
-                            <th scope="col">ชื่อ-นามสกุล</th>
-                            <th scope="col">อีเมล</th>
-                            <th scope="col">สาขาวิชา</th>
-                            <th scope="col" style={{ width: '120px' }} >ระดับการศึกษา</th>
+                            <th scope="col" style={{ width: '40px' }}>#</th>
+                            <th scope="col">ข้อมูลนักเรียน</th>
+                            <th scope="col">โรงเรียน/ชั้น</th>
+                            <th scope="col">ผลการเรียน</th>
                             <th scope="col" className="text-center">สถานะ</th>
-                            <th scope="col" style={{ width: '100px' }} className="text-center">จัดการ</th>
+                            <th scope="col" style={{ width: '120px' }} className="text-center">จัดการ</th>
                           </tr>
                         </thead>
                         <tbody>
                           {currentItems.map((student, index) => (
-                            <tr key={`student-${student.student_id}-${index}`}>
-                              <td data-label="#">{indexOfFirstItem + index + 1}</td>
-                              <td data-label="รหัสนักศึกษา">{student.student_code}</td>
-                              <td data-label="ชื่อผู้ใช้">{student.username}</td>
-                              <td data-label="ชื่อ-นามสกุล">{`${student.first_name} ${student.last_name}`}</td>
-                              <td data-label="อีเมล">{student.email}</td>
-                              <td data-label="สาขาวิชา">{student.department_name || 'ไม่ระบุ'}</td>
-                              <td data-label="ระดับการศึกษา">{student.education_level || 'ไม่ระบุ'}</td>
-                              <td data-label="สถานะ"><StatusBadge status={student.status }/></td>
-                              <td data-label="จัดการ">
-                                <div className="d-flex justify-content-center gap-3 action-icons">
-                                  <Link
-                                    to={`/admin-account/students/edit/${student.student_id}`}
-                                    className="text-primary"
-                                    style={{ display: "inline-flex", alignItems: "center" }}
-                                  >
-                                    <i className="fas fa-edit icon-action" style={{ cursor: "pointer", lineHeight: 1 }}></i>
-                                  </Link>
-                                  <i
-                                    className="fas fa-trash-alt text-danger icon-action"
-                                    style={{ cursor: "pointer", lineHeight: 1 }}
-                                    onClick={() => {
-                                      console.log('Deleting student with user_id:', student.user_id);
-                                      handleDeleteStudent(student.user_id);
-                                    }}
-                                  ></i>
-                                </div>
-                              </td>
-                            </tr>
+                            <React.Fragment key={`student-${student.student_id}-${index}`}>
+                              <tr>
+                                <td>{indexOfFirstItem + index + 1}</td>
+                                <td>
+                                  <div className="d-flex align-items-center">
+                                    <div className="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" 
+                                         style={{ width: '40px', height: '40px', fontSize: '14px', fontWeight: 'bold' }}>
+                                      {student.first_name?.charAt(0) || 'N'}{student.last_name?.charAt(0) || 'A'}
+                                    </div>
+                                    <div>
+                                      <div className="fw-bold">{`${student.first_name || ''} ${student.last_name || ''}`.trim()}</div>
+                                      <div className="text-muted small">
+                                        <i className="fas fa-id-card me-1"></i>{student.student_code}
+                                      </div>
+                                      <div className="text-muted small">
+                                        <i className="fas fa-envelope me-1"></i>{student.email}
+                                      </div>
+                                      <div className="text-muted small">
+                                        <i className="fas fa-graduation-cap me-1"></i>{student.department_name || 'ไม่ระบุสาขา'}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </td>
+                                <td>
+                                  <div>
+                                    <div className="fw-medium">
+                                      <i className="fas fa-school me-1 text-primary"></i>
+                                      {student.school_name || 'ไม่ระบุโรงเรียน'}
+                                    </div>
+                                    <div className="text-muted small mt-1">
+                                      <span className="badge bg-info me-2">
+                                        {student.grade_level || 'ไม่ระบุชั้น'}
+                                      </span>
+                                      <span className="text-muted">
+                                        ปีการศึกษา {student.academic_year || 'ไม่ระบุ'}
+                                      </span>
+                                    </div>
+                                    {student.study_program && (
+                                      <div className="text-muted small">
+                                        <i className="fas fa-book me-1"></i>{student.study_program}
+                                      </div>
+                                    )}
+                                  </div>
+                                </td>
+                                <td>
+                                  <div className="d-flex flex-column">
+                                    <div className="mb-2">
+                                      <div className="d-flex justify-content-between align-items-center mb-1">
+                                        <small className="text-muted">คะแนนเฉลี่ย</small>
+                                        <span className={`badge ${
+                                          (student.average_score || 0) >= 80 ? 'bg-success' :
+                                          (student.average_score || 0) >= 70 ? 'bg-warning' :
+                                          (student.average_score || 0) >= 60 ? 'bg-info' : 'bg-danger'
+                                        }`}>
+                                          {student.average_score?.toFixed(1) || '0.0'}
+                                        </span>
+                                      </div>
+                                      <div className="progress" style={{ height: '4px' }}>
+                                        <div 
+                                          className={`progress-bar ${
+                                            (student.average_score || 0) >= 80 ? 'bg-success' :
+                                            (student.average_score || 0) >= 70 ? 'bg-warning' :
+                                            (student.average_score || 0) >= 60 ? 'bg-info' : 'bg-danger'
+                                          }`}
+                                          style={{ width: `${Math.min(student.average_score || 0, 100)}%` }}
+                                        ></div>
+                                      </div>
+                                    </div>
+                                    <div className="small text-muted">
+                                      <div>
+                                        <i className="fas fa-tasks me-1"></i>
+                                        ทำแบบทดสอบ {student.total_quizzes_taken || 0} ครั้ง
+                                      </div>
+                                      <div>
+                                        <i className="fas fa-chart-line me-1"></i>
+                                        เรียนจบ {student.completed_courses || 0}/{student.enrolled_courses || 0} วิชา
+                                      </div>
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="text-center">
+                                  <StatusBadge status={student.status} />
+                                  <div className="text-muted small mt-1">
+                                    ลงทะเบียน {new Date(student.created_at).toLocaleDateString('th-TH')}
+                                  </div>
+                                </td>
+                                <td>
+                                  <div className="d-flex justify-content-center gap-2 action-icons">
+                                    <button
+                                      className="btn btn-outline-info btn-sm"
+                                      onClick={() => setShowDetails(showDetails === student.student_id ? null : student.student_id)}
+                                      title="ดูรายละเอียด"
+                                    >
+                                      <i className={`fas ${showDetails === student.student_id ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                                    </button>
+                                    <Link
+                                      to={`/admin-account/students/edit/${student.student_id}`}
+                                      className="btn btn-outline-primary btn-sm"
+                                      title="แก้ไข"
+                                    >
+                                      <i className="fas fa-edit"></i>
+                                    </Link>
+                                    <button
+                                      className="btn btn-outline-danger btn-sm"
+                                      onClick={() => handleDeleteStudent(student.user_id)}
+                                      title="ลบ"
+                                    >
+                                      <i className="fas fa-trash-alt"></i>
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                              {showDetails === student.student_id && (
+                                <tr>
+                                  <td colSpan={6} className="bg-light">
+                                    <div className="p-3">
+                                      <h6 className="mb-3">
+                                        <i className="fas fa-chart-bar me-2"></i>
+                                        รายละเอียดผลการเรียนของ {student.first_name} {student.last_name}
+                                      </h6>
+                                      <div className="row">
+                                        <div className="col-md-6">
+                                          <div className="card">
+                                            <div className="card-header bg-primary text-white">
+                                              <h6 className="mb-0">ข้อมูลทั่วไป</h6>
+                                            </div>
+                                            <div className="card-body">
+                                              <table className="table table-sm mb-0">
+                                                <tbody>
+                                                  <tr>
+                                                    <td><strong>รหัสนักเรียน:</strong></td>
+                                                    <td>{student.student_code}</td>
+                                                  </tr>
+                                                  <tr>
+                                                    <td><strong>Username:</strong></td>
+                                                    <td>{student.username}</td>
+                                                  </tr>
+                                                  <tr>
+                                                    <td><strong>อีเมล:</strong></td>
+                                                    <td>{student.email}</td>
+                                                  </tr>
+                                                  <tr>
+                                                    <td><strong>สาขาวิชา:</strong></td>
+                                                    <td>{student.department_name}</td>
+                                                  </tr>
+                                                  <tr>
+                                                    <td><strong>ระดับการศึกษา:</strong></td>
+                                                    <td>{student.education_level}</td>
+                                                  </tr>
+                                                </tbody>
+                                              </table>
+                                            </div>
+                                          </div>
+                                        </div>
+                                        <div className="col-md-6">
+                                          <div className="card">
+                                            <div className="card-header bg-success text-white">
+                                              <h6 className="mb-0">ผลการเรียน</h6>
+                                            </div>
+                                            <div className="card-body">
+                                              <div className="row text-center">
+                                                <div className="col-6">
+                                                  <div className="border rounded p-2 mb-2">
+                                                    <div className="h4 text-primary mb-0">{student.average_score?.toFixed(1) || '0.0'}</div>
+                                                    <small>คะแนนเฉลี่ย</small>
+                                                  </div>
+                                                </div>
+                                                <div className="col-6">
+                                                  <div className="border rounded p-2 mb-2">
+                                                    <div className="h4 text-info mb-0">{student.total_quizzes_taken || 0}</div>
+                                                    <small>แบบทดสอบ</small>
+                                                  </div>
+                                                </div>
+                                                <div className="col-6">
+                                                  <div className="border rounded p-2">
+                                                    <div className="h4 text-success mb-0">{student.completed_courses || 0}</div>
+                                                    <small>วิชาที่จบ</small>
+                                                  </div>
+                                                </div>
+                                                <div className="col-6">
+                                                  <div className="border rounded p-2">
+                                                    <div className="h4 text-warning mb-0">{student.enrolled_courses || 0}</div>
+                                                    <small>วิชาที่ลงทะเบียน</small>
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
+                            </React.Fragment>
                           ))}
                         </tbody>
                       </table>

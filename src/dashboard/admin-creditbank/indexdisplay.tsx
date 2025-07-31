@@ -1,22 +1,19 @@
 import DashboardBreadcrumb from '../../components/common/breadcrumb/DashboardBreadcrumb'
 import FooterOne from '../../layouts/footers/FooterOne'
 import HeaderOne from '../../layouts/headers/HeaderOne'
-import AdminCreditbankArea from './AdminCreditbankArea'
+import ManagePics from './displaymanage'
 
-const AdminCreditbank = () => {
+const AdminDisplaypics = () => {
    return (
-      <>    
+      <>
          <HeaderOne />
-              
-                   
          <main className="main-area fix">
             <DashboardBreadcrumb />
-            <AdminCreditbankArea />
+            <ManagePics />
          </main>
-          
          <FooterOne />
       </>
    )
 }
 
-export default AdminCreditbank
+export default AdminDisplaypics
