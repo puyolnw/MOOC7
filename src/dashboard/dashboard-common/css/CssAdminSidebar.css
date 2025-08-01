@@ -404,6 +404,28 @@
     border-radius: 0 2px 2px 0;
 }
 
+/* ทำให้ approve มีลักษณะเหมือน display */
+.dashboard__sidebar-menu .menu-item[href*="admin-approve"].active {
+    background-color: rgba(13, 110, 253, 0.1) !important;
+    color: #0d6efd !important;
+    border-left: 3px solid #0d6efd !important;
+}
+
+/* บังคับให้แสดงขอบด้านข้าง */
+.dashboard__sidebar-menu .menu-item[href*="admin-approve"].active::before {
+    content: '' !important;
+    position: absolute !important;
+    left: 0 !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    width: 3px !important;
+    height: 20px !important;
+    background-color: #0d6efd !important;
+    border-radius: 0 2px 2px 0 !important;
+    display: block !important;
+    z-index: 10 !important;
+}
+
 .dashboard__sidebar-menu .submenu-link.active::before {
     content: '';
     position: absolute;
@@ -431,6 +453,10 @@
 }
 
 .dashboard__sidebar-menu .menu-item[href*="creditbank"] .menu-icon {
+    color: #007bff;
+}
+
+.dashboard__sidebar-menu .menu-item[href*="approve"] .menu-icon {
     color: #007bff;
 }
 

@@ -68,7 +68,7 @@ const sidebar_data: DataType[] = [
    },
   
    {
-      id: 4,
+      id: 3,
       title: "จัดการผู้ใช้",
       class_name: "mt-40",
       sidebar_details: [
@@ -112,8 +112,21 @@ const sidebar_data: DataType[] = [
          },
       ],
    },
-      {
-      id: 3,
+   {
+      id: 4,
+      title: "การเงิน",
+      class_name: "mt-40",
+      sidebar_details: [
+         {
+            id: 14,
+            link: "/admin-approve",
+            icon: "fas fa-check-circle",
+            title: "อนุมัติการชำระเงิน",
+         },
+      ],
+   },
+   {
+      id: 5,
       title: "ตั้งค่า",
       class_name: "mt-40",
       sidebar_details: [
@@ -123,8 +136,6 @@ const sidebar_data: DataType[] = [
             icon: "fas fa-display",
             title: "การแสดงผล",
          },
-      
-       
       ],
    },
 ];
