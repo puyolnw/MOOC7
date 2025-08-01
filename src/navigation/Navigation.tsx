@@ -17,6 +17,7 @@ import AdminEditlessonspage from '../pages/Admin/edit/AdminEditLesson';
 import AdminEditQuizzespage from '../pages/Admin/edit/AdminEditQuiz';
 import AdminEditquestionpage from '../pages/Admin/edit/AdminEditQuestion';
 import AdminEditSubjectspage from '../pages/Admin/edit/AdminEditSubject';
+import AdminApprovepage from '../pages/Admin/AdminApprove';
 
 import AdminAccountInstructorspage from '../pages/Admin/account/AccountInstructors';
 import CreateAccountInstructorspage from '../pages/Admin/account/create/AddInstructors';
@@ -27,30 +28,30 @@ import CreateAccountStudentspage from '../pages/Admin/account/create/AddStudents
 import Inscrepage from '../pages/Instructor/ins';
 import SubjectDetailsPage from '../pages/SubjectDetails';
 import Home from '../pages/Home';
-import HomeTwo from '../pages/HomeTwo';
-import HomeEight from '../pages/HomeEight';
-import HomeSeven from '../pages/HomeSeven';
-import HomeSix from '../pages/HomeSix';
-import HomeFive from '../pages/HomeFive';
-import HomeFour from '../pages/HomeFour';
-import HomeThree from '../pages/HomeThree';
+// import HomeTwo from '../pages/HomeTwo';
+// import HomeEight from '../pages/HomeEight';
+// import HomeSeven from '../pages/HomeSeven';
+// import HomeSix from '../pages/HomeSix';
+// import HomeFive from '../pages/HomeFive';
+// import HomeFour from '../pages/HomeFour';
+// import HomeThree from '../pages/HomeThree';
 import Course from '../pages/Course';
 import Lesson from '../pages/Lesson';
 import CourseDetails from '../pages/CourseDetails';
 import About from '../pages/About';
 import Instructor from '../pages/Instructor';
 import InstructorDetails from '../pages/InstructorDetails';
-import Event from '../pages/Event';
-import EventDetails from '../pages/EventDetails';
-import Shop from '../pages/Shop';
-import ShopDetails from '../pages/ShopDetails';
-import Cart from '../pages/Cart';
-import Wishlist from '../pages/Wishlist';
-import CheckOut from '../pages/CheckOut';
-import Blog from '../pages/Blog';
-import BlogTwo from '../pages/BlogTwo';
-import BlogThree from '../pages/BlogThree';
-import BlogDetails from '../pages/BlogDetails';
+// import Event from '../pages/Event';
+// import EventDetails from '../pages/EventDetails';
+// import Shop from '../pages/Shop';
+// import ShopDetails from '../pages/ShopDetails';
+// import Cart from '../pages/Cart';
+// import Wishlist from '../pages/Wishlist';
+// import CheckOut from '../pages/CheckOut';
+// import Blog from '../pages/Blog';
+// import BlogTwo from '../pages/BlogTwo';
+// import BlogThree from '../pages/BlogThree';
+// import BlogDetails from '../pages/BlogDetails';
 import Login from '../pages/Login';
 import Registration from '../pages/Registration';
 import Contact from '../pages/Contact';
@@ -93,7 +94,6 @@ import InstructorSubjectOverviewPage from '../pages/InstructorSubjectOverview';
 
 import Personelpage from '../pages/Personel';
 import ManagePics from '../pages/ManagePics';
-{/* ลองเพิ่ม */}
 // import AddQuestions from '../forms/Course/AddQuestions';
 
 
@@ -104,30 +104,30 @@ const AppNavigation = () => {
     <Router>
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/home-two" element={<HomeTwo />} />
+        {/* <Route path="/home-two" element={<HomeTwo />} />
         <Route path="/home-three" element={<HomeThree />} />
         <Route path="/home-four" element={<HomeFour />} />
         <Route path="/home-five" element={<HomeFive />} />
         <Route path="/home-six" element={<HomeSix />} />
         <Route path="/home-seven" element={<HomeSeven />} />
-        <Route path="/home-eight" element={<HomeEight />} />
+        <Route path="/home-eight" element={<HomeEight />} /> */}
         <Route path="/courses" element={<Course />} />
         <Route path="/course-details/:id" element={<CourseDetails />} />
         <Route path="/course-learning/:courseId/:subjectId" element={<Lesson />} />
         <Route path="/about-us" element={<About />} />
         <Route path="/instructors" element={<Instructor />} />
         <Route path="/instructor-details" element={<InstructorDetails />} />
-        <Route path="/events" element={<Event />} />
+        {/* <Route path="/events" element={<Event />} />
         <Route path="/events-details" element={<EventDetails />} />
         <Route path="/shop" element={<Shop />} />
         <Route path="/shop-details" element={<ShopDetails />} />
-        <Route path="/cart" element={<Cart />} />
-        <Route path="/wishlist" element={<Wishlist />} />
+        <Route path="/cart" element={<Cart />} /> */}
+        {/* <Route path="/wishlist" element={<Wishlist />} />
         <Route path="/check-out" element={<CheckOut />} />
         <Route path="/blog" element={<Blog />} />
         <Route path="/blog-2" element={<BlogTwo />} />
         <Route path="/blog-3" element={<BlogThree />} />
-        <Route path="/blog-details" element={<BlogDetails />} />
+        <Route path="/blog-details" element={<BlogDetails />} /> */}
         <Route path="/login" element={<Login />} />
         <Route path="/registration" element={<Registration />} />
         <Route path="/contact" element={<Contact />} />
@@ -166,7 +166,8 @@ const AppNavigation = () => {
         <Route path="/admin-account/students/edit/:id" element={< AdminEditaccountStudentpage />} />
         <Route path="/admin-account/students/create-new" element={< CreateAccountStudentspage />} />
         <Route path="/admin/manage-pics" element={<ManagePics />} />
-         <Route path="/admin-display" element={<Admindisplaypage />} />
+        <Route path="/admin-display" element={<Admindisplaypage />} />
+        <Route path="/admin-approve" element={<AdminApprovepage />} />
 
 
         </Route>

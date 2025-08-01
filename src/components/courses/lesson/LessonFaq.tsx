@@ -1,8 +1,6 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
 import './LessonFaq.css';
 
-const API_URL = import.meta.env.VITE_API_URL;
 
 interface LessonItem {
   id: number;
@@ -40,30 +38,25 @@ interface LessonFaqProps {
   lessonData: SectionData[];
   onSelectLesson: (sectionId: number, itemId: number, title: string, type: 'video' | 'quiz') => void;
   subjectId?: number;
+  subjectQuizzes?: SubjectQuiz[];
+  paymentStatus?: any;
+  onUploadSlip?: (file: File) => Promise<void>;
 }
 
 const LessonFaq = ({ 
   lessonData, 
   onSelectLesson, 
-  subjectId 
+  subjectId,
+  subjectQuizzes: externalSubjectQuizzes,
+  paymentStatus,
+  onUploadSlip
 }: LessonFaqProps) => {
   const [activeAccordion, setActiveAccordion] = useState<number | null>(null);
   const [subjectQuizzes, setSubjectQuizzes] = useState<SubjectQuiz[]>([]);
   const [loadingQuizzes, setLoadingQuizzes] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  // ฟังก์ชันเช็คว่าแบบทดสอบก่อนเรียนผ่านแล้วหรือยัง
-  // const isPreTestPassed = () => {
-  //   const preTest = subjectQuizzes.find(q => q.type === "pre_test");
-  //   return preTest?.passed || false;
-  // };
 
-  // // ฟังก์ชันเช็คว่าบทเรียนทั้งหมดเสร็จแล้วหรือยัง
-  // const areAllLessonsCompleted = () => {
-  //   return lessonData.every(section => 
-  //     section.items.every(item => item.completed)
-  //   );
-  // };
 
   // ฟังก์ชันเช็คว่าบทก่อนหน้าเสร็จแล้วหรือยัง
   const isPreviousLessonCompleted = (sectionIndex: number, itemIndex: number) => {
@@ -107,94 +100,25 @@ const LessonFaq = ({
     return false;
   };
 
-  // ฟังก์ชันโหลดข้อมูลแบบทดสอบ pre/post test
-  const fetchSubjectQuizzes = async () => {
-    if (!subjectId) {
-      return;
-    }
-    
-    try {
-      setLoadingQuizzes(true);
+
+
+  // ใช้ข้อมูลแบบทดสอบจาก parent component
+  useEffect(() => {
+    if (externalSubjectQuizzes) {
+      setSubjectQuizzes(externalSubjectQuizzes);
+      setLoadingQuizzes(false);
       setError(null);
       
-      const token = localStorage.getItem("token");
-      if (!token) {
-        throw new Error("No authentication token found");
+      // ตรวจสอบว่ามีแบบทดสอบก่อนเรียนหรือไม่ และตั้งค่า activeAccordion
+      const preTest = externalSubjectQuizzes.find(q => q.type === "pre_test");
+      if (preTest) {
+        setActiveAccordion(-1000);
       }
-
-      const response = await axios.get(
-        `${API_URL}/api/learn/subject/${subjectId}/quizzes`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      if (response.data.success) {
-        const quizzes: SubjectQuiz[] = [];
-        
-        // แบบทดสอบก่อนเรียน
-        if (response.data.pre_test) {
-          const preTest = response.data.pre_test;
-          quizzes.push({
-            quiz_id: preTest.quiz_id,
-            title: preTest.title || "แบบทดสอบก่อนเรียน",
-            description: preTest.description,
-            type: "pre_test",
-            locked: false,
-            completed: preTest.progress?.completed || false,
-            passed: preTest.progress?.passed || false,
-            status: preTest.progress?.awaiting_review ? "awaiting_review" :
-                    preTest.progress?.passed ? "passed" :
-                    preTest.progress?.completed ? "failed" : "not_started",
-            score: preTest.progress?.score,
-            max_score: preTest.progress?.max_score,
-          });
-        }
-
-          // แบบทดสอบหลังเรียน
-  if (response.data.post_test) {
-    const postTest = response.data.post_test;
-    quizzes.push({
-      quiz_id: postTest.quiz_id,
-      title: postTest.title || "แบบทดสอบหลังเรียน",
-      description: postTest.description,
-      type: "post_test",
-      locked: false, // ปลดล็อคแบบทดสอบหลังเรียน
-      completed: postTest.progress?.completed || false,
-      passed: postTest.progress?.passed || false,
-      status: postTest.progress?.awaiting_review ? "awaiting_review" :
-              postTest.progress?.passed ? "passed" :
-              postTest.progress?.completed ? "failed" : "not_started",
-      score: postTest.progress?.score,
-      max_score: postTest.progress?.max_score,
-    });
-  }
-
-        setSubjectQuizzes(quizzes);
-      } else {
-        setError("ไม่สามารถโหลดข้อมูลแบบทดสอบได้");
-      }
-    } catch (error: any) {
-      console.error("Error fetching subject quizzes:", error);
-      setError(error.response?.data?.message || "เกิดข้อผิดพลาดในการโหลดแบบทดสอบ");
-    } finally {
-      setLoadingQuizzes(false);
-    }
-  };
-
-  // เรียก API เมื่อ subjectId เปลี่ยน
-  useEffect(() => {
-    if (subjectId) {
-      fetchSubjectQuizzes();
     } else {
       setSubjectQuizzes([]);
     }
-  }, [subjectId]);
+  }, [externalSubjectQuizzes]);
 
-  // อัพเดทสถานะการล็อคของแบบทดสอบหลังเรียนเมื่อข้อมูลเปลี่ยน
   useEffect(() => {
     setSubjectQuizzes(prev => prev.map(quiz => ({
       ...quiz,
@@ -290,17 +214,28 @@ const LessonFaq = ({
     );
   };
 
-  // เปิดแอคคอร์เดียนแรกที่ยังไม่เสร็จ
+  // เปิดแอคคอร์เดียนแรกที่ยังไม่เสร็จ หรือแบบทดสอบก่อนเรียน
   useEffect(() => {
-    for (const section of lessonData) {
-      for (const item of section.items) {
-        if (!item.completed) {
-          setActiveAccordion(section.id);
-          return;
+    // ตรวจสอบว่ามีแบบทดสอบก่อนเรียนหรือไม่
+    const preTest = externalSubjectQuizzes?.find(q => q.type === "pre_test");
+    
+    if (preTest) {
+      // ถ้ามีแบบทดสอบก่อนเรียน ให้เปิดแอคคอร์เดียนของแบบทดสอบก่อนเรียน
+      setActiveAccordion(-1000);
+    } else if (lessonData.length > 0) {
+      // ถ้าไม่มีแบบทดสอบก่อนเรียน ให้เปิดแอคคอร์เดียนแรกที่ยังไม่เสร็จ
+      for (const section of lessonData) {
+        for (const item of section.items) {
+          if (!item.completed) {
+            setActiveAccordion(section.id);
+            return;
+          }
         }
       }
+      // ถ้าทุกบทเรียนเสร็จแล้ว ให้เปิดแอคคอร์เดียนแรก
+      setActiveAccordion(lessonData[0].id);
     }
-  }, [lessonData]);
+  }, [lessonData, externalSubjectQuizzes]);
 
   return (
     <div className="accordion" id="accordionExample">
@@ -322,7 +257,7 @@ const LessonFaq = ({
           <button 
             type="button" 
             className="btn btn-sm btn-outline-danger ms-2"
-            onClick={fetchSubjectQuizzes}
+            onClick={() => window.location.reload()}
           >
             ลองใหม่
           </button>
@@ -393,13 +328,154 @@ const LessonFaq = ({
         .filter(quiz => quiz.type === "post_test")
         .map((quiz) => renderQuizSection(quiz, -2000))}
 
-      {/* แสดงข้อความเมื่อไม่มีแบบทดสอบ */}
-      {!loadingQuizzes && subjectQuizzes.length === 0 && subjectId && !error && (
-        <div className="no-quizzes text-center p-3 text-muted">
-          <i className="fas fa-info-circle me-2"></i>
-          ไม่มีแบบทดสอบก่อนเรียนหรือหลังเรียนสำหรับวิชานี้
-        </div>
-      )}
+      {/* ส่วนการชำระเงิน */}
+      {paymentStatus && externalSubjectQuizzes && (() => {
+        const postTest = externalSubjectQuizzes?.find(q => q.type === "post_test");
+        const postTestPassed = postTest?.passed || false;
+        
+
+        
+        // แสดงส่วนการชำระเงินเสมอ แต่จะแสดงข้อความที่เหมาะสม
+
+        const statusText = paymentStatus.approved ? 'อนุมัติแล้ว' : 
+                          paymentStatus.hasSlip ? 'รออนุมัติ' : 
+                          postTest && !postTestPassed ? 'รอทำแบบทดสอบ' : 'ยังไม่ชำระ';
+        
+        const statusClass = paymentStatus.approved ? 'status-passed' : 
+                           paymentStatus.hasSlip ? 'status-awaiting' : 'status-not-passed';
+
+        return (
+          <div className="accordion-item mb-3 border rounded">
+            <h2 className="accordion-header">
+              <button
+                className={`accordion-button d-flex justify-content-between align-items-center ${
+                  activeAccordion === -3000 ? "" : "collapsed"
+                }`}
+                type="button"
+                onClick={() => toggleAccordion(-3000)}
+                aria-expanded={activeAccordion === -3000}
+                aria-controls="collapse-3000"
+              >
+                <span className="section-title fw-bold">
+                  <i className="fas fa-credit-card me-2"></i>
+                  การชำระเงิน
+                </span>
+                <span 
+                  className="section-status" 
+                  style={{
+                    padding: '4px 8px',
+                    borderRadius: '4px',
+                    fontSize: '12px',
+                    fontWeight: '500',
+                    backgroundColor: statusClass === 'status-passed' ? '#d4edda' : 
+                                   statusClass === 'status-awaiting' ? '#fff3cd' : '#f8d7da',
+                    color: statusClass === 'status-passed' ? '#155724' : 
+                          statusClass === 'status-awaiting' ? '#856404' : '#721c24',
+                    border: statusClass === 'status-passed' ? '1px solid #c3e6cb' : 
+                           statusClass === 'status-awaiting' ? '1px solid #ffeaa7' : '1px solid #f5c6cb'
+                  }}
+                >
+                  {statusText}
+                </span>
+              </button>
+            </h2>
+            <div
+              id="collapse-3000"
+              className={`accordion-collapse collapse ${
+                activeAccordion === -3000 ? "show" : ""
+              }`}
+              aria-labelledby="accordion-header-3000"
+            >
+              <div className="accordion-body p-3">
+                {!paymentStatus.hasSlip ? (
+                  <div className="payment-upload-section">
+                    {postTest && !postTestPassed ? (
+                      <p className="text-muted mb-3 fs-6">
+                        <i className="fas fa-info-circle me-2"></i>
+                        กรุณาทำแบบทดสอบหลังเรียนให้ผ่านก่อนจึงจะสามารถอัปโหลดสลิปได้
+                      </p>
+                    ) : (
+                      <p className="text-muted mb-3 fs-6">
+                        กรุณาอัปโหลดสลิปการชำระเงิน (รองรับภาพและ PDF, ขนาดไม่เกิน 5MB)
+                      </p>
+                    )}
+                    <input
+                      type="file"
+                      id="slip-upload"
+                      accept="image/*,.pdf"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          if (file.size > 5 * 1024 * 1024) {
+                            alert("ไฟล์ต้องมีขนาดไม่เกิน 5MB");
+                            return;
+                          }
+                          onUploadSlip?.(file);
+                        }
+                      }}
+                      style={{ display: "none" }}
+                      aria-label="อัปโหลดสลิปการชำระเงิน"
+                    />
+                    <button
+                      className={`btn btn-sm d-flex align-items-center ${
+                        postTest && !postTestPassed ? 'btn-secondary disabled' : 'btn-primary'
+                      }`}
+                      onClick={() => document.getElementById("slip-upload")?.click()}
+                      disabled={postTest && !postTestPassed}
+                      aria-label="เลือกไฟล์สลิป"
+                    >
+                      <i className="fas fa-upload me-2"></i>
+                      {postTest && !postTestPassed ? 'รอทำแบบทดสอบ' : 'อัปโหลดสลิป'}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="payment-status-section">
+                    <p className="mb-2">
+                      <strong>ไฟล์:</strong> {paymentStatus.fileName}
+                    </p>
+                    <p className="mb-2">
+                      <strong>อัปโหลดเมื่อ:</strong>{" "}
+                      {new Date(paymentStatus.uploadedAt).toLocaleString("th-TH", {
+                        dateStyle: "medium",
+                        timeStyle: "short",
+                      })}
+                    </p>
+                    {paymentStatus.approved ? (
+                      <div className="alert alert-success d-flex align-items-center" role="alert">
+                        <i className="fas fa-check-circle me-2"></i>
+                        อนุมัติแล้วเมื่อ{" "}
+                        {new Date(paymentStatus.approvedAt).toLocaleString("th-TH", {
+                          dateStyle: "medium",
+                          timeStyle: "short",
+                        })}
+                      </div>
+                    ) : (
+                      <div className="alert alert-warning d-flex align-items-center" role="alert">
+                        <i className="fas fa-clock me-2"></i>
+                        รอ admin อนุมัติ
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* แสดงข้อความเมื่อไม่มีแบบทดสอบหรือ error */}
+        {!loadingQuizzes && subjectQuizzes?.length === 0 && subjectId && !error && (
+          <div className="no-quizzes alert alert-info text-center p-3 mb-0" role="alert">
+            <i className="fas fa-info-circle me-2"></i>
+            ไม่มีแบบทดสอบก่อนเรียนหรือหลังเรียนสำหรับวิชานี้
+          </div>
+        )}
+        {error && (
+          <div className="error-message alert alert-danger text-center p-3 mb-0" role="alert">
+            <i className="fas fa-exclamation-triangle me-2"></i>
+            เกิดข้อผิดพลาด: {typeof error === 'string' ? error : 'ไม่สามารถโหลดข้อมูลได้'}
+          </div>
+        )}
     </div>
   );
 };

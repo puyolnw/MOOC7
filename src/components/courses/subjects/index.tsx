@@ -15,9 +15,14 @@ const SubjectDetails = () => {
   const [subjectDetails, setSubjectDetails] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isEnrolled, setIsEnrolled] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [courseId, setCourseId] = useState<string | null>(null);
   
   // Extract course_id from location state or query params
-  const courseId = location.state?.courseId || new URLSearchParams(location.search).get('courseId');
+  const urlCourseId = location.state?.courseId || new URLSearchParams(location.search).get('courseId');
+  
+
 
   useEffect(() => {
     const fetchSubjectDetails = async () => {
@@ -56,6 +61,14 @@ const SubjectDetails = () => {
             quiz_count: parseInt(response.data.subject.quiz_count, 10) || 0,
           };
 
+          // ถ้าไม่มี courseId จาก URL ให้ใช้ courseId จากข้อมูล subject
+          if (!urlCourseId && subjectData.courses && subjectData.courses.length > 0) {
+            const firstCourse = subjectData.courses[0];
+            setCourseId(firstCourse.course_id.toString());
+          } else if (urlCourseId) {
+            setCourseId(urlCourseId);
+          }
+
           setSubjectDetails(subjectData);
         } else {
           console.error("API returned invalid data:", response.data);
@@ -83,6 +96,40 @@ const SubjectDetails = () => {
 
     fetchSubjectDetails();
   }, [apiURL, id, navigate]);
+
+  // ตรวจสอบการลงทะเบียนและ role ของผู้ใช้
+  useEffect(() => {
+    const checkEnrollmentAndRole = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token || !courseId) return;
+
+        // ดึงข้อมูล role จาก token
+        const tokenPayload = JSON.parse(atob(token.split('.')[1]));
+        const userRole = tokenPayload.role_id;
+        const isUserAdmin = userRole === 4;
+        setIsAdmin(isUserAdmin);
+
+        // ตรวจสอบการลงทะเบียนในคอร์ส
+        const enrollmentResponse = await axios.get(`${apiURL}/api/courses/${courseId}/enrollment-status`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        if (enrollmentResponse.data.success) {
+          const enrollmentStatus = enrollmentResponse.data.isEnrolled;
+          setIsEnrolled(enrollmentStatus);
+        }
+      } catch (error) {
+        console.error("Error checking enrollment:", error);
+        // ถ้าไม่มีข้อมูลการลงทะเบียน แสดงว่ายังไม่ได้ลงทะเบียน
+        setIsEnrolled(false);
+      }
+    };
+
+    if (courseId) {
+      checkEnrollmentAndRole();
+    }
+  }, [courseId, apiURL]);
 
   return (
     <>
@@ -120,7 +167,9 @@ const SubjectDetails = () => {
         ) : (
           <SubjectDetailsArea 
             subject_details={subjectDetails} 
-            course_id={courseId} // Pass course_id to SubjectDetailsArea
+            course_id={courseId ? parseInt(courseId) : 0}
+            isEnrolled={isEnrolled}
+            isAdmin={isAdmin}
           />
         )}
       </main>

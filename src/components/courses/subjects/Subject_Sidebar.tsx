@@ -14,6 +14,8 @@ interface SidebarProps {
   quiz_count: number;
   cover_image?: string;
   course_id: number; // Add course_id prop
+  isEnrolled?: boolean; // สถานะการลงทะเบียนจากคอร์ส
+  isAdmin?: boolean; // สถานะ admin
 }
 
 const Sidebar = ({
@@ -24,7 +26,9 @@ const Sidebar = ({
   lesson_count,
   quiz_count,
   cover_image,
-  course_id
+  course_id,
+  isEnrolled = false,
+  isAdmin = false
 }: SidebarProps) => {
   const [isVideoOpen, setIsVideoOpen] = useState(false);
   const [progress, setProgress] = useState<any>(null);
@@ -78,6 +82,11 @@ const Sidebar = ({
       // Optionally redirect to courses page or show error
     }
   };
+
+  // ตรวจสอบว่าสามารถเริ่มเรียนได้หรือไม่
+  const canStartLearning = isAdmin || isEnrolled;
+
+
 
   return (
     <>
@@ -170,13 +179,20 @@ const Sidebar = ({
           </div>
           {/* Add Start Learning Button */}
           <div className="sidebar-action mt-4">
-            <button
-              onClick={handleStartLearning}
-              className="btn btn-primary w-100 mb-3"
-            >
-              เริ่มเรียน
-              <BtnArrow />
-            </button>
+            {canStartLearning ? (
+              <button
+                onClick={handleStartLearning}
+                className="btn btn-primary w-100 mb-3"
+              >
+                เริ่มเรียน
+                <BtnArrow />
+              </button>
+            ) : (
+              <div className="alert alert-warning small">
+                <i className="fas fa-exclamation-triangle me-1"></i>
+                กรุณาลงทะเบียนเรียนที่หน้าหลักสูตรก่อนเริ่มเรียน
+              </div>
+            )}
           </div>
 
          

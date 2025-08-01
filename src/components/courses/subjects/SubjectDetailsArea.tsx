@@ -11,11 +11,15 @@ const tab_title: string[] = ["ภาพรวม", "บทเรียน", "อ
 interface SubjectDetailsAreaProps {
   subject_details: any;
   course_id: number;
+  isEnrolled?: boolean;
+  isAdmin?: boolean;
 }
 
-const SubjectDetailsArea = ({ subject_details, course_id }: SubjectDetailsAreaProps) => {
+const SubjectDetailsArea = ({ subject_details, course_id, isEnrolled = false, isAdmin = false }: SubjectDetailsAreaProps) => {
   const [activeTab, setActiveTab] = useState(0);
   const apiURL = import.meta.env.VITE_API_URL || "http://localhost:3301";
+
+
 
   const handleTabClick = (index: number) => {
     setActiveTab(index);
@@ -165,6 +169,8 @@ const SubjectDetailsArea = ({ subject_details, course_id }: SubjectDetailsAreaPr
             quiz_count={totalQuizCount}
             cover_image={finalCoverImage}
             course_id={course_id}
+            isEnrolled={isEnrolled}
+            isAdmin={isAdmin}
           />
         </div>
       </div>
