@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import axios from "axios";
 
 import Plyr from 'plyr';
 import 'plyr/dist/plyr.css';
@@ -41,43 +42,65 @@ const LessonVideo = ({
     return `video_progress_lesson_${lessonId}_${youtubeId}`;
   };
 
-  // บันทึกความก้าวหน้าไปที่ localStorage
-  const saveToLocalStorage = (currentTime: number, duration: number) => {
+  // บันทึกความก้าวหน้าไปที่ Server
+  const saveToServer = async (currentTime: number, duration: number) => {
     try {
-      const storageKey = getStorageKey();
-      const progressData = {
-        position: currentTime,
-        duration: duration,
-        percentage: (currentTime / duration) * 100,
-        completed: currentTime >= duration * 0.9,
-        lastUpdated: new Date().toISOString()
-      };
-
-      localStorage.setItem(storageKey, JSON.stringify(progressData));
-      setLastSavedTime(new Date());
+      const apiURL = import.meta.env.VITE_API_URL;
+      const token = localStorage.getItem('token');
       
-      console.log(`บันทึก localStorage: ${currentTime.toFixed(1)}/${duration.toFixed(1)} (${progressData.percentage.toFixed(1)}%)`);
+      const response = await axios.post(
+        `${apiURL}/api/learn/lesson/${lessonId}/video-progress`,
+        {
+          position: currentTime,
+          duration: duration
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
       
-      return progressData;
-    } catch (error) {
-      console.error("Error saving to localStorage:", error);
-      return null;
-    }
-  };
-
-  // โหลดความก้าวหน้าจาก localStorage
-  const loadFromLocalStorage = () => {
-    try {
-      const storageKey = getStorageKey();
-      const savedData = localStorage.getItem(storageKey);
-      
-      if (savedData) {
-        const progressData = JSON.parse(savedData);
-        console.log("โหลดจาก localStorage:", progressData);
+      if (response.data.success) {
+        const progressData = {
+          position: currentTime,
+          duration: duration,
+          percentage: (currentTime / duration) * 100,
+          completed: currentTime >= duration * 0.9,
+          lastUpdated: new Date().toISOString()
+        };
+        
+        setLastSavedTime(new Date());
+        console.log(`บันทึก Server: ${currentTime.toFixed(1)}/${duration.toFixed(1)} (${progressData.percentage.toFixed(1)}%)`);
+        
         return progressData;
       }
     } catch (error) {
-      console.error("Error loading from localStorage:", error);
+      console.error("Error saving to server:", error);
+    }
+    return null;
+  };
+
+  // โหลดความก้าวหน้าจาก Server
+  const loadFromServer = async () => {
+    try {
+      const apiURL = import.meta.env.VITE_API_URL;
+      const token = localStorage.getItem('token');
+      const response = await axios.get(
+        `${apiURL}/api/learn/lesson/${lessonId}/video-progress`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      if (response.data.success && response.data.progress) {
+        const progressData = response.data.progress;
+        console.log("โหลดจาก Server:", progressData);
+        return {
+          position: progressData.last_position_seconds || 0,
+          duration: progressData.duration_seconds || 0,
+          percentage: progressData.duration_seconds > 0 ? 
+            (progressData.last_position_seconds / progressData.duration_seconds) * 100 : 0,
+          completed: progressData.video_completed || false,
+          lastUpdated: new Date().toISOString()
+        };
+      }
+    } catch (error) {
+      console.error("Error loading from server:", error);
     }
     return null;
   };
@@ -88,13 +111,13 @@ const LessonVideo = ({
       clearInterval(saveIntervalRef.current);
     }
 
-    saveIntervalRef.current = setInterval(() => {
+    saveIntervalRef.current = setInterval(async () => {
       if (playerRef.current && playerRef.current.duration > 0) {
         const currentTime = playerRef.current.currentTime;
         const duration = playerRef.current.duration;
         
         if (currentTime > 0) {
-          const savedData = saveToLocalStorage(currentTime, duration);
+          const savedData = await saveToServer(currentTime, duration);
           
           // ตรวจสอบว่าดูจบแล้วหรือยัง
           if (savedData && savedData.completed && !hasCompletedRef.current) {
@@ -162,17 +185,20 @@ const LessonVideo = ({
     setIsCompleted(false);
     setIsLoading(true);
     
-    // โหลดข้อมูลจาก localStorage
-    const savedProgress = loadFromLocalStorage();
-    if (savedProgress) {
-      setProgress(savedProgress.percentage || 0);
-      
-      if (savedProgress.completed) {
-        setIsCompleted(true);
-        hasCompletedRef.current = true;
-        onComplete();
+    // โหลดข้อมูลจาก Server
+    const loadProgress = async () => {
+      const savedProgress = await loadFromServer();
+      if (savedProgress) {
+        setProgress(savedProgress.percentage || 0);
+        
+        if (savedProgress.completed) {
+          setIsCompleted(true);
+          hasCompletedRef.current = true;
+          onComplete();
+        }
       }
-    }
+    };
+    loadProgress();
     
     setIsLoading(false);
     
@@ -218,11 +244,14 @@ const LessonVideo = ({
             console.log(`Duration: ${playerRef.current.duration} วินาที`);
             
             // โหลดตำแหน่งที่บันทึกไว้
-            const savedProgress = loadFromLocalStorage();
-            if (savedProgress && savedProgress.position > 0) {
-              playerRef.current.currentTime = savedProgress.position;
-              console.log(`เริ่มเล่นจากตำแหน่ง: ${savedProgress.position} วินาที`);
-            }
+            const loadSavedProgress = async () => {
+              const savedProgress = await loadFromServer();
+              if (savedProgress && savedProgress.position > 0 && playerRef.current) {
+                playerRef.current.currentTime = savedProgress.position;
+                console.log(`เริ่มเล่นจากตำแหน่ง: ${savedProgress.position} วินาที`);
+              }
+            };
+            loadSavedProgress();
           }
         }, 500);
       });
@@ -240,7 +269,7 @@ const LessonVideo = ({
         
         // บันทึกทันทีเมื่อ pause
         if (playerRef.current && playerRef.current.duration > 0) {
-          saveToLocalStorage(playerRef.current.currentTime, playerRef.current.duration);
+          saveToServer(playerRef.current.currentTime, playerRef.current.duration);
         }
       });
 
@@ -260,8 +289,8 @@ const LessonVideo = ({
             setShowCompletionModal(true);
             hasCompletedRef.current = true;
             
-            // บันทึกทันที
-            saveToLocalStorage(currentTime, duration);
+                      // บันทึกทันที
+          saveToServer(currentTime, duration);
             onComplete();
           }
         }
@@ -271,7 +300,7 @@ const LessonVideo = ({
       playerRef.current.on('seeked', () => {
         if (playerRef.current && playerRef.current.duration > 0) {
           console.log("เลื่อนตำแหน่งวิดีโอ - บันทึกทันที");
-          saveToLocalStorage(playerRef.current.currentTime, playerRef.current.duration);
+          saveToServer(playerRef.current.currentTime, playerRef.current.duration);
         }
       });
 
@@ -282,7 +311,7 @@ const LessonVideo = ({
         
         if (playerRef.current) {
           // บันทึกว่าดูจบแล้ว
-          saveToLocalStorage(playerRef.current.duration, playerRef.current.duration);
+          saveToServer(playerRef.current.duration, playerRef.current.duration);
           
           if (!hasCompletedRef.current) {
             setIsCompleted(true);
@@ -307,7 +336,7 @@ const LessonVideo = ({
       if (playerRef.current) {
         // บันทึกครั้งสุดท้ายก่อน destroy
         if (playerRef.current.currentTime && playerRef.current.duration) {
-          saveToLocalStorage(playerRef.current.currentTime, playerRef.current.duration);
+          saveToServer(playerRef.current.currentTime, playerRef.current.duration);
         }
         playerRef.current.destroy();
       }
