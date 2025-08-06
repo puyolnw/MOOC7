@@ -198,7 +198,25 @@ const DashboardCourse = () => {
             <div className="row">
                {courses.map((item) => (
                   <div key={item.id} className="col-xl-4 col-md-6">
-                     <div className="courses__item courses__item-two shine__animate-item">
+                     <div className="courses__item courses__item-two shine__animate-item" style={{ position: 'relative' }}>
+                        {/* Badge มุมขวาบน */}
+                        {item.progress >= 100 && (
+                          <div className="completion-badge" style={{
+                            color: '#ffffff',
+                            backgroundColor: '#28a745',
+                            fontSize: '12px',
+                            padding: '4px 10px',
+                            borderRadius: '4px',
+                            fontWeight: 'bold',
+                            position: 'absolute',
+                            top: '10px',
+                            right: '10px',
+                            zIndex: 2,
+                            boxShadow: '0 2px 8px rgba(40,167,69,0.15)'
+                          }}>
+                            ✓ เรียนจบแล้ว
+                          </div>
+                        )}
                         <div className="courses__item-thumb courses__item-thumb-two">
                            <Link to={`/course-details/${item.course_id}`} className="shine__animate-link">
                               <img 
@@ -242,11 +260,6 @@ const DashboardCourse = () => {
                                     }}>
                                   </div>
                                </div>
-                               {item.progress >= 100 && (
-                                 <div className="completion-badge" style={{color: '#28a745', fontSize: '12px', marginTop: '5px'}}>
-                                   ✓ เรียนจบแล้ว
-                                 </div>
-                               )}
                             </div>
                         </div>
                         <div className="courses__item-bottom-two">
