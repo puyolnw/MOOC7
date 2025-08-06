@@ -88,8 +88,8 @@ const StudentEnrolledCoursesArea = () => {
                      title: course.title,
                      thumb: "/assets/img/courses/course_thumb01.jpg", // รูปภาพเริ่มต้น
                      tag: "ทั่วไป",
-                     avatar_thumb: "/assets/img/courses/course_tutor01.png", // รูปภาพเริ่มต้นของผู้สอน
-                     avatar_name: "อาจารย์ผู้สอน", // ชื่อเริ่มต้นของผู้สอน
+                     avatar_thumb: course.avatar_thumb, // รูปภาพเริ่มต้นของผู้สอน
+                     avatar_name: course.avatar_name, // ชื่อเริ่มต้นของผู้สอน
                      review: "4.5", // คะแนนเริ่มต้น
                      progress: course.progress_percentage, // ใช้ค่า progress จาก dashboard API
                      book: "หลักสูตร",
@@ -249,9 +249,9 @@ const StudentEnrolledCoursesArea = () => {
                                              </ul>
                                              <h5 className="title"><a href={`/course-details/${item.course_id}`}>{item.title}</a></h5>
                                              <div className="courses__item-content-bottom">
-                                                <div className="author-two">
+                                                {/* <div className="author-two">
                                                    <a href="/instructor-details"><img src={item.avatar_thumb} alt="img" />{item.avatar_name}</a>
-                                                </div>
+                                                </div> */}
                                              </div>
                                              <div className="progress-item progress-item-two">
                                                 <h6 className="title">COMPLETE <span>{item.progress}%</span></h6>

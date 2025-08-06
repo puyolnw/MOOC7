@@ -364,13 +364,16 @@ const StudentPaymentArea: React.FC = () => {
                 <select
                   id="bankAccount"
                   className="form-select"
-                  value={selectedBankAccount || ''}
-                  onChange={(e) => setSelectedBankAccount(Number(e.target.value))}
+                  value={selectedBankAccount === null ? '' : String(selectedBankAccount)}
+                  onChange={e => {
+                    const val = e.target.value;
+                    setSelectedBankAccount(val === '' ? null : Number(val));
+                  }}
                   required
                 >
-                  <option value="">-- เลือกบัญชีที่โอนเงิน --</option>
+                  <option key="placeholder" value="">-- เลือกบัญชีที่โอนเงิน --</option>
                   {bankAccounts.map((account) => (
-                    <option key={account.account_id} value={account.account_id}>
+                    <option key={String(account.account_id)} value={String(account.account_id)}>
                       {account.bank_name} - {account.account_name} ({account.account_number})
                       {account.is_default && ' (แนะนำ)'}
                     </option>

@@ -373,10 +373,11 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
 
             if (response.data.success) {
                 const quizzes: any[] = [];
-                
-                // แบบทดสอบก่อนเรียน
+                // --- ดึงข้อมูล pre/post test ---
+                let preTestCompleted = false;
                 if (response.data.pre_test) {
                     const preTest = response.data.pre_test;
+                    preTestCompleted = preTest.progress?.passed || false;
                     quizzes.push({
                         quiz_id: preTest.quiz_id,
                         title: preTest.title || "แบบทดสอบก่อนเรียน",
@@ -392,16 +393,33 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
                         max_score: preTest.progress?.max_score,
                     });
                 }
-
-                // แบบทดสอบหลังเรียน
+                // --- เช็คว่าทุกบทเรียนผ่านหรือยัง ---
+                let allLessonsPassed = true;
+                if (lessonData.length > 0) {
+                    for (const section of lessonData) {
+                        for (const item of section.items) {
+                            if (item.type === "quiz" && !item.completed) {
+                                allLessonsPassed = false;
+                                break;
+                            }
+                        }
+                        if (!allLessonsPassed) break;
+                    }
+                }
+                // --- post test ---
                 if (response.data.post_test) {
                     const postTest = response.data.post_test;
+                    // ล็อค posttest ถ้า pretest ยังไม่ผ่าน หรือ บทเรียนยังไม่ผ่านครบ
+                    let locked = false;
+                    if (!preTestCompleted || !allLessonsPassed) {
+                        locked = true;
+                    }
                     quizzes.push({
                         quiz_id: postTest.quiz_id,
                         title: postTest.title || "แบบทดสอบหลังเรียน",
                         description: postTest.description,
                         type: "post_test",
-                        locked: postTest.locked || false, // ใช้ locked จาก backend
+                        locked,
                         completed: postTest.progress?.completed || false,
                         passed: postTest.progress?.passed || false,
                         status: postTest.progress?.awaiting_review ? "awaiting_review" :
@@ -411,14 +429,13 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
                         max_score: postTest.progress?.max_score,
                     });
                 }
-
                 setSubjectQuizzes(quizzes);
             }
         } catch (error) {
             console.error("Error fetching subject quizzes:", error);
             setSubjectQuizzes([]);
         }
-    }, [currentSubjectId, API_URL]);
+    }, [currentSubjectId, API_URL, lessonData]);
 
     // ✅ Task 3: โหลดข้อมูลอาจารย์ประจำหลักสูตร
     const fetchInstructors = useCallback(async () => {
@@ -686,7 +703,31 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
         }
     }, [currentSubjectId]);
 
-
+    // ปรับสูตร progress bar ให้นับ pre/post test และทั้ง video/quiz
+    useEffect(() => {
+        // ต้องรอให้ subjectQuizzes และ lessonData โหลดเสร็จ
+        if (!lessonData || lessonData.length === 0) return;
+        let progress = 0;
+        const preTest = subjectQuizzes.find(q => q.type === "pre_test");
+        const postTest = subjectQuizzes.find(q => q.type === "post_test");
+        if (preTest && preTest.completed) progress += 20;
+        if (postTest && postTest.completed) progress += 20;
+        // นับทั้ง video และ quiz
+        let totalItems = 0;
+        let completedItems = 0;
+        lessonData.forEach(section => {
+            section.items.forEach(item => {
+                if (item.type === "quiz" || item.type === "video") {
+                    totalItems++;
+                    if (item.completed) completedItems++;
+                }
+            });
+        });
+        if (totalItems > 0) {
+            progress += (completedItems / totalItems) * 60;
+        }
+        setProgress(progress);
+    }, [lessonData, subjectQuizzes]);
 
     // ตั้งค่าบทเรียนแรกเมื่อข้อมูลพร้อม
     useEffect(() => {
