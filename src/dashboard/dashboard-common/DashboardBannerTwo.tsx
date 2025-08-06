@@ -10,8 +10,8 @@ const silentAxios = axios.create();
 silentAxios.interceptors.response.use(
   (response) => response,
   (error) => {
-    // ถ้าเป็น 404 error ให้ return response แทนที่จะ throw error
-    if (error.response?.status === 404) {
+    // ถ้าเป็น 404 error หรือ network error ให้ silent
+    if (error.response?.status === 404 || !error.response) {
       return Promise.reject({ ...error, silent: true });
     }
     return Promise.reject(error);
@@ -38,42 +38,43 @@ const DashboardBannerTwo = () => {
          setLoading(false);
          return;
       }
-      setLoading(true);
       
-      // ลอง fetch จาก students ก่อน
-      silentAxios
-         .get(`${apiUrl}/api/accounts/students/${userId}`, {
-            headers: { Authorization: `Bearer ${token}` },
-         })
-         .then((res) => {
-            setStudent(res.data.student);
-         })
-         .catch((error: any) => {
-            // ถ้าไม่ใช่ silent error (404) ให้ log
-            if (!error.silent) {
+      const fetchStudentData = async () => {
+         setLoading(true);
+         
+         try {
+            // ลอง fetch จาก students ก่อน
+            const response = await axios.get(`${apiUrl}/api/accounts/students/${userId}`, {
+               headers: { Authorization: `Bearer ${token}` },
+            });
+            setStudent(response.data.student);
+            setLoading(false);
+            return;
+         } catch (error: any) {
+            // ถ้าไม่ใช่ 404 ให้ log error
+            if (error.response?.status !== 404) {
                console.error("Error fetching student:", error);
             }
-            
-            // ถ้าไม่เจอ ลอง fetch จาก school_students
-            silentAxios
-               .get(`${apiUrl}/api/accounts/school_students/${userId}`, {
-                  headers: { Authorization: `Bearer ${token}` },
-               })
-               .then((res) => {
-                  setStudent(res.data.school_student);
-               })
-               .catch((schoolError: any) => {
-                  // ถ้าไม่ใช่ silent error (404) ให้ log
-                  if (!schoolError.silent) {
-                     console.error("Error fetching school student:", schoolError);
-                  }
-                  setStudent(null);
-               })
-               .finally(() => setLoading(false));
-         })
-         .finally(() => {
-            if (student) setLoading(false);
-         });
+         }
+         
+         try {
+            // ถ้าไม่เจอใน students ลอง fetch จาก school_students
+            const response = await axios.get(`${apiUrl}/api/accounts/school_students/${userId}`, {
+               headers: { Authorization: `Bearer ${token}` },
+            });
+            setStudent(response.data.school_student);
+         } catch (error: any) {
+            // ถ้าไม่ใช่ 404 ให้ log error
+            if (error.response?.status !== 404) {
+               console.error("Error fetching school student:", error);
+            }
+            setStudent(null);
+         } finally {
+            setLoading(false);
+         }
+      };
+      
+      fetchStudentData();
    }, [userId, token]);
 
    return (

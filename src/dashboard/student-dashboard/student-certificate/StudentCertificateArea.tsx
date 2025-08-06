@@ -26,6 +26,7 @@ totalLessons: number;
 completedLessons: number;
 progressPercentage: number;
 status: string;
+paymentApproved?: boolean;
 }
 
 interface CertificateData {
@@ -59,8 +60,22 @@ const ErrorDisplay: FC<{ message: string }> = ({ message }) => (
 const EmptyState: FC = () => (
    <div className="card text-center" style={{ padding: '3rem' }}>
       <div style={{ fontSize: '5rem', color: '#e9ecef', marginBottom: '1.5rem' }}><i className="fas fa-graduation-cap"></i></div>
-      <h5 className="text-muted mb-3">คุณยังไม่มีคอร์สที่เรียนจบแล้ว</h5>
-      <p className="text-muted mb-4">เมื่อคุณเรียนคอร์สใดคอร์สหนึ่งจนครบ 100% แล้ว คุณจะสามารถดาวน์โหลดใบรับรองได้ที่นี่</p>
+      <h5 className="text-muted mb-3">คุณยังไม่มีคอร์สที่สามารถดาวน์โหลดใบรับรองได้</h5>
+      <p className="text-muted mb-4">เพื่อดาวน์โหลดใบรับรอง คุณต้อง:</p>
+      <div className="text-start mb-4" style={{ maxWidth: '400px', margin: '0 auto' }}>
+         <div className="d-flex align-items-center mb-2">
+            <i className="fas fa-check-circle text-success me-2"></i>
+            <span>เรียนคอร์สจนครบ 100%</span>
+         </div>
+         <div className="d-flex align-items-center mb-2">
+            <i className="fas fa-credit-card text-warning me-2"></i>
+            <span>ชำระเงินค่าเรียน</span>
+         </div>
+         <div className="d-flex align-items-center">
+            <i className="fas fa-user-check text-info me-2"></i>
+            <span>รอการอนุมัติจากผู้ดูแล</span>
+         </div>
+      </div>
       <Link to="/courses" className="btn btn-primary"><i className="fas fa-search me-2"></i>ค้นหาคอร์สเรียน</Link>
    </div>
 );
@@ -261,9 +276,14 @@ const StudentCertificateArea = () => {
                                                 </small>
                                           </td>
                                           <td className="text-center">
+                                                <div className="d-flex flex-column align-items-center gap-1">
                                                 <span className="badge bg-success">
-                                                   <i className="fas fa-graduation-cap me-1"></i>เรียนจบแล้ว
-                                                </span>
+                                                      <i className="fas fa-graduation-cap me-1"></i>เรียนจบแล้ว
+                                     </span>
+                                     <span className="badge bg-success">
+                                        <i className="fas fa-check-circle me-1"></i>ได้รับอนุมัติ
+                                     </span>
+                                  </div>
                                           </td>
                                           <td className="text-center">
                                                 <button 

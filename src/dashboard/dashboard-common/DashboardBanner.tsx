@@ -7,6 +7,7 @@ const apiUrl = import.meta.env.VITE_API_URL || process.env.REACT_APP_API_URL;
 const DashboardBanner = ({ style }: any) => {
    const [user, setUser] = useState<any>(null)
    const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+   const [facultyName, setFacultyName] = useState<string | null>(null)
 
    useEffect(() => {
       // Get user data from localStorage where it's typically stored after login
@@ -26,15 +27,26 @@ const DashboardBanner = ({ style }: any) => {
 
    const fetchInstructorData = async (userData: any) => {
       try {
-         const token = localStorage.getItem("token")
-         if (!token) return
-
          const userId = userData.user_id || userData.id
          if (!userId) return
 
-         const response = await axios.get(`${apiUrl}/api/accounts/instructors/${userId}`, {
+         // Check user role first - only fetch instructor data for instructors
+         const userRole = userData.role || userData.user_role
+         console.log('DashboardBanner - User ID:', userId, 'Role:', userRole, 'UserData:', userData)
+         
+         if (userRole !== 'instructor') {
+            // For non-instructors (like admin), just use the existing userData
+            console.log('Non-instructor user, skipping instructor API call')
+            setUser(userData)
+            return
+         }
+
+         const token = localStorage.getItem('token')
+         const config = {
             headers: { Authorization: `Bearer ${token}` }
-         })
+         }
+
+         const response = await axios.get(`${apiUrl}/api/accounts/instructors/user/${userId}`, config)
          
          const instructorData = response.data.instructor
          setUser(instructorData)
@@ -43,8 +55,31 @@ const DashboardBanner = ({ style }: any) => {
          if (instructorData.avatar_file_id) {
             fetchAvatar(instructorData.avatar_file_id)
          }
+
+         // Fetch faculty information
+         if (instructorData.department) {
+            fetchFacultyInfo(instructorData.department, config)
+         }
       } catch (error) {
          console.error("Error fetching instructor data:", error)
+      }
+   }
+
+   const fetchFacultyInfo = async (departmentId: number, config: any) => {
+      try {
+         const departmentsResponse = await axios.get(`${apiUrl}/api/auth/departments`, config)
+         
+         if (departmentsResponse.data.success) {
+            const department = departmentsResponse.data.departments.find(
+               (dept: any) => dept.department_id === departmentId
+            )
+            
+            if (department && department.faculty) {
+               setFacultyName(department.faculty)
+            }
+         }
+      } catch (error) {
+         console.error("Error fetching faculty info:", error)
       }
    }
 
@@ -112,7 +147,20 @@ const DashboardBanner = ({ style }: any) => {
                </div>
                <div className="content">
                   <h4 className="title">{getUserName()}</h4>
-
+                  {facultyName && (
+                     <p className="faculty-info" style={{
+                        color: '#6b7280',
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        margin: '5px 0 0 0',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                     }}>
+                        <i className="fas fa-university" style={{ color: '#4f46e5', fontSize: '12px' }}></i>
+                        {facultyName}
+                     </p>
+                  )}
                </div>
             </div>
 

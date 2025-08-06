@@ -1,8 +1,7 @@
 "use client"
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { Swiper, SwiperSlide } from "swiper/react";
-import { Navigation } from 'swiper/modules';
+
 import axios from "axios";
 
 // Define interfaces for our data structure
@@ -25,38 +24,11 @@ interface CourseDetail {
    completion_count?: number;
 }
 
-const setting = {
-   slidesPerView: 3,
-   spaceBetween: 30,
-   observer: true,
-   observeParents: true,
-   loop: true,
-   breakpoints: {
-      '1500': {
-         slidesPerView: 3,
-      },
-      '1200': {
-         slidesPerView: 3,
-      },
-      '992': {
-         slidesPerView: 2,
-         spaceBetween: 24,
-      },
-      '768': {
-         slidesPerView: 2,
-         spaceBetween: 24,
-      },
-      '576': {
-         slidesPerView: 1.5,
-      },
-      '0': {
-         slidesPerView: 1,
-      },
-   },
-}
+
 
 const InstructorEnrolledCourseContent = () => {
    const [isLoop, setIsLoop] = useState(false);
+   console.log(isLoop)
    const [loading, setLoading] = useState(true);
    const [error, setError] = useState<string | null>(null);
    const [courseData, setCourseData] = useState<CourseDetail[]>([]);
@@ -93,7 +65,9 @@ const InstructorEnrolledCourseContent = () => {
             );
 
             if (response.data.success) {
+               console.log("=== INSTRUCTOR COURSES PAGE ===");
                console.log("API Response:", response.data.courses); // Debug log
+               console.log("Number of courses from API:", response.data.courses.length);
                
                // Transform the API response to match our component's data structure
                const transformedData: CourseDetail[] = response.data.courses.map((course: any) => {
@@ -387,77 +361,73 @@ const InstructorEnrolledCourseContent = () => {
                            ไม่พบรายวิชา
                         </div>
                      ) : (
-                        <Swiper
-                           {...setting}
-                           modules={[Navigation]}
-                           loop={isLoop && courseData.length > setting.slidesPerView} 
-                           className="swiper dashboard-courses-active">
-                           {courseData.map((item) => (
-                              <SwiperSlide key={item.id} className="swiper-slide">
-                                 <Link to={`/instructor/subject/${item.subject_id}/overview`} className="courses__item courses__item-two shine__animate-item" style={{ textDecoration: 'none', color: 'inherit' }}>
-                                    <div className="courses__item-thumb courses__item-thumb-two">
-                                       <div className="shine__animate-link">
-                                          <img 
-                                             src={item.thumb}
-                                             alt={item.title}
-                                             onError={(e) => {
-                                                console.log("Image failed to load:", item.thumb);
-                                                (e.target as HTMLImageElement).src = "/assets/img/courses/course_thumb01.jpg";
-                                             }}
-                                          />
-                                       </div>
-                                    </div>
-                                    <div className="courses__item-content courses__item-content-two">
-                                       <ul className="courses__item-meta list-wrap">
-                                          <li className="courses__item-tag">
-                                             <span>{item.tag}</span>
-                                          </li>
-                                       </ul>
-                                       <h5 className="title">
-                                          {item.title}
-                                       </h5>
-                                       {item.progress !== undefined &&
-                                          <div className="progress-item progress-item-two">
-                                             <h6 className="title">COMPLETE <span>{item.progress}%</span></h6>
-                                             <div className="progress">
-                                                <div className="progress-bar" style={{ width: `${item.progress}%` }}></div>
-                                             </div>
-                                          </div>
-                                       }
-                                    </div>
-                                    <div className="courses__item-bottom-two">
-                                       <div className="enrollment-stats">
-                                          <div className="stat-item">
-                                             <span className="stat-label">
-                                                <i className="fas fa-users" style={{ marginRight: '8px' }}></i>
-                                                นักเรียนทั้งหมด
-                                             </span>
-                                             <span className="stat-value">{item.enrollment_count || 0} คน</span>
-                                          </div>
-                                          <div className="stat-item">
-                                             <span className="stat-label">
-                                                <i className="fas fa-graduation-cap" style={{ marginRight: '8px' }}></i>
-                                                สำเร็จการศึกษา
-                                             </span>
-                                             <span className="stat-value">{item.completion_count || 0} คน</span>
-                                          </div>
-                                          <div className="stat-item">
-                                             <span className="stat-label">
-                                                <i className="fas fa-chart-line" style={{ marginRight: '8px' }}></i>
-                                                อัตราสำเร็จ
-                                             </span>
-                                             <span className="stat-value">
-                                                {item.enrollment_count && item.enrollment_count > 0 
-                                                   ? Math.round((item.completion_count || 0) / item.enrollment_count * 100)
-                                                   : 0}%
-                                             </span>
-                                          </div>
-                                       </div>
-                                    </div>
-                                 </Link>
-                              </SwiperSlide>
-                           ))}
-                        </Swiper>
+                     <div className="row">
+                     {courseData.map((item) => (
+                        <div key={item.id} className="col-lg-6 col-md-6 col-sm-12 mb-4">
+                           <Link to={`/instructor/subject/${item.subject_id}/overview`} className="courses__item courses__item-two shine__animate-item" style={{ textDecoration: 'none', color: 'inherit' }}>
+                              <div className="courses__item-thumb courses__item-thumb-two">
+                                 <div className="shine__animate-link">
+                                 <img 
+                                 src={item.thumb}
+                              alt={item.title}
+                           onError={(e) => {
+                           console.log("Image failed to load:", item.thumb);
+                        (e.target as HTMLImageElement).src = "/assets/img/courses/course_thumb01.jpg";
+                     }}
+                     />
+                     </div>
+                     </div>
+                     <div className="courses__item-content courses__item-content-two">
+                     <ul className="courses__item-meta list-wrap">
+                        <li className="courses__item-tag">
+                              <span>{item.tag}</span>
+                           </li>
+                     </ul>
+                     <h5 className="title">
+                     {item.title}
+                     </h5>
+                     {item.progress !== undefined &&
+                        <div className="progress-item progress-item-two">
+                        <h6 className="title">COMPLETE <span>{item.progress}%</span></h6>
+                           <div className="progress">
+                              <div className="progress-bar" style={{ width: `${item.progress}%` }}></div>
+                        </div>
+                     </div>
+                     }
+                     </div>
+                     <div className="courses__item-bottom-two">
+                     <div className="enrollment-stats">
+                        <div className="stat-item">
+                              <span className="stat-label">
+                                 <i className="fas fa-users" style={{ marginRight: '8px' }}></i>
+                              นักเรียนทั้งหมด
+                        </span>
+                     <span className="stat-value">{item.enrollment_count || 0} คน</span>
+                     </div>
+                     <div className="stat-item">
+                     <span className="stat-label">
+                        <i className="fas fa-graduation-cap" style={{ marginRight: '8px' }}></i>
+                           สำเร็จการศึกษา
+                        </span>
+                     <span className="stat-value">{item.completion_count || 0} คน</span>
+                     </div>
+                     <div className="stat-item">
+                     <span className="stat-label">
+                        <i className="fas fa-chart-line" style={{ marginRight: '8px' }}></i>
+                           อัตราสำเร็จ
+                        </span>
+                     <span className="stat-value">
+                     {item.enrollment_count && item.enrollment_count > 0 
+                        ? Math.round((item.completion_count || 0) / item.enrollment_count * 100)
+                           : 0}%
+                     </span>
+                     </div>
+                     </div>
+                     </div>
+                     </Link>
+                     </div>
+                     ))}
+                     </div>
                      )}
                   </div>
                </div>

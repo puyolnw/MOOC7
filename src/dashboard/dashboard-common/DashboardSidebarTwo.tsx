@@ -63,6 +63,13 @@ const DashboardSidebarTwo = () => {
           icon: "fas fa-home",
           title: "แดชบอร์ด",
         },
+      ],
+    },
+    {
+      id: 2,
+      title: "การเรียน",
+      class_name: "category-section",
+      sidebar_details: [
         {
           id: 3,
           link: "/student-enrolled-courses",
@@ -81,9 +88,23 @@ const DashboardSidebarTwo = () => {
           icon: "fas fa-certificate",
           title: "ใบรับรองของฉัน",
         },
-        {
+              {
           id: 8,
-          link: userId ? `/student-setting/${userId}` : "/student-setting", // Conditional link
+          link: "/student-payment",
+          icon: "fas fa-credit-card",
+          title: "การชำระเงิน",
+        },
+      ],
+    },
+    {
+      id: 3,
+      title: "การจัดการบัญชี",
+      class_name: "category-section",
+      sidebar_details: [
+  
+        {
+          id: 9,
+          link: userId ? `/student-setting/${userId}` : "/student-setting",
           icon: "fas fa-cog",
           title: "ตั้งค่าโปรไฟล์",
         },

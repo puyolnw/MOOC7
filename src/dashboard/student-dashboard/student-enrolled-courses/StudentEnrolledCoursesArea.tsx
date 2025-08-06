@@ -50,19 +50,19 @@ const StudentEnrolledCoursesArea = () => {
          }
 
          try {
-            // ดึงข้อมูลความคืบหน้าของผู้ใช้
-            const response = await axios.get(`${API_URL}/api/courses/user/progress`, {
+            // ใช้ API เดียวกับ dashboard
+            const response = await axios.get(`${API_URL}/api/data/student/dashboard/courses`, {
                headers: {
                   Authorization: `Bearer ${token}`
                }
             });
 
             if (response.data.success) {
-               const { courses: apiCourses } = response.data.progress;
+               const { courses: apiCourses } = response.data;
                
                // แปลงข้อมูลจาก API ให้เข้ากับ interface ที่ต้องการ
                const formattedCourses = await Promise.all(apiCourses.map(async (course: any, index: number) => {
-                  // ดึงข้อมูลเพิ่มเติมของคอร์ส
+                  // ดึงข้อมูลเพิ่มเติมของคอร์ส (รูปภาพ, รายละเอียด)
                   let courseDetails = course;
                   try {
                      const detailsResponse = await axios.get(`${API_URL}/api/courses/${course.course_id}`, {
@@ -74,60 +74,35 @@ const StudentEnrolledCoursesArea = () => {
                      if (detailsResponse.data.success) {
                         courseDetails = {
                            ...course,
-                           ...detailsResponse.data.course
+                           cover_image_file_id: detailsResponse.data.course.cover_image_file_id,
+                           cover_image: detailsResponse.data.course.cover_image
                         };
                      }
                   } catch (err) {
                      console.error(`Error fetching details for course ${course.course_id}:`, err);
                   }
                   
-                  // ดึงข้อมูล progress จาก API
-                  let progressDetails = {
-                     overallPercentage: courseDetails.progress_percentage || 0,
-                     totalLessons: courseDetails.total_subjects || 0,
-                     completedLessons: courseDetails.completed_subjects || 0
-                  };
-                  
-                  try {
-                     // เรียกใช้ API /course/:courseId/progress-detail
-                     const progressResponse = await axios.get(`${API_URL}/api/learn/course/${course.course_id}/progress-detail`, {
-                        headers: {
-                           Authorization: `Bearer ${token}`
-                        }
-                     });
-                     
-                     if (progressResponse.data.success) {
-                        progressDetails = {
-                           overallPercentage: progressResponse.data.overallPercentage,
-                           totalLessons: progressResponse.data.totalLessons,
-                           completedLessons: progressResponse.data.completedLessons
-                        };
-                     }
-                  } catch (err) {
-                     console.error(`Error fetching progress details for course ${course.course_id}:`, err);
-                  }
-                  
                   return {
                      id: index + 1,
-                     course_id: courseDetails.course_id,
-                     title: courseDetails.title || courseDetails.course_title,
+                     course_id: course.course_id,
+                     title: course.title,
                      thumb: "/assets/img/courses/course_thumb01.jpg", // รูปภาพเริ่มต้น
-                     tag: courseDetails.category || "ทั่วไป",
+                     tag: "ทั่วไป",
                      avatar_thumb: "/assets/img/courses/course_tutor01.png", // รูปภาพเริ่มต้นของผู้สอน
                      avatar_name: "อาจารย์ผู้สอน", // ชื่อเริ่มต้นของผู้สอน
                      review: "4.5", // คะแนนเริ่มต้น
-                     progress: progressDetails.overallPercentage, // ใช้ค่า progress จาก API
-                     book: `${progressDetails.totalLessons || 0} วิชา`,
-                     time: courseDetails.enrollment_date ? new Date(courseDetails.enrollment_date).toLocaleDateString('th-TH') : "-",
-                     mortarboard: `${progressDetails.completedLessons || 0}/${progressDetails.totalLessons || 0}`,
-                     status: courseDetails.status,
-                     enrollment_date: courseDetails.enrollment_date,
-                     completion_date: courseDetails.completion_date,
-                     progress_percentage: progressDetails.overallPercentage,
+                     progress: course.progress_percentage, // ใช้ค่า progress จาก dashboard API
+                     book: "หลักสูตร",
+                     time: course.enrollment_date ? new Date(course.enrollment_date).toLocaleDateString('th-TH') : "-",
+                     mortarboard: course.status === "completed" ? "เรียนจบแล้ว" : "กำลังเรียน",
+                     status: course.status,
+                     enrollment_date: course.enrollment_date,
+                     completion_date: course.completion_date,
+                     progress_percentage: course.progress_percentage,
                      cover_image_file_id: courseDetails.cover_image_file_id || null,
                      cover_image: courseDetails.cover_image || null,
-                     totalLessons: progressDetails.totalLessons,
-                     completedLessons: progressDetails.completedLessons
+                     totalLessons: 0, // จะได้จาก dashboard API
+                     completedLessons: 0 // จะได้จาก dashboard API
                   };
                }));
                

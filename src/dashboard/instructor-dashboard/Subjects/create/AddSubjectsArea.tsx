@@ -24,13 +24,13 @@ const AddSubjectsArea: React.FC<AddSubjectsAreaProps> = ({ isEmbedded = false, o
     // แสดงข้อความสำเร็จ
     alert("บันทึกข้อมูลสำเร็จ");
     
-    // กลับไปยังหน้ารายการรายวิชา
-    navigate("/admin-subjects");
+    // กลับไปยังหน้ารายการรายวิชา (อาจารย์)
+    navigate("/ins-creditbank");
   };
   
   // จัดการเมื่อมีการยกเลิก
   const handleCancel = () => {
-    navigate("/admin-subjects");
+    navigate("/ins-creditbank");
   };
   
   // ถ้าเป็นแบบ embedded ให้แสดงเฉพาะฟอร์ม

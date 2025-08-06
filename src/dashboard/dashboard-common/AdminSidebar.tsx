@@ -118,11 +118,17 @@ const sidebar_data: DataType[] = [
       class_name: "mt-40",
       sidebar_details: [
          {
-            id: 14,
-            link: "/admin-approve",
-            icon: "fas fa-check-circle",
-            title: "อนุมัติการชำระเงิน",
+         id: 14,
+         link: "/admin-approve",
+         icon: "fas fa-check-circle",
+         title: "อนุมัติการชำระเงิน",
          },
+          {
+             id: 15,
+             link: "/admin-bank-accounts",
+             icon: "fas fa-university",
+             title: "จัดการบัญชีธนาคาร",
+          },
       ],
    },
    {

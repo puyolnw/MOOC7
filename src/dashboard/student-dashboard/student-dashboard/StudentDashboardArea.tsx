@@ -16,7 +16,10 @@ interface DashboardStats {
 interface CourseData {
   course_id: number;
   title: string;
-  completed: boolean | null;
+  total_lessons: number;
+  completed_lessons: number;
+  progress_percentage: number;
+  completed: boolean;
   status: 'completed' | 'in_progress' | 'not_started';
 }
 

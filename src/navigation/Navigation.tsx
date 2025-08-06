@@ -18,6 +18,7 @@ import AdminEditQuizzespage from '../pages/Admin/edit/AdminEditQuiz';
 import AdminEditquestionpage from '../pages/Admin/edit/AdminEditQuestion';
 import AdminEditSubjectspage from '../pages/Admin/edit/AdminEditSubject';
 import AdminApprovepage from '../pages/Admin/AdminApprove';
+import BankAccountspage from '../pages/BankAccountspage';
 
 import AdminAccountInstructorspage from '../pages/Admin/account/AccountInstructors';
 import CreateAccountInstructorspage from '../pages/Admin/account/create/AddInstructors';
@@ -79,6 +80,7 @@ import StudentSetting from '../pages/StudentSetting';
 import NotFound from '../pages/NotFound';
 
 import StudentCertificate from '../pages/StudentCertificate';
+import StudentPaymentpage from '../pages/StudentPaymentpage';
 
 import InsLessonspage from '../pages/Instructor/InsLessons';
 import InsQuestionspage from '../pages/Instructor/InsQuestions';
@@ -168,6 +170,7 @@ const AppNavigation = () => {
         <Route path="/admin/manage-pics" element={<ManagePics />} />
         <Route path="/admin-display" element={<Admindisplaypage />} />
         <Route path="/admin-approve" element={<AdminApprovepage />} />
+        <Route path="/admin-bank-accounts" element={<BankAccountspage />} />
 
 
         </Route>
@@ -208,6 +211,7 @@ const AppNavigation = () => {
         <Route path="/student-history" element={<StudentHistory />} />
         <Route path="/student-setting/:id" element={<StudentSetting />} />
         <Route path="/student-certificate" element={<StudentCertificate />} />
+        <Route path="/student-payment" element={<StudentPaymentpage />} />
        
         </Route>
         {/* <Route path="/blog-details/:id" element={<DynamicBlogDeatils />} /> */}

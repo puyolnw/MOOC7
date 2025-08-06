@@ -19,7 +19,7 @@
     "@thednp/dommatrix": "^2.0.11",
     "@types/react-modal": "^3.16.3",
     "aos": "^2.3.4",
-    "axios": "^1.10.0",
+    "axios": "^1.11.0",
     "bootstrap": "^5.3.7",
     "circletype": "^2.3.0",
     "core-js": "^3.41.0",

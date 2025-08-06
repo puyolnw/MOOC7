@@ -49,20 +49,16 @@ const StudentSettingProfile: React.FC = () => {
     }
   }
 
-  const token = localStorage.getItem("token");
-
   useEffect(() => {
-    if (!userId || !token) {
-      setMessage("ไม่พบข้อมูลผู้ใช้หรือ token");
+    if (!userId) {
+      setMessage("ไม่พบข้อมูลผู้ใช้");
       setLoading(false);
       return;
     }
     setLoading(true);
     // ลองดึงข้อมูลนักศึกษา
     axios
-      .get(`${apiUrl}/api/accounts/students/${userId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+      .get(`${apiUrl}/api/accounts/students/${userId}`)
       .then((res) => {
         setStudent(res.data.student);
         setEditData(res.data.student);
@@ -71,9 +67,7 @@ const StudentSettingProfile: React.FC = () => {
       .catch(() => {
         // ถ้าไม่เจอใน students ให้ลองดึง school_students
         axios
-          .get(`${apiUrl}/api/accounts/school_students/${userId}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          })
+          .get(`${apiUrl}/api/accounts/school_students/${userId}`)
           .then((res) => {
             setStudent(res.data.school_student);
             setEditData(res.data.school_student);
@@ -82,7 +76,7 @@ const StudentSettingProfile: React.FC = () => {
           .catch(() => setMessage("ไม่พบข้อมูลผู้ใช้ในระบบ"));
       })
       .finally(() => setLoading(false));
-  }, [userId, token]);
+  }, [userId]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -92,8 +86,8 @@ const StudentSettingProfile: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!userId || !token) {
-      setMessage("ไม่พบข้อมูลผู้ใช้หรือ token");
+    if (!userId) {
+      setMessage("ไม่พบข้อมูลผู้ใช้");
       return;
     }
     try {
@@ -105,9 +99,6 @@ const StudentSettingProfile: React.FC = () => {
             email: editData.email,
             firstName: editData.first_name,
             lastName: editData.last_name,
-          },
-          {
-            headers: { Authorization: `Bearer ${token}` },
           }
         );
       } else if (studentType === "school_student") {
@@ -123,9 +114,6 @@ const StudentSettingProfile: React.FC = () => {
             study_program: editData.study_program,
             grade_level: editData.grade_level,
             address: editData.address,
-          },
-          {
-            headers: { Authorization: `Bearer ${token}` },
           }
         );
       }
@@ -133,15 +121,11 @@ const StudentSettingProfile: React.FC = () => {
       setIsEditPopupOpen(false); // Close popup after success
       // Refresh student data
       if (studentType === "student") {
-        const res = await axios.get(`${apiUrl}/api/accounts/students/${userId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const res = await axios.get(`${apiUrl}/api/accounts/students/${userId}`);
         setStudent(res.data.student);
         setEditData(res.data.student);
       } else if (studentType === "school_student") {
-        const res = await axios.get(`${apiUrl}/api/accounts/school_students/${userId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const res = await axios.get(`${apiUrl}/api/accounts/school_students/${userId}`);
         setStudent(res.data.school_student);
         setEditData(res.data.school_student);
       }

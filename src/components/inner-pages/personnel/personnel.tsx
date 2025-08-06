@@ -20,6 +20,7 @@ const Personnel: React.FC = () => {
   const [instructors, setInstructors] = useState<InstructorType[]>([]);
   const [selectedInstructor, setSelectedInstructor] = useState<InstructorType | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const [selectedDepartment, setSelectedDepartment] = useState<string>('all');
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [animateCards, setAnimateCards] = useState<boolean>(false);
   const apiUrl = import.meta.env.VITE_API_URL;
@@ -48,8 +49,17 @@ const Personnel: React.FC = () => {
       fullName.includes(searchTerm.toLowerCase()) ||
       (instructor.position || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       (instructor.department_name || '').toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesSearch;
+    
+    const matchesDepartment = selectedDepartment === 'all' || 
+      instructor.department_name === selectedDepartment;
+    
+    return matchesSearch && matchesDepartment;
   });
+
+  // สร้างรายการคณะที่ไม่ซ้ำ
+  const uniqueDepartments = Array.from(new Set(instructors.map(instructor => 
+    instructor.department_name || 'ไม่มีภาควิชา'
+  ))).sort();
 
   const groupedByDepartment = filteredInstructors.reduce((acc, instructor) => {
     const deptName = instructor.department_name || 'ไม่มีภาควิชา';
@@ -91,82 +101,151 @@ const Personnel: React.FC = () => {
             </div>
           </div>
 
+          {/* ส่วนค้นหาและกรองที่ปรับปรุงใหม่ */}
           <div className="row mb-50">
-            <div className="col-lg-6 col-md-8 mb-4 mb-lg-0">
-              <div className="personnel-search">
-                <input 
-                  type="text" 
-                  placeholder="ค้นหาบุคลากร..." 
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="form-control personnel-search-input"
-                />
-                <button className="search-btn">
-                  <i className="fas fa-search"></i>
-                </button>
-              </div>
-            </div>
-            <div className="col-lg-6 col-md-12">
-              <div className="personnel-filter">
-                <span className="filter-label">กรองตามคณะ:</span>
-                <div className="filter-buttons">
-                  <button 
-                    className={`filter-btn ${'all' === 'all' ? 'active' : ''}`} 
-                    onClick={() => {}}
-                  >
-                    ทั้งหมด
-                  </button>
+            <div className="col-12">
+              <div className="modern-filter-section">
+                <div className="row g-4">
+                  <div className="col-lg-5 col-md-6">
+                    <div className="search-container">
+                      <div className="search-input-wrapper">
+                        <i className="fas fa-search search-icon"></i>
+                        <input 
+                          type="text" 
+                          placeholder="ค้นหาชื่อ, ตำแหน่ง, หรือภาควิชา..." 
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          className="modern-search-input"
+                        />
+                        {searchTerm && (
+                          <button 
+                            className="clear-search-btn"
+                            onClick={() => setSearchTerm('')}
+                          >
+                            <i className="fas fa-times"></i>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="col-lg-4 col-md-6">
+                    <div className="department-filter">
+                      <select 
+                        value={selectedDepartment}
+                        onChange={(e) => setSelectedDepartment(e.target.value)}
+                        className="modern-select"
+                      >
+                        <option value="all">ทุกคณะ</option>
+                        {uniqueDepartments.map((dept) => (
+                          <option key={dept} value={dept}>
+                            {dept}
+                          </option>
+                        ))}
+                      </select>
+                      <i className="fas fa-chevron-down select-arrow"></i>
+                    </div>
+                  </div>
+                  
+                  <div className="col-lg-3 col-md-12">
+                    <div className="filter-summary">
+                      <div className="result-count">
+                        <i className="fas fa-users"></i>
+                        <span>พบ {filteredInstructors.length} คน</span>
+                      </div>
+                      {(searchTerm || selectedDepartment !== 'all') && (
+                        <button 
+                          className="clear-all-btn"
+                          onClick={() => {
+                            setSearchTerm('');
+                            setSelectedDepartment('all');
+                          }}
+                        >
+                          <i className="fas fa-undo"></i>
+                          รีเซ็ต
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="row justify-content-center">
-            {Object.entries(groupedByDepartment).map(([deptName, ranks], deptIndex) => (
-              <React.Fragment key={deptIndex}>
-                <div className="col-12">
-                  <h3 className="department-title">{deptName}</h3>
-                </div>
-                {Object.entries(ranks)
-                  .sort(([rankA], [rankB]) => {
-                    const indexA = rankingOrder.indexOf(rankA);
-                    const indexB = rankingOrder.indexOf(rankB);
-                    return indexA - indexB;
-                  })
-                  .map(([_, rankInstructors], rankIndex) => (
-                    rankInstructors.map((instructor, index) => (
-                      <div 
-                        key={instructor.instructor_id} 
-                        className={`col-xl-4 col-lg-4 col-md-6 col-sm-10 mb-30 ${animateCards ? 'animate-in' : ''}`}
-                        style={{ animationDelay: `${(deptIndex * Object.keys(ranks).length + rankIndex) * 0.1 + index * 0.1}s` }}
-                      >
-                        <div className="personnel-card">
-                          <div className="personnel-card-inner">
-                            <div className="personnel-card-front">
-                              <div className="personnel-image">
+          {/* ส่วนแสดงผลการ์ดที่ปรับปรุงใหม่ */}
+          <div className="personnel-grid">
+            {selectedDepartment === 'all' ? (
+              // แสดงแบบแยกตามคณะ
+              Object.entries(groupedByDepartment).map(([deptName, ranks], deptIndex) => (
+                <div key={deptIndex} className="department-section">
+                  <div className="department-header">
+                    <div className="department-title-wrapper">
+                      <h3 className="department-title">
+                        <i className="fas fa-building"></i>
+                        {deptName}
+                      </h3>
+                      <div className="department-count">
+                        {Object.values(ranks).reduce((total, instructors) => total + instructors.length, 0)} คน
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="row g-4">
+                    {Object.entries(ranks)
+                      .sort(([rankA], [rankB]) => {
+                        const indexA = rankingOrder.indexOf(rankA);
+                        const indexB = rankingOrder.indexOf(rankB);
+                        return indexA - indexB;
+                      })
+                      .map(([_, rankInstructors]) => (
+                        rankInstructors.map((instructor, index) => (
+                          <div 
+                            key={instructor.instructor_id} 
+                            className={`col-xl-4 col-lg-6 col-md-6 ${animateCards ? 'animate-in' : ''}`}
+                            style={{ animationDelay: `${deptIndex * 0.1 + index * 0.05}s` }}
+                          >
+                            <div className="modern-personnel-card">
+                              <div className="card-image">
                                 <img src={instructor.avatar_file_id
                                   ? `${apiUrl}/api/accounts/instructors/avatar/${instructor.avatar_file_id}`
-                                  : "public/assets/img/userdefault.png"
+                                  : "/assets/img/userdefault.png"
                                 } alt={`${instructor.first_name} ${instructor.last_name}`} />
-                                <div className="personnel-overlay">
+                                <div className="card-overlay">
                                   <button 
-                                    className="view-profile-btn"
+                                    className="view-details-btn"
                                     onClick={() => openModal(instructor)}
                                   >
-                                    ดูโปรไฟล์
+                                    <i className="fas fa-eye"></i>
+                                    ดูรายละเอียด
                                   </button>
                                 </div>
+                                {instructor.ranking_name && instructor.ranking_name !== 'ไม่มียศ' && (
+                                  <div className="rank-badge">
+                                    {instructor.ranking_name}
+                                  </div>
+                                )}
                               </div>
-                              <div className="personnel-info">
-                                <h4 className="personnel-name">{`${instructor.first_name} ${instructor.last_name}`}</h4>
-                                <p className="personnel-position">{instructor.position || 'ไม่มีตำแหน่ง'}</p>
-                                <p className="personnel-department">{instructor.department_name || 'ไม่มีภาควิชา'}</p>
-                                <div className="personnel-faculty">
-                                  <span>{instructor.department_name || 'ไม่มีข้อมูลคณะ'}</span>
-                                </div>
-                                <div className="personnel-contact">
+                              
+                              <div className="card-content">
+                                <h4 className="instructor-name">
+                                  {`${instructor.first_name} ${instructor.last_name}`}
+                                </h4>
+                                <p className="instructor-position">
+                                  <i className="fas fa-user-tie"></i>
+                                  {instructor.position || 'ไม่มีตำแหน่ง'}
+                                </p>
+                                <p className="instructor-department">
+                                  <i className="fas fa-building"></i>
+                                  {instructor.department_name || 'ไม่มีภาควิชา'}
+                                </p>
+                                
+                                <div className="card-footer">
+                                  <div className="subject-count">
+                                    <i className="fas fa-book"></i>
+                                    <span>{instructor.subject_count || 0} วิชา</span>
+                                  </div>
                                   <button 
-                                    className="contact-icon info-btn"
+                                    className="info-btn"
                                     onClick={() => openModal(instructor)}
                                   >
                                     <i className="fas fa-info-circle"></i>
@@ -175,23 +254,91 @@ const Personnel: React.FC = () => {
                               </div>
                             </div>
                           </div>
+                        ))
+                      ))}
+                  </div>
+                </div>
+              ))
+            ) : (
+              // แสดงแบบ Grid ธรรมดาเมื่อกรองคณะ
+              <div className="row g-4">
+                {filteredInstructors.map((instructor, index) => (
+                  <div 
+                    key={instructor.instructor_id} 
+                    className={`col-xl-4 col-lg-6 col-md-6 ${animateCards ? 'animate-in' : ''}`}
+                    style={{ animationDelay: `${index * 0.05}s` }}
+                  >
+                    <div className="modern-personnel-card">
+                      <div className="card-image">
+                        <img src={instructor.avatar_file_id
+                          ? `${apiUrl}/api/accounts/instructors/avatar/${instructor.avatar_file_id}`
+                          : "/assets/img/userdefault.png"
+                        } alt={`${instructor.first_name} ${instructor.last_name}`} />
+                        <div className="card-overlay">
+                          <button 
+                            className="view-details-btn"
+                            onClick={() => openModal(instructor)}
+                          >
+                            <i className="fas fa-eye"></i>
+                            ดูรายละเอียด
+                          </button>
+                        </div>
+                        {instructor.ranking_name && instructor.ranking_name !== 'ไม่มียศ' && (
+                          <div className="rank-badge">
+                            {instructor.ranking_name}
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="card-content">
+                        <h4 className="instructor-name">
+                          {`${instructor.first_name} ${instructor.last_name}`}
+                        </h4>
+                        <p className="instructor-position">
+                          <i className="fas fa-user-tie"></i>
+                          {instructor.position || 'ไม่มีตำแหน่ง'}
+                        </p>
+                        <p className="instructor-department">
+                          <i className="fas fa-building"></i>
+                          {instructor.department_name || 'ไม่มีภาควิชา'}
+                        </p>
+                        
+                        <div className="card-footer">
+                          <div className="subject-count">
+                            <i className="fas fa-book"></i>
+                            <span>{instructor.subject_count || 0} วิชา</span>
+                          </div>
+                          <button 
+                            className="info-btn"
+                            onClick={() => openModal(instructor)}
+                          >
+                            <i className="fas fa-info-circle"></i>
+                          </button>
                         </div>
                       </div>
-                    ))
-                  ))}
-              </React.Fragment>
-            ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            
             {filteredInstructors.length === 0 && (
-              <div className="col-12 text-center mt-5 mb-5">
-                <div className="no-results">
-                  <i className="fas fa-search fa-3x mb-3"></i>
-                  <h3>ไม่พบบุคลากรที่ค้นหา</h3>
-                  <p>กรุณาลองค้นหาด้วยคำอื่น</p>
+              <div className="empty-state">
+                <div className="empty-illustration">
+                  <i className="fas fa-user-friends"></i>
+                </div>
+                <h3>ไม่พบบุคลากรที่ค้นหา</h3>
+                <p>ลองใช้คำค้นหาอื่น หรือเปลี่ยนการกรองคณะ</p>
+                <div className="empty-actions">
                   <button 
-                    className="btn btn-primary mt-3"
-                    onClick={() => setSearchTerm('')}
+                    className="btn-reset"
+                    onClick={() => {
+                      setSearchTerm('');
+                      setSelectedDepartment('all');
+                    }}
                   >
-                    ดูบุคลากรทั้งหมด
+                    <i className="fas fa-undo"></i>
+                    รีเซ็ตการค้นหา
                   </button>
                 </div>
               </div>

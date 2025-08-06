@@ -39,19 +39,36 @@ interface LessonFaqProps {
   onSelectLesson: (sectionId: number, itemId: number, title: string, type: 'video' | 'quiz') => void;
   subjectId?: number;
   subjectQuizzes?: SubjectQuiz[];
-  paymentStatus?: any;
-  onUploadSlip?: (file: File) => Promise<void>;
+  // ✅ Task 5: ลบ payment-related props
+  // paymentStatus?: any;
+  // onUploadSlip?: (file: File) => Promise<void>;
 }
+
+// ✅ Task 5: ลบ BankAccount interface ที่ไม่ใช้แล้ว
+// interface BankAccount {
+//   bank_name: string;
+//   account_name: string;
+//   account_number: string;
+//   bank_code?: string;
+//   branch_name?: string;
+//   account_type: string;
+//   is_default: boolean;
+// }
 
 const LessonFaq = ({ 
   lessonData, 
   onSelectLesson, 
   subjectId,
-  subjectQuizzes: externalSubjectQuizzes,
-  paymentStatus,
-  onUploadSlip
+  subjectQuizzes: externalSubjectQuizzes
+  // ✅ Task 5: ลบ payment-related parameters
+  // paymentStatus,
+  // onUploadSlip
 }: LessonFaqProps) => {
   const [activeAccordion, setActiveAccordion] = useState<number | null>(null);
+  // ✅ Task 5: ลบ bank account related states
+  // const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
+  // const [loadingBankAccounts, setLoadingBankAccounts] = useState(false);
+  // const apiURL = import.meta.env.VITE_API_URL;
   const [subjectQuizzes, setSubjectQuizzes] = useState<SubjectQuiz[]>([]);
   const [loadingQuizzes, setLoadingQuizzes] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -124,6 +141,9 @@ const LessonFaq = ({
       ...quiz,
       locked: false // ปลดล็อคทุกแบบทดสอบ pre/post
     })));
+    
+    // ✅ Task 5: ลบการเรียก fetchBankAccounts
+    // fetchBankAccounts();
   }, [lessonData]);
 
   const handleItemClick = (sectionId: number, item: LessonItem, sectionIndex: number, itemIndex: number) => {
@@ -157,6 +177,22 @@ const LessonFaq = ({
   const toggleAccordion = (id: number) => {
     setActiveAccordion(activeAccordion === id ? null : id);
   };
+
+  // ✅ Task 5: ลบ fetchBankAccounts function ที่ไม่ใช้แล้ว
+  // const fetchBankAccounts = async () => {
+  //   try {
+  //     setLoadingBankAccounts(true);
+  //     const response = await axios.get(`${apiURL}/api/bank-accounts/active`);
+  //     
+  //     if (response.data.success) {
+  //       setBankAccounts(response.data.bankAccounts);
+  //     }
+  //   } catch (error) {
+  //     console.error("Error fetching bank accounts:", error);
+  //   } finally {
+  //     setLoadingBankAccounts(false);
+  //   }
+  // };
 
   // ฟังก์ชันสำหรับ render แบบทดสอบในรูปแบบ accordion เหมือนบทเรียน
   const renderQuizSection = (quiz: SubjectQuiz, sectionId: number) => {
@@ -328,140 +364,7 @@ const LessonFaq = ({
         .filter(quiz => quiz.type === "post_test")
         .map((quiz) => renderQuizSection(quiz, -2000))}
 
-      {/* ส่วนการชำระเงิน */}
-      {paymentStatus && externalSubjectQuizzes && (() => {
-        const postTest = externalSubjectQuizzes?.find(q => q.type === "post_test");
-        const postTestPassed = postTest?.passed || false;
-        
-
-        
-        // แสดงส่วนการชำระเงินเสมอ แต่จะแสดงข้อความที่เหมาะสม
-
-        const statusText = paymentStatus.approved ? 'อนุมัติแล้ว' : 
-                          paymentStatus.hasSlip ? 'รออนุมัติ' : 
-                          postTest && !postTestPassed ? 'รอทำแบบทดสอบ' : 'ยังไม่ชำระ';
-        
-        const statusClass = paymentStatus.approved ? 'status-passed' : 
-                           paymentStatus.hasSlip ? 'status-awaiting' : 'status-not-passed';
-
-        return (
-          <div className="accordion-item mb-3 border rounded">
-            <h2 className="accordion-header">
-              <button
-                className={`accordion-button d-flex justify-content-between align-items-center ${
-                  activeAccordion === -3000 ? "" : "collapsed"
-                }`}
-                type="button"
-                onClick={() => toggleAccordion(-3000)}
-                aria-expanded={activeAccordion === -3000}
-                aria-controls="collapse-3000"
-              >
-                <span className="section-title fw-bold">
-                  <i className="fas fa-credit-card me-2"></i>
-                  การชำระเงิน
-                </span>
-                <span 
-                  className="section-status" 
-                  style={{
-                    padding: '4px 8px',
-                    borderRadius: '4px',
-                    fontSize: '12px',
-                    fontWeight: '500',
-                    backgroundColor: statusClass === 'status-passed' ? '#d4edda' : 
-                                   statusClass === 'status-awaiting' ? '#fff3cd' : '#f8d7da',
-                    color: statusClass === 'status-passed' ? '#155724' : 
-                          statusClass === 'status-awaiting' ? '#856404' : '#721c24',
-                    border: statusClass === 'status-passed' ? '1px solid #c3e6cb' : 
-                           statusClass === 'status-awaiting' ? '1px solid #ffeaa7' : '1px solid #f5c6cb'
-                  }}
-                >
-                  {statusText}
-                </span>
-              </button>
-            </h2>
-            <div
-              id="collapse-3000"
-              className={`accordion-collapse collapse ${
-                activeAccordion === -3000 ? "show" : ""
-              }`}
-              aria-labelledby="accordion-header-3000"
-            >
-              <div className="accordion-body p-3">
-                {!paymentStatus.hasSlip ? (
-                  <div className="payment-upload-section">
-                    {postTest && !postTestPassed ? (
-                      <p className="text-muted mb-3 fs-6">
-                        <i className="fas fa-info-circle me-2"></i>
-                        กรุณาทำแบบทดสอบหลังเรียนให้ผ่านก่อนจึงจะสามารถอัปโหลดสลิปได้
-                      </p>
-                    ) : (
-                      <p className="text-muted mb-3 fs-6">
-                        กรุณาอัปโหลดสลิปการชำระเงิน (รองรับภาพและ PDF, ขนาดไม่เกิน 5MB)
-                      </p>
-                    )}
-                    <input
-                      type="file"
-                      id="slip-upload"
-                      accept="image/*,.pdf"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          if (file.size > 5 * 1024 * 1024) {
-                            alert("ไฟล์ต้องมีขนาดไม่เกิน 5MB");
-                            return;
-                          }
-                          onUploadSlip?.(file);
-                        }
-                      }}
-                      style={{ display: "none" }}
-                      aria-label="อัปโหลดสลิปการชำระเงิน"
-                    />
-                    <button
-                      className={`btn btn-sm d-flex align-items-center ${
-                        postTest && !postTestPassed ? 'btn-secondary disabled' : 'btn-primary'
-                      }`}
-                      onClick={() => document.getElementById("slip-upload")?.click()}
-                      disabled={postTest && !postTestPassed}
-                      aria-label="เลือกไฟล์สลิป"
-                    >
-                      <i className="fas fa-upload me-2"></i>
-                      {postTest && !postTestPassed ? 'รอทำแบบทดสอบ' : 'อัปโหลดสลิป'}
-                    </button>
-                  </div>
-                ) : (
-                  <div className="payment-status-section">
-                    <p className="mb-2">
-                      <strong>ไฟล์:</strong> {paymentStatus.fileName}
-                    </p>
-                    <p className="mb-2">
-                      <strong>อัปโหลดเมื่อ:</strong>{" "}
-                      {new Date(paymentStatus.uploadedAt).toLocaleString("th-TH", {
-                        dateStyle: "medium",
-                        timeStyle: "short",
-                      })}
-                    </p>
-                    {paymentStatus.approved ? (
-                      <div className="alert alert-success d-flex align-items-center" role="alert">
-                        <i className="fas fa-check-circle me-2"></i>
-                        อนุมัติแล้วเมื่อ{" "}
-                        {new Date(paymentStatus.approvedAt).toLocaleString("th-TH", {
-                          dateStyle: "medium",
-                          timeStyle: "short",
-                        })}
-                      </div>
-                    ) : (
-                      <div className="alert alert-warning d-flex align-items-center" role="alert">
-                        <i className="fas fa-clock me-2"></i>
-                        รอ admin อนุมัติ
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        );
-      })()}
+      {/* ✅ Task 5: ลบส่วนการชำระเงินทั้งหมด */}
 
       {/* แสดงข้อความเมื่อไม่มีแบบทดสอบหรือ error */}
         {!loadingQuizzes && subjectQuizzes?.length === 0 && subjectId && !error && (

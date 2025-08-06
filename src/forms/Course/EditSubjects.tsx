@@ -993,10 +993,24 @@ const EditSubject: React.FC = () => {
               </div>
               <button
                 type="button"
-                className="btn btn-outline-primary btn-sm"
+                className="btn btn-success btn-sm shadow-sm"
                 onClick={() => setShowInstructorModal(true)}
+                style={{
+                  background: 'linear-gradient(135deg, #28a745 0%, #20c997 100%)',
+                  border: 'none',
+                  fontWeight: '600',
+                  transition: 'all 0.3s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(40, 167, 69, 0.4)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+                }}
               >
-                <i className="fas fa-user-plus me-2"></i>เลือกอาจารย์
+                <i className="fas fa-user-plus me-2"></i>เพิ่มอาจารย์ประจำรายวิชา
               </button>
             </div>
             {subjectData.instructors.length > 0 && (

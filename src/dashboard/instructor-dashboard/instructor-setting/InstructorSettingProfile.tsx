@@ -68,13 +68,21 @@ const InstructorSettingProfile: React.FC = () => {
       return;
     }
     setLoading(true);
+    
+    // First, get instructor data by user_id to find instructor_id
     axios
-      .get(`${apiUrl}/api/accounts/instructors/${userId}`, {
+      .get(`${apiUrl}/api/accounts/instructors`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => {
-        setInstructor(res.data.instructor);
-        setEditData(res.data.instructor);
+        // Find instructor by user_id
+        const instructorData = res.data.instructors.find((inst: any) => inst.user_id === userId);
+        if (instructorData) {
+          setInstructor(instructorData);
+          setEditData(instructorData);
+        } else {
+          setMessage("ไม่พบข้อมูลผู้สอน");
+        }
       })
       .catch(() => setMessage("ไม่สามารถโหลดข้อมูลได้"))
       .finally(() => setLoading(false));
@@ -125,11 +133,14 @@ const InstructorSettingProfile: React.FC = () => {
       setAvatarPreview(null);
       
       // Refresh instructor data to get new avatar
-      const res = await axios.get(`${apiUrl}/api/accounts/instructors/${userId}`, {
+      const res = await axios.get(`${apiUrl}/api/accounts/instructors`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setInstructor(res.data.instructor);
-      setEditData(res.data.instructor);
+      const instructorData = res.data.instructors.find((inst: any) => inst.user_id === userId);
+      if (instructorData) {
+        setInstructor(instructorData);
+        setEditData(instructorData);
+      }
     } catch (error: any) {
       setMessage(
         error?.response?.data?.message || "เกิดข้อผิดพลาดในการอัปโหลดภาพ"
@@ -171,11 +182,14 @@ const InstructorSettingProfile: React.FC = () => {
       setMessage("บันทึกข้อมูลสำเร็จ");
       setIsEditPopupOpen(false);
       // Refresh instructor data
-      const res = await axios.get(`${apiUrl}/api/accounts/instructors/${userId}?type=user_id`, {
+      const res = await axios.get(`${apiUrl}/api/accounts/instructors`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setInstructor(res.data.instructor);
-      setEditData(res.data.instructor);
+      const instructorData = res.data.instructors.find((inst: any) => inst.user_id === userId);
+      if (instructorData) {
+        setInstructor(instructorData);
+        setEditData(instructorData);
+      }
     } catch (error: any) {
       setMessage(
         error?.response?.data?.message || "เกิดข้อผิดพลาดในการบันทึกข้อมูล"

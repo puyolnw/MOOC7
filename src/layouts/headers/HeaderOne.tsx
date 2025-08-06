@@ -1,7 +1,6 @@
 import NavMenu from "./menu/NavMenu";
 import { useEffect, useState } from "react";
 import MobileSidebar from "./menu/MobileSidebar";
-import UseSticky from "../../hooks/UseSticky";
 import { Link, useNavigate } from "react-router-dom";
 import InjectableSvg from "../../hooks/InjectableSvg";
 
@@ -13,15 +12,28 @@ const HeaderOne = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isActive, setIsActive] = useState(false);
   const [role, setRole] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string>("");
 
   const navigate = useNavigate();
-  const { sticky } = UseSticky();
 
   useEffect(() => {
     const userJson = localStorage.getItem("user");
     if (userJson) {
       const user = JSON.parse(userJson);
       setRole(user.role);
+      
+      // Set user name based on available fields
+      if (user.first_name && user.last_name) {
+        setUserName(`${user.first_name} ${user.last_name}`);
+      } else if (user.name) {
+        setUserName(user.name);
+      } else if (user.username) {
+        setUserName(user.username);
+      } else if (user.email) {
+        // Use email before @ symbol as name
+        const emailName = user.email.split("@")[0];
+        setUserName(emailName);
+      }
     }
   }, []);
 
@@ -43,6 +55,7 @@ const HeaderOne = () => {
       localStorage.removeItem("token");
       localStorage.removeItem("user");
       setRole(null); // ✅ reset role
+      setUserName(""); // ✅ reset user name
       navigate("/login");
     } catch (err) {
       console.error("Logout failed:", err);
@@ -52,8 +65,7 @@ const HeaderOne = () => {
   return (
     <>
       <header>
-        <div id="header-fixed-height"></div>
-        <div id="sticky-header" className={`tg-header__area ${sticky ? "sticky-menu" : ""}`}>
+        <div id="sticky-header" className="tg-header__area">
           <div className="container custom-container">
             <div className="row">
               <div className="col-12">
@@ -87,6 +99,11 @@ const HeaderOne = () => {
                               <ul className="dropdown-menu">
                                 {role ? (
                                   <>
+                                    {userName && (
+                                      <li className="user-name" style={{padding: "10px 15px", borderBottom: "1px solid #eee", fontWeight: "bold", color: "#333"}}>
+                                        {userName}
+                                      </li>
+                                    )}
                                     {role === "student" && (
                                       <>
                                         <li className="logout-menu">

@@ -202,8 +202,8 @@ const EditStudents: React.FC<EditStudentsProps> = ({ onSubmit, onCancel }) => {
       isValid = false;
     } else {
       const year = parseInt(studentData.academicYear);
-      if (year < 1 || year > 4) {
-        newErrors.academicYear = "ชั้นปีต้องอยู่ระหว่าง 1-4";
+      if (isNaN(year) || year < 1 || year > 10) {
+        newErrors.academicYear = "ชั้นปีต้องเป็นตัวเลขระหว่าง 1-10";
         isValid = false;
       }
     }
@@ -244,13 +244,27 @@ const EditStudents: React.FC<EditStudentsProps> = ({ onSubmit, onCancel }) => {
         return;
       }
 
+      // Validate and convert numbers safely
+      const studentCodeNum = parseInt(studentData.studentCode);
+      const academicYearNum = parseInt(studentData.academicYear);
+      
+      if (isNaN(studentCodeNum) || studentCodeNum <= 0) {
+        toast.error("รหัสนักศึกษาต้องเป็นตัวเลขที่มากกว่า 0");
+        return;
+      }
+      
+      if (isNaN(academicYearNum) || academicYearNum < 1) {
+        toast.error("ชั้นปีต้องเป็นตัวเลขที่มากกว่า 0");
+        return;
+      }
+
       const formData = {
         username: studentData.username,
         email: studentData.email,
-        student_code: parseInt(studentData.studentCode),
+        student_code: studentCodeNum,
         department_id: studentData.department,
         education_level: studentData.educationLevel,
-        academic_year: parseInt(studentData.academicYear),
+        academic_year: academicYearNum,
         first_name: studentData.firstName,
         last_name: studentData.lastName,
       };

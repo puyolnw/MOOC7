@@ -57,6 +57,9 @@ interface SubjectSummary {
     subject_code: string;
     pending_count: number;
     attempts: Attempt[];
+    department_name?: string;
+    faculty?: string;
+    is_home_faculty?: boolean;
 }
 
 interface InstructorGradingProps {
@@ -94,6 +97,7 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
     const [isSaving, setIsSaving] = useState<boolean>(false);
     const [quizTitle, setQuizTitle] = useState<string>("");
     const [currentView, setCurrentView] = useState<'subjects' | 'attempts' | 'grading'>('subjects');
+    const [instructorFaculty, setInstructorFaculty] = useState<string | null>(null);
 
     const apiURL = import.meta.env.VITE_API_URL;
 
@@ -102,26 +106,7 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
         return questions.find((q) => q.question_id === questionId);
     };
 
-    // ฟังก์ชันจัดกลุ่ม attempts ตามรายวิชา
-    const groupAttemptsBySubject = (attempts: Attempt[]): SubjectSummary[] => {
-        const grouped = attempts.reduce((acc, attempt) => {
-            const key = attempt.subject_id;
-            if (!acc[key]) {
-                acc[key] = {
-                    subject_id: attempt.subject_id,
-                    subject_title: attempt.subject_title,
-                    subject_code: attempt.subject_code,
-                    pending_count: 0,
-                    attempts: []
-                };
-            }
-            acc[key].attempts.push(attempt);
-            acc[key].pending_count++;
-            return acc;
-        }, {} as { [key: number]: SubjectSummary });
 
-        return Object.values(grouped);
-    };
 
     const loadData = async () => {
         try {
@@ -209,25 +194,111 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
                     setError("ไม่สามารถโหลดข้อมูลการทำแบบทดสอบได้");
                 }
             } else {
-                // โหมด Non-Popup: ดึงรายการ attempts ทั้งหมด
-                const response = await axios.get(
-                    `${apiURL}/api/special-quiz/attempts/all`,
-                    {
-                        headers: {
-                            Authorization: `Bearer ${token}`,
-                        },
+                // โหมด Non-Popup: ดึงรายวิชาทั้งหมดที่อาจารย์สอน
+                const config = {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
                     }
+                };
+
+                // ดึงรายวิชาทั้งหมดที่อาจารย์สอน
+                const subjectsResponse = await axios.get(
+                    `${apiURL}/api/courses/subjects/instructors/cou`,
+                    config
                 );
 
-                if (response.data.success) {
-                    const allAttempts = response.data.attempts || [];
-                 
+                if (subjectsResponse.data.success) {
+                    const allSubjects = subjectsResponse.data.courses || [];
+
+                    // ดึงข้อมูลอาจารย์และคณะที่สังกัด
+                    const userDataStr = localStorage.getItem('userData');
+                    let instructorDepartmentFaculty = null;
                     
-                    // จัดกลุ่มตามรายวิชา
-                    const grouped = groupAttemptsBySubject(allAttempts);
-                    setSubjectSummaries(grouped);
+                    if (userDataStr) {
+                        const userData = JSON.parse(userDataStr);
+                        if (userData.user_id) {
+                            try {
+                                const instructorResponse = await axios.get(
+                                    `${apiURL}/api/accounts/instructors/user/${userData.user_id}`,
+                                    config
+                                );
+                                if (instructorResponse.data.success) {
+                                    // ดึงข้อมูลคณะของอาจารย์จาก department
+                                    const departmentId = instructorResponse.data.instructor.department;
+                                    if (departmentId) {
+                                        const departmentResponse = await axios.get(
+                                            `${apiURL}/api/auth/departments`,
+                                            config
+                                        );
+                                        if (departmentResponse.data.success) {
+                                            const department = departmentResponse.data.departments.find(
+                                                (dept: any) => dept.department_id === departmentId
+                                            );
+                                            if (department) {
+                                                instructorDepartmentFaculty = department.faculty;
+                                                setInstructorFaculty(department.faculty);
+                                            }
+                                        }
+                                    }
+                                }
+                            } catch (error) {
+                                console.log("Could not fetch instructor department info:", error);
+                            }
+                        }
+                    }
+
+                    // ดึงข้อมูลงานที่รอตรวจทั้งหมด
+                    const attemptsResponse = await axios.get(
+                        `${apiURL}/api/special-quiz/attempts/all`,
+                        config
+                    );
+
+                    const pendingAttempts = attemptsResponse.data.success ? attemptsResponse.data.attempts || [] : [];
+
+                    // ดึงข้อมูลคณะของแต่ละรายวิชา
+                    const departmentsResponse = await axios.get(
+                        `${apiURL}/api/auth/departments`,
+                        config
+                    );
+                    
+                    const departments = departmentsResponse.data.success ? departmentsResponse.data.departments : [];
+
+                    // สร้าง SubjectSummary จากรายวิชาทั้งหมด พร้อมข้อมูลคณะ
+                    const subjectSummaries: SubjectSummary[] = allSubjects.map((subject: any) => {
+                        // หางานที่รอตรวจสำหรับรายวิชานี้
+                        const subjectAttempts = pendingAttempts.filter((attempt: Attempt) =>
+                            attempt.subject_id === subject.subject_id
+                        );
+
+                        // หาคณะของรายวิชานี้
+                        const subjectDepartment = departments.find((dept: any) => dept.department_id === subject.department_id);
+                        const subjectFaculty = subjectDepartment?.faculty || null;
+                        const isHomeFaculty = instructorDepartmentFaculty && subjectFaculty === instructorDepartmentFaculty;
+
+                        return {
+                            subject_id: subject.subject_id,
+                            subject_title: subject.subject_name,
+                            subject_code: subject.subject_code,
+                            pending_count: subjectAttempts.length,
+                            attempts: subjectAttempts,
+                            department_name: subjectDepartment?.department_name,
+                            faculty: subjectFaculty,
+                            is_home_faculty: isHomeFaculty
+                        };
+                    });
+
+                    // เรียงลำดับ: คณะเดียวกันก่อน แล้วเรียงตามจำนวนงานรอตรวจ
+                    subjectSummaries.sort((a, b) => {
+                        // คณะเดียวกันอยู่ข้างบน
+                        if (a.is_home_faculty && !b.is_home_faculty) return -1;
+                        if (!a.is_home_faculty && b.is_home_faculty) return 1;
+                        // ถ้าคณะเดียวกัน เรียงตามจำนวนงานรอตรวจ
+                        return b.pending_count - a.pending_count;
+                    });
+
+                    setSubjectSummaries(subjectSummaries);
                 } else {
-                    setError("ไม่สามารถโหลดรายการการทำแบบทดสอบได้");
+                    setError("ไม่สามารถโหลดรายการรายวิชาได้");
                 }
             }
         } catch (error) {
@@ -313,7 +384,7 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
 
             if (response.data.success) {
                 toast.success("บันทึกการให้คะแนนเรียบร้อยแล้ว");
-                
+
                 if (onGraded && selectedAttemptId !== null && selectedAttemptId !== undefined) {
                     const passed = response.data.attempt.passed;
                     onGraded(selectedAttemptId, passed);
@@ -358,7 +429,7 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
         try {
             setLoading(true);
             const token = localStorage.getItem("token");
-            
+
             const response = await axios.get(
                 `${apiURL}/api/special-quiz/attempt/${attemptId}`,
                 {
@@ -370,7 +441,7 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
 
             if (response.data.success) {
                 const attempt: Attempt = response.data.attempt;
-                
+
                 setAttemptAnswers(attempt.answers);
                 setStudentInfo({
                     fullname: `${attempt.first_name} ${attempt.last_name}`,
@@ -398,7 +469,7 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
 
                     attempt.answers.forEach((answer) => {
                         initialScores[answer.question_id] = answer.score_earned || 0;
-                                                initialIsCorrect[answer.question_id] = answer.is_correct || false;
+                        initialIsCorrect[answer.question_id] = answer.is_correct || false;
                         initialFeedback[answer.question_id] = "";
                     });
 
@@ -486,7 +557,7 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
 
                 {!isPopup && (
                     <div className="d-flex align-items-center mb-4">
-                        <button 
+                        <button
                             className="btn btn-outline-secondary me-3"
                             onClick={handleBack}
                         >
@@ -537,11 +608,10 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
                                         className="progress-bar"
                                         role="progressbar"
                                         style={{
-                                            width: `${
-                                                totalMaxScore > 0
+                                            width: `${totalMaxScore > 0
                                                     ? (totalScore / totalMaxScore) * 100
                                                     : 0
-                                            }%`,
+                                                }%`,
                                         }}
                                         aria-valuenow={totalScore}
                                         aria-valuemin={0}
@@ -761,15 +831,15 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
         );
     }
 
-      // แสดงรายการงานที่รอตรวจของรายวิชาที่เลือก
+    // แสดงรายการงานที่รอตรวจของรายวิชาที่เลือก
     if (currentView === 'attempts') {
         const selectedSubject = subjectSummaries.find(s => s.subject_id === selectedSubjectId);
-        
+
         return (
             <div className="grading-container">
                 <div className="grading-content">
                     <div className="d-flex align-items-center mb-4">
-                        <button 
+                        <button
                             className="btn btn-outline-secondary me-3"
                             onClick={handleBack}
                         >
@@ -806,7 +876,7 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
                                                     <small className="text-muted">{attempt.email}</small>
                                                 </div>
                                             </div>
-                                            
+
                                             <div className="mb-3">
                                                 <p className="card-text mb-2">
                                                     <strong>แบบทดสอบ:</strong> {attempt.quiz_title}
@@ -855,16 +925,19 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
     return (
         <div className="grading-container">
             <div className="grading-content">
-                <div className="d-flex justify-content-between align-items-center mb-4">
+                <div className="d-flex justify-content-between align-items-center mb-4 p-4 bg-primary rounded">
                     <div>
-                        <h4 className="mb-1">การตรวจแบบทดสอบ</h4>
-                        <p className="text-muted mb-0">รายวิชาที่มีงานรอตรวจ</p>
+                        <h4 className="text-white mb-1">การตรวจแบบทดสอบ</h4>
+                        <p className="text-white-50 mb-0">รายวิชาทั้งหมดที่ท่านสอน</p>
                     </div>
-                    <div className="d-flex align-items-center">
-                        <span className="badge bg-primary me-2">
-                            รายวิชาทั้งหมด: {subjectSummaries.length}
+                    <div className="d-flex align-items-center gap-3">
+                        <span className="badge bg-light text-dark px-3 py-2">
+                            <i className="fas fa-book me-2"></i>
+                            รายวิชาทั้งหมด: {subjectSummaries.length} 
+                            {instructorFaculty && <small className="ms-1">({instructorFaculty})</small>}
                         </span>
-                        <span className="badge bg-warning">
+                        <span className="badge bg-warning text-dark px-3 py-2">
+                            <i className="fas fa-tasks me-2"></i>
                             งานรอตรวจ: {subjectSummaries.reduce((total, subject) => total + subject.pending_count, 0)}
                         </span>
                     </div>
@@ -873,45 +946,59 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
                 {subjectSummaries.length === 0 ? (
                     <div className="text-center py-5">
                         <div className="mb-4">
-                            <i className="fas fa-clipboard-check fa-4x text-muted"></i>
+                            <i className="fas fa-book fa-4x text-muted"></i>
                         </div>
-                        <h5 className="text-muted">ไม่มีงานที่รอตรวจ</h5>
-                        <p className="text-muted">ยังไม่มีแบบทดสอบที่ต้องตรวจในขณะนี้</p>
+                        <h5 className="text-muted">ไม่มีรายวิชา</h5>
+                        <p className="text-muted">ยังไม่มีรายวิชาที่ท่านสอนในระบบ</p>
                     </div>
                 ) : (
                     <div className="row">
                         {subjectSummaries.map((subject) => (
                             <div key={subject.subject_id} className="col-md-6 col-lg-4 mb-4">
-                                <div className="card h-100 shadow-sm hover-card">
+                                <div className="card h-100 shadow-sm">
                                     <div className="card-body">
                                         <div className="d-flex justify-content-between align-items-start mb-3">
                                             <div className="subject-icon">
                                                 <i className="fas fa-book fa-2x text-primary"></i>
                                             </div>
-                                            <span className="badge bg-warning">
-                                                {subject.pending_count} งาน
+                                            <span className={`badge ${subject.pending_count > 0 ? 'bg-warning text-dark' : 'bg-success text-white'}`}>
+                                                {subject.pending_count > 0 ? `${subject.pending_count} งาน` : 'ไม่มีงาน'}
                                             </span>
                                         </div>
-                                        
-                                        <h5 className="card-title mb-2">{subject.subject_title}</h5>
-                                        <p className="card-text text-muted mb-3">
+
+                                        <h5 className="card-title mb-2 text-dark">{subject.subject_title}</h5>
+                                        <p className="card-text text-muted mb-2">
                                             <small>รหัสวิชา: {subject.subject_code}</small>
                                         </p>
-                                        
+                                        {subject.faculty && (
+                                            <p className="card-text mb-3">
+                                                <small className={`${subject.is_home_faculty ? 'text-primary fw-bold' : 'text-secondary'}`}>
+                                                    <i className={`fas ${subject.is_home_faculty ? 'fa-home' : 'fa-building'} me-1`}></i>
+                                                    {subject.faculty}
+                                                    {subject.is_home_faculty && <span className="ms-1">(คณะหลัก)</span>}
+                                                </small>
+                                            </p>
+                                        )}
+
                                         <div className="mb-3">
-                                            <div className="d-flex align-items-center text-muted">
-                                                <i className="fas fa-tasks me-2"></i>
-                                                <small>มีงานรอตรวจ {subject.pending_count} งาน</small>
+                                            <div className="d-flex align-items-center">
+                                                <i className={`fas ${subject.pending_count > 0 ? 'fa-exclamation-triangle text-warning' : 'fa-check-circle text-success'} me-2`}></i>
+                                                <small className="text-muted">
+                                                    {subject.pending_count > 0
+                                                        ? `มีงานรอตรวจ ${subject.pending_count} งาน`
+                                                        : 'ไม่มีงานรอตรวจ'}
+                                                </small>
                                             </div>
                                         </div>
                                     </div>
                                     <div className="card-footer bg-transparent">
                                         <button
-                                            className="btn btn-outline-primary w-100"
+                                            className={`btn w-100 ${subject.pending_count > 0 ? 'btn-primary' : 'btn-outline-secondary'}`}
                                             onClick={() => handleSelectSubject(subject.subject_id)}
+                                            disabled={subject.pending_count === 0}
                                         >
-                                            <i className="fas fa-eye me-2"></i>
-                                            ดูงานที่รอตรวจ
+                                            <i className={`fas ${subject.pending_count > 0 ? 'fa-eye' : 'fa-check'} me-2`}></i>
+                                            {subject.pending_count > 0 ? 'ดูงานที่รอตรวจ' : 'ไม่มีงานรอตรวจ'}
                                         </button>
                                     </div>
                                 </div>

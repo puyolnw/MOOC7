@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import DashboardSidebar from "../../../dashboard-common/AdminSidebar";
+import AdminSidebar from "../../../dashboard-common/AdminSidebar";
+import InstructorSidebar from "../../../dashboard-common/DashboardSidebar";
 import DashboardBanner from "../../../dashboard-common/AdminBanner";
 import AddSubjects from "../../../../forms/Course/Subjects/AddSubjects";
 
@@ -12,6 +13,20 @@ interface AddSubjectsAreaProps {
 
 const AddSubjectsArea: React.FC<AddSubjectsAreaProps> = ({ isEmbedded = false, onSubmit }) => {
   const navigate = useNavigate();
+  const [userRole, setUserRole] = useState<number | null>(null);
+
+  // ดึงข้อมูล role ของผู้ใช้จาก localStorage
+  useEffect(() => {
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      try {
+        const parsedUser = JSON.parse(userData);
+        setUserRole(parsedUser.role_id);
+      } catch (error) {
+        console.error("Error parsing user data:", error);
+      }
+    }
+  }, []);
 
   // จัดการเมื่อมีการส่งฟอร์ม
   const handleSubmit = (subjectData: any) => {
@@ -39,7 +54,12 @@ const AddSubjectsArea: React.FC<AddSubjectsAreaProps> = ({ isEmbedded = false, o
 
   // จัดการเมื่อมีการยกเลิก
   const handleCancel = () => {
-    navigate("/admin-creditbank");
+    // นำทางกลับไปยังหน้าที่เหมาะสมตาม role
+    if (userRole === 2) { // อาจารย์
+      navigate("/ins-creditbank");
+    } else { // แอดมิน
+      navigate("/admin-creditbank");
+    }
   };
 
   // ถ้าเป็นแบบ embedded ให้แสดงเฉพาะฟอร์ม
@@ -54,6 +74,9 @@ const AddSubjectsArea: React.FC<AddSubjectsAreaProps> = ({ isEmbedded = false, o
     );
   }
 
+  // เลือก Sidebar ตาม role
+  const SidebarComponent = userRole === 2 ? InstructorSidebar : AdminSidebar;
+
   // แสดงแบบปกติเมื่อใช้งานเป็นหน้าเต็ม
   return (
     <section className="dashboard__area section-pb-120">
@@ -61,7 +84,7 @@ const AddSubjectsArea: React.FC<AddSubjectsAreaProps> = ({ isEmbedded = false, o
         <DashboardBanner />
         <div className="dashboard__inner-wrap">
           <div className="row">
-            <DashboardSidebar />
+            <SidebarComponent />
             <div className="dashboard__content-area col-lg-9">
               <div className="dashboard__content-main">
            

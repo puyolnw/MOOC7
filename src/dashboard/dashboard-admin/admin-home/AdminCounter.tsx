@@ -50,8 +50,9 @@ const AdminCounter = () => {
         <>
             {counters.map((item, index) => (
                 <div key={item.id} className="col-lg-3 col-md-6 col-sm-6 mb-4">
-                    <Link to={item.path} className="text-decoration-none">
-                        <div className="dashboard__counter-item card shadow-sm border-0 h-100">
+                    {/* เฉพาะการ์ด "สำเร็จหลักสูตร" (id = 3) ไม่ให้เป็นลิงก์ */}
+                    {item.id === 3 ? (
+                        <div className="dashboard__counter-item card shadow-sm border-0 h-100 no-hover">
                             <div className={`card-body d-flex flex-column align-items-center justify-content-center p-4 bg-${
                                 index === 0 ? 'light-blue' : 
                                 index === 1 ? 'light-green' : 
@@ -68,10 +69,33 @@ const AdminCounter = () => {
                                 </div>
                             </div>
                             <div className="card-footer bg-white border-0 py-2 text-center">
-                                <small className="text-muted">คลิกเพื่อดูรายละเอียด</small>
+                                <small className="text-muted">ข้อมูลสถิติ</small>
                             </div>
                         </div>
-                    </Link>
+                    ) : (
+                        <Link to={item.path} className="text-decoration-none">
+                            <div className="dashboard__counter-item card shadow-sm border-0 h-100">
+                                <div className={`card-body d-flex flex-column align-items-center justify-content-center p-4 bg-${
+                                    index === 0 ? 'light-blue' : 
+                                    index === 1 ? 'light-green' : 
+                                    index === 2 ? 'light-gray' : 'light-yellow'
+                                } text-dark`}>
+                                    <div className="icon mb-2">
+                                        <i className={`${item.icon} fa-2x`}></i>
+                                    </div>
+                                    <div className="content text-center">
+                                        <div className="count display-6 fw-bold mb-1 text-danger">
+                                            <Count number={item.count} />
+                                        </div>
+                                        <p className="mb-0 opacity-75">{item.title}</p>
+                                    </div>
+                                </div>
+                                <div className="card-footer bg-white border-0 py-2 text-center">
+                                    <small className="text-muted">คลิกเพื่อดูรายละเอียด</small>
+                                </div>
+                            </div>
+                        </Link>
+                    )}
                 </div>
             ))}
             <style>{`
@@ -83,6 +107,12 @@ const AdminCounter = () => {
 
                 .dashboard__counter-item:hover {
                     transform: translateY(-5px);
+                }
+                
+                /* การ์ด "สำเร็จหลักสูตร" ไม่มี hover effect */
+                .dashboard__counter-item.no-hover:hover {
+                    transform: none;
+                    cursor: default;
                 }
 
                 .card-body {

@@ -447,6 +447,27 @@
     margin-top: 40px;
 }
 
+/* Category section styling */
+.dashboard__sidebar-title.category-section {
+    margin-top: 35px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.dashboard__sidebar-title.category-section .title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.dashboard__sidebar-title.category-section:first-child {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+}
+
 /* Icon colors for different sections */
 .dashboard__sidebar-menu .menu-item[href*="dashboard"] .menu-icon {
     color: #28a745;

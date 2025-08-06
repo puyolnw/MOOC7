@@ -15,7 +15,6 @@ interface FacultyWithStats {
   total_courses: number;
   description?: string;
   created_at?: string;
-  is_home_faculty?: boolean;
 }
 
 interface Course {
@@ -243,7 +242,7 @@ const FacultySelection: React.FC<{
         </div>
         <div className="section-title">
           <h2>เลือกคณะ</h2>
-          <p>คณะที่ท่านสังกัดและมีการสอนรายวิชา</p>
+          <p>เลือกคณะที่ต้องการจัดการหลักสูตร</p>
         </div>
       </div>
       
@@ -251,24 +250,16 @@ const FacultySelection: React.FC<{
         {/* ลบ Add Faculty Card - อาจารย์ไม่มีสิทธิ์เพิ่มคณะ */}
         
         {faculties.map((faculty, index) => (
-          <div key={`faculty-${index}`} className={`selection-card faculty-card ${faculty.is_home_faculty ? 'home-faculty' : ''}`}>
+          <div key={`faculty-${index}`} className="selection-card faculty-card">
             <div 
               className="card-content"
               onClick={() => onSelectFaculty(faculty.name)}
             >
               <div className="card-icon faculty-icon">
-                <i className={`fas ${faculty.is_home_faculty ? 'fa-home' : 'fa-university'}`}></i>
+                <i className="fas fa-graduation-cap"></i>
               </div>
               <div className="card-body">
-                <h3 className="card-title">
-                  {faculty.name}
-                  {faculty.is_home_faculty && (
-                    <span className="home-badge ms-2">
-                      <i className="fas fa-star me-1"></i>
-                      คณะหลัก
-                    </span>
-                  )}
-                </h3>
+                <h3 className="card-title">{faculty.name}</h3>
                 <div className="card-stats">
                   <span className="stat-item">
                     <i className="fas fa-building me-1"></i>
@@ -369,7 +360,7 @@ const DepartmentSelection: React.FC<{
   );
 };
 
-
+// ลบ Add Course Card Component - อาจารย์ไม่มีสิทธิ์สร้างหลักสูตรใหม่
 
 // Course List component - ลบการสร้างหลักสูตรใหม่สำหรับอาจารย์
 const CourseList: React.FC<{
@@ -516,32 +507,13 @@ const CourseList: React.FC<{
   );
 };
 
-// Add Subject Card Component - ลบสำหรับอาจารย์
-const AddSubjectCard: React.FC<{
-  courseId: number;
-  onClick: () => void;
-}> = ({ onClick }) => {
-  return (
-    <div className="add-subject-card" onClick={onClick}>
-      <div className="add-subject-content">
-        <div className="add-subject-icon">
-          <i className="fas fa-plus"></i>
-        </div>
-        <h3 className="add-subject-title">เพิ่มรายวิชาใหม่</h3>
-        <p className="add-subject-description">
-          สร้างรายวิชาใหม่สำหรับหลักสูตรนี้
-        </p>
-      </div>
-    </div>
-  );
-};
+
 
 // Editable Course Detail component - ลบการแก้ไขสำหรับอาจารย์
 const EditableCourseDetail: React.FC<{
   course: Course;
   onBack: () => void;
   onSubjectSelect: (subject: Subject) => void;
-  onCourseUpdate: (updatedCourse: Course) => void;
 }> = ({ course, onSubjectSelect }) => {
   const apiURL = import.meta.env.VITE_API_URL;
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -611,9 +583,7 @@ const EditableCourseDetail: React.FC<{
     return videoUrl;
   };
 
-  const handleAddSubject = () => {
-    window.location.href = `/instructor-subjects/create-new?course_id=${course.course_id}`;
-  };
+
 
   return (
     <div className="course-detail-container">
@@ -748,11 +718,7 @@ const EditableCourseDetail: React.FC<{
           </div>
         ) : (
           <div className="subjects-grid">
-            {/* เพิ่มปุ่มสร้างรายวิชาใหม่สำหรับอาจารย์ */}
-            <AddSubjectCard 
-              courseId={course.course_id} 
-              onClick={handleAddSubject}
-            />
+            {/* ลบ Add Subject Card - อาจารย์ไม่มีสิทธิ์เพิ่มรายวิชาใหม่ */}
             
             {filteredSubjects.map((subject, index) => (
               <div 
@@ -1192,7 +1158,7 @@ const InsCreditbankArea: React.FC = () => {
     setCurrentPage(1);
   }, [searchTerm, courses, itemsPerPage]);
 
-  // API calls - แก้ไข fetchFaculties ให้แสดงเฉพาะคณะที่อาจารย์สังกัด พร้อมข้อมูลสถิติ
+  // API calls - แก้ไข fetchFaculties ให้ดึงข้อมูลพร้อมสถิติ
   const fetchFaculties = async () => {
     // Only show loading if we're in faculties view
     if (currentView === 'faculties') {
@@ -1206,136 +1172,14 @@ const InsCreditbankArea: React.FC = () => {
         return;
       }
 
-      // ดึงข้อมูลอาจารย์และคณะที่สังกัด
-      const userDataStr = localStorage.getItem('user');
-      let instructorFaculty = null;
-      let allInstructorSubjectFaculties = new Set<string>();
-
-      console.log('=== DEBUG: Fetching instructor faculty info ===');
-      console.log('userDataStr:', userDataStr);
-
-      if (userDataStr) {
-        const userData = JSON.parse(userDataStr);
-        console.log('userData:', userData);
-        
-        if (userData.id) {
-          try {
-            console.log('Fetching instructor data for user_id:', userData.id);
-            
-            // ดึงข้อมูลอาจารย์
-            const instructorResponse = await axios.get(
-              `${apiURL}/api/accounts/instructors/user/${userData.id}`,
-              { headers: { Authorization: `Bearer ${token}` } }
-            );
-            
-            console.log('Instructor response:', instructorResponse.data);
-            
-            if (instructorResponse.data.success) {
-              const instructor = instructorResponse.data.instructor;
-              console.log('Instructor data:', instructor);
-              
-              // ดึงคณะหลักของอาจารย์
-              if (instructor.department) {
-                console.log('Instructor department ID:', instructor.department);
-                
-                const departmentResponse = await axios.get(
-                  `${apiURL}/api/auth/departments`,
-                  { headers: { Authorization: `Bearer ${token}` } }
-                );
-                
-                console.log('Departments response:', departmentResponse.data);
-                console.log('Looking for department_id:', instructor.department, 'type:', typeof instructor.department);
-                
-                if (departmentResponse.data.success) {
-                  console.log('Available departments:', departmentResponse.data.departments.map((d: any) => ({
-                    id: d.department_id,
-                    name: d.department_name,
-                    faculty: d.faculty,
-                    type: typeof d.department_id
-                  })));
-                  
-                  const department = departmentResponse.data.departments.find(
-                    (dept: any) => dept.department_id === instructor.department
-                  );
-                  
-                  console.log('Found instructor department:', department);
-                  
-                  if (department) {
-                    instructorFaculty = department.faculty;
-                    allInstructorSubjectFaculties.add(department.faculty);
-                    console.log('Added instructor home faculty:', department.faculty);
-                  }
-                }
-              }
-
-              // ใช้ API ที่ดึงรายวิชาที่อาจารย์สอนโดยตรง
-              try {
-                const subjectsResponse = await axios.get(
-                  `${apiURL}/api/courses/subjects/instructors/cou`,
-                  { headers: { Authorization: `Bearer ${token}` } }
-                );
-                
-                console.log('Instructor subjects response:', subjectsResponse.data);
-                
-                if (subjectsResponse.data.success && subjectsResponse.data.courses) {
-                  const departmentResponse = await axios.get(
-                    `${apiURL}/api/auth/departments`,
-                    { headers: { Authorization: `Bearer ${token}` } }
-                  );
-                  
-                  if (departmentResponse.data.success) {
-                    const departments = departmentResponse.data.departments;
-                    
-                    // ดึงคณะจากรายวิชาที่อาจารย์สอน
-                    for (const subject of subjectsResponse.data.courses) {
-                      if (subject.department_id) {
-                        const subjectDept = departments.find(
-                          (dept: any) => dept.department_id === subject.department_id
-                        );
-                        if (subjectDept && subjectDept.faculty) {
-                          allInstructorSubjectFaculties.add(subjectDept.faculty);
-                          console.log('Added subject faculty:', subjectDept.faculty, 'from subject:', subject.subject_name);
-                        }
-                      }
-                    }
-                  }
-                }
-              } catch (error) {
-                console.log("Could not fetch instructor subjects:", error);
-              }
-            }
-          } catch (error) {
-            console.log("Could not fetch instructor info:", error);
-          }
-        }
-      }
-
-      console.log('=== DEBUG FINAL RESULTS ===');
-      console.log('Final instructor faculty:', instructorFaculty);
-      console.log('All instructor subject faculties SET:', allInstructorSubjectFaculties);
-      console.log('All instructor subject faculties ARRAY:', Array.from(allInstructorSubjectFaculties));
-      console.log('SET SIZE:', allInstructorSubjectFaculties.size);
-
-      // ดึงข้อมูลคณะทั้งหมด
       const response = await axios.get(`${apiURL}/api/departments/faculties`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
       if (response.data.success) {
-        // กรองเฉพาะคณะที่อาจารย์เกี่ยวข้อง
-        const relevantFaculties = Array.from(allInstructorSubjectFaculties);
-        
-        console.log('Relevant faculties:', relevantFaculties);
-        console.log('All faculties from API:', response.data.faculties);
-        
-        // ถ้าไม่มีคณะที่เกี่ยวข้อง ให้แสดงทั้งหมด (fallback)
-        const facultiesToProcess = relevantFaculties.length > 0 ? relevantFaculties : response.data.faculties;
-        
-        console.log('Faculties to process:', facultiesToProcess);
-
-        // Count departments and courses for each relevant faculty
+        // Count departments and courses for each faculty
         const facultiesWithStats = await Promise.all(
-          facultiesToProcess.map(async (faculty: string) => {
+          response.data.faculties.map(async (faculty: string) => {
             try {
               const deptResponse = await axios.get(
                 `${apiURL}/api/departments/by-faculty/${encodeURIComponent(faculty)}`,
@@ -1365,28 +1209,18 @@ const InsCreditbankArea: React.FC = () => {
               return {
                 name: faculty,
                 department_count: deptResponse.data.departments?.length || 0,
-                total_courses: totalCourses,
-                is_home_faculty: faculty === instructorFaculty // เพิ่ม flag สำหรับคณะหลัก
+                total_courses: totalCourses
               };
             } catch (error) {
               console.error(`Error fetching departments for faculty ${faculty}:`, error);
               return {
                 name: faculty,
                 department_count: 0,
-                total_courses: 0,
-                is_home_faculty: faculty === instructorFaculty
+                total_courses: 0
               };
             }
           })
         );
-
-        // เรียงลำดับ: คณะหลักก่อน แล้วเรียงตามชื่อ
-        facultiesWithStats.sort((a, b) => {
-          if (a.is_home_faculty && !b.is_home_faculty) return -1;
-          if (!a.is_home_faculty && b.is_home_faculty) return 1;
-          return a.name.localeCompare(b.name, 'th');
-        });
-
         setFaculties(facultiesWithStats);
       } else {
         setError('ไม่สามารถดึงข้อมูลคณะได้');
@@ -1568,20 +1402,7 @@ const InsCreditbankArea: React.FC = () => {
     updateBrowserHistory('subjects', selectedFaculty, selectedDepartment, selectedCourse, null);
   };
 
-  const handleCourseUpdate = (updatedCourse: Course) => {
-    setSelectedCourse(updatedCourse);
-    // Update courses list if the updated course is in the current list
-    setCourses(prevCourses => 
-      prevCourses.map(course => 
-        course.course_id === updatedCourse.course_id ? updatedCourse : course
-      )
-    );
-    setFilteredCourses(prevCourses => 
-      prevCourses.map(course => 
-        course.course_id === updatedCourse.course_id ? updatedCourse : course
-      )
-    );
-  };
+
 
   const handleSubjectUpdate = (updatedSubject: Subject) => {
     setSelectedSubject(updatedSubject);
@@ -1746,7 +1567,6 @@ const InsCreditbankArea: React.FC = () => {
                     course={selectedCourse}
                     onBack={handleBackToCourses}
                     onSubjectSelect={handleSubjectSelect}
-                    onCourseUpdate={handleCourseUpdate}
                   />
                 ) : currentView === 'courses' && selectedDepartment ? (
                   <CourseList

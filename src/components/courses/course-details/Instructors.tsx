@@ -17,6 +17,8 @@ interface InstructorsProps {
 const apiURL = import.meta.env.VITE_API_URL;
 
 const Instructors = ({ instructors }: InstructorsProps) => {
+  console.log("🎓 Instructors component received:", instructors);
+  
   const getAvatarUrl = (instructor: Instructor) => {
     if (instructor.avatar_file_id) {
       return `${apiURL}/api/accounts/instructors/avatar/${instructor.avatar_file_id}`;

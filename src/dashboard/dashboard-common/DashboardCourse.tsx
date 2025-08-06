@@ -49,25 +49,25 @@ const DashboardCourse = () => {
          }
 
          try {
-            // ดึงข้อมูลความคืบหน้าของผู้ใช้
-            const response = await axios.get(`${API_URL}/api/courses/user/progress`, {
+            // ใช้ API เดียวกับ dashboard ที่มีการคำนวณ progress ที่ถูกต้องแล้ว
+            const response = await axios.get(`${API_URL}/api/data/student/dashboard/courses`, {
                headers: {
                   Authorization: `Bearer ${token}`
                }
             });
 
-            console.log("API Response:", response.data);
+            console.log("Dashboard API Response:", response.data);
 
             if (response.data.success) {
-               const { courses: apiCourses } = response.data.progress;
+               const { courses: apiCourses } = response.data;
                
-               console.log("Raw courses data:", apiCourses);
+               console.log("Raw courses data from dashboard API:", apiCourses);
                
                // แปลงข้อมูลจาก API ให้เข้ากับ interface ที่ต้องการ
                const formattedCourses = await Promise.all(apiCourses.map(async (course: any, index: number) => {
-                  console.log(`Course ${index + 1} (${course.course_title}) initial data:`, course);
+                  console.log(`Course ${index + 1} (${course.title}) data:`, course);
                   
-                  // ดึงข้อมูลเพิ่มเติมของคอร์ส
+                  // ดึงข้อมูลเพิ่มเติมของคอร์ส (รูปภาพ, รายละเอียด)
                   let courseDetails = course;
                   try {
                      const detailsResponse = await axios.get(`${API_URL}/api/courses/${course.course_id}`, {
@@ -79,7 +79,9 @@ const DashboardCourse = () => {
                      if (detailsResponse.data.success) {
                         courseDetails = {
                            ...course,
-                           ...detailsResponse.data.course
+                           cover_image_file_id: detailsResponse.data.course.cover_image_file_id,
+                           cover_image: detailsResponse.data.course.cover_image,
+                           department_name: detailsResponse.data.course.department_name
                         };
                         console.log(`Course ${index + 1} details fetched:`, courseDetails);
                      }
@@ -87,58 +89,32 @@ const DashboardCourse = () => {
                      console.error(`Error fetching details for course ${course.course_id}:`, err);
                   }
                   
-                  // ดึงข้อมูล progress จาก API ใหม่
-                  let progressDetails = {
-                     overallPercentage: courseDetails.progress_percentage || 0,
-                     totalLessons: courseDetails.total_subjects || 0,
-                     completedLessons: courseDetails.completed_subjects || 0
-                  };
-                  
-                  try {
-                     // เรียกใช้ API /course/:courseId/progress-detail
-                     const progressResponse = await axios.get(`${API_URL}/api/learn/course/${course.course_id}/progress-detail`, {
-                        headers: {
-                           Authorization: `Bearer ${token}`
-                        }
-                     });
-                     
-                     if (progressResponse.data.success) {
-                        progressDetails = {
-                           overallPercentage: progressResponse.data.overallPercentage,
-                           totalLessons: progressResponse.data.totalLessons,
-                           completedLessons: progressResponse.data.completedLessons
-                        };
-                        console.log(`Course ${index + 1} progress details:`, progressDetails);
-                     }
-                  } catch (err) {
-                     console.error(`Error fetching progress details for course ${course.course_id}:`, err);
-                  }
-                  
-                  console.log(`Course ${index + 1} (${courseDetails.title || courseDetails.course_title}) image data:`, {
-                     cover_image_file_id: courseDetails.cover_image_file_id,
-                     cover_image: courseDetails.cover_image
+                  console.log(`Course ${index + 1} (${courseDetails.title}) final data:`, {
+                     progress_percentage: course.progress_percentage,
+                     status: course.status,
+                     completed: course.completed
                   });
                   
                   return {
                      id: index + 1,
-                     course_id: courseDetails.course_id,
-                     title: courseDetails.title || courseDetails.course_title,
-                     thumb: "/assets/img/courses/course_thumb01.jpg", // รูปภาพเริ่มต้น (จะถูกแทนที่ถ้ามี cover_image)
-                     tag: courseDetails.category || "ทั่วไป",
-                     department_name: courseDetails.department_name || "ไม่ระบุสาขา", // ชื่อสาขา
+                     course_id: course.course_id,
+                     title: course.title,
+                     thumb: "/assets/img/courses/course_thumb01.jpg", // รูปภาพเริ่มต้น
+                     tag: "หลักสูตร",
+                     department_name: courseDetails.department_name || "ไม่ระบุสาขา",
                      review: "4.5", // คะแนนเริ่มต้น
-                     progress: progressDetails.overallPercentage, // ใช้ค่า progress จาก API ใหม่
-                     book: `${progressDetails.totalLessons || 0} วิชา`,
-                     time: courseDetails.enrollment_date ? new Date(courseDetails.enrollment_date).toLocaleDateString('th-TH') : "-",
-                     mortarboard: `${progressDetails.completedLessons || 0}/${progressDetails.totalLessons || 0}`,
-                     status: courseDetails.status,
-                     enrollment_date: courseDetails.enrollment_date,
-                     completion_date: courseDetails.completion_date,
-                     progress_percentage: progressDetails.overallPercentage, // ใช้ค่า progress จาก API ใหม่
+                     progress: course.progress_percentage, // ใช้ progress จาก dashboard API ที่คำนวณถูกต้องแล้ว
+                     book: "หลักสูตร",
+                     time: course.enrollment_date ? new Date(course.enrollment_date).toLocaleDateString('th-TH') : "-",
+                     mortarboard: course.status === "completed" ? "เรียนจบแล้ว" : "กำลังเรียน",
+                     status: course.status,
+                     enrollment_date: course.enrollment_date,
+                     completion_date: course.completion_date,
+                     progress_percentage: course.progress_percentage,
                      cover_image_file_id: courseDetails.cover_image_file_id || null,
                      cover_image: courseDetails.cover_image || null,
-                     totalLessons: progressDetails.totalLessons,
-                     completedLessons: progressDetails.completedLessons
+                     totalLessons: 0, // จะได้จาก dashboard API
+                     completedLessons: 0 // จะได้จาก dashboard API
                   };
                }));
                
@@ -255,11 +231,23 @@ const DashboardCourse = () => {
                               </div>
                            </div>
                            <div className="progress-item progress-item-two">
-                              <h6 className="title">COMPLETE <span>{item.progress}%</span></h6>
-                              <div className="progress">
-                                 <div className="progress-bar" style={{ width: `${item.progress}%` }}></div>
-                              </div>
-                           </div>
+                           <h6 className="title">COMPLETE <span>{Math.round(item.progress || 0)}%</span></h6>
+                           <div className="progress">
+                           <div 
+                                className="progress-bar" 
+                                   style={{ 
+                                      width: `${Math.round(item.progress || 0)}%`,
+                                      backgroundColor: item.progress >= 100 ? '#28a745' : 
+                                                       item.progress >= 50 ? '#ffc107' : '#007bff'
+                                    }}>
+                                  </div>
+                               </div>
+                               {item.progress >= 100 && (
+                                 <div className="completion-badge" style={{color: '#28a745', fontSize: '12px', marginTop: '5px'}}>
+                                   ✓ เรียนจบแล้ว
+                                 </div>
+                               )}
+                            </div>
                         </div>
                         <div className="courses__item-bottom-two">
                            <ul className="list-wrap">

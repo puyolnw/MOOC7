@@ -38,13 +38,13 @@ const LessonAttachments = ({ currentLessonId, currentBigLessonId }: { currentLes
 
   const fetchLessonAttachments = async (lessonId?: number) => {
     if (!lessonId) return [];
+    console.log("📎 Fetching lesson attachments for lessonId:", lessonId);
     try {
       const apiURL = import.meta.env.VITE_API_URL;
-      const token = localStorage.getItem('token');
       const response = await axios.get(
-        `${apiURL}/api/learn/lessons/${lessonId}/attachments`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        `${apiURL}/api/learn/lessons/${lessonId}/attachments`
       );
+      console.log("📎 Lesson attachments response:", response.data);
       if (response.data.success) {
         // Normalize field names for consistency
         return (response.data.attachments || []).map((a: any) => ({
@@ -55,30 +55,33 @@ const LessonAttachments = ({ currentLessonId, currentBigLessonId }: { currentLes
       }
       return [];
     } catch (error) {
+      console.error("❌ Error fetching lesson attachments:", error);
       return [];
     }
   };
 
   const fetchBigLessonAttachments = async (bigLessonId?: number) => {
     if (!bigLessonId) return [];
+    console.log("📎 Fetching big lesson attachments for bigLessonId:", bigLessonId);
     try {
       const apiURL = import.meta.env.VITE_API_URL;
-      const token = localStorage.getItem('token');
       const response = await axios.get(
-        `${apiURL}/api/big-lessons/${bigLessonId}/attachments`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        `${apiURL}/api/big-lessons/${bigLessonId}/attachments`
       );
+      console.log("📎 Big lesson attachments response:", response.data);
       if (response.data.success) {
         return response.data.attachments || [];
       }
       return [];
     } catch (error) {
+      console.error("❌ Error fetching big lesson attachments:", error);
       return [];
     }
   };
 
   useEffect(() => {
     const fetchAll = async () => {
+      console.log("📎 Fetching all attachments for lessonId:", currentLessonId, "bigLessonId:", currentBigLessonId);
       setLoading(true);
       const [lessonFiles, bigLessonFiles] = await Promise.all([
         fetchLessonAttachments(currentLessonId),
@@ -90,6 +93,7 @@ const LessonAttachments = ({ currentLessonId, currentBigLessonId }: { currentLes
         const dateB = new Date(b.created_at || b.upload_at || 0).getTime();
         return dateB - dateA;
       });
+      console.log("📎 Final attachments:", allFiles);
       setAttachments(allFiles);
       setLoading(false);
     };
@@ -174,6 +178,8 @@ const LessonAttachments = ({ currentLessonId, currentBigLessonId }: { currentLes
 
 const LessonNavTav = ({ description, instructors, currentLessonId, currentBigLessonId }: LessonNavTavProps) => {
    const [activeTab, setActiveTab] = useState(0);
+   
+   console.log("🎓 LessonNavTav received instructors:", instructors);
 
    const handleTabClick = (index: number) => {
       setActiveTab(index);
@@ -181,10 +187,43 @@ const LessonNavTav = ({ description, instructors, currentLessonId, currentBigLes
 
    return (
       <div className="courses__details-content lesson__details-content">
-         <ul className="nav nav-tabs" id="myTab" role="tablist">
+         <ul className="nav nav-tabs" id="myTab" role="tablist" style={{
+            borderBottom: 'none',
+            marginBottom: '20px'
+         }}>
             {tab_title.map((tab, index) => (
-               <li key={index} onClick={() => handleTabClick(index)} className="nav-item" role="presentation">
-                  <button className={`nav-link ${activeTab === index ? "active" : ""}`}>{tab}</button>
+               <li key={index} onClick={() => handleTabClick(index)} className="nav-item" role="presentation" style={{marginRight: '5px'}}>
+                  <button 
+                     className={`nav-link ${activeTab === index ? "active" : ""}`}
+                     style={{
+                        border: 'none',
+                        borderRadius: '12px',
+                        padding: '12px 20px',
+                        fontWeight: '500',
+                        transition: 'all 0.3s ease',
+                        background: activeTab === index 
+                           ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' 
+                           : 'rgba(102, 126, 234, 0.1)',
+                        color: activeTab === index ? 'white' : '#667eea',
+                        boxShadow: activeTab === index 
+                           ? '0 4px 15px rgba(102, 126, 234, 0.3)' 
+                           : '0 2px 8px rgba(102, 126, 234, 0.1)'
+                     }}
+                     onMouseEnter={(e) => {
+                        if (activeTab !== index) {
+                           e.currentTarget.style.background = 'rgba(102, 126, 234, 0.2)';
+                           e.currentTarget.style.transform = 'translateY(-2px)';
+                        }
+                     }}
+                     onMouseLeave={(e) => {
+                        if (activeTab !== index) {
+                           e.currentTarget.style.background = 'rgba(102, 126, 234, 0.1)';
+                           e.currentTarget.style.transform = 'translateY(0)';
+                        }
+                     }}
+                  >
+                     {tab}
+                  </button>
                </li>
             ))}
          </ul>
@@ -196,9 +235,9 @@ const LessonNavTav = ({ description, instructors, currentLessonId, currentBigLes
                <Instructors instructors={instructors} />
             </div>
             <div className={`tab-pane fade ${activeTab === 2 ? 'show active' : ''}`} id="attachments-tab-pane" role="tabpanel" aria-labelledby="attachments-tab">
-               <LessonAttachments currentLessonId={currentLessonId} currentBigLessonId={currentBigLessonId} />
+                <LessonAttachments currentLessonId={currentLessonId} currentBigLessonId={currentBigLessonId} />
             </div>
-         </div>
+            </div>
       </div>
    )
 }

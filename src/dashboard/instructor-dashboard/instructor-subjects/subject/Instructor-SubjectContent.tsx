@@ -27,6 +27,8 @@ interface Enrollment {
   enrollmentDate: string;
   status: string;
   progressPercentage: number;
+  institutionName?: string;
+  institutionType?: 'school' | 'university' | 'unknown';
 }
 
 interface Lesson {
@@ -56,6 +58,9 @@ interface StudentDetail {
   lastActivity: string;
   completedLessons: number;
   totalLessons: number;
+  institutionName?: string;
+  institutionType?: 'school' | 'university' | 'unknown';
+  status?: string;
 }
 
 const InstructorSubjectContent = () => {
@@ -64,6 +69,8 @@ const InstructorSubjectContent = () => {
   const [error, setError] = useState<string | null>(null);
   const [overviewData, setOverviewData] = useState<SubjectOverview | null>(null);
   const [activeFilter, setActiveFilter] = useState<string>('all');
+  const [institutionFilter, setInstitutionFilter] = useState<string>('all');
+  const [searchTerm, setSearchTerm] = useState<string>('');
   const [showStudentModal, setShowStudentModal] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<StudentDetail | null>(null);
   const [studentLoading, setStudentLoading] = useState(false);
@@ -73,29 +80,28 @@ const InstructorSubjectContent = () => {
       try {
         setLoading(true);
         
-        // Get token from localStorage
-        const token = localStorage.getItem('token');
-        if (!token) {
-          throw new Error("ไม่พบข้อมูลการเข้าสู่ระบบ กรุณาเข้าสู่ระบบใหม่");
-        }
-
         // Get API base URL from environment variables
         const apiURL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
-        // Set up headers with authorization token
-        const config = {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        };
-
         // Fetch subject overview
         const response = await axios.get(
-          `${apiURL}/api/data/instructor/subject/${subjectId}/overview`, 
-          config
+          `${apiURL}/api/data/instructor/subject/${subjectId}/overview`
         );
 
         if (response.data.success) {
+          console.log('Subject overview data loaded:', response.data);
+          console.log('Enrollments count:', response.data.enrollments?.length || 0);
+          
+          // Log ความคืบหน้าของนักเรียนแต่ละคน
+          response.data.enrollments?.forEach((enrollment: any, index: number) => {
+            console.log(`Student ${index + 1}:`, {
+              name: enrollment.name,
+              progress: enrollment.progressPercentage,
+              status: enrollment.status,
+              institution: enrollment.institutionName
+            });
+          });
+          
           setOverviewData(response.data);
         } else {
           throw new Error(response.data.message || "ไม่สามารถดึงข้อมูลรายวิชาได้");
@@ -118,47 +124,21 @@ const InstructorSubjectContent = () => {
     try {
       setStudentLoading(true);
       
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error("ไม่พบข้อมูลการเข้าสู่ระบบ");
-      }
-
       const apiURL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-      const config = {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      };
 
       const response = await axios.get(
-        `${apiURL}/api/data/instructor/student/${userId}/detail?subjectId=${subjectId}`, 
-        config
+        `${apiURL}/api/data/instructor/student/${userId}/detail?subjectId=${subjectId}`
       );
 
       if (response.data.success) {
+        console.log('Student detail loaded:', response.data.student);
         setSelectedStudent(response.data.student);
       } else {
         throw new Error(response.data.message || "ไม่สามารถดึงข้อมูลนักเรียนได้");
       }
     } catch (err) {
       console.error("Error fetching student detail:", err);
-      // For demo purposes, create mock data
-      const enrollment = overviewData?.enrollments.find(e => e.userId === userId);
-      if (enrollment) {
-        setSelectedStudent({
-          userId: enrollment.userId,
-          name: enrollment.name,
-          email: enrollment.email,
-          totalCoursesEnrolled: Math.floor(Math.random() * 10) + 3,
-          completedCourses: Math.floor(Math.random() * 5) + 1,
-          inProgressCourses: Math.floor(Math.random() * 3) + 1,
-          currentSubjectProgress: enrollment.progressPercentage,
-          enrollmentDate: enrollment.enrollmentDate,
-          lastActivity: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString(),
-          completedLessons: Math.floor((enrollment.progressPercentage / 100) * (overviewData?.lessons.length || 10)),
-          totalLessons: overviewData?.lessons.length || 10
-        });
-      }
+      setSelectedStudent(null);
     } finally {
       setStudentLoading(false);
     }
@@ -218,21 +198,69 @@ const InstructorSubjectContent = () => {
     return '#dc3545';
   };
 
-  // Filter enrollments based on active filter
+  // Filter enrollments based on active filter and search term
   const getFilteredEnrollments = () => {
-    if (!overviewData) return [];
+    if (!overviewData) {
+      console.log('No overview data available for filtering');
+      return [];
+    }
     
+    console.log('Filtering enrollments:', {
+      total: overviewData.enrollments?.length || 0,
+      activeFilter,
+      institutionFilter,
+      searchTerm
+    });
+    
+    let filtered = overviewData.enrollments || [];
+    
+    // Apply status filter
     switch (activeFilter) {
       case 'completed':
-        return overviewData.enrollments.filter(enrollment => enrollment.status === 'completed');
+        filtered = filtered.filter(enrollment => enrollment.status === 'completed');
+        break;
       case 'in_progress':
-        return overviewData.enrollments.filter(enrollment => enrollment.status === 'in_progress');
+        filtered = filtered.filter(enrollment => enrollment.status === 'in_progress');
+        break;
       case 'high_progress':
-        return overviewData.enrollments.filter(enrollment => enrollment.progressPercentage >= 80);
+        filtered = filtered.filter(enrollment => enrollment.progressPercentage >= 80);
+        break;
       case 'all':
       default:
-        return overviewData.enrollments;
+        // No additional filtering needed
+        break;
     }
+    
+    console.log('After status filter:', filtered.length);
+    
+    // Apply institution filter
+    switch (institutionFilter) {
+      case 'school':
+        filtered = filtered.filter(enrollment => enrollment.institutionType === 'school');
+        break;
+      case 'university':
+        filtered = filtered.filter(enrollment => enrollment.institutionType === 'university');
+        break;
+      case 'all':
+      default:
+        // No additional filtering needed
+        break;
+    }
+    
+    console.log('After institution filter:', filtered.length);
+    
+    // Apply search filter
+    if (searchTerm.trim()) {
+      filtered = filtered.filter(enrollment => 
+        enrollment.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        enrollment.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (enrollment.institutionName && enrollment.institutionName.toLowerCase().includes(searchTerm.toLowerCase()))
+      );
+    }
+    
+    console.log('After search filter:', filtered.length);
+    
+    return filtered;
   };
 
   const handleFilterClick = (filterType: string) => {
@@ -519,6 +547,148 @@ const InstructorSubjectContent = () => {
           </div>
         </div>
 
+        {/* Filters Section */}
+        <div className="row mb-4">
+          <div className="col-12">
+            <div className="card" style={{
+              border: 'none',
+              borderRadius: '16px',
+              boxShadow: '0 8px 25px rgba(0, 0, 0, 0.1)',
+              background: 'white'
+            }}>
+              <div className="card-body" style={{ padding: '1.5rem' }}>
+                <div className="row align-items-center">
+                  <div className="col-md-4 mb-3 mb-md-0">
+                    <label className="form-label" style={{ 
+                      fontWeight: '600', 
+                      color: '#2d3748',
+                      marginBottom: '0.5rem',
+                      fontSize: '0.95rem'
+                    }}>
+                      <i className="fas fa-school me-2" style={{ color: '#667eea' }}></i>
+                      กรองตามประเภทสถาบัน
+                    </label>
+                    <select 
+                      className="form-select"
+                      value={institutionFilter}
+                      onChange={(e) => setInstitutionFilter(e.target.value)}
+                      style={{
+                        borderRadius: '10px',
+                        border: '2px solid #e9ecef',
+                        padding: '0.75rem 1rem',
+                        fontSize: '0.95rem',
+                        transition: 'all 0.3s ease'
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.borderColor = '#667eea';
+                        e.target.style.boxShadow = '0 0 0 0.2rem rgba(102, 126, 234, 0.25)';
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = '#e9ecef';
+                        e.target.style.boxShadow = 'none';
+                      }}
+                    >
+                      <option value="all">ทุกประเภท</option>
+                      <option value="school">โรงเรียน</option>
+                      <option value="university">มหาวิทยาลัย</option>
+                    </select>
+                  </div>
+                  
+                  <div className="col-md-8">
+                    <label className="form-label" style={{ 
+                      fontWeight: '600', 
+                      color: '#2d3748',
+                      marginBottom: '0.5rem',
+                      fontSize: '0.95rem'
+                    }}>
+                      <i className="fas fa-search me-2" style={{ color: '#667eea' }}></i>
+                      ค้นหานักเรียน
+                    </label>
+                    <div className="input-group">
+                      <span className="input-group-text" style={{
+                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                        border: 'none',
+                        borderRadius: '10px 0 0 10px'
+                      }}>
+                        <i className="fas fa-search" style={{ color: 'white' }}></i>
+                      </span>
+                      <input
+                        type="text"
+                        className="form-control"
+                        placeholder="ค้นหาด้วยชื่อ, อีเมล หรือชื่อสถาบัน..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        style={{
+                          border: '2px solid #e9ecef',
+                          borderLeft: 'none',
+                          borderRadius: '0 10px 10px 0',
+                          padding: '0.75rem 1rem',
+                          fontSize: '0.95rem',
+                          transition: 'all 0.3s ease'
+                        }}
+                        onFocus={(e) => {
+                          e.target.style.borderColor = '#667eea';
+                          e.target.style.boxShadow = '0 0 0 0.2rem rgba(102, 126, 234, 0.25)';
+                        }}
+                        onBlur={(e) => {
+                          e.target.style.borderColor = '#e9ecef';
+                          e.target.style.boxShadow = 'none';
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                {(institutionFilter !== 'all' || searchTerm.trim()) && (
+                  <div className="mt-3 pt-3" style={{ borderTop: '1px solid #e9ecef' }}>
+                    <div className="d-flex flex-wrap gap-2 align-items-center">
+                      <span style={{ fontSize: '0.9rem', color: '#6c757d', fontWeight: '500' }}>
+                        ตัวกรองที่ใช้:
+                      </span>
+                      {institutionFilter !== 'all' && (
+                        <span className="badge" style={{
+                          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                          color: 'white',
+                          padding: '0.5rem 1rem',
+                          borderRadius: '20px',
+                          fontSize: '0.8rem',
+                          fontWeight: '500'
+                        }}>
+                          {institutionFilter === 'school' ? 'โรงเรียน' : 'มหาวิทยาลัย'}
+                          <button
+                            type="button"
+                            className="btn-close btn-close-white ms-2"
+                            style={{ fontSize: '0.7rem' }}
+                            onClick={() => setInstitutionFilter('all')}
+                          />
+                        </span>
+                      )}
+                      {searchTerm.trim() && (
+                        <span className="badge" style={{
+                          background: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
+                          color: 'white',
+                          padding: '0.5rem 1rem',
+                          borderRadius: '20px',
+                          fontSize: '0.8rem',
+                          fontWeight: '500'
+                        }}>
+                          "{searchTerm}"
+                          <button
+                            type="button"
+                            className="btn-close btn-close-white ms-2"
+                            style={{ fontSize: '0.7rem' }}
+                            onClick={() => setSearchTerm('')}
+                          />
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Students List */}
         <div className="row">
           <div className="col-12 mb-4">
@@ -533,29 +703,69 @@ const InstructorSubjectContent = () => {
                 border: 'none',
                 padding: '1.5rem'
               }}>
-                <h5 className="card-title mb-0" style={{ 
-                  color: 'white', 
-                  fontSize: '1.3rem', 
-                  fontWeight: '600',
-                  display: 'flex',
-                  alignItems: 'center'
-                }}>
-                  <i className="fas fa-user-graduate me-2"></i>
-                  รายชื่อนักเรียน ({filteredEnrollments.length} คน)
-                  {activeFilter !== 'all' && (
-                    <span style={{ 
-                      marginLeft: '0.5rem',
-                      fontSize: '0.9rem',
-                      backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                      padding: '0.25rem 0.5rem',
-                      borderRadius: '12px'
-                    }}>
-                      {activeFilter === 'completed' && 'เรียนจบแล้ว'}
-                      {activeFilter === 'in_progress' && 'กำลังเรียน'}
-                      {activeFilter === 'high_progress' && 'ความคืบหน้าสูง (≥80%)'}
-                    </span>
-                  )}
-                </h5>
+                <div className="d-flex justify-content-between align-items-center">
+                  <h5 className="card-title mb-0" style={{ 
+                    color: 'white', 
+                    fontSize: '1.3rem', 
+                    fontWeight: '600',
+                    display: 'flex',
+                    alignItems: 'center'
+                  }}>
+                    <i className="fas fa-user-graduate me-2"></i>
+                    รายชื่อนักเรียน ({filteredEnrollments.length} คน)
+                    {activeFilter !== 'all' && (
+                      <span style={{ 
+                        marginLeft: '0.5rem',
+                        fontSize: '0.9rem',
+                        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                        padding: '0.25rem 0.5rem',
+                        borderRadius: '12px'
+                      }}>
+                        {activeFilter === 'completed' && 'เรียนจบแล้ว'}
+                        {activeFilter === 'in_progress' && 'กำลังเรียน'}
+                        {activeFilter === 'high_progress' && 'ความคืบหน้าสูง (≥80%)'}
+                      </span>
+                    )}
+                  </h5>
+                  <div className="d-flex align-items-center">
+                    <div className="input-group" style={{ width: '300px' }}>
+                      <span className="input-group-text" style={{
+                        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                        border: 'none',
+                        color: 'white'
+                      }}>
+                        <i className="fas fa-search"></i>
+                      </span>
+                      <input
+                        type="text"
+                        className="form-control"
+                        placeholder="ค้นหาชื่อหรืออีเมล..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        style={{
+                          backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                          border: 'none',
+                          color: 'white',
+                          fontSize: '0.9rem'
+                        }}
+                      />
+                      {searchTerm && (
+                        <button
+                          className="btn btn-outline-light"
+                          type="button"
+                          onClick={() => setSearchTerm('')}
+                          style={{
+                            backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                            border: 'none',
+                            fontSize: '0.8rem'
+                          }}
+                        >
+                          <i className="fas fa-times"></i>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
               </div>
               <div className="card-body" style={{ padding: '0' }}>
                 {filteredEnrollments.length === 0 ? (
@@ -591,16 +801,27 @@ const InstructorSubjectContent = () => {
                             <i className="fas fa-user me-2"></i>ชื่อ
                           </th>
                           <th style={{ 
-                            border: 'none', 
-                            padding: '1rem 1.5rem',
-                            fontWeight: '600',
-                            color: '#495057',
-                            fontSize: '0.9rem',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.5px'
+                          border: 'none', 
+                          padding: '1rem 1.5rem',
+                          fontWeight: '600',
+                          color: '#495057',
+                          fontSize: '0.9rem',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.5px'
                           }}>
-                            <i className="fas fa-envelope me-2"></i>อีเมล
+                          <i className="fas fa-envelope me-2"></i>อีเมล
                           </th>
+                           <th style={{ 
+                             border: 'none', 
+                             padding: '1rem 1.5rem',
+                             fontWeight: '600',
+                             color: '#495057',
+                             fontSize: '0.9rem',
+                             textTransform: 'uppercase',
+                             letterSpacing: '0.5px'
+                           }}>
+                             <i className="fas fa-school me-2"></i>สถาบัน
+                           </th>
                           <th style={{ 
                             border: 'none', 
                             padding: '1rem 1.5rem',
@@ -693,13 +914,32 @@ const InstructorSubjectContent = () => {
                               </div>
                             </td>
                             <td style={{ 
-                              padding: '1rem 1.5rem',
-                              borderTop: index === 0 ? 'none' : '1px solid #dee2e6',
-                              verticalAlign: 'middle',
-                              color: '#6c757d'
+                            padding: '1rem 1.5rem',
+                            borderTop: index === 0 ? 'none' : '1px solid #dee2e6',
+                            verticalAlign: 'middle',
+                            color: '#6c757d'
                             }}>
-                              {enrollment.email}
+                            {enrollment.email}
                             </td>
+                             <td style={{ 
+                               padding: '1rem 1.5rem',
+                               borderTop: index === 0 ? 'none' : '1px solid #dee2e6',
+                               verticalAlign: 'middle'
+                             }}>
+                               <div className="d-flex align-items-center">
+                                 <span className="badge me-2" style={{
+                                   backgroundColor: enrollment.institutionType === 'school' ? '#e3f2fd' : '#f3e5f5',
+                                   color: enrollment.institutionType === 'school' ? '#1976d2' : '#7b1fa2',
+                                   fontSize: '0.7rem',
+                                   fontWeight: '500',
+                                   padding: '0.25rem 0.5rem'
+                                 }}>
+                                   {enrollment.institutionType === 'school' ? 'โรงเรียน' : 
+                                    enrollment.institutionType === 'university' ? 'มหาวิทยาลัย' : 'ไม่ระบุ'}
+                                 </span>
+  
+                               </div>
+                             </td>
                             <td style={{ 
                               padding: '1rem 1.5rem',
                               borderTop: index === 0 ? 'none' : '1px solid #dee2e6',
@@ -1055,9 +1295,26 @@ const InstructorSubjectContent = () => {
                           <h4 style={{ color: '#2d3748', fontWeight: '600', marginBottom: '0.5rem' }}>
                             {selectedStudent.name}
                           </h4>
-                          <p style={{ color: '#6c757d', fontSize: '0.95rem' }}>
-                            {selectedStudent.email}
+                          <p style={{ color: '#6c757d', fontSize: '0.95rem', marginBottom: '0.5rem' }}>
+                          {selectedStudent.email}
                           </p>
+                           {selectedStudent.institutionName && (
+                             <div className="d-flex align-items-center justify-content-center">
+                               <span className="badge me-2" style={{
+                                 backgroundColor: selectedStudent.institutionType === 'school' ? '#e3f2fd' : '#f3e5f5',
+                                 color: selectedStudent.institutionType === 'school' ? '#1976d2' : '#7b1fa2',
+                                 fontSize: '0.7rem',
+                                 fontWeight: '500',
+                                 padding: '0.25rem 0.5rem'
+                               }}>
+                                 {selectedStudent.institutionType === 'school' ? 'โรงเรียน' : 
+                                  selectedStudent.institutionType === 'university' ? 'มหาวิทยาลัย' : 'ไม่ระบุ'}
+                               </span>
+                               <span style={{ color: '#6c757d', fontSize: '0.85rem' }}>
+                                 {selectedStudent.institutionName}
+                               </span>
+                             </div>
+                           )}
                         </div>
                         <div className="col-md-8">
                           <div className="row">
@@ -1344,10 +1601,7 @@ const InstructorSubjectContent = () => {
                               <div>
                                 <small style={{ color: '#6c757d', fontSize: '0.85rem' }}>สถานะในวิชานี้</small>
                                 <div style={{ marginTop: '0.25rem' }}>
-                                  {(() => {
-                                    const enrollment = overviewData?.enrollments.find(e => e.userId === selectedStudent.userId);
-                                    return enrollment ? getStatusBadge(enrollment.status) : 'ไม่ทราบสถานะ';
-                                  })()}
+                                {selectedStudent.status ? getStatusBadge(selectedStudent.status) : 'ไม่ทราบสถานะ'}
                                 </div>
                               </div>
                             </div>
