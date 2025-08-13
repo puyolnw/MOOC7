@@ -133,6 +133,7 @@ const AccountStudentArea: React.FC = () => {
   const [schools, setSchools] = useState<string[]>([]);
   const [academicYears, setAcademicYears] = useState<number[]>([]);
   const [showDetails, setShowDetails] = useState<number | null>(null);
+  const [userTypeFilter, setUserTypeFilter] = useState('all'); // all, university, school
 
   // ดึงข้อมูลนักศึกษาและแผนก
   useEffect(() => {
@@ -258,12 +259,25 @@ const AccountStudentArea: React.FC = () => {
       });
     }
 
+    // กรองตามประเภทผู้ใช้หลัก
+    if (userTypeFilter !== 'all') {
+      results = results.filter(student => {
+        const isSchoolStudent = student.education_level === 'มัธยมต้น' || student.education_level === 'มัธยมปลาย' || student.grade_level;
+        if (userTypeFilter === 'university') {
+          return !isSchoolStudent;
+        } else if (userTypeFilter === 'school') {
+          return isSchoolStudent;
+        }
+        return true;
+      });
+    }
+
     setFilteredStudents(results);
     setTotalPages(Math.ceil(results.length / itemsPerPage));
     if (currentPage !== 1) {
       setCurrentPage(1);
     }
-  }, [searchTerm, statusFilter, departmentFilter, schoolFilter, yearFilter, gradeFilter, performanceFilter, students, itemsPerPage]);
+  }, [searchTerm, statusFilter, departmentFilter, schoolFilter, yearFilter, gradeFilter, performanceFilter, userTypeFilter, students, itemsPerPage]);
 
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
@@ -416,8 +430,57 @@ const AccountStudentArea: React.FC = () => {
                 <div className="d-flex justify-content-between align-items-center mb-4">
                   <h5 className="card-title mb-0">จัดการบัญชีนักศึกษา</h5>
                   <Link to="/admin-account/students/create-new" className="btn btn-primary">
-                    <i className="fas fa-plus-circle me-2"></i>เพิ่มนักศึกษาใหม่
+                    <i className="fas fa-plus-circle me-2"></i>เพิ่มผู้ใช้ใหม่
                   </Link>
+                </div>
+
+                {/* User Type Filter Tabs */}
+                <div className="card mb-4">
+                  <div className="card-body py-3">
+                    <div className="d-flex justify-content-center">
+                      <div className="btn-group" role="group" aria-label="ประเภทผู้ใช้">
+                        <button
+                          type="button"
+                          className={`btn ${userTypeFilter === 'all' ? 'btn-primary' : 'btn-outline-primary'} position-relative`}
+                          onClick={() => setUserTypeFilter('all')}
+                        >
+                          <i className="fas fa-users me-2"></i>
+                          ทั้งหมด
+                          <span className="badge bg-secondary ms-2">
+                            {students.length}
+                          </span>
+                        </button>
+                        <button
+                          type="button"
+                          className={`btn ${userTypeFilter === 'university' ? 'btn-primary' : 'btn-outline-primary'} position-relative`}
+                          onClick={() => setUserTypeFilter('university')}
+                        >
+                          <i className="fas fa-graduation-cap me-2"></i>
+                          นักศึกษา
+                          <span className="badge bg-secondary ms-2">
+                            {students.filter(s => {
+                              const isSchoolStudent = s.education_level === 'มัธยมต้น' || s.education_level === 'มัธยมปลาย' || s.grade_level;
+                              return !isSchoolStudent;
+                            }).length}
+                          </span>
+                        </button>
+                        <button
+                          type="button"
+                          className={`btn ${userTypeFilter === 'school' ? 'btn-primary' : 'btn-outline-primary'} position-relative`}
+                          onClick={() => setUserTypeFilter('school')}
+                        >
+                          <i className="fas fa-school me-2"></i>
+                          นักเรียน
+                          <span className="badge bg-secondary ms-2">
+                            {students.filter(s => {
+                              const isSchoolStudent = s.education_level === 'มัธยมต้น' || s.education_level === 'มัธยมปลาย' || s.grade_level;
+                              return isSchoolStudent;
+                            }).length}
+                          </span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Search and Basic Filters */}
@@ -448,6 +511,7 @@ const AccountStudentArea: React.FC = () => {
                           setYearFilter('all');
                           setGradeFilter('all');
                           setPerformanceFilter('all');
+                          setUserTypeFilter('all');
                         }}
                       >
                         <i className="fas fa-undo me-1"></i>ล้างตัวกรอง
@@ -461,25 +525,16 @@ const AccountStudentArea: React.FC = () => {
                   <div className="card-header bg-light">
                     <h6 className="mb-0">
                       <i className="fas fa-filter me-2"></i>ตัวกรองข้อมูล
+                      {userTypeFilter !== 'all' && (
+                        <span className="badge bg-primary ms-2">
+                          {userTypeFilter === 'university' ? 'นักศึกษา' : 'นักเรียน'}
+                        </span>
+                      )}
                     </h6>
                   </div>
                   <div className="card-body">
                     <div className="row">
-                      <div className="col-md-3 mb-3">
-                        <label className="form-label small">สาขาวิชา</label>
-                        <select
-                          className="form-select form-select-sm"
-                          value={departmentFilter}
-                          onChange={(e) => setDepartmentFilter(e.target.value)}
-                        >
-                          <option value="all">ทุกสาขา</option>
-                          {departments.map((dept) => (
-                            <option key={dept.department_id} value={dept.department_id}>
-                              {dept.department_name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
+                      {/* Universal filters */}
                       <div className="col-md-3 mb-3">
                         <label className="form-label small">สถานะ</label>
                         <select
@@ -493,55 +548,78 @@ const AccountStudentArea: React.FC = () => {
                           <option value="pending">รอการยืนยัน</option>
                         </select>
                       </div>
+
+                      {/* University student specific filters */}
+                      {(userTypeFilter === 'all' || userTypeFilter === 'university') && (
+                        <>
+                          <div className="col-md-3 mb-3">
+                            <label className="form-label small">สาขาวิชา</label>
+                            <select
+                              className="form-select form-select-sm"
+                              value={departmentFilter}
+                              onChange={(e) => setDepartmentFilter(e.target.value)}
+                            >
+                              <option value="all">ทุกสาขา</option>
+                              {departments.map((dept) => (
+                                <option key={dept.department_id} value={dept.department_id}>
+                                  {dept.department_name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="col-md-3 mb-3">
+                            <label className="form-label small">ปีการศึกษา</label>
+                            <select
+                              className="form-select form-select-sm"
+                              value={yearFilter}
+                              onChange={(e) => setYearFilter(e.target.value)}
+                            >
+                              <option value="all">ทุกปี</option>
+                              {academicYears.map((year) => (
+                                <option key={year} value={year}>
+                                  {year}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        </>
+                      )}
+
+                      {/* School student specific filters */}
+                      {(userTypeFilter === 'all' || userTypeFilter === 'school') && (
+                        <>
+                          <div className="col-md-3 mb-3">
+                            <label className="form-label small">โรงเรียน</label>
+                            <select
+                              className="form-select form-select-sm"
+                              value={schoolFilter}
+                              onChange={(e) => setSchoolFilter(e.target.value)}
+                            >
+                              <option value="all">ทุกโรงเรียน</option>
+                              {schools.map((school) => (
+                                <option key={school} value={school}>
+                                  {school}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="col-md-3 mb-3">
+                            <label className="form-label small">ระดับชั้น</label>
+                            <select
+                              className="form-select form-select-sm"
+                              value={gradeFilter}
+                              onChange={(e) => setGradeFilter(e.target.value)}
+                            >
+                              <option value="all">ทุกระดับ</option>
+                              <option value="มัธยมต้น">มัธยมต้น</option>
+                              <option value="มัธยมปลาย">มัธยมปลาย</option>
+                            </select>
+                          </div>
+                        </>
+                      )}
+
+                      {/* Performance filter - available for both */}
                       <div className="col-md-3 mb-3">
-                        <label className="form-label small">โรงเรียน</label>
-                        <select
-                          className="form-select form-select-sm"
-                          value={schoolFilter}
-                          onChange={(e) => setSchoolFilter(e.target.value)}
-                        >
-                          <option value="all">ทุกโรงเรียน</option>
-                          {schools.map((school) => (
-                            <option key={school} value={school}>
-                              {school}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div className="col-md-3 mb-3">
-                        <label className="form-label small">ปีการศึกษา</label>
-                        <select
-                          className="form-select form-select-sm"
-                          value={yearFilter}
-                          onChange={(e) => setYearFilter(e.target.value)}
-                        >
-                          <option value="all">ทุกปี</option>
-                          {academicYears.map((year) => (
-                            <option key={year} value={year}>
-                              {year}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-                    <div className="row">
-                      <div className="col-md-6 mb-3">
-                        <label className="form-label small">ระดับชั้น</label>
-                        <select
-                          className="form-select form-select-sm"
-                          value={gradeFilter}
-                          onChange={(e) => setGradeFilter(e.target.value)}
-                        >
-                          <option value="all">ทุกระดับ</option>
-                          <option value="ม.1">ม.1</option>
-                          <option value="ม.2">ม.2</option>
-                          <option value="ม.3">ม.3</option>
-                          <option value="ม.4">ม.4</option>
-                          <option value="ม.5">ม.5</option>
-                          <option value="ม.6">ม.6</option>
-                        </select>
-                      </div>
-                      <div className="col-md-6 mb-3">
                         <label className="form-label small">ผลการเรียน</label>
                         <select
                           className="form-select form-select-sm"
@@ -574,12 +652,19 @@ const AccountStudentArea: React.FC = () => {
                 ) : filteredStudents.length === 0 ? (
                   <div className="text-center py-5 bg-light rounded">
                     <i className="fas fa-user-slash fa-3x text-muted mb-3"></i>
-                    <h5>ไม่พบข้อมูลนักศึกษา</h5>
-                    <p className="text-muted">
-                      {searchTerm || statusFilter !== 'all' || departmentFilter !== 'all'
-                        ? 'ไม่พบข้อมูลที่ตรงกับเงื่อนไขการค้นหา'
-                        : 'ยังไม่มีข้อมูลนักศึกษาในระบบ'}
-                    </p>
+                    <h5>
+                      ไม่พบข้อมูล
+                    {userTypeFilter === 'university' 
+                    ? 'นักศึกษา' 
+                    : userTypeFilter === 'school' 
+                        ? 'นักเรียน' 
+                         : 'ผู้ใช้'}
+                     </h5>
+                     <p className="text-muted">
+                       {searchTerm || statusFilter !== 'all' || departmentFilter !== 'all' || userTypeFilter !== 'all'
+                         ? 'ไม่พบข้อมูลที่ตรงกับเงื่อนไขการค้นหา'
+                         : 'ยังไม่มีข้อมูลผู้ใช้ในระบบ'}
+                     </p>
                   </div>
                 ) : (
                   <>
@@ -588,8 +673,14 @@ const AccountStudentArea: React.FC = () => {
                         <thead className="table-dark">
                           <tr>
                             <th scope="col" style={{ width: '40px' }}>#</th>
-                            <th scope="col">ข้อมูลนักเรียน</th>
-                            <th scope="col">โรงเรียน/ชั้น</th>
+                            <th scope="col">ข้อมูลผู้ใช้</th>
+                            <th scope="col">
+                               {userTypeFilter === 'university' 
+                                 ? 'สาขา/ปี' 
+                                 : userTypeFilter === 'school' 
+                                 ? 'โรงเรียน/ชั้น'
+                                 : 'สถานศึกษา/ระดับ'}
+                             </th>
                             <th scope="col">ผลการเรียน</th>
                             <th scope="col" className="text-center">สถานะ</th>
                             <th scope="col" style={{ width: '120px' }} className="text-center">จัดการ</th>

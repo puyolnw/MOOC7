@@ -36,7 +36,8 @@ const AddInstructorModal: React.FC<{
   onClose: () => void;
   onSubmit: (instructorIds: string[]) => void;
   subjectId: number;
-}> = ({ show, onClose, onSubmit, subjectId }) => {
+  currentInstructors: Instructor[];
+}> = ({ show, onClose, onSubmit, subjectId, currentInstructors }) => {
   const [selectedInstructors, setSelectedInstructors] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -61,9 +62,14 @@ const AddInstructorModal: React.FC<{
       const apiURL = import.meta.env.VITE_API_URL;
       const token = localStorage.getItem('token');
       
+      // รวมอาจารย์เดิม + ใหม่ที่เลือก
+      const existingInstructorIds = currentInstructors.map(inst => inst.instructor_id);
+      const newInstructorIds = selectedInstructors.map(id => parseInt(id));
+      const allInstructorIds = [...existingInstructorIds, ...newInstructorIds];
+      
       const response = await axios.put(
         `${apiURL}/api/courses/subjects/${subjectId}`,
-        { instructors: selectedInstructors.map(id => parseInt(id)) },
+        { instructors: allInstructorIds },
         { 
           headers: { 
             Authorization: `Bearer ${token}`,
@@ -154,7 +160,7 @@ const AddInstructorModal: React.FC<{
               onClick={handleClose}
             ></button>
           </div>
-          <div className="modal-body p-4">
+          <div className="modal-body p-4" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
             {error && (
               <div className="alert alert-danger d-flex align-items-center mb-4" role="alert">
                 <i className="fas fa-exclamation-triangle me-2"></i>
@@ -162,26 +168,7 @@ const AddInstructorModal: React.FC<{
               </div>
             )}
             
-            <div className="mb-4">
-              <button
-                type="button"
-                className="btn btn-primary d-flex align-items-center w-100"
-                onClick={handleSubmit}
-                disabled={isSubmitting || selectedInstructors.length === 0}
-              >
-                {isSubmitting ? (
-                  <>
-                    <span className="spinner-border spinner-border-sm me-2" role="status"></span>
-                    กำลังเพิ่ม...
-                  </>
-                ) : (
-                  <>
-                    <i className="fas fa-plus me-2"></i>
-                    เพิ่มอาจารย์ผู้สอน ({selectedInstructors.length})
-                  </>
-                )}
-              </button>
-            </div>
+
             
             <InstructorSelector
               selectedInstructors={selectedInstructors}
@@ -206,12 +193,30 @@ const AddInstructorModal: React.FC<{
           <div className="modal-footer bg-light">
             <button
               type="button"
-              className="btn btn-secondary d-flex align-items-center"
+              className="btn btn-secondary d-flex align-items-center me-3"
               onClick={handleClose}
               disabled={isSubmitting}
             >
               <i className="fas fa-times me-2"></i>
               ยกเลิก
+            </button>
+            <button
+              type="button"
+              className="btn btn-primary d-flex align-items-center"
+              onClick={handleSubmit}
+              disabled={isSubmitting || selectedInstructors.length === 0}
+            >
+              {isSubmitting ? (
+                <>
+                  <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                  กำลังเพิ่ม...
+                </>
+              ) : (
+                <>
+                  <i className="fas fa-plus me-2"></i>
+                  เพิ่มอาจารย์ผู้สอน ({selectedInstructors.length})
+                </>
+              )}
             </button>
           </div>
         </div>
@@ -432,6 +437,7 @@ const InsSection: React.FC<InsSectionProps> = ({ subject, onSubjectUpdate }) => 
         onClose={() => setShowInstructorModal(false)}
         onSubmit={handleInstructorsAdded}
         subjectId={currentSubject.subject_id}
+        currentInstructors={currentSubject.instructors || []}
       />
 
       {/* Custom Styles */}
@@ -555,6 +561,8 @@ const InsSection: React.FC<InsSectionProps> = ({ subject, onSubjectUpdate }) => 
           display: grid;
           grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
           gap: 1.5rem;
+          max-height: 500px;
+          overflow-y: auto;
         }
 
         .instructor-card {

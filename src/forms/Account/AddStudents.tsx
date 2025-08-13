@@ -22,6 +22,11 @@ interface StudentData {
   department: string;
   educationLevel: string;
   academicYear: string;
+  // เพิ่มฟิลด์สำหรับนักเรียน
+  schoolName?: string;
+  studyProgram?: string;
+  gradeLevel?: string;
+  address?: string;
 }
 
 interface AddStudentsProps {
@@ -33,11 +38,30 @@ const AddStudents: React.FC<AddStudentsProps> = ({ onSubmit, onCancel }) => {
   const navigate = useNavigate();
   const apiURL = import.meta.env.VITE_API_URL;
 
+  // ตัวเลือกประเภทผู้ใช้
+  const tab_title: string[] = ["นักศึกษา", "นักเรียน"];
+  
+  // ตัวเลือกโรงเรียน
+  const schoolNames = [
+    'โรงเรียน1',
+    'โรงเรียน2',
+  ];
+
+  const studyPrograms = [
+    'วิทย์-คณิต',
+    'ศิลป์-ภาษา',
+    'ศิลป์-คำนวณ',
+    'ศิลป์-สังคม',
+  ];
+
   // State สำหรับการโหลดและข้อผิดพลาด
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
   // const [apiSuccess, setApiSuccess] = useState<string | null>(null); // ลบ apiSuccess state ออก
+
+  // State สำหรับประเภทผู้ใช้
+  const [userType, setUserType] = useState<number>(0); // 0 = นักศึกษา, 1 = นักเรียน
 
   // State สำหรับข้อมูลแผนก
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -54,6 +78,11 @@ const AddStudents: React.FC<AddStudentsProps> = ({ onSubmit, onCancel }) => {
     department: "",
     educationLevel: "",
     academicYear: "",
+    // ฟิลด์สำหรับนักเรียน
+    schoolName: "",
+    studyProgram: "",
+    gradeLevel: "",
+    address: "",
   });
 
   // State สำหรับข้อผิดพลาดในการตรวจสอบข้อมูล
@@ -68,6 +97,11 @@ const AddStudents: React.FC<AddStudentsProps> = ({ onSubmit, onCancel }) => {
     department: "",
     educationLevel: "",
     academicYear: "",
+    // ฟิลด์สำหรับนักเรียน
+    schoolName: "",
+    studyProgram: "",
+    gradeLevel: "",
+    address: "",
   });
 
   // ดึงข้อมูลแผนกจาก API
@@ -186,34 +220,62 @@ const AddStudents: React.FC<AddStudentsProps> = ({ onSubmit, onCancel }) => {
       isValid = false;
     }
 
-    // ตรวจสอบรหัสนักศึกษา
+    // ตรวจสอบรหัสนักศึกษา/นักเรียน
     if (!studentData.studentCode.trim()) {
-      newErrors.studentCode = "กรุณากรอกรหัสนักศึกษา";
+      newErrors.studentCode = userType === 0 ? "กรุณากรอกรหัสนักศึกษา" : "กรุณากรอกรหัสนักเรียน";
       isValid = false;
     }
 
-    // ตรวจสอบชั้นปีการศึกษา
-    if (!studentData.academicYear) {
-      newErrors.academicYear = "กรุณาเลือกชั้นปีการศึกษา";
-      isValid = false;
-    } else {
-      const year = parseInt(studentData.academicYear);
-      if (year < 1 || year > 4) {
-        newErrors.academicYear = "ชั้นปีต้องอยู่ระหว่าง 1-4";
+    if (userType === 0) {
+      // ตรวจสอบเฉพาะนักศึกษา
+      // ตรวจสอบชั้นปีการศึกษา
+      if (!studentData.academicYear) {
+        newErrors.academicYear = "กรุณาเลือกชั้นปีการศึกษา";
+        isValid = false;
+      } else {
+        const year = parseInt(studentData.academicYear);
+        if (year < 1 || year > 4) {
+          newErrors.academicYear = "ชั้นปีต้องอยู่ระหว่าง 1-4";
+          isValid = false;
+        }
+      }
+
+      // ตรวจสอบภาควิชา
+      if (!studentData.department) {
+        newErrors.department = "กรุณาเลือกภาควิชา";
         isValid = false;
       }
-    }
 
-    // ตรวจสอบภาควิชา
-    if (!studentData.department) {
-      newErrors.department = "กรุณาเลือกภาควิชา";
-      isValid = false;
-    }
+      // ตรวจสอบระดับการศึกษา
+      if (!studentData.educationLevel) {
+        newErrors.educationLevel = "กรุณาเลือกระดับการศึกษา";
+        isValid = false;
+      }
+    } else {
+      // ตรวจสอบเฉพาะนักเรียน
+      // ตรวจสอบระดับชั้น
+      if (!studentData.gradeLevel) {
+        newErrors.gradeLevel = "กรุณาเลือกระดับชั้น";
+        isValid = false;
+      }
 
-    // ตรวจสอบระดับการศึกษา
-    if (!studentData.educationLevel) {
-      newErrors.educationLevel = "กรุณาเลือกระดับการศึกษา";
-      isValid = false;
+      // ตรวจสอบชื่อโรงเรียน
+      if (!studentData.schoolName) {
+        newErrors.schoolName = "กรุณาเลือกโรงเรียน";
+        isValid = false;
+      }
+
+      // ตรวจสอบแผนการเรียน
+      if (!studentData.studyProgram) {
+        newErrors.studyProgram = "กรุณาเลือกแผนการเรียน";
+        isValid = false;
+      }
+
+      // ตรวจสอบที่อยู่
+      if (!studentData.address?.trim()) {
+        newErrors.address = "กรุณากรอกที่อยู่";
+        isValid = false;
+      }
     }
 
     setErrors(newErrors);
@@ -242,18 +304,33 @@ const AddStudents: React.FC<AddStudentsProps> = ({ onSubmit, onCancel }) => {
       }
 
       // สร้างข้อมูลสำหรับส่งไปยัง API
-      const formData = {
+      const baseFormData = {
         username: studentData.username,
         email: studentData.email,
         password: studentData.password,
-        role_id: 1, // ตั้งค่า role_id เป็น 1 สำหรับนักศึกษา
+        role_id: 1, // ตั้งค่า role_id เป็น 1 สำหรับทั้งนักศึกษาและนักเรียน
         student_code: parseInt(studentData.studentCode),
-        department_id: studentData.department,
-        education_level: studentData.educationLevel,
-        academic_year: parseInt(studentData.academicYear),
         first_name: studentData.firstName,
         last_name: studentData.lastName,
       };
+
+      const formData = userType === 0 
+        ? {
+            // ข้อมูลสำหรับนักศึกษา
+            ...baseFormData,
+            department_id: studentData.department,
+            education_level: studentData.educationLevel,
+            academic_year: parseInt(studentData.academicYear),
+          }
+        : {
+            // ข้อมูลสำหรับนักเรียน
+            ...baseFormData,
+            school_name: studentData.schoolName,
+            study_program: studentData.studyProgram,
+            education_level: studentData.gradeLevel, // ใช้ gradeLevel เป็น education_level สำหรับนักเรียน
+            grade_level: studentData.gradeLevel,
+            address: studentData.address,
+          };
 
       // ส่งข้อมูลไปยัง API
       const response = await axios.post(`${apiURL}/api/auth/register`, formData, {
@@ -362,6 +439,34 @@ const AddStudents: React.FC<AddStudentsProps> = ({ onSubmit, onCancel }) => {
           {apiError}
         </div>
       )}
+
+      {/* Tab Selector สำหรับเลือกประเภทผู้ใช้ */}
+      <div className="card shadow-sm border-0 mb-4">
+        <div className="card-body">
+          <h5 className="card-title mb-3">เลือกประเภทผู้ใช้</h5>
+          <div className="row g-3">
+            {tab_title.map((title, index) => (
+              <div key={index} className="col-6">
+                <div 
+                  className={`card h-100 cursor-pointer ${userType === index ? 'border-primary bg-primary-subtle' : 'border-light'}`}
+                  onClick={() => setUserType(index)}
+                  style={{ cursor: 'pointer', transition: 'all 0.3s ease' }}
+                >
+                  <div className="card-body text-center">
+                    <div className="mb-2">
+                      <i className={`fas ${index === 0 ? 'fa-graduation-cap' : 'fa-school'} ${userType === index ? 'text-primary' : 'text-muted'} fs-3`}></i>
+                    </div>
+                    <h6 className={`card-title mb-1 ${userType === index ? 'text-primary' : ''}`}>{title}</h6>
+                    <small className={`text-muted ${userType === index ? 'text-primary' : ''}`}>
+                      {index === 0 ? 'มหาวิทยาลัย' : 'โรงเรียนมัธยม'}
+                    </small>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
 
       {/* ลบส่วนแสดงข้อความสำเร็จ (apiSuccess) ออก */}
       {/* {apiSuccess && (
@@ -490,7 +595,7 @@ const AddStudents: React.FC<AddStudentsProps> = ({ onSubmit, onCancel }) => {
           <div className="row mb-3">
             <div className="col-md-6">
               <label htmlFor="studentCode" className="form-label">
-                รหัสนักศึกษา <span className="text-danger">*</span>
+                {userType === 0 ? 'รหัสนักศึกษา' : 'รหัสนักเรียน'} <span className="text-danger">*</span>
               </label>
               <input
                 type="text"
@@ -499,81 +604,180 @@ const AddStudents: React.FC<AddStudentsProps> = ({ onSubmit, onCancel }) => {
                 name="studentCode"
                 value={studentData.studentCode}
                 onChange={handleInputChange}
-                placeholder="รหัสนักศึกษา"
+                placeholder={userType === 0 ? 'รหัสนักศึกษา' : 'รหัสนักเรียน'}
               />
               {errors.studentCode && <div className="invalid-feedback">{errors.studentCode}</div>}
             </div>
 
             <div className="col-md-6">
-              <label htmlFor="academicYear" className="form-label">
-                ชั้นปีการศึกษา <span className="text-danger">*</span>
-              </label>
-              <select
-                className={`form-select ${errors.academicYear ? "is-invalid" : ""}`}
-                id="academicYear"
-                name="academicYear"
-                value={studentData.academicYear}
-                onChange={handleInputChange}
-              >
-                <option value="">เลือกชั้นปี</option>
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-                <option value="4">4</option>
-              </select>
-              {errors.academicYear && <div className="invalid-feedback">{errors.academicYear}</div>}
+              {userType === 0 ? (
+                // ฟิลด์สำหรับนักศึกษา: ชั้นปีการศึกษา
+                <>
+                  <label htmlFor="academicYear" className="form-label">
+                    ชั้นปีการศึกษา <span className="text-danger">*</span>
+                  </label>
+                  <select
+                    className={`form-select ${errors.academicYear ? "is-invalid" : ""}`}
+                    id="academicYear"
+                    name="academicYear"
+                    value={studentData.academicYear}
+                    onChange={handleInputChange}
+                  >
+                    <option value="">เลือกชั้นปี</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                  </select>
+                  {errors.academicYear && <div className="invalid-feedback">{errors.academicYear}</div>}
+                </>
+              ) : (
+                // ฟิลด์สำหรับนักเรียน: ระดับชั้น
+                <>
+                  <label htmlFor="gradeLevel" className="form-label">
+                    ระดับชั้น <span className="text-danger">*</span>
+                  </label>
+                  <select
+                    className={`form-select ${errors.gradeLevel ? "is-invalid" : ""}`}
+                    id="gradeLevel"
+                    name="gradeLevel"
+                    value={studentData.gradeLevel}
+                    onChange={handleInputChange}
+                  >
+                    <option value="">เลือกระดับชั้น</option>
+                    <option value="มัธยมต้น">มัธยมต้น</option>
+                    <option value="มัธยมปลาย">มัธยมปลาย</option>
+                  </select>
+                  {errors.gradeLevel && <div className="invalid-feedback">{errors.gradeLevel}</div>}
+                </>
+              )}
             </div>
           </div>
 
           <div className="row mb-3">
             <div className="col-md-6">
-              <label htmlFor="department" className="form-label">
-                ภาควิชา <span className="text-danger">*</span>
-              </label>
-              {isLoading ? (
-                <div className="d-flex align-items-center mb-2">
-                  <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                  <span>กำลังโหลดข้อมูลภาควิชา...</span>
-                </div>
+              {userType === 0 ? (
+                // ฟิลด์สำหรับนักศึกษา: ภาควิชา
+                <>
+                  <label htmlFor="department" className="form-label">
+                    ภาควิชา <span className="text-danger">*</span>
+                  </label>
+                  {isLoading ? (
+                    <div className="d-flex align-items-center mb-2">
+                      <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                      <span>กำลังโหลดข้อมูลภาควิชา...</span>
+                    </div>
+                  ) : (
+                    <select
+                      className={`form-select ${errors.department ? "is-invalid" : ""}`}
+                      id="department"
+                      name="department"
+                      value={studentData.department}
+                      onChange={handleInputChange}
+                      disabled={isLoading}
+                    >
+                      <option value="">เลือกภาควิชา</option>
+                      {departments.map((dept) => (
+                        <option key={dept.department_id} value={dept.department_id}>
+                          {dept.department_name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                  {errors.department && <div className="invalid-feedback">{errors.department}</div>}
+                </>
               ) : (
-                <select
-                  className={`form-select ${errors.department ? "is-invalid" : ""}`}
-                  id="department"
-                  name="department"
-                  value={studentData.department}
-                  onChange={handleInputChange}
-                  disabled={isLoading}
-                >
-                  <option value="">เลือกภาควิชา</option>
-                  {departments.map((dept) => (
-                    <option key={dept.department_id} value={dept.department_id}>
-                      {dept.department_name}
-                    </option>
-                  ))}
-                </select>
+                // ฟิลด์สำหรับนักเรียน: ชื่อโรงเรียน
+                <>
+                  <label htmlFor="schoolName" className="form-label">
+                    ชื่อโรงเรียน <span className="text-danger">*</span>
+                  </label>
+                  <select
+                    className={`form-select ${errors.schoolName ? "is-invalid" : ""}`}
+                    id="schoolName"
+                    name="schoolName"
+                    value={studentData.schoolName}
+                    onChange={handleInputChange}
+                  >
+                    <option value="">เลือกโรงเรียน</option>
+                    {schoolNames.map((school) => (
+                      <option key={school} value={school}>
+                        {school}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.schoolName && <div className="invalid-feedback">{errors.schoolName}</div>}
+                </>
               )}
-              {errors.department && <div className="invalid-feedback">{errors.department}</div>}
             </div>
 
             <div className="col-md-6">
-              <label htmlFor="educationLevel" className="form-label">
-                ระดับการศึกษา <span className="text-danger">*</span>
-              </label>
-              <select
-                className={`form-select ${errors.educationLevel ? "is-invalid" : ""}`}
-                id="educationLevel"
-                name="educationLevel"
-                value={studentData.educationLevel}
-                onChange={handleInputChange}
-              >
-                <option value="">เลือกระดับการศึกษา</option>
-                <option value="ปริญญาตรี">ปริญญาตรี</option>
-                <option value="ปริญญาโท">ปริญญาโท</option>
-                <option value="ปริญญาเอก">ปริญญาเอก</option>
-              </select>
-              {errors.educationLevel && <div className="invalid-feedback">{errors.educationLevel}</div>}
+              {userType === 0 ? (
+                // ฟิลด์สำหรับนักศึกษา: ระดับการศึกษา
+                <>
+                  <label htmlFor="educationLevel" className="form-label">
+                    ระดับการศึกษา <span className="text-danger">*</span>
+                  </label>
+                  <select
+                    className={`form-select ${errors.educationLevel ? "is-invalid" : ""}`}
+                    id="educationLevel"
+                    name="educationLevel"
+                    value={studentData.educationLevel}
+                    onChange={handleInputChange}
+                  >
+                    <option value="">เลือกระดับการศึกษา</option>
+                    <option value="ปริญญาตรี">ปริญญาตรี</option>
+                    <option value="ปริญญาโท">ปริญญาโท</option>
+                    <option value="ปริญญาเอก">ปริญญาเอก</option>
+                  </select>
+                  {errors.educationLevel && <div className="invalid-feedback">{errors.educationLevel}</div>}
+                </>
+              ) : (
+                // ฟิลด์สำหรับนักเรียน: แผนการเรียน
+                <>
+                  <label htmlFor="studyProgram" className="form-label">
+                    แผนการเรียน <span className="text-danger">*</span>
+                  </label>
+                  <select
+                    className={`form-select ${errors.studyProgram ? "is-invalid" : ""}`}
+                    id="studyProgram"
+                    name="studyProgram"
+                    value={studentData.studyProgram}
+                    onChange={handleInputChange}
+                  >
+                    <option value="">เลือกแผนการเรียน</option>
+                    {studyPrograms.map((program) => (
+                      <option key={program} value={program}>
+                        {program}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.studyProgram && <div className="invalid-feedback">{errors.studyProgram}</div>}
+                </>
+              )}
             </div>
           </div>
+
+          {/* เพิ่มฟิลด์ที่อยู่สำหรับนักเรียนเท่านั้น */}
+          {userType === 1 && (
+            <div className="row mb-3">
+              <div className="col-12">
+                <label htmlFor="address" className="form-label">
+                  ที่อยู่ <span className="text-danger">*</span>
+                </label>
+                <textarea
+                  className={`form-control ${errors.address ? "is-invalid" : ""}`}
+                  id="address"
+                  name="address"
+                  value={studentData.address}
+                  onChange={handleInputChange}
+                  placeholder="ที่อยู่ของนักเรียน"
+                  rows={3}
+                />
+                {errors.address && <div className="invalid-feedback">{errors.address}</div>}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
