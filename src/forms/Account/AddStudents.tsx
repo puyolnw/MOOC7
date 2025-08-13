@@ -143,7 +143,7 @@ const AddStudents: React.FC<AddStudentsProps> = ({ onSubmit, onCancel }) => {
   }, [apiURL]);
 
   // จัดการการเปลี่ยนแปลงข้อมูลในฟอร์ม
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setStudentData((prevState) => ({
       ...prevState,
@@ -173,6 +173,11 @@ const AddStudents: React.FC<AddStudentsProps> = ({ onSubmit, onCancel }) => {
       department: "",
       educationLevel: "",
       academicYear: "",
+      // ฟิลด์สำหรับนักเรียน
+      schoolName: "",
+      studyProgram: "",
+      gradeLevel: "",
+      address: "",
     };
 
     // ตรวจสอบชื่อผู้ใช้

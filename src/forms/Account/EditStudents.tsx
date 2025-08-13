@@ -190,6 +190,11 @@ const EditStudents: React.FC<EditStudentsProps> = ({ onSubmit, onCancel }) => {
       department: "",
       educationLevel: "",
       academicYear: "",
+      // ฟิลด์สำหรับนักเรียน
+      schoolName: "",
+      studyProgram: "",
+      gradeLevel: "",
+      address: "",
     };
 
     // Validate username
