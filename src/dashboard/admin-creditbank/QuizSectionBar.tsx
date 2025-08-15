@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ReactDOM from 'react-dom';
 import axios from 'axios';
 import AddQuestions from '../../forms/Course/Questions/AddQuestions';
 
@@ -816,54 +817,81 @@ const handleDeleteQuiz = async () => {
   const currentHasQuiz = hasQuiz();
   const currentQuizTitle = getQuizTitle();
 
-  if (showAddQuestionForm) {
-    return (
-      <div className="content-section-bar">
-        <div className="section-bar-header">
-          <div className="section-bar-icon quiz-icon">
-            <i className="fas fa-plus-circle"></i>
-          </div>
-          <div className="section-bar-info">
-            <h5 className="section-bar-title">เพิ่มคำถามใหม่</h5>
-            <p className="section-bar-subtitle">
-              เพิ่มคำถามในแบบทดสอบ: {currentQuizTitle}
-            </p>
-          </div>
-          <div className="section-bar-expand">
-            <button
-              className="btn btn-sm btn-outline-secondary"
-              onClick={() => setShowAddQuestionForm(false)}
-            >
-              <i className="fas fa-times"></i> ยกเลิก
-            </button>
-          </div>
-        </div>
-        
-        <div className="section-bar-content expanded">
-          <div className="add-question-form-container">
-            <div className="form-wrapper">
+  // Question Modal Component - Fixed version
+  const QuestionModal = () => {
+    if (!showAddQuestionForm) return null;
+
+    // Prevent body scroll when modal is open
+    useEffect(() => {
+      document.body.classList.add('modal-open');
+      return () => {
+        document.body.classList.remove('modal-open');
+      };
+    }, []);
+
+    const handleBackdropClick = (e: React.MouseEvent) => {
+      if (e.target === e.currentTarget) {
+        setShowAddQuestionForm(false);
+      }
+    };
+
+    const modalContent = (
+      <div 
+        className="question-modal-overlay"
+        onClick={handleBackdropClick}
+      >
+        <div className="question-modal-container">
+          <div className="question-modal-content">
+            <div className="question-modal-header">
+              <div className="modal-title-info">
+                <div className="modal-title-icon">
+                  <i className="fas fa-plus-circle"></i>
+                </div>
+                <div className="modal-title-text">
+                  <h5>เพิ่มคำถามใหม่</h5>
+                  <small>เพิ่มคำถามในแบบทดสอบ: {currentQuizTitle}</small>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() => setShowAddQuestionForm(false)}
+              >
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+            
+            <div className="question-modal-body">
               {error && (
-                <div className="alert alert-danger alert-sm mb-3">
-                  <i className="fas fa-exclamation-circle me-2"></i>
-                  {error}
-                  <button 
-                    className="btn btn-sm btn-outline-secondary ms-2"
-                    onClick={() => setError('')}
-                  >
-                    ปิด
-                  </button>
+                <div className="error-alert">
+                  <div className="error-content">
+                    <i className="fas fa-exclamation-circle"></i>
+                    <span>{error}</span>
+                    <button 
+                      className="error-close-btn"
+                      onClick={() => setError('')}
+                    >
+                      <i className="fas fa-times"></i>
+                    </button>
+                  </div>
                 </div>
               )}
-              <AddQuestions
-                onSubmit={handleAddQuestion}
-                onCancel={() => setShowAddQuestionForm(false)}
-              />
+              
+              <div className="question-form-container">
+                <AddQuestions
+                  onSubmit={handleAddQuestion}
+                  onCancel={() => setShowAddQuestionForm(false)}
+                />
+              </div>
             </div>
           </div>
         </div>
       </div>
     );
-  }
+
+    // Render modal using portal to prevent DOM hierarchy issues
+    return ReactDOM.createPortal(modalContent, document.body);
+  };
 
   return (
     <div className="content-section-bar">
@@ -1543,7 +1571,193 @@ const handleDeleteQuiz = async () => {
           color: #2d3748;
           margin: 0;
         }
+
+        /* Custom Modal Styles */
+        .question-modal-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background-color: rgba(0, 0, 0, 0.5);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 9999;
+          padding: 1rem;
+        }
+
+        .question-modal-container {
+          width: 100%;
+          max-width: 1200px;
+          max-height: 90vh;
+          background: white;
+          border-radius: 12px;
+          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+          overflow: hidden;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .question-modal-content {
+          display: flex;
+          flex-direction: column;
+          height: 100%;
+        }
+
+        .question-modal-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 1.5rem;
+          border-bottom: 1px solid #e9ecef;
+          background: #f8f9fa;
+          flex-shrink: 0;
+        }
+
+        .modal-title-info {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+        }
+
+        .modal-title-icon {
+          width: 48px;
+          height: 48px;
+          border-radius: 12px;
+          background: #e6fffa;
+          color: #319795;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 1.5rem;
+        }
+
+        .modal-title-text h5 {
+          margin: 0;
+          color: #2d3748;
+          font-size: 1.25rem;
+          font-weight: 600;
+        }
+
+        .modal-title-text small {
+          color: #718096;
+          font-size: 0.875rem;
+        }
+
+        .modal-close-btn {
+          width: 40px;
+          height: 40px;
+          border: none;
+          background: #f7fafc;
+          color: #4a5568;
+          border-radius: 8px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .modal-close-btn:hover {
+          background: #e2e8f0;
+          color: #2d3748;
+        }
+
+        .question-modal-body {
+          flex: 1;
+          overflow-y: auto;
+          padding: 0;
+        }
+
+        .question-form-container {
+          padding: 1.5rem;
+        }
+
+        .error-alert {
+          padding: 1rem 1.5rem;
+          background: #fed7d7;
+          border-bottom: 1px solid #feb2b2;
+        }
+
+        .error-content {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          color: #c53030;
+        }
+
+        .error-content i {
+          font-size: 1.1rem;
+        }
+
+        .error-content span {
+          flex: 1;
+          font-size: 0.9rem;
+        }
+
+        .error-close-btn {
+          border: none;
+          background: none;
+          color: #c53030;
+          cursor: pointer;
+          padding: 0.25rem;
+          border-radius: 4px;
+          transition: background 0.2s;
+        }
+
+        .error-close-btn:hover {
+          background: rgba(197, 48, 48, 0.1);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+          .question-modal-container {
+            max-width: 95vw;
+            margin: 0.5rem;
+          }
+        }
+
+        @media (max-width: 768px) {
+          .question-modal-overlay {
+            padding: 0.5rem;
+          }
+          
+          .question-modal-container {
+            max-height: 95vh;
+          }
+
+          .question-modal-header {
+            padding: 1rem;
+          }
+
+          .modal-title-info {
+            gap: 0.75rem;
+          }
+
+          .modal-title-icon {
+            width: 40px;
+            height: 40px;
+            font-size: 1.25rem;
+          }
+
+          .modal-title-text h5 {
+            font-size: 1.125rem;
+          }
+
+          .question-form-container {
+            padding: 1rem;
+          }
+        }
+
+        /* Prevent body scroll when modal is open */
+        body.modal-open {
+          overflow: hidden;
+        }
       `}</style>
+      
+      {/* Modal is rendered via portal */}
+      {showAddQuestionForm && <QuestionModal />}
     </div>
   );
 };

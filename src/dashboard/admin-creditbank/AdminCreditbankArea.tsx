@@ -507,6 +507,7 @@ const CourseList: React.FC<{
   searchTerm: string;
   onSearchChange: (term: string) => void;
   onCourseSelect: (course: Course) => void;
+  onDeleteCourse: (course: Course) => void;
   onAddCourse: () => void;
   selectedDepartment: Department;
   currentPage: number;
@@ -519,6 +520,7 @@ const CourseList: React.FC<{
   searchTerm, 
   onSearchChange, 
   onCourseSelect, 
+  onDeleteCourse,
   onAddCourse,
   selectedDepartment,
   currentPage,
@@ -583,55 +585,128 @@ const CourseList: React.FC<{
         {courses.map((course, index) => (
           <div 
             key={`course-${course.course_id}-${index}`} 
-            className="course-card"
-            onClick={() => onCourseSelect(course)}
+            className="course-card modern-card"
           >
-            <div className="course-card-image">
-              <img
-                src={course.cover_image_file_id 
-                  ? `${import.meta.env.VITE_API_URL}/api/courses/image/${course.cover_image_file_id}`
-                  : 'https://via.placeholder.com/300x200.png?text=ไม่มีรูปภาพ'
-                }
-                alt={course.title}
-                className="course-image"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = 'https://via.placeholder.com/300x200.png?text=ไม่มีรูปภาพ';
-                }}
-              />
-              <div className="course-card-overlay">
-                <div className="course-status">
-                  <span className={`status-badge ${course.status}`}>
-                    {course.status === 'active' ? 'เปิดใช้งาน' : 
-                     course.status === 'inactive' ? 'ปิดใช้งาน' : 'ร่าง'}
-                  </span>
+            {/* Card Header with Actions */}
+            <div className="modern-card-header">
+              <div className="card-header-left">
+                {course.course_code && (
+                  <div className="course-code-tag">
+                    <i className="fas fa-bookmark me-1"></i>
+                    {course.course_code}
+                  </div>
+                )}
+              </div>
+              <div className="card-header-right">
+                <button
+                  className="delete-action-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (course.subject_count > 0) {
+                      alert('ไม่สามารถลบหลักสูตรที่มีรายวิชาอยู่ได้ กรุณาลบรายวิชาทั้งหมดก่อน');
+                      return;
+                    }
+                    if (window.confirm(`คุณต้องการลบหลักสูตร "${course.title}" ใช่หรือไม่?`)) {
+                      onDeleteCourse(course);
+                    }
+                  }}
+                  title="ลบหลักสูตร"
+                >
+                  <i className="fas fa-trash"></i>
+                </button>
+                <div className="status-indicator">
+                  <div className={`status-dot status-${course.status}`}></div>
                 </div>
               </div>
             </div>
-            <div className="course-card-content">
-              <div className="course-card-header">
-                <h3 className="course-title">{course.title}</h3>
-                {course.course_code && (
-                  <span className="course-code">{course.course_code}</span>
-                )}
+
+            {/* Image Section */}
+            <div 
+              className="modern-card-image"
+              onClick={() => onCourseSelect(course)}
+            >
+              <div className="image-container">
+                <img
+                  src={course.cover_image_file_id 
+                    ? `${import.meta.env.VITE_API_URL}/api/courses/image/${course.cover_image_file_id}`
+                    : 'https://via.placeholder.com/400x240.png?text=ไม่มีรูปภาพหลักสูตร'
+                  }
+                  alt={course.title}
+                  className="card-image"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400x240.png?text=ไม่มีรูปภาพหลักสูตร';
+                  }}
+                />
+                <div className="image-overlay">
+                  <div className="overlay-content">
+                    <div className="status-badge">
+                      <i className="fas fa-circle me-1"></i>
+                      {course.status === 'active' ? 'เปิดใช้งาน' : 
+                       course.status === 'inactive' ? 'ปิดใช้งาน' : 'ร่าง'}
+                    </div>
+                  </div>
+                </div>
               </div>
+            </div>
+
+            {/* Content Section */}
+            <div className="modern-card-content">
+              <div className="content-header">
+                <h3 
+                  className="card-title"
+                  onClick={() => onCourseSelect(course)}
+                  title="คลิกเพื่อเข้าสู่หลักสูตร"
+                >
+                  {course.title}
+                </h3>
+              </div>
+              
               {course.description && (
-                <p className="course-description">
-                  {course.description.length > 100 
-                    ? `${course.description.substring(0, 100)}...`
+                <p className="card-description">
+                  {course.description.length > 120 
+                    ? `${course.description.substring(0, 120)}...`
                     : course.description
                   }
                 </p>
               )}
-              <div className="course-stats">
-                <div className="stat-group">
-                  <i className="fas fa-list-alt me-1"></i>
-                  <span>{course.subject_count} รายวิชา</span>
+
+              <div className="card-stats">
+                <div className="stat-item">
+                  <div className="stat-icon">
+                    <i className="fas fa-list-alt"></i>
+                  </div>
+                  <div className="stat-content">
+                    <span className="stat-number">{course.subject_count}</span>
+                    <span className="stat-label">รายวิชา</span>
+                  </div>
                 </div>
-                <div className="stat-group">
-                  <i className="fas fa-calendar me-1"></i>
-                  <span>{new Date(course.created_at).toLocaleDateString('th-TH')}</span>
+                <div className="stat-divider"></div>
+                <div className="stat-item">
+                  <div className="stat-icon">
+                    <i className="fas fa-calendar-alt"></i>
+                  </div>
+                  <div className="stat-content">
+                    <span className="stat-date">
+                      {new Date(course.created_at).toLocaleDateString('th-TH', {
+                        day: 'numeric',
+                        month: 'short'
+                      })}
+                    </span>
+                    <span className="stat-label">สร้างเมื่อ</span>
+                  </div>
                 </div>
               </div>
+            </div>
+
+            {/* Footer Section */}
+            <div className="modern-card-footer">
+              <button
+                className="enter-course-btn"
+                onClick={() => onCourseSelect(course)}
+              >
+                <span>เข้าสู่หลักสูตร</span>
+                <i className="fas fa-arrow-right"></i>
+              </button>
             </div>
           </div>
         ))}
@@ -833,6 +908,43 @@ const EditableCourseDetail: React.FC<{
 
   const handleAddSubject = () => {
     window.location.href = `/admin-subjects/create-new?course_id=${course.course_id}`;
+  };
+
+  const handleDeleteSubject = async (subject: Subject) => {
+    if (!window.confirm(`คุณต้องการลบรายวิชา "${subject.subject_name}" ใช่หรือไม่?\n\nการดำเนินการนี้ไม่สามารถยกเลิกได้`)) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.delete(
+        `${apiURL}/api/courses/subjects/${subject.subject_id}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (response.data.success) {
+        // Remove deleted subject from state
+        const updatedSubjects = subjects.filter(s => s.subject_id !== subject.subject_id);
+        setSubjects(updatedSubjects);
+        setFilteredSubjects(updatedSubjects);
+        
+        alert('ลบรายวิชาสำเร็จ');
+      } else {
+        alert('ไม่สามารถลบรายวิชาได้: ' + (response.data.message || 'เกิดข้อผิดพลาด'));
+      }
+    } catch (error: any) {
+      console.error('Error deleting subject:', error);
+      
+      if (error.response?.status === 400) {
+        alert('ไม่สามารถลบรายวิชาได้: มีข้อมูลที่เกี่ยวข้องอยู่ กรุณาลบข้อมูลที่เกี่ยวข้องก่อน');
+      } else if (error.response?.status === 403) {
+        alert('คุณไม่มีสิทธิ์ลบรายวิชานี้');
+      } else if (error.response?.status === 404) {
+        alert('ไม่พบรายวิชาที่ต้องการลบ');
+      } else {
+        alert('เกิดข้อผิดพลาดในการลบรายวิชา: ' + (error.response?.data?.message || error.message));
+      }
+    }
   };
 
   return (
@@ -1067,12 +1179,27 @@ const EditableCourseDetail: React.FC<{
                   <div className="subject-order">
                     <span>#{subject.order_number || index + 1}</span>
                   </div>
-                  <div className="subject-status">
-                    <span className={`status-dot ${subject.status}`}></span>
+                  <div className="subject-card-actions">
+                    <button
+                      className="btn btn-sm btn-outline-danger subject-delete-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteSubject(subject);
+                      }}
+                      title="ลบรายวิชา"
+                    >
+                      <i className="fas fa-trash"></i>
+                    </button>
+                    <div className="subject-status">
+                      <span className={`status-dot ${subject.status}`}></span>
+                    </div>
                   </div>
                 </div>
                 
-                <div className="subject-card-image">
+                <div 
+                  className="subject-card-image clickable"
+                  onClick={() => onSubjectSelect(subject)}
+                >
                   <img
                     src={subject.cover_image_file_id 
                       ? `${apiURL}/api/courses/image/${subject.cover_image_file_id}`
@@ -1088,7 +1215,13 @@ const EditableCourseDetail: React.FC<{
                 
                 <div className="subject-card-content">
                   <div className="subject-card-header">
-                    <h3 className="subject-title">{subject.subject_name}</h3>
+                    <h3 
+                      className="subject-title clickable"
+                      onClick={() => onSubjectSelect(subject)}
+                      title="คลิกเพื่อเข้าสู่รายวิชา"
+                    >
+                      {subject.subject_name}
+                    </h3>
                     <span className="subject-code">{subject.subject_code}</span>
                   </div>
                   {subject.description && (
@@ -1138,16 +1271,14 @@ const EditableCourseDetail: React.FC<{
                   )}
                 </div>
                 
-                <div className="subject-card-footer d-flex justify-content-end align-items-center pt-3">
-                  <div className="subject-actions">
-                    <button
-                      className="btn btn-primary btn-sm d-flex align-items-center"
-                      onClick={() => onSubjectSelect(subject)}
-                    >
-                      <i className="fas fa-eye me-2"></i>
-                      ดูรายละเอียด
-                    </button>
-                  </div>
+                <div className="subject-card-footer d-flex justify-content-center align-items-center pt-3">
+                  <button
+                    className="btn btn-primary btn-sm d-flex align-items-center w-100"
+                    onClick={() => onSubjectSelect(subject)}
+                  >
+                    <i className="fas fa-arrow-right me-2"></i>
+                    เข้าสู่รายวิชา
+                  </button>
                 </div>
               </div>
             ))}
@@ -1794,6 +1925,59 @@ const AdminCreditbankArea: React.FC = () => {
     }
   };
 
+  const handleDeleteCourse = async (course: Course) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.delete(
+        `${apiURL}/api/courses/${course.course_id}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (response.data.success) {
+        // Remove course from state
+        const updatedCourses = courses.filter(c => c.course_id !== course.course_id);
+        setCourses(updatedCourses);
+        setFilteredCourses(updatedCourses);
+        
+        // Update department stats
+        if (selectedDepartment) {
+          setDepartments(prev => 
+            prev.map(dept => 
+              dept.department_id === selectedDepartment.department_id 
+                ? { ...dept, course_count: (dept.course_count || 1) - 1 }
+                : dept
+            )
+          );
+        }
+
+        // Update faculty stats
+        if (selectedFaculty) {
+          setFaculties(prev => 
+            prev.map(faculty => 
+              faculty.name === selectedFaculty 
+                ? { ...faculty, total_courses: faculty.total_courses - 1 }
+                : faculty
+            )
+          );
+        }
+        
+        alert('ลบหลักสูตรสำเร็จ');
+      }
+    } catch (error: any) {
+      console.error('Error deleting course:', error);
+      
+      if (error.response?.status === 400) {
+        alert('ไม่สามารถลบหลักสูตรได้: มีรายวิชาอยู่ กรุณาลบรายวิชาทั้งหมดก่อน');
+      } else if (error.response?.status === 403) {
+        alert('คุณไม่มีสิทธิ์ลบหลักสูตรนี้');
+      } else if (error.response?.status === 404) {
+        alert('ไม่พบหลักสูตรที่ต้องการลบ');
+      } else {
+        alert('เกิดข้อผิดพลาดในการลบหลักสูตร');
+      }
+    }
+  };
+
   // Navigation handlers
   const handleFacultySelect = (faculty: string) => {
     setSelectedFaculty(faculty);
@@ -2050,6 +2234,7 @@ const AdminCreditbankArea: React.FC = () => {
                     searchTerm={searchTerm}
                     onSearchChange={setSearchTerm}
                     onCourseSelect={handleCourseSelect}
+                    onDeleteCourse={handleDeleteCourse}
                     onAddCourse={handleAddCourse}
                     selectedDepartment={selectedDepartment}
                     currentPage={currentPage}

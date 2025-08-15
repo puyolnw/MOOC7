@@ -615,6 +615,43 @@ const EditableCourseDetail: React.FC<{
     window.location.href = `/instructor-subjects/create-new?course_id=${course.course_id}`;
   };
 
+  const handleDeleteSubject = async (subject: Subject) => {
+    if (!window.confirm(`คุณต้องการลบรายวิชา "${subject.subject_name}" ใช่หรือไม่?\n\nการดำเนินการนี้ไม่สามารถยกเลิกได้`)) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.delete(
+        `${apiURL}/api/courses/subjects/${subject.subject_id}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (response.data.success) {
+        // Remove deleted subject from state
+        const updatedSubjects = subjects.filter(s => s.subject_id !== subject.subject_id);
+        setSubjects(updatedSubjects);
+        setFilteredSubjects(updatedSubjects);
+        
+        alert('ลบรายวิชาสำเร็จ');
+      } else {
+        alert('ไม่สามารถลบรายวิชาได้: ' + (response.data.message || 'เกิดข้อผิดพลาด'));
+      }
+    } catch (error: any) {
+      console.error('Error deleting subject:', error);
+      
+      if (error.response?.status === 400) {
+        alert('ไม่สามารถลบรายวิชาได้: มีข้อมูลที่เกี่ยวข้องอยู่ กรุณาลบข้อมูลที่เกี่ยวข้องก่อน');
+      } else if (error.response?.status === 403) {
+        alert('คุณไม่มีสิทธิ์ลบรายวิชานี้');
+      } else if (error.response?.status === 404) {
+        alert('ไม่พบรายวิชาที่ต้องการลบ');
+      } else {
+        alert('เกิดข้อผิดพลาดในการลบรายวิชา: ' + (error.response?.data?.message || error.message));
+      }
+    }
+  };
+
   return (
     <div className="course-detail-container">
       <div className="course-detail-header">
@@ -763,12 +800,27 @@ const EditableCourseDetail: React.FC<{
                   <div className="subject-order">
                     <span>#{subject.order_number || index + 1}</span>
                   </div>
-                  <div className="subject-status">
-                    <span className={`status-dot ${subject.status}`}></span>
+                  <div className="subject-card-actions">
+                    <button
+                      className="btn btn-sm btn-outline-danger subject-delete-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteSubject(subject);
+                      }}
+                      title="ลบรายวิชา"
+                    >
+                      <i className="fas fa-trash"></i>
+                    </button>
+                    <div className="subject-status">
+                      <span className={`status-dot ${subject.status}`}></span>
+                    </div>
                   </div>
                 </div>
                 
-                <div className="subject-card-image">
+                <div 
+                  className="subject-card-image clickable"
+                  onClick={() => onSubjectSelect(subject)}
+                >
                   <img
                     src={subject.cover_image_file_id 
                       ? `${apiURL}/api/courses/image/${subject.cover_image_file_id}`
@@ -784,7 +836,13 @@ const EditableCourseDetail: React.FC<{
                 
                 <div className="subject-card-content">
                   <div className="subject-card-header">
-                    <h3 className="subject-title">{subject.subject_name}</h3>
+                    <h3 
+                      className="subject-title clickable"
+                      onClick={() => onSubjectSelect(subject)}
+                      title="คลิกเพื่อเข้าสู่รายวิชา"
+                    >
+                      {subject.subject_name}
+                    </h3>
                     <span className="subject-code">{subject.subject_code}</span>
                   </div>
                   {subject.description && (
@@ -834,16 +892,14 @@ const EditableCourseDetail: React.FC<{
                   )}
                 </div>
                 
-                <div className="subject-card-footer d-flex justify-content-end align-items-center pt-3">
-                  <div className="subject-actions">
-                    <button
-                      className="btn btn-primary btn-sm d-flex align-items-center"
-                      onClick={() => onSubjectSelect(subject)}
-                    >
-                      <i className="fas fa-eye me-2"></i>
-                      ดูรายละเอียด
-                    </button>
-                  </div>
+                <div className="subject-card-footer d-flex justify-content-center align-items-center pt-3">
+                  <button
+                    className="btn btn-primary btn-sm d-flex align-items-center w-100"
+                    onClick={() => onSubjectSelect(subject)}
+                  >
+                    <i className="fas fa-arrow-right me-2"></i>
+                    เข้าสู่รายวิชา
+                  </button>
                 </div>
               </div>
             ))}
