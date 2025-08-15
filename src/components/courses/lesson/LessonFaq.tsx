@@ -105,7 +105,8 @@ const LessonFaq = ({
     const section = lessonData[sectionIndex];
     const currentItem = section?.items[itemIndex];
     if (currentItem && currentItem.type === "quiz") {
-      const isEndOfChapterQuiz = currentItem.title.includes("แบบทดสอบท้ายบท");
+      const isEndOfChapterQuiz = currentItem.title.includes("แบบทดสอบท้ายบท") || 
+                                 currentItem.title.includes("แบบทดสอบท้ายบทใหญ่");
       if (isEndOfChapterQuiz) {
         // ถ้า section ไม่มี video เลย ให้ไม่ล็อค
         const hasVideo = section.items.some(item => item.type === "video");
@@ -137,10 +138,11 @@ const LessonFaq = ({
   }, [externalSubjectQuizzes]);
 
   useEffect(() => {
-    setSubjectQuizzes(prev => prev.map(quiz => ({
-      ...quiz,
-      locked: false // ปลดล็อคทุกแบบทดสอบ pre/post
-    })));
+    // ✅ ลบ useEffect ที่ override locked property เป็น false
+    // setSubjectQuizzes(prev => prev.map(quiz => ({
+    //   ...quiz,
+    //   locked: false // ปลดล็อคทุกแบบทดสอบ pre/post
+    // })));
     
     // ✅ Task 5: ลบการเรียก fetchBankAccounts
     // fetchBankAccounts();
@@ -160,9 +162,45 @@ const LessonFaq = ({
 
   // แปลง SubjectQuiz เป็น LessonItem แล้วเรียก onSelectLesson
   const handleSubjectQuizClick = (quiz: SubjectQuiz) => {
-    // ปลดล็อคทุกแบบทดสอบ pre/post
+    // ตรวจสอบการล็อคแบบทดสอบ
     if (quiz.locked) {
-      alert("แบบทดสอบนี้ยังไม่พร้อมใช้งาน");
+      if (quiz.type === 'post_test') {
+        // ตรวจสอบเงื่อนไขการปลดล็อค post-test
+        const preTest = subjectQuizzes.find(q => q.type === 'pre_test');
+        let message = "แบบทดสอบหลังเรียนยังไม่พร้อมใช้งาน\n\n";
+        
+        if (preTest && !preTest.completed) {
+          message += "• กรุณาทำแบบทดสอบก่อนเรียนให้เสร็จก่อน\n";
+        }
+        
+        // ตรวจสอบ progress ของทุก item ในบทเรียน
+        let totalItems = 0;
+        let completedItems = 0;
+        
+        lessonData.forEach(section => {
+            // นับทุก item ใน section (ไม่ว่าจะมี quiz หรือไม่)
+            section.items.forEach(item => {
+                totalItems++;
+                if (item.completed) completedItems++;
+            });
+        });
+        
+        const overallProgress = totalItems > 0 ? (completedItems / totalItems) * 100 : 0;
+        
+        if (overallProgress < 90) {
+          message += `• กรุณาเรียนบทเรียนให้เสร็จอย่างน้อย 90% (ปัจจุบัน ${overallProgress.toFixed(1)}%)\n`;
+        }
+        
+        // เพิ่มข้อมูลเพิ่มเติม
+        message += `\n📊 สรุป:\n`;
+        message += `• บทเรียนทั้งหมด: ${lessonData.length} บท\n`;
+        message += `• เนื้อหาทั้งหมด: ${totalItems} รายการ (เสร็จแล้ว ${completedItems} รายการ)\n`;
+        message += `• ความคืบหน้าโดยรวม: ${overallProgress.toFixed(1)}%\n`;
+        
+        alert(message);
+      } else {
+        alert("แบบทดสอบนี้ยังไม่พร้อมใช้งาน");
+      }
       return;
     }
 

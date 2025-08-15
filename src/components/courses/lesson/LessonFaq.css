@@ -353,6 +353,35 @@
 .lock-icon {
   color: #dc3545;
   font-size: 0.75rem;
+  margin-right: 8px;
+}
+
+/* เพิ่ม CSS สำหรับ locked state */
+.course-item.locked {
+  background-color: #f8f9fa;
+  opacity: 0.7;
+  cursor: not-allowed !important;
+}
+
+.course-item.locked:hover {
+  background-color: #f8f9fa;
+  transform: none;
+}
+
+.course-item.locked .item-name {
+  color: #6c757d;
+}
+
+.course-item.locked .item-status {
+  color: #dc3545;
+  background-color: rgba(220, 53, 69, 0.1);
+}
+
+/* ปรับแต่ง lock icon ให้เด่นชัดขึ้น */
+.course-item.locked .lock-icon {
+  color: #dc3545;
+  font-size: 0.8rem;
+  animation: pulse 2s infinite;
 }
 
 .item-status {
@@ -360,6 +389,18 @@
   border-radius: 12px;
   font-size: 0.75rem;
   font-weight: 500;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
 }
 
 /* Responsive Design */

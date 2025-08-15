@@ -216,7 +216,7 @@ const ApproveArea: React.FC = () => {
     setCurrentPage(pageNumber);
   };
 
-  const handleApprovePayment = async (subjectId: number) => {
+  const handleApprovePayment = async (slipId: number) => {
     if (window.confirm("คุณต้องการอนุมัติการชำระเงินนี้ใช่หรือไม่?")) {
       try {
         const token = localStorage.getItem("token");
@@ -225,21 +225,28 @@ const ApproveArea: React.FC = () => {
           return;
         }
 
-        const response = await axios.patch(`${apiURL}/api/learn/subject/${subjectId}/approve-payment`, {}, {
+        // หา subject_id จาก slip ที่ต้องการ approve
+        const slipToApprove = paymentSlips.find(slip => slip.id === slipId);
+        if (!slipToApprove) {
+          toast.error("ไม่พบข้อมูลการชำระเงินที่ต้องการ");
+          return;
+        }
+
+        const response = await axios.patch(`${apiURL}/api/learn/subject/${slipToApprove.subject_id}/approve-payment`, {}, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
 
         if (response.data.success) {
-          // อัปเดตสถานะใน state
+          // อัปเดตสถานะใน state - ใช้ slip.id แทน subject_id
           setPaymentSlips(prev => prev.map(slip => 
-            slip.subject_id === subjectId 
+            slip.id === slipId  // ใช้ slip.id แทน subject_id
               ? { ...slip, approved: true, approved_at: new Date().toISOString() }
               : slip
           ));
           setFilteredSlips(prev => prev.map(slip => 
-            slip.subject_id === subjectId 
+            slip.id === slipId  // ใช้ slip.id แทน subject_id
               ? { ...slip, approved: true, approved_at: new Date().toISOString() }
               : slip
           ));
@@ -560,7 +567,7 @@ const ApproveArea: React.FC = () => {
                                     {!slip.approved && (
                                       <button
                                         className="btn btn-outline-success btn-sm"
-                                        onClick={() => handleApprovePayment(slip.subject_id)}
+                                        onClick={() => handleApprovePayment(slip.id)}
                                         title="อนุมัติ"
                                       >
                                         <i className="fas fa-check"></i>
