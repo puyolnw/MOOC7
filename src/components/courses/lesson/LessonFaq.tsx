@@ -24,7 +24,7 @@ interface SubjectQuiz {
   quiz_id: number;
   title: string;
   description?: string;
-  type: "pre_test" | "post_test";
+  type: "pre_test" | "big_pre_test" | "post_test";
   locked: boolean;
   completed: boolean;
   passed: boolean;
@@ -39,6 +39,11 @@ interface LessonFaqProps {
   onSelectLesson: (sectionId: number, itemId: number, title: string, type: 'video' | 'quiz') => void;
   subjectId?: number;
   subjectQuizzes?: SubjectQuiz[];
+  // เพิ่ม prop ใหม่เพื่อให้รู้ว่ากำลังเรียนบทไหนอยู่
+  currentLessonId?: string;
+  // เพิ่ม prop สำหรับควบคุม activeAccordion จากภายนอก
+  activeAccordion?: number | null;
+  onAccordionChange?: (accordionId: number | null) => void;
   // ✅ Task 5: ลบ payment-related props
   // paymentStatus?: any;
   // onUploadSlip?: (file: File) => Promise<void>;
@@ -59,7 +64,12 @@ const LessonFaq = ({
   lessonData, 
   onSelectLesson, 
   subjectId,
-  subjectQuizzes: externalSubjectQuizzes
+  subjectQuizzes: externalSubjectQuizzes,
+  // เพิ่ม prop ใหม่เพื่อให้รู้ว่ากำลังเรียนบทไหนอยู่
+  currentLessonId,
+  // เพิ่ม prop สำหรับควบคุม activeAccordion จากภายนอก
+  activeAccordion: externalActiveAccordion,
+  onAccordionChange,
   // ✅ Task 5: ลบ payment-related parameters
   // paymentStatus,
   // onUploadSlip
@@ -73,7 +83,25 @@ const LessonFaq = ({
   const [loadingQuizzes, setLoadingQuizzes] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-
+  // ใช้ controlled accordion ถ้ามีการส่งค่าจากภายนอก
+  const currentActiveAccordion = externalActiveAccordion !== undefined ? externalActiveAccordion : activeAccordion;
+  
+  // ✅ เพิ่ม debug log เพื่อดูการเปลี่ยนแปลงของ activeAccordion
+  useEffect(() => {
+    console.log("🎯 LessonFaq currentActiveAccordion changed:", currentActiveAccordion);
+  }, [currentActiveAccordion]);
+  
+  // ฟังก์ชันสำหรับอัปเดต accordion
+  const updateActiveAccordion = (accordionId: number | null) => {
+    console.log("🎯 LessonFaq updateActiveAccordion:", accordionId);
+    if (onAccordionChange) {
+      console.log("🎯 เรียก onAccordionChange จากภายนอก");
+      onAccordionChange(accordionId);
+    } else {
+      console.log("🎯 ใช้ local state");
+      setActiveAccordion(accordionId);
+    }
+  };
 
   // ฟังก์ชันเช็คว่าบทก่อนหน้าเสร็จแล้วหรือยัง
   const isPreviousLessonCompleted = (sectionIndex: number, itemIndex: number) => {
@@ -128,7 +156,7 @@ const LessonFaq = ({
       setError(null);
       
       // ตรวจสอบว่ามีแบบทดสอบก่อนเรียนหรือไม่ และตั้งค่า activeAccordion
-      const preTest = externalSubjectQuizzes.find(q => q.type === "pre_test");
+              const preTest = externalSubjectQuizzes.find(q => q.type === "pre_test" || q.type === "big_pre_test");
       if (preTest) {
         setActiveAccordion(-1000);
       }
@@ -157,6 +185,9 @@ const LessonFaq = ({
       return;
     }
     
+    // อัปเดต activeAccordion ให้ตรงกับ section ที่เลือก
+    updateActiveAccordion(sectionId);
+    
     onSelectLesson(sectionId, item.id, item.title, item.type);
   };
 
@@ -166,7 +197,7 @@ const LessonFaq = ({
     if (quiz.locked) {
       if (quiz.type === 'post_test') {
         // ตรวจสอบเงื่อนไขการปลดล็อค post-test
-        const preTest = subjectQuizzes.find(q => q.type === 'pre_test');
+        const preTest = subjectQuizzes.find(q => q.type === 'pre_test' || q.type === 'big_pre_test');
         let message = "แบบทดสอบหลังเรียนยังไม่พร้อมใช้งาน\n\n";
         
         if (preTest && !preTest.completed) {
@@ -204,16 +235,19 @@ const LessonFaq = ({
       return;
     }
 
+    // อัปเดต activeAccordion ให้ตรงกับแบบทดสอบที่เลือก
+            const specialSectionId = (quiz.type === 'pre_test' || quiz.type === 'big_pre_test') ? -1000 : -2000;
+    updateActiveAccordion(specialSectionId);
+
     // ส่งข้อมูลแบบทดสอบพิเศษไปยัง parent component
     // ใช้ค่าลบเพื่อแยกจากบทเรียนปกติ
-    const specialSectionId = quiz.type === 'pre_test' ? -1000 : -2000;
     const specialItemId = quiz.quiz_id;
     
     onSelectLesson(specialSectionId, specialItemId, quiz.title, 'quiz');
   };
 
   const toggleAccordion = (id: number) => {
-    setActiveAccordion(activeAccordion === id ? null : id);
+    updateActiveAccordion(currentActiveAccordion === id ? null : id);
   };
 
   // ✅ Task 5: ลบ fetchBankAccounts function ที่ไม่ใช้แล้ว
@@ -242,12 +276,12 @@ const LessonFaq = ({
       <div key={`${quiz.type}-${quiz.quiz_id}`} className="accordion-item">
         <h2 className="accordion-header">
           <button 
-            className={`accordion-button ${activeAccordion === sectionId ? '' : 'collapsed'}`}
+            className={`accordion-button ${currentActiveAccordion === sectionId ? '' : 'collapsed'}`}
             type="button"
             onClick={() => toggleAccordion(sectionId)}
           >
             <span className="section-title">
-              {quiz.type === 'pre_test' ? '🎯 ' : '🏁 '}{quiz.title}
+              {(quiz.type === 'pre_test' || quiz.type === 'big_pre_test') ? '🎯 ' : '🏁 '}{quiz.title}
             </span>
             <span className={`section-status ${
               quiz.status === 'passed' ? "status-passed" : 
@@ -259,7 +293,7 @@ const LessonFaq = ({
         </h2>
         <div 
           id={`collapse${sectionId}`} 
-          className={`accordion-collapse collapse ${activeAccordion === sectionId ? 'show' : ''}`}
+          className={`accordion-collapse collapse ${currentActiveAccordion === sectionId ? 'show' : ''}`}
         >
           <div className="accordion-body">
             <ul className="list-wrap">
@@ -290,26 +324,51 @@ const LessonFaq = ({
 
   // เปิดแอคคอร์เดียนแรกที่ยังไม่เสร็จ หรือแบบทดสอบก่อนเรียน
   useEffect(() => {
+    console.log("🎯 LessonFaq useEffect - currentLessonId:", currentLessonId);
+    
+    // ถ้ามี currentLessonId ให้เปิด accordion ที่ตรงกับบทเรียนปัจจุบัน
+    if (currentLessonId) {
+      const [sectionId] = currentLessonId.split("-").map(Number);
+      console.log("🎯 แยก sectionId:", sectionId);
+      
+      // ตรวจสอบว่าเป็นแบบทดสอบพิเศษหรือไม่
+      if (sectionId < 0) {
+        // แบบทดสอบก่อน/หลังเรียน
+        console.log("🎯 แบบทดสอบพิเศษ - เปิด accordion:", sectionId);
+        updateActiveAccordion(sectionId);
+        return;
+      }
+      
+      // บทเรียนปกติ - เปิด accordion ของ section ที่กำลังเรียน
+      console.log("🎯 บทเรียนปกติ - เปิด accordion:", sectionId);
+      updateActiveAccordion(sectionId);
+      return;
+    }
+    
+    // ถ้าไม่มี currentLessonId (กรณีเริ่มต้น) ให้ใช้ logic เดิม
     // ตรวจสอบว่ามีแบบทดสอบก่อนเรียนหรือไม่
-    const preTest = externalSubjectQuizzes?.find(q => q.type === "pre_test");
+    const preTest = externalSubjectQuizzes?.find(q => q.type === "pre_test" || q.type === "big_pre_test");
     
     if (preTest) {
       // ถ้ามีแบบทดสอบก่อนเรียน ให้เปิดแอคคอร์เดียนของแบบทดสอบก่อนเรียน
-      setActiveAccordion(-1000);
+      console.log("🎯 เริ่มต้น - เปิดแบบทดสอบก่อนเรียน");
+      updateActiveAccordion(-1000);
     } else if (lessonData.length > 0) {
       // ถ้าไม่มีแบบทดสอบก่อนเรียน ให้เปิดแอคคอร์เดียนแรกที่ยังไม่เสร็จ
       for (const section of lessonData) {
         for (const item of section.items) {
           if (!item.completed) {
-            setActiveAccordion(section.id);
+            console.log("🎯 เริ่มต้น - เปิดบทเรียนแรกที่ยังไม่เสร็จ:", section.id);
+            updateActiveAccordion(section.id);
             return;
           }
         }
       }
       // ถ้าทุกบทเรียนเสร็จแล้ว ให้เปิดแอคคอร์เดียนแรก
-      setActiveAccordion(lessonData[0].id);
+      console.log("🎯 เริ่มต้น - ทุกบทเรียนเสร็จแล้ว เปิดแอคคอร์เดียนแรก");
+      updateActiveAccordion(lessonData[0].id);
     }
-  }, [lessonData, externalSubjectQuizzes]);
+  }, [currentLessonId, lessonData, externalSubjectQuizzes]);
 
   return (
     <div className="accordion" id="accordionExample">
@@ -340,14 +399,14 @@ const LessonFaq = ({
 
       {/* แบบทดสอบก่อนเรียน */}
       {subjectQuizzes
-        .filter(quiz => quiz.type === "pre_test")
+        .filter(quiz => quiz.type === "pre_test" || quiz.type === "big_pre_test")
         .map((quiz) => renderQuizSection(quiz, -1000))}
       {/* บทเรียนปกติ */}
       {lessonData.map((section, sectionIndex) => (
         <div key={section.id} className="accordion-item">
           <h2 className="accordion-header">
             <button 
-              className={`accordion-button ${activeAccordion === section.id ? '' : 'collapsed'}`}
+              className={`accordion-button ${currentActiveAccordion === section.id ? '' : 'collapsed'}`}
               type="button"
               onClick={() => toggleAccordion(section.id)}
             >
@@ -362,7 +421,7 @@ const LessonFaq = ({
           </h2>
           <div 
             id={`collapseOne${section.id}`} 
-            className={`accordion-collapse collapse ${activeAccordion === section.id ? 'show' : ''}`}
+            className={`accordion-collapse collapse ${currentActiveAccordion === section.id ? 'show' : ''}`}
           >
             <div className="accordion-body">
               <ul className="list-wrap">

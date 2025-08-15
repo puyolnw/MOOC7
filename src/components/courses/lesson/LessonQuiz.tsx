@@ -13,6 +13,9 @@ interface LessonQuizProps {
     onNextLesson?: () => void;
     lessonId: number;
     onRefreshProgress?: () => void;
+    // ✅ เพิ่ม prop ใหม่สำหรับการไปบทเรียนถัดไป (lesson ถัดไป)
+    // ใช้สำหรับแบบทดสอบของแต่ละบท เพื่อไปบทเรียนถัดไป (section ถัดไป)
+    onGoToNextLesson?: () => void;
 }
 
 // Define different question types
@@ -89,6 +92,9 @@ const LessonQuiz = ({
     onNextLesson,
     lessonId,
     onRefreshProgress,
+    // ✅ เพิ่ม prop ใหม่สำหรับการไปบทเรียนถัดไป (lesson ถัดไป)
+    // ใช้สำหรับแบบทดสอบของแต่ละบท เพื่อไปบทเรียนถัดไป (section ถัดไป)
+    onGoToNextLesson,
 }: LessonQuizProps) => {
     const [currentQuestion, setCurrentQuestion] = useState(0);
     const [showResult, setShowResult] = useState(false);
@@ -118,6 +124,26 @@ const LessonQuiz = ({
 
     // กำหนดเกณฑ์การผ่าน (65%)
     const PASSING_PERCENTAGE = 65;
+
+    // ✅ เพิ่มฟังก์ชัน reset state ทั้งหมด
+    const resetAllStates = () => {
+        setCurrentQuestion(0);
+        setShowResult(false);
+        setScore(0);
+        setMaxScore(0);
+        setIsPassed(false);
+        setLoading(true);
+        setQuestions([]);
+        setIsSpecialQuiz(false);
+        setIsAwaitingReview(false);
+        setPreviousAttempts([]);
+        setUploadedAttachments([]);
+        setHasCompleted(false);
+        setSelectedSingleAnswers([]);
+        setSelectedMultipleAnswers([]);
+        setTextAnswers([]);
+        setFiles([]);
+    };
 
     // ฟังก์ชันตรวจสอบว่าเป็น Special Quiz หรือไม่ (มี FB)
     const checkIfSpecialQuiz = (questions: Question[]) => {
@@ -224,8 +250,12 @@ const LessonQuiz = ({
             if (quizData && quizData.length > 0) {
                 const formattedQuestions = mapBackendQuestions(quizData);
                 if (!cancelled) {
-                    setQuestions(formattedQuestions);
-                    checkIfSpecialQuiz(formattedQuestions);
+                    // ✅ ตรวจสอบว่า questions เปลี่ยนจริงหรือไม่ก่อนอัปเดต
+                    if (JSON.stringify(formattedQuestions) !== JSON.stringify(questions)) {
+                        console.log("🎯 อัปเดต questions ใน LessonQuiz");
+                        setQuestions(formattedQuestions);
+                        checkIfSpecialQuiz(formattedQuestions);
+                    }
                     setLoading(false);
                 }
                 return;
@@ -240,8 +270,12 @@ const LessonQuiz = ({
             );
             if (response.data.success && response.data.quiz && !cancelled) {
                 const mappedQuestions = mapBackendQuestions(response.data.quiz.questions);
-                setQuestions(mappedQuestions);
-                checkIfSpecialQuiz(mappedQuestions);
+                // ✅ ตรวจสอบว่า questions เปลี่ยนจริงหรือไม่ก่อนอัปเดต
+                if (JSON.stringify(mappedQuestions) !== JSON.stringify(questions)) {
+                    console.log("🎯 อัปเดต questions จาก API");
+                    setQuestions(mappedQuestions);
+                    checkIfSpecialQuiz(mappedQuestions);
+                }
                 if (response.data.quiz.status === "awaiting_review") {
                     setIsAwaitingReview(true);
                     setShowResult(true);
@@ -324,17 +358,65 @@ const LessonQuiz = ({
         }
     };
 
-    // ใน useEffect หลัก เปลี่ยนจาก fetchQuizData() เป็น fetchQuizData(cancelled)
+    // ✅ แก้ไข useEffect หลัก - เพิ่มการ reset state เมื่อ quizId เปลี่ยน
     useEffect(() => {
         let cancelled = false;
-        fetchQuizData(cancelled);
+        console.log("🎯 LessonQuiz useEffect: quizId =", quizId);
+        
+        // ✅ Reset เฉพาะ state ที่จำเป็น แทนการใช้ resetAllStates()
+        setCurrentQuestion(0);
+        setShowResult(false);
+        setScore(0);
+        setMaxScore(0);
+        setIsPassed(false);
+        setLoading(true);
+        setSelectedSingleAnswers([]);
+        setSelectedMultipleAnswers([]);
+        setTextAnswers([]);
+        setFiles([]);
+        setHasCompleted(false);
+        
+        // รอสักครู่แล้วค่อยโหลดข้อมูลใหม่
+        const timer = setTimeout(() => {
+            if (!cancelled) {
+                fetchQuizData(cancelled);
+            }
+        }, 100);
+        
         if (isCompleted && !hasCompleted) {
             setIsPassed(true);
             setShowResult(true);
             setHasCompleted(true);
         }
-        return () => { cancelled = true; };
-    }, [quizId]);
+        
+        return () => { 
+            cancelled = true; 
+            clearTimeout(timer);
+        };
+    }, [quizId, isCompleted]); // ✅ เพิ่ม isCompleted เป็น dependency
+
+    // ✅ เพิ่ม useEffect สำหรับ reset state เมื่อ quizData เปลี่ยน
+    useEffect(() => {
+        if (quizData && quizData.length > 0) {
+            // Reset state เมื่อ quizData เปลี่ยน
+            setCurrentQuestion(0);
+            setShowResult(false);
+            setScore(0);
+            setMaxScore(0);
+            setIsPassed(false);
+            setSelectedSingleAnswers([]);
+            setSelectedMultipleAnswers([]);
+            setTextAnswers([]);
+            setFiles([]);
+            setHasCompleted(false);
+            
+            // โหลดคำถามใหม่
+            const formattedQuestions = mapBackendQuestions(quizData);
+            setQuestions(formattedQuestions);
+            checkIfSpecialQuiz(formattedQuestions);
+            setLoading(false);
+        }
+    }, [quizData]);
 
     // เพิ่ม useEffect สำหรับ auto refresh
     useEffect(() => {
@@ -676,6 +758,20 @@ const LessonQuiz = ({
 
                     if (percentage >= PASSING_PERCENTAGE) {
                         safeOnComplete();
+                        
+                        // ✅ แก้ไข: ใช้ onGoToNextLesson เป็นหลัก สำหรับแบบทดสอบของแต่ละบท
+                        setTimeout(() => {
+                            if (onGoToNextLesson) {
+                                console.log("🎯 ใช้ onGoToNextLesson - ไปบทเรียนถัดไป (lesson ถัดไป)");
+                                resetAllStates();
+                                onGoToNextLesson();
+                            } else if (onNextLesson) {
+                                // ✅ ใช้ onNextLesson เป็น fallback สำหรับแบบทดสอบพิเศษ
+                                console.log("🎯 ใช้ onNextLesson - ไปเนื้อหาถัดไป (fallback)");
+                                resetAllStates();
+                                onNextLesson();
+                            }
+                        }, 2000);
                     }
                 }
             }
@@ -692,31 +788,37 @@ const LessonQuiz = ({
         if (isPassed || isAwaitingReview) {
             safeOnComplete();
             
-            // ✅ แก้ไข Task 1: ปรับปรุงการ redirect หลังทำข้อสอบเสร็จ
-            // เพิ่ม delay เล็กน้อยเพื่อให้ user เห็นผลลัพธ์ก่อน redirect
+            // ✅ แก้ไข: ใช้ onGoToNextLesson เป็นหลัก สำหรับแบบทดสอบของแต่ละบท
             setTimeout(() => {
-                if (onNextLesson) {
+                if (onGoToNextLesson) {
+                    console.log("🎯 ใช้ onGoToNextLesson - ไปบทเรียนถัดไป (lesson ถัดไป)");
+                    resetAllStates();
+                    onGoToNextLesson();
+                } else if (onNextLesson) {
+                    // ✅ ใช้ onNextLesson เป็น fallback สำหรับแบบทดสอบพิเศษ
+                    console.log("🎯 ใช้ onNextLesson - ไปเนื้อหาถัดไป (fallback)");
+                    resetAllStates();
                     onNextLesson();
                 } else {
-                    // กรณีที่ไม่มี onNextLesson (เช่น เป็นแบบทดสอบสุดท้าย)
-                    // สามารถเพิ่มการ redirect ไปหน้าสรุปผลหรือหน้าหลักสูตรได้ที่นี่
+                    // กรณีที่ไม่มีทั้งสอง (เช่น เป็นแบบทดสอบสุดท้าย)
                     console.log("แบบทดสอบเสร็จสิ้น - ไม่มีบทเรียนถัดไป");
                 }
-            }, 1500); // รอ 1.5 วินาทีเพื่อให้ผู้ใช้เห็นผลลัพธ์
+            }, 2000); // ✅ เพิ่มเวลาเป็น 2 วินาทีเพื่อให้ผู้ใช้เห็นผลลัพธ์
         } else {
             resetQuiz();
         }
     };
 
     const resetQuiz = () => {
-        setCurrentQuestion(0);
-        setSelectedSingleAnswers([]);
-        setSelectedMultipleAnswers([]);
-        setTextAnswers([]);
-        setFiles([]);
-        setUploadedAttachments([]);
-        setShowResult(false);
-        setIsAwaitingReview(false);
+        // ✅ ใช้ฟังก์ชัน resetAllStates แทนการ reset แยก
+        resetAllStates();
+        // แต่ไม่ต้อง reset loading และ questions เพราะต้องการให้โหลดคำถามใหม่
+        setLoading(false);
+        if (quizData && quizData.length > 0) {
+            const formattedQuestions = mapBackendQuestions(quizData);
+            setQuestions(formattedQuestions);
+            checkIfSpecialQuiz(formattedQuestions);
+        }
     };
 
     const isCurrentQuestionAnswered = () => {
