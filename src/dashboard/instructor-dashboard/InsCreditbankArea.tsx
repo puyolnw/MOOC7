@@ -265,7 +265,6 @@ const FacultySelection: React.FC<{
                   {faculty.is_home_faculty && (
                     <span className="home-badge ms-2">
                       <i className="fas fa-star me-1"></i>
-                      คณะหลัก
                     </span>
                   )}
                 </h3>

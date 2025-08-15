@@ -88,7 +88,7 @@ const DashboardReviewTable = () => {
             {courses.map((course) => (
                <tr key={course.id}>
                   <td>
-                     <Link to={`/course-details/${course.id}`}>{course.name}</Link>
+                  <span>{course.name}</span>
                   </td>
                   <td>
                      <p className="color-black">{course.enrolled}</p>

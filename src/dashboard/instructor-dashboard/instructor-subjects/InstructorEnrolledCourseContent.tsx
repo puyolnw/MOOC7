@@ -364,7 +364,7 @@ const InstructorEnrolledCourseContent = () => {
                      <div className="row">
                      {courseData.map((item) => (
                         <div key={item.id} className="col-lg-6 col-md-6 col-sm-12 mb-4">
-                           <Link to={`/instructor/subject/${item.subject_id}/overview`} className="courses__item courses__item-two shine__animate-item" style={{ textDecoration: 'none', color: 'inherit' }}>
+                        <div className="courses__item courses__item-two shine__animate-item" style={{ textDecoration: 'none', color: 'inherit' }}>
                               <div className="courses__item-thumb courses__item-thumb-two">
                                  <div className="shine__animate-link">
                                  <img 
@@ -424,7 +424,7 @@ const InstructorEnrolledCourseContent = () => {
                      </div>
                      </div>
                      </div>
-                     </Link>
+                     </div>
                      </div>
                      ))}
                      </div>

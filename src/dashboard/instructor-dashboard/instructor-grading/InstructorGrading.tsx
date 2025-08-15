@@ -975,7 +975,6 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
                                                 <small className={`${subject.is_home_faculty ? 'text-primary fw-bold' : 'text-secondary'}`}>
                                                     <i className={`fas ${subject.is_home_faculty ? 'fa-home' : 'fa-building'} me-1`}></i>
                                                     {subject.faculty}
-                                                    {subject.is_home_faculty && <span className="ms-1">(คณะหลัก)</span>}
                                                 </small>
                                             </p>
                                         )}
