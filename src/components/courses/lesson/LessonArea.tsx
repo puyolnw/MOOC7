@@ -1514,6 +1514,19 @@ const handleNextLesson = useCallback(() => {
                                         {progress < 100 ? "🎯 กำลังเรียน" : "🎉 เรียนจบแล้ว"}
                                     </span>
                                 </div>
+                                {progress >= 100 && (
+                                    <div className="mt-3" style={{textAlign: 'center'}}>
+                                        <div className="alert alert-success" role="alert" style={{marginBottom: '12px'}}>
+                                            คุณเรียนบทเรียนนี้ทั้งหมดแล้ว กรุณาชำระเงินเพื่อรับใบประกาศ
+                                        </div>
+                                        <a href="/student-payment" className="btn btn-light" style={{
+                                            borderRadius: '10px',
+                                            fontWeight: 600
+                                        }}>
+                                            ไปหน้าชำระเงิน
+                                        </a>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
