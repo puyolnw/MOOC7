@@ -156,35 +156,6 @@ const StudentPaymentArea: React.FC = () => {
     }
   };
 
-  const handleCertificateDownload = async (subjectId: number) => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(
-        `${apiURL}/api/data/student/certificates/${subjectId}`,
-        {
-          responseType: 'blob',
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
-      );
-
-      // Create download link
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `certificate-${subjectId}.pdf`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      
-      toast.success("ดาวน์โหลดเกียรติบัตรสำเร็จ");
-    } catch (error: any) {
-      console.error("Error downloading certificate:", error);
-      toast.error("เกิดข้อผิดพลาดในการดาวน์โหลดเกียรติบัตร");
-    }
-  };
-
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'not_paid':
@@ -279,14 +250,14 @@ const StudentPaymentArea: React.FC = () => {
                                     </button>
                                   )}
                                   {subject.payment_status === 'approved' && subject.certificate_available && (
-                                    <button
-                                      className="btn btn-sm btn-success"
-                                      onClick={() => handleCertificateDownload(subject.subject_id)}
-                                      title="ดาวน์โหลดเกียรติบัตร"
+                                    <a
+                                      href="/student-certificate"
+                                      className="btn btn-sm btn-outline-primary ms-2"
+                                      title="ไปหน้าใบรับรอง"
                                     >
-                                      <i className="fas fa-download me-1"></i>
-                                      เกียรติบัตร
-                                    </button>
+                                      <i className="fas fa-external-link-alt me-1"></i>
+                                      ไปหน้าใบรับรอง
+                                    </a>
                                   )}
                                   {subject.payment_status === 'rejected' && (
                                     <button

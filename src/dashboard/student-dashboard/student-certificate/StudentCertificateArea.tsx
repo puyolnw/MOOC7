@@ -27,6 +27,9 @@ completedLessons: number;
 progressPercentage: number;
 status: string;
 paymentApproved?: boolean;
+hasPaymentSlip?: boolean;
+lastPaymentDate?: string;
+certificateStatus?: 'ready_to_download' | 'pending_approval' | 'waiting_payment' | 'not_completed';
 }
 
 interface CertificateData {
@@ -127,7 +130,7 @@ const StudentCertificateArea = () => {
                      console.log(`Course ${index + 1}:`);
                      console.log(`  - ID: ${course.courseId}`);
                      console.log(`  - Title: ${course.title}`);
-                     console.log(`  - Progress: ${course.progressPercentage}%`);
+                     console.log(`  - Progress: ${course.progressPercentage}`);
                      console.log(`  - Status: ${course.status}`);
                      console.log(`  - Department: ${course.departmentName}`);
                      console.log("  - Full course object:", course);
@@ -138,6 +141,9 @@ const StudentCertificateArea = () => {
                      console.log(`Course "${course.title}"`);
                      console.log(`  - Progress value:`, course.progressPercentage);
                      console.log(`  - Progress type:`, typeof course.progressPercentage);
+                     console.log(`  - Certificate Status:`, course.certificateStatus);
+                     console.log(`  - Has Payment Slip:`, course.hasPaymentSlip);
+                     console.log(`  - Payment Approved:`, course.paymentApproved);
                      
                      // แปลงเป็น number เพื่อเปรียบเทียบ
                      const progressNum = Number(course.progressPercentage);
@@ -280,22 +286,44 @@ const StudentCertificateArea = () => {
                                                 <span className="badge bg-success">
                                                       <i className="fas fa-graduation-cap me-1"></i>เรียนจบแล้ว
                                      </span>
-                                     <span className="badge bg-success">
-                                        <i className="fas fa-check-circle me-1"></i>ได้รับอนุมัติ
-                                     </span>
+                                     {course.certificateStatus === 'ready_to_download' && (
+                                        <span className="badge bg-success">
+                                           <i className="fas fa-check-circle me-1"></i>พร้อมดาวน์โหลด
+                                        </span>
+                                     )}
+                                     {course.certificateStatus === 'pending_approval' && (
+                                        <span className="badge bg-warning">
+                                           <i className="fas fa-clock me-1"></i>กำลังตรวจสอบ
+                                        </span>
+                                     )}
+                                     {course.certificateStatus === 'waiting_payment' && (
+                                        <span className="badge bg-info">
+                                           <i className="fas fa-credit-card me-1"></i>รอการชำระเงิน
+                                        </span>
+                                     )}
                                   </div>
                                           </td>
                                           <td className="text-center">
-                                                <button 
-                                                   className="btn btn-success btn-sm" 
-                                                   onClick={() => handleDownloadCertificate(course.courseId, course.title)}
-                                                   disabled={downloadingId === `course-${course.courseId}`}
-                                                >
-                                                   {downloadingId === `course-${course.courseId}` 
-                                                         ? <><i className="fas fa-spinner fa-spin me-1"></i>กำลังสร้าง...</>
-                                                         : <><i className="fas fa-download me-1"></i>ดาวน์โหลด</>
-                                                   }
-                                                </button>
+                                                {course.certificateStatus === 'ready_to_download' ? (
+                                                   <button 
+                                                      className="btn btn-success btn-sm" 
+                                                      onClick={() => handleDownloadCertificate(course.courseId, course.title)}
+                                                      disabled={downloadingId === `course-${course.courseId}`}
+                                                   >
+                                                      {downloadingId === `course-${course.courseId}` 
+                                                        ? <><i className="fas fa-spinner fa-spin me-1"></i>กำลังสร้าง...</>
+                                                        : <><i className="fas fa-download me-1"></i>ดาวน์โหลด</>
+                                                      }
+                                                   </button>
+                                                ) : course.certificateStatus === 'pending_approval' ? (
+                                                   <button className="btn btn-warning btn-sm" disabled>
+                                                      <i className="fas fa-clock me-1"></i>รอการอนุมัติ
+                                                   </button>
+                                                ) : (
+                                                   <button className="btn btn-info btn-sm" disabled>
+                                                      <i className="fas fa-credit-card me-1"></i>รอการชำระเงิน
+                                                   </button>
+                                                )}
                                           </td>
                                        </tr>
                                     ))}
