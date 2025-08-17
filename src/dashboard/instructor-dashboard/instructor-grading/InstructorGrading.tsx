@@ -51,6 +51,13 @@ interface Attempt {
     answers: Answer[];
 }
 
+interface Subject {
+    subject_id: number;
+    subject_name: string;
+    subject_code: string;
+    department_id: number;
+}
+
 interface SubjectSummary {
     subject_id: number;
     subject_title: string;
@@ -257,7 +264,7 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
                     console.log('Attempts response:', attemptsResponse.data);
                     const pendingAttempts = attemptsResponse.data.success ? attemptsResponse.data.attempts || [] : [];
                     console.log('Pending attempts found:', pendingAttempts.length, pendingAttempts);
-                    console.log('Attempt details:', pendingAttempts.map(a => ({
+                    console.log('Attempt details:', pendingAttempts.map((a: Attempt) => ({
                         attempt_id: a.attempt_id,
                         quiz_id: a.quiz_id,
                         subject_id: a.subject_id,
@@ -279,13 +286,13 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
 
                     // สร้าง SubjectSummary จากรายวิชาทั้งหมด พร้อมข้อมูลคณะ
                     console.log('All subjects:', allSubjects.length, allSubjects);
-                    console.log('Subject details:', allSubjects.map(s => ({
+                    console.log('Subject details:', allSubjects.map((s: Subject) => ({
                         subject_id: s.subject_id,
                         subject_name: s.subject_name,
                         subject_code: s.subject_code
                     })));
                     
-                    const subjectSummaries: SubjectSummary[] = allSubjects.map((subject: any) => {
+                    const subjectSummaries: SubjectSummary[] = allSubjects.map((subject: Subject) => {
                         // หางานที่รอตรวจสำหรับรายวิชานี้
                         // ชั่วคราว: แสดงงานทั้งหมดให้รายวิชาแรก เพื่อทดสอบ
                         const subjectAttempts = subject.subject_id === allSubjects[0]?.subject_id ? 
@@ -296,7 +303,7 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
                         
                         console.log(`Subject ${subject.subject_id} (${subject.subject_name}):`, 
                             'Total attempts found:', subjectAttempts.length,
-                            'Attempt subject_ids:', pendingAttempts.map(a => a.subject_id));
+                            'Attempt subject_ids:', pendingAttempts.map((a: Attempt) => a.subject_id));
 
                         // หาคณะของรายวิชานี้
                         const subjectDepartment = departments.find((dept: any) => dept.department_id === subject.department_id);
