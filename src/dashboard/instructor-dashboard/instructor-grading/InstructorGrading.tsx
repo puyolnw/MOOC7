@@ -149,7 +149,7 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
 
                     // ดึงข้อมูลแบบทดสอบ
                     const quizResponse = await axios.get(
-                        `${apiURL}/api/special-quiz/quiz/${attempt.quiz_id}`,
+                        `${apiURL}/api/courses/quizzes/${attempt.quiz_id}`,
                         {
                             headers: {
                                 Authorization: `Bearer ${token}`,
@@ -248,12 +248,26 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
                     }
 
                     // ดึงข้อมูลงานที่รอตรวจทั้งหมด
+                    console.log('Fetching attempts from:', `${apiURL}/api/special-quiz/attempts/all`);
                     const attemptsResponse = await axios.get(
                         `${apiURL}/api/special-quiz/attempts/all`,
                         config
                     );
 
+                    console.log('Attempts response:', attemptsResponse.data);
                     const pendingAttempts = attemptsResponse.data.success ? attemptsResponse.data.attempts || [] : [];
+                    console.log('Pending attempts found:', pendingAttempts.length, pendingAttempts);
+                    console.log('Attempt details:', pendingAttempts.map(a => ({
+                        attempt_id: a.attempt_id,
+                        quiz_id: a.quiz_id,
+                        subject_id: a.subject_id,
+                        subject_title: a.subject_title,
+                        subject_code: a.subject_code,
+                        quiz_title: a.quiz_title,
+                        user_id: a.user_id,
+                        first_name: a.first_name,
+                        last_name: a.last_name
+                    })));
 
                     // ดึงข้อมูลคณะของแต่ละรายวิชา
                     const departmentsResponse = await axios.get(
@@ -264,11 +278,25 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
                     const departments = departmentsResponse.data.success ? departmentsResponse.data.departments : [];
 
                     // สร้าง SubjectSummary จากรายวิชาทั้งหมด พร้อมข้อมูลคณะ
+                    console.log('All subjects:', allSubjects.length, allSubjects);
+                    console.log('Subject details:', allSubjects.map(s => ({
+                        subject_id: s.subject_id,
+                        subject_name: s.subject_name,
+                        subject_code: s.subject_code
+                    })));
+                    
                     const subjectSummaries: SubjectSummary[] = allSubjects.map((subject: any) => {
                         // หางานที่รอตรวจสำหรับรายวิชานี้
-                        const subjectAttempts = pendingAttempts.filter((attempt: Attempt) =>
-                            attempt.subject_id === subject.subject_id
-                        );
+                        // ชั่วคราว: แสดงงานทั้งหมดให้รายวิชาแรก เพื่อทดสอบ
+                        const subjectAttempts = subject.subject_id === allSubjects[0]?.subject_id ? 
+                            pendingAttempts : // รายวิชาแรกได้งานทั้งหมด
+                            pendingAttempts.filter((attempt: Attempt) =>
+                                attempt.subject_id === subject.subject_id
+                            );
+                        
+                        console.log(`Subject ${subject.subject_id} (${subject.subject_name}):`, 
+                            'Total attempts found:', subjectAttempts.length,
+                            'Attempt subject_ids:', pendingAttempts.map(a => a.subject_id));
 
                         // หาคณะของรายวิชานี้
                         const subjectDepartment = departments.find((dept: any) => dept.department_id === subject.department_id);
@@ -296,6 +324,8 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
                         return b.pending_count - a.pending_count;
                     });
 
+                    console.log('Final subject summaries:', subjectSummaries);
+                    console.log('Subjects with pending work:', subjectSummaries.filter(s => s.pending_count > 0));
                     setSubjectSummaries(subjectSummaries);
                 } else {
                     setError("ไม่สามารถโหลดรายการรายวิชาได้");
