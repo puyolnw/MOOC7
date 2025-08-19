@@ -36,16 +36,16 @@ const DashboardReviewTable = () => {
 
             // Fetch instructor's subjects with enrollment data
             const response = await axios.get(
-               `${API_BASE_URL}/api/courses/subjects/instructors/cou`, 
+               `${API_BASE_URL}/api/courses/subjects/instructors/dashboard`, 
                config
             );
 
             if (response.data.success) {
-               setCourses(response.data.courses.map((course: any) => ({
-                  id: course.subject_id,
-                  name: course.title || course.subject_name,
-                  enrolled: course.enrollment_count || 0,
-                  completed: course.completion_count || 0
+               setCourses(response.data.subjects.map((subject: any) => ({
+                  id: subject.subject_id,
+                  name: subject.subject_name,
+                  enrolled: subject.enrollment_count || 0,
+                  completed: subject.completion_count || 0
                })));
             } else {
                throw new Error(response.data.message || "ไม่สามารถดึงข้อมูลรายวิชาได้");

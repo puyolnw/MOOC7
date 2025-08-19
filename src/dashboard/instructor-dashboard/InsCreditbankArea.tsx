@@ -275,7 +275,7 @@ const FacultySelection: React.FC<{
                   </span>
                   <span className="stat-item">
                     <i className="fas fa-graduation-cap me-1"></i>
-                    {faculty.total_courses} หลักสูตร
+                    {faculty.total_courses} วิชา
                   </span>
                 </div>
               </div>
@@ -370,15 +370,13 @@ const DepartmentSelection: React.FC<{
 
 
 
-// Course List component - ลบการสร้างหลักสูตรใหม่สำหรับอาจารย์
-const CourseList: React.FC<{
+// All Instructor Courses List - แสดงหลักสูตรทั้งหมดที่อาจารย์เกี่ยวข้อง
+const AllInstructorCoursesList: React.FC<{
   courses: Course[];
   isLoading: boolean;
   searchTerm: string;
   onSearchChange: (term: string) => void;
   onCourseSelect: (course: Course) => void;
-  onAddCourse: () => void;
-  selectedDepartment: Department;
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
@@ -389,7 +387,6 @@ const CourseList: React.FC<{
   searchTerm, 
   onSearchChange, 
   onCourseSelect, 
-  selectedDepartment,
   currentPage,
   totalPages,
   onPageChange,
@@ -414,8 +411,8 @@ const CourseList: React.FC<{
           <i className="fas fa-graduation-cap"></i>
         </div>
         <div className="section-title">
-          <h2>หลักสูตร</h2>
-          <p>สาขา {selectedDepartment.department_name} - จำนวน {courses.length} หลักสูตร</p>
+          <h2>หลักสูตรทั้งหมด</h2>
+          <p>หลักสูตรที่ท่านเกี่ยวข้องในการสอน - จำนวน {courses.length} หลักสูตร</p>
         </div>
       </div>
 
@@ -491,6 +488,14 @@ const CourseList: React.FC<{
                 <div className="stat-group">
                   <i className="fas fa-list-alt me-1"></i>
                   <span>{course.subject_count} รายวิชา</span>
+                </div>
+                <div className="stat-group">
+                  <i className="fas fa-building me-1"></i>
+                  <span>{course.department_name || 'ไม่ระบุสาขา'}</span>
+                </div>
+                <div className="stat-group">
+                  <i className="fas fa-university me-1"></i>
+                  <span>{course.faculty || 'ไม่ระบุคณะ'}</span>
                 </div>
                 <div className="stat-group">
                   <i className="fas fa-calendar me-1"></i>
@@ -997,8 +1002,8 @@ const InsCreditbankArea: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   
-  // State management
-  const [currentView, setCurrentView] = useState<'faculties' | 'departments' | 'courses' | 'subjects' | 'subject-detail'>('faculties');
+  // State management - เปลี่ยนให้เริ่มต้นที่ courses แทน faculties
+  const [currentView, setCurrentView] = useState<'faculties' | 'departments' | 'courses' | 'subjects' | 'subject-detail'>('courses');
   const [selectedFaculty, setSelectedFaculty] = useState<string | null>(null);
   const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
@@ -1025,17 +1030,123 @@ const InsCreditbankArea: React.FC = () => {
 
   // ลบ Modal states - อาจารย์ไม่มีสิทธิ์ CRUD คณะและสาขา
 
-  const handleAddCourse = () => {
-    if (selectedDepartment) {
-      navigate(`/ins-creditbank/create-new?department_id=${selectedDepartment.department_id}`);
-    } else {
-      alert('เกิดข้อผิดพลาด: ไม่พบข้อมูลสาขาวิชา');
+  // ฟังก์ชันใหม่: ดึงหลักสูตรทั้งหมดที่อาจารย์เกี่ยวข้อง
+  const fetchAllInstructorCourses = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setError('ไม่พบข้อมูลการเข้าสู่ระบบ กรุณาเข้าสู่ระบบใหม่');
+        return;
+      }
+
+      // ดึงข้อมูล DEBUG ก่อน
+      const debugResponse = await axios.get(`${apiURL}/api/courses/subjects/instructors/debug`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      
+      console.log('=== DEBUG DATABASE INFO ===');
+      console.log('Debug response:', debugResponse.data);
+      
+      if (debugResponse.data.success) {
+        const debug = debugResponse.data.debug;
+        console.log('📊 สรุปจำนวน:', debug.summary);
+        console.log('👤 ข้อมูลอาจารย์:', debug.instructor);
+        console.log('📚 รายวิชาที่สอน (' + debug.subjects.length + '):', debug.subjects);
+        console.log('🔗 การมอบหมายสอน (' + debug.subjectInstructors.length + '):', debug.subjectInstructors);
+        console.log('📖 เชื่อมโยงกับหลักสูตร (' + debug.courseSubjects.length + '):', debug.courseSubjects);
+        console.log('🎓 หลักสูตรทั้งหมด (' + debug.courses.length + '):', debug.courses);
+        
+        // แสดงชื่อหลักสูตรทั้งหมดเพื่อให้เห็นง่าย
+        if (debug.courses.length > 0) {
+          console.log('📋 รายชื่อหลักสูตร:');
+          debug.courses.forEach((course: any, index: number) => {
+            console.log(`  ${index + 1}. ${course.title} (ID: ${course.course_id})`);
+          });
+        }
+      }
+      
+      // ดึงข้อมูลหลักสูตรที่อาจารย์เกี่ยวข้อง - ใช้ endpoint เฉพาะสำหรับหลักสูตร
+      const coursesResponse = await axios.get(`${apiURL}/api/courses`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      console.log('Courses response:', coursesResponse.data);
+      
+      if (!coursesResponse.data.success) {
+        throw new Error('ไม่สามารถดึงข้อมูลหลักสูตรได้');
+      }
+
+      // ดึงข้อมูลหลักสูตรที่อาจารย์เกี่ยวข้อง
+      if (coursesResponse.data.success && Array.isArray(coursesResponse.data.courses)) {
+        const formattedCourses: Course[] = coursesResponse.data.courses.map((course: any) => ({
+          course_id: course.course_id,
+          course_code: course.course_code || '',
+          title: course.title || '',
+          description: course.description || '',
+          cover_image_path: course.cover_image_path || null,
+          cover_image_file_id: course.cover_image_file_id || null,
+          video_url: course.video_url || null,
+          study_result: course.study_result || null,
+          department_name: course.department_name || null,
+          faculty: course.faculty || null,
+          subject_count: course.subject_count || 0,
+          status: course.status || 'draft',
+          created_at: course.created_at || new Date().toISOString(),
+          updated_at: course.updated_at || new Date().toISOString(),
+        }));
+
+        setCourses(formattedCourses);
+        setFilteredCourses(formattedCourses);
+        setCurrentView('courses'); // ตั้งให้แสดง courses โดยตรง
+        console.log('Found instructor courses:', formattedCourses.length, formattedCourses);
+      } else {
+        console.log('No courses found for instructor or API response failed');
+        setError('ไม่พบหลักสูตรที่ท่านเกี่ยวข้อง กรุณาติดต่อผู้ดูแลระบบ');
+      }
+    } catch (error) {
+      console.error('Error fetching all instructor courses:', error);
+      setError('เกิดข้อผิดพลาดในการดึงข้อมูลหลักสูตร');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // Initialize from URL parameters on component mount
+
+
+  // Initialize - โหลดหลักสูตรทั้งหมดที่อาจารย์เกี่ยวข้องเลย
+  useEffect(() => {
+    const init = async () => {
+      setIsInitialized(false);
+      
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          setError('ไม่พบข้อมูลการเข้าสู่ระบบ กรุณาเข้าสู่ระบบใหม่');
+          setIsInitialized(true);
+          return;
+        }
+
+        // โหลดหลักสูตรทั้งหมดที่อาจารย์เกี่ยวข้องเลย
+        await fetchAllInstructorCourses();
+
+      } catch (error) {
+        console.error('Initialization error:', error);
+        setError('เกิดข้อผิดพลาดในการโหลดข้อมูล');
+      } finally {
+        setIsInitialized(true);
+      }
+    };
+
+    init();
+  }, []); // โหลดครั้งเดียวตอนเริ่มต้น
+
+  // Initialize from URL parameters on component mount - เก็บไว้สำหรับการกลับมาจากหน้าอื่น
   useEffect(() => {
     const initializeFromURL = async () => {
+      if (!isInitialized) return; // รอให้ init เสร็จก่อน
+      
       const urlParams = new URLSearchParams(location.search);
       const view = urlParams.get('view');
       const faculty = urlParams.get('faculty');
@@ -1591,13 +1702,19 @@ const InsCreditbankArea: React.FC = () => {
   };
 
   const handleBackToFaculties = () => {
-    setCurrentView('faculties');
+    // กลับไปหน้าหลักสูตรทั้งหมดแทนหน้าคณะ
+    handleBackToCourses();
+  };
+
+  const handleBackToCourses = () => {
+    setCurrentView('courses');
     setSelectedFaculty(null);
     setSelectedDepartment(null);
     setSelectedCourse(null);
     setSelectedSubject(null);
     setSearchTerm('');
-    updateBrowserHistory('faculties', null, null, null, null);
+    // โหลดหลักสูตรทั้งหมดใหม่
+    fetchAllInstructorCourses();
   };
 
   const handleBackToDepartments = () => {
@@ -1609,13 +1726,7 @@ const InsCreditbankArea: React.FC = () => {
     updateBrowserHistory('departments', selectedFaculty, null, null, null);
   };
 
-  const handleBackToCourses = () => {
-    setCurrentView('courses');
-    setSelectedCourse(null);
-    setSelectedSubject(null);
-    setSearchTerm('');
-    updateBrowserHistory('courses', selectedFaculty, selectedDepartment, null, null);
-  };
+  // ลบ handleBackToCourses เดิม เพราะเราย้ายไปด้านบนแล้ว
 
   const handleBackToSubjects = () => {
     setSelectedSubject(null);
@@ -1740,17 +1851,19 @@ const InsCreditbankArea: React.FC = () => {
             <div className="dashboard__content-area col-lg-9">
               <div className="dashboard__content-main">
                 
-                {/* Navigation Breadcrumb */}
-                <NavigationBreadcrumb
-                  selectedFaculty={selectedFaculty}
-                  selectedDepartment={selectedDepartment}
-                  selectedCourse={selectedCourse}
-                  selectedSubject={selectedSubject}
-                  onFacultyClick={handleBackToFaculties}
-                  onDepartmentClick={handleBackToDepartments}
-                  onCourseClick={handleBackToCourses}
-                  onSubjectClick={handleBackToSubjects}
-                />
+                {/* Navigation Breadcrumb - แสดงเฉพาะเมื่อไม่ใช่หน้าหลักสูตรทั้งหมด */}
+                {currentView !== 'courses' && (
+                  <NavigationBreadcrumb
+                    selectedFaculty={selectedFaculty}
+                    selectedDepartment={selectedDepartment}
+                    selectedCourse={selectedCourse}
+                    selectedSubject={selectedSubject}
+                    onFacultyClick={handleBackToFaculties}
+                    onDepartmentClick={handleBackToDepartments}
+                    onCourseClick={handleBackToCourses}
+                    onSubjectClick={handleBackToSubjects}
+                  />
+                )}
 
                 {/* Error Display */}
                 {error && (
@@ -1803,20 +1916,18 @@ const InsCreditbankArea: React.FC = () => {
                     onSubjectSelect={handleSubjectSelect}
                     onCourseUpdate={handleCourseUpdate}
                   />
-                ) : currentView === 'courses' && selectedDepartment ? (
-                  <CourseList
-                    courses={currentItems}
-                    isLoading={isLoading}
-                    searchTerm={searchTerm}
-                    onSearchChange={setSearchTerm}
-                    onCourseSelect={handleCourseSelect}
-                    onAddCourse={handleAddCourse}
-                    selectedDepartment={selectedDepartment}
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={handlePageChange}
-                    indexOfFirstItem={indexOfFirstItem}
-                  />
+                ) : currentView === 'courses' ? (
+                <AllInstructorCoursesList
+                courses={currentItems}
+                isLoading={isLoading}
+                searchTerm={searchTerm}
+                onSearchChange={setSearchTerm}
+                onCourseSelect={handleCourseSelect}
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
+                indexOfFirstItem={indexOfFirstItem}
+                />
                 ) : currentView === 'departments' && selectedFaculty ? (
                   <DepartmentSelection
                     departments={departments}

@@ -570,6 +570,21 @@ const ManagePics: React.FC = () => {
                         console.log('Refreshed pageConfigs for:', category);
                         console.log('New pageConfigs:', pageConfigs);
                     }
+
+                    // Clear the preview image and reset file input after successful upload
+                    setTimeout(() => {
+                        setPreviewImages(prev => {
+                            const newState = { ...prev };
+                            delete newState[field];
+                            return newState;
+                        });
+                        
+                        // Reset the specific file input
+                        const fileInput = document.querySelector(`input[type="file"][data-field="${field}"]`) as HTMLInputElement;
+                        if (fileInput) {
+                            fileInput.value = '';
+                        }
+                    }, 1000); // Give user a moment to see the success message
                 } else {
                     throw new Error(result.message);
                 }
@@ -641,6 +656,14 @@ const ManagePics: React.FC = () => {
         return changes + pageImageChanges;
     };
 
+    const resetFileInputs = () => {
+        // Reset all file input values to allow re-selection of the same file
+        const fileInputs = document.querySelectorAll('input[type="file"]');
+        fileInputs.forEach((input: Element) => {
+            (input as HTMLInputElement).value = '';
+        });
+    };
+
     const resetChanges = () => {
         if (activeTab === 'banner') {
             setBannerData({ ...originalBannerData });
@@ -652,6 +675,8 @@ const ManagePics: React.FC = () => {
             setPageChanges(prev => ({ ...prev, [activeTab]: false }));
         }
         setPreviewImages({});
+        // Also reset file inputs
+        resetFileInputs();
     };
 
     const handlePageTextChange = (page: string, field: string, value: string) => {
@@ -697,6 +722,8 @@ const ManagePics: React.FC = () => {
                         toast.success('บันทึกการเปลี่ยนแปลงสำเร็จ');
                         setOriginalBannerData(bannerData);
                         setPreviewImages({});
+                        // Reset file inputs
+                        resetFileInputs();
                     } else {
                         throw new Error(result.message);
                     }
@@ -727,6 +754,8 @@ const ManagePics: React.FC = () => {
                                 }));
                                 setPreviewImages({});
                                 setPageChanges(prev => ({ ...prev, [activeTab]: false }));
+                                // Reset file inputs
+                                resetFileInputs();
                             } else {
                                 throw new Error(result.message);
                             }
@@ -736,6 +765,8 @@ const ManagePics: React.FC = () => {
                     } else {
                         toast.success('อัปโหลดรูปภาพสำเร็จ - รูปภาพจะถูกแสดงในหน้าเว็บไซต์โดยอัตโนมัติ');
                         setPreviewImages({});
+                        // Reset file inputs
+                        resetFileInputs();
                     }
                 }
         } catch (error: any) {
@@ -871,6 +902,7 @@ const ManagePics: React.FC = () => {
                                                     type="file"
                                                     className="form-control"
                                                     accept="image/*"
+                                                    data-field="main_image"
                                                     onChange={(e) => {
                                                         const file = e.target.files?.[0];
                                                         if (file) handleImageUpload('main_image', file, 'main,หลัก,banner');
@@ -900,6 +932,7 @@ const ManagePics: React.FC = () => {
                                                     type="file"
                                                     className="form-control"
                                                     accept="image/*"
+                                                    data-field="instructor1_image"
                                                     onChange={(e) => {
                                                         const file = e.target.files?.[0];
                                                         if (file) handleImageUpload('instructor1_image', file, 'instructor1,อาจารย์1,banner');
@@ -929,6 +962,7 @@ const ManagePics: React.FC = () => {
                                                     type="file"
                                                     className="form-control"
                                                     accept="image/*"
+                                                    data-field="instructor2_image"
                                                     onChange={(e) => {
                                                         const file = e.target.files?.[0];
                                                         if (file) handleImageUpload('instructor2_image', file, 'instructor2,อาจารย์2,banner');
@@ -1081,6 +1115,7 @@ const ManagePics: React.FC = () => {
                                                     type="file"
                                                     className="form-control"
                                                     accept="image/*"
+                                                    data-field="faq_main_image"
                                                     onChange={(e) => {
                                                         const file = e.target.files?.[0];
                                                         if (file) handleImageUpload('faq_main_image', file, 'faq,main,หลัก', 'faq');
@@ -1217,6 +1252,7 @@ const ManagePics: React.FC = () => {
                                                     type="file"
                                                     className="form-control"
                                                     accept="image/*"
+                                                    data-field="about_main_image"
                                                     onChange={(e) => {
                                                         const file = e.target.files?.[0];
                                                         if (file) handleImageUpload('about_main_image', file, 'about,main,หลัก', 'about');
@@ -1233,6 +1269,7 @@ const ManagePics: React.FC = () => {
                                                     type="file"
                                                     className="form-control"
                                                     accept="image/*"
+                                                    data-field="about_student_group"
                                                     onChange={(e) => {
                                                         const file = e.target.files?.[0];
                                                         if (file) handleImageUpload('about_student_group', file, 'about,student,group,นักศึกษา', 'about');
@@ -1384,6 +1421,7 @@ const ManagePics: React.FC = () => {
                                                             type="file"
                                                             className="form-control"
                                                             accept="image/*"
+                                                            data-field={`instructor${num}_image`}
                                                             onChange={(e) => {
                                                                 const file = e.target.files?.[0];
                                                                 if (file) handleImageUpload(`instructor${num}_image`, file, `instructor,instructor${num},อาจารย์${num}`, 'instructor');

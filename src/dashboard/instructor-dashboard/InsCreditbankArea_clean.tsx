@@ -242,7 +242,7 @@ const FacultySelection: React.FC<{
         </div>
         <div className="section-title">
           <h2>เลือกคณะ</h2>
-          <p>เลือกคณะที่ต้องการจัดการหลักสูตร</p>
+          <p>เลือกคณะที่ต้องการจัดการวิชา</p>
         </div>
       </div>
       
@@ -267,7 +267,7 @@ const FacultySelection: React.FC<{
                   </span>
                   <span className="stat-item">
                     <i className="fas fa-graduation-cap me-1"></i>
-                    {faculty.total_courses} หลักสูตร
+                    {faculty.total_courses} วิชา
                   </span>
                 </div>
               </div>
@@ -314,7 +314,7 @@ const DepartmentSelection: React.FC<{
         </div>
         <div className="section-title">
           <h2>เลือกสาขาวิชา</h2>
-          <p>คณะ {selectedFaculty} - เลือกสาขาที่ต้องการจัดการหลักสูตร</p>
+          <p>คณะ {selectedFaculty} - เลือกสาขาที่ต้องการจัดการวิชา</p>
         </div>
       </div>
       
@@ -343,7 +343,7 @@ const DepartmentSelection: React.FC<{
                 <div className="card-stats">
                   <span className="stat-item">
                     <i className="fas fa-graduation-cap me-1"></i>
-                    {department.course_count || 0} หลักสูตร
+                    {department.course_count || 0} วิชา
                   </span>
                 </div>
               </div>
@@ -393,7 +393,7 @@ const CourseList: React.FC<{
           <div className="spinner-border text-primary" role="status">
             <span className="visually-hidden">กำลังโหลด...</span>
           </div>
-          <p className="loading-text">กำลังโหลดข้อมูลหลักสูตร...</p>
+          <p className="loading-text">กำลังโหลดข้อมูลวิชา...</p>
         </div>
       </div>
     );
@@ -406,8 +406,8 @@ const CourseList: React.FC<{
           <i className="fas fa-graduation-cap"></i>
         </div>
         <div className="section-title">
-          <h2>หลักสูตร</h2>
-          <p>สาขา {selectedDepartment.department_name} - จำนวน {courses.length} หลักสูตร</p>
+          <h2>วิชา</h2>
+          <p>สาขา {selectedDepartment.department_name} - จำนวน {courses.length} วิชา</p>
         </div>
       </div>
 
@@ -418,7 +418,7 @@ const CourseList: React.FC<{
             <input
               type="text"
               className="search-input"
-              placeholder="ค้นหาหลักสูตร..."
+              placeholder="ค้นหาวิชา..."
               value={searchTerm}
               onChange={(e) => onSearchChange(e.target.value)}
             />

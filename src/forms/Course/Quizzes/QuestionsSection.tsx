@@ -136,8 +136,8 @@ const QuestionsSection: React.FC<QuestionsSectionProps> = ({
         style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}
         tabIndex={-1}
       >
-        <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-          <div className="modal-content border-0 shadow-lg">
+        <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable" style={{ maxHeight: '90vh', maxWidth: '90vw' }}>
+          <div className="modal-content border-0 shadow-lg" style={{ maxHeight: '90vh' }}>
             <div className="modal-header bg-primary">
               <h5 className="modal-title text-white">
                 <i className="fas fa-plus-circle me-2"></i>
@@ -149,7 +149,7 @@ const QuestionsSection: React.FC<QuestionsSectionProps> = ({
                 onClick={() => setShowAddQuestionForm(false)}
               ></button>
             </div>
-            <div className="modal-body">
+            <div className="modal-body" style={{ maxHeight: 'calc(90vh - 120px)', overflowY: 'auto', padding: '1rem' }}>
               {/* ใช้ฟอร์มเพิ่มคำถามที่มีอยู่แล้ว */}
               <AddQuestions onSubmit={handleAddNewQuestion} onCancel={() => setShowAddQuestionForm(false)} />
             </div>
@@ -164,8 +164,8 @@ const QuestionsSection: React.FC<QuestionsSectionProps> = ({
         style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}
         tabIndex={-1}
       >
-        <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-          <div className="modal-content border-0 shadow-lg">
+        <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable" style={{ maxHeight: '90vh', maxWidth: '90vw' }}>
+          <div className="modal-content border-0 shadow-lg" style={{ maxHeight: '90vh' }}>
             <div className="modal-header bg-primary">
               <h5 className="modal-title text-white">
                 <i className="fas fa-list me-2"></i>
@@ -180,7 +180,7 @@ const QuestionsSection: React.FC<QuestionsSectionProps> = ({
                 }}
               ></button>
             </div>
-            <div className="modal-body">
+            <div className="modal-body" style={{ maxHeight: 'calc(90vh - 180px)', overflowY: 'auto', padding: '1rem' }}>
               {/* ค้นหาคำถาม */}
               <div className="mb-3">
                 <div className="input-group">
@@ -267,6 +267,55 @@ const QuestionsSection: React.FC<QuestionsSectionProps> = ({
         </div>
       </div>
     )}
+
+    {/* Custom CSS for better modal scrolling */}
+    <style>
+      {`
+        .modal-dialog-scrollable {
+          height: calc(100vh - 3.5rem);
+        }
+        
+        .modal-dialog-scrollable .modal-content {
+          max-height: none;
+          height: calc(100vh - 3.5rem);
+        }
+        
+        .modal-dialog-scrollable .modal-body {
+          overflow-y: auto;
+        }
+        
+        @media (max-width: 576px) {
+          .modal-dialog {
+            margin: 0.5rem;
+            max-width: none;
+            width: calc(100vw - 1rem);
+          }
+          
+          .modal-body {
+            padding: 0.75rem;
+          }
+        }
+        
+        /* Custom scrollbar styling */
+        .modal-body::-webkit-scrollbar {
+          width: 8px;
+        }
+        
+        .modal-body::-webkit-scrollbar-track {
+          background: #f1f1f1;
+          border-radius: 4px;
+        }
+        
+        .modal-body::-webkit-scrollbar-thumb {
+          background: #c1c1c1;
+          border-radius: 4px;
+        }
+        
+        .modal-body::-webkit-scrollbar-thumb:hover {
+          background: #a8a8a8;
+        }
+      `}
+    </style>
   </div>
 );
 

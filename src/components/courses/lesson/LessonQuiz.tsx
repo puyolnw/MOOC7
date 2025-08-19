@@ -21,11 +21,19 @@ interface LessonQuizProps {
 // Define different question types
 type QuestionType = "SC" | "MC" | "TF" | "FB";
 
+interface QuestionAttachment {
+    attachment_id: number;
+    file_name: string;
+    file_url: string;
+    file_size?: number;
+}
+
 interface Question {
     question_id: number;
     title: string;
     type: QuestionType;
     score: number;
+    attachments?: QuestionAttachment[];
     choices: {
         choice_id: number;
         text: string;
@@ -76,6 +84,7 @@ function mapBackendQuestions(backendQuestions: any[]): Question[] {
         title: q.question_text || q.title || "",
         type: q.question_type || q.type,
         score: q.points || q.score || 1,
+        attachments: q.attachments || [],
         choices: (q.options || q.choices || []).map((c: any) => ({
             choice_id: c.option_id ?? c.choice_id,
             text: c.option_text ?? c.text,
@@ -83,6 +92,68 @@ function mapBackendQuestions(backendQuestions: any[]): Question[] {
         })),
     }));
 }
+
+// Helper function to format file sizes
+const formatFileSize = (bytes?: number) => {
+    if (!bytes) return '';
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+};
+
+// Component to render question attachments
+const QuestionAttachments = ({ attachments }: { attachments?: QuestionAttachment[] }) => {
+    if (!attachments || attachments.length === 0) return null;
+
+    return (
+        <div className="question-attachments mb-3">
+            <h6 className="text-primary">
+                <i className="fas fa-paperclip me-2"></i>
+                เอกสารประกอบโจทย์ ({attachments.length} ไฟล์)
+            </h6>
+            <div className="list-group">
+                {attachments.map((attachment) => (
+                    <div key={attachment.attachment_id} className="list-group-item">
+                        <div className="d-flex align-items-center justify-content-between">
+                            <div className="d-flex align-items-center">
+                                <i className="fas fa-file me-2 text-primary"></i>
+                                <div>
+                                    <div className="fw-bold">{attachment.file_name}</div>
+                                    {attachment.file_size && (
+                                        <small className="text-muted">{formatFileSize(attachment.file_size)}</small>
+                                    )}
+                                </div>
+                            </div>
+                            <div>
+                                <a
+                                    href={attachment.file_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="btn btn-outline-primary btn-sm me-2"
+                                    title="เปิดไฟล์"
+                                >
+                                    <i className="fas fa-eye me-1"></i>
+                                    เปิด
+                                </a>
+                                <a
+                                    href={attachment.file_url}
+                                    download={attachment.file_name}
+                                    className="btn btn-outline-secondary btn-sm"
+                                    title="ดาวน์โหลดไฟล์"
+                                >
+                                    <i className="fas fa-download me-1"></i>
+                                    ดาวน์โหลด
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
 
 const LessonQuiz = ({
     onComplete,
@@ -1228,6 +1299,9 @@ const LessonQuiz = ({
                     <p className="question-score">
                         คะแนน: {questions[currentQuestion]?.score || 1} คะแนน
                     </p>
+
+                    {/* Display question attachments */}
+                    <QuestionAttachments attachments={questions[currentQuestion]?.attachments} />
                 </div>
 
                 <div className="answers">

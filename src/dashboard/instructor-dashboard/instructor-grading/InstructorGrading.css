@@ -470,6 +470,15 @@
   font-size: 16px;
 }
 
+.avatar-sm {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+}
+
 /* ===== Badge Styling ===== */
 .badge {
   font-size: 0.75rem;

@@ -7,7 +7,9 @@ interface Question {
     question_id: number;
     title: string;
     type: string;
-    score: number;
+    score?: number;
+    max_score?: number;
+    points?: number;
 }
 
 interface Attachment {
@@ -105,12 +107,21 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
     const [quizTitle, setQuizTitle] = useState<string>("");
     const [currentView, setCurrentView] = useState<'subjects' | 'attempts' | 'grading'>('subjects');
     const [instructorFaculty, setInstructorFaculty] = useState<string | null>(null);
+    const [currentAttemptId, setCurrentAttemptId] = useState<number | null>(null);
+    const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
+    const [quickGradingData, setQuickGradingData] = useState<{[attemptId: number]: {scores: {[questionId: number]: number}, feedback: {[questionId: number]: string}, questions: Question[]}}>({});
+    const [quickGradingSaving, setQuickGradingSaving] = useState<{[attemptId: number]: boolean}>({});
 
     const apiURL = import.meta.env.VITE_API_URL;
 
     // ฟังก์ชันหาคำถามจาก question_id
     const findQuestion = (questionId: number): Question | undefined => {
         return questions.find((q) => q.question_id === questionId);
+    };
+
+    // ฟังก์ชันหาคะแนนเต็มของคำถาม
+    const getQuestionMaxScore = (question: Question): number => {
+        return question.score || question.max_score || question.points || 0;
     };
 
 
@@ -129,6 +140,7 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
 
             if (isPopup && selectedAttemptId) {
                 // โหมด Popup: ดึงข้อมูล attempt เฉพาะ
+                setCurrentAttemptId(selectedAttemptId);
                 const response = await axios.get(
                     `${apiURL}/api/special-quiz/attempt/${selectedAttemptId}`,
                     {
@@ -165,6 +177,16 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
                     );
 
                     if (quizResponse.data.success) {
+                        console.log('Full quiz response (popup mode):', quizResponse.data);
+                        console.log('Quiz questions data (popup mode):', quizResponse.data.quiz.questions);
+                        console.log('Quiz questions individual (popup mode):', quizResponse.data.quiz.questions.map((q: any) => ({
+                            question_id: q.question_id,
+                            title: q.title,
+                            score: q.score,
+                            max_score: q.max_score,
+                            points: q.points,
+                            allFields: Object.keys(q)
+                        })));
                         setQuestions(quizResponse.data.quiz.questions);
                         setQuizTitle(quizResponse.data.quiz.title);
 
@@ -185,7 +207,8 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
                         let total = 0;
                         let maxTotal = 0;
                         quizResponse.data.quiz.questions.forEach((q: Question) => {
-                            maxTotal += q.score;
+                            const questionScore = getQuestionMaxScore(q);
+                            maxTotal += questionScore;
                             if (initialScores[q.question_id] !== undefined) {
                                 total += initialScores[q.question_id];
                             }
@@ -210,12 +233,12 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
 
                 // ดึงรายวิชาทั้งหมดที่อาจารย์สอน
                 const subjectsResponse = await axios.get(
-                    `${apiURL}/api/courses/subjects/instructors/cou`,
+                    `${apiURL}/api/courses/subjects/instructors/grading`,
                     config
                 );
 
                 if (subjectsResponse.data.success) {
-                    const allSubjects = subjectsResponse.data.courses || [];
+                    const allSubjects = subjectsResponse.data.subjects || [];
 
                     // ดึงข้อมูลอาจารย์และคณะที่สังกัด
                     const userDataStr = localStorage.getItem('userData');
@@ -356,27 +379,30 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
         const question = findQuestion(questionId);
         if (!question) return;
 
-        const maxScore = question.score;
-        const validScore = Math.min(Math.max(0, score), maxScore);
+        const maxScore = getQuestionMaxScore(question);
+        const inputScore = isNaN(score) ? 0 : score;
+        const validScore = Math.min(Math.max(0, inputScore), maxScore);
 
-        setScores((prev) => ({
-            ...prev,
-            [questionId]: validScore,
-        }));
+        setScores((prev) => {
+            const newScores = {
+                ...prev,
+                [questionId]: validScore,
+            };
+            
+            // คำนวณคะแนนรวมใหม่
+            let newTotalScore = 0;
+            Object.keys(newScores).forEach(qId => {
+                newTotalScore += newScores[parseInt(qId)] || 0;
+            });
+            setTotalScore(newTotalScore);
+            
+            return newScores;
+        });
 
         setIsCorrect((prev) => ({
             ...prev,
             [questionId]: validScore === maxScore,
         }));
-
-        let newTotalScore = 0;
-        for (const qId in scores) {
-            if (parseInt(qId) !== questionId) {
-                newTotalScore += scores[parseInt(qId)] || 0;
-            }
-        }
-        newTotalScore += validScore;
-        setTotalScore(newTotalScore);
     };
 
     // ฟังก์ชันจัดการการเปลี่ยนแปลงความคิดเห็น
@@ -389,7 +415,8 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
 
     // ฟังก์ชันบันทึกการให้คะแนน
     const handleSaveGrading = async () => {
-        if (!selectedAttemptId) {
+        const attemptIdToUse = selectedAttemptId || currentAttemptId;
+        if (!attemptIdToUse) {
             toast.error("ไม่พบ attempt ที่ต้องการให้คะแนน");
             return;
         }
@@ -410,7 +437,7 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
             }));
 
             const response = await axios.post(
-                `${apiURL}/api/special-quiz/attempt/${selectedAttemptId}/grade`,
+                `${apiURL}/api/special-quiz/attempt/${attemptIdToUse}/grade`,
                 { answers: answersToSubmit },
                 {
                     headers: {
@@ -422,9 +449,9 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
             if (response.data.success) {
                 toast.success("บันทึกการให้คะแนนเรียบร้อยแล้ว");
 
-                if (onGraded && selectedAttemptId !== null && selectedAttemptId !== undefined) {
+                if (onGraded && attemptIdToUse !== null && attemptIdToUse !== undefined) {
                     const passed = response.data.attempt.passed;
-                    onGraded(selectedAttemptId, passed);
+                    onGraded(attemptIdToUse, passed);
                 }
 
                 // === Trigger refresh progress for student ===
@@ -456,9 +483,126 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
     };
 
     // ฟังก์ชันเลือกรายวิชา
-    const handleSelectSubject = (subjectId: number) => {
+    const handleSelectSubject = async (subjectId: number) => {
         setSelectedSubjectId(subjectId);
         setCurrentView('attempts');
+        
+        // โหลดข้อมูลคำถามสำหรับตรวจด่วน
+        const selectedSubject = subjectSummaries.find(s => s.subject_id === subjectId);
+        if (selectedSubject) {
+            await loadQuickGradingData(selectedSubject.attempts);
+        }
+    };
+
+    // ฟังก์ชันโหลดข้อมูลสำหรับตรวจด่วน
+    const loadQuickGradingData = async (attempts: Attempt[]) => {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+
+        const gradingData: {[attemptId: number]: any} = {};
+
+        for (const attempt of attempts) {
+            try {
+                // โหลดข้อมูลแบบทดสอบ
+                const quizResponse = await axios.get(
+                    `${apiURL}/api/courses/quizzes/${attempt.quiz_id}`,
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+
+                if (quizResponse.data.success) {
+                    const questions = quizResponse.data.quiz.questions;
+                    const initialScores: {[questionId: number]: number} = {};
+                    const initialFeedback: {[questionId: number]: string} = {};
+
+                    // เตรียมค่าเริ่มต้น
+                    questions.forEach((q: Question) => {
+                        initialScores[q.question_id] = 0;
+                        initialFeedback[q.question_id] = "";
+                    });
+
+                    gradingData[attempt.attempt_id] = {
+                        scores: initialScores,
+                        feedback: initialFeedback,
+                        questions: questions
+                    };
+                }
+            } catch (error) {
+                console.error(`Error loading quiz for attempt ${attempt.attempt_id}:`, error);
+            }
+        }
+
+        setQuickGradingData(gradingData);
+    };
+
+    // ฟังก์ชันเปลี่ยนคะแนนในโหมดด่วน
+    const handleQuickScoreChange = (attemptId: number, questionId: number, score: number) => {
+        const attemptData = quickGradingData[attemptId];
+        if (!attemptData) return;
+
+        const question = attemptData.questions.find((q: Question) => q.question_id === questionId);
+        if (!question) return;
+
+        const maxScore = getQuestionMaxScore(question);
+        const validScore = Math.min(Math.max(0, score || 0), maxScore);
+
+        setQuickGradingData(prev => ({
+            ...prev,
+            [attemptId]: {
+                ...prev[attemptId],
+                scores: {
+                    ...prev[attemptId].scores,
+                    [questionId]: validScore
+                }
+            }
+        }));
+    };
+
+    // ฟังก์ชันบันทึกการตรวจด่วน
+    const handleQuickSave = async (attemptId: number) => {
+        const attemptData = quickGradingData[attemptId];
+        if (!attemptData) return;
+
+        try {
+            setQuickGradingSaving(prev => ({ ...prev, [attemptId]: true }));
+
+            const token = localStorage.getItem("token");
+            if (!token) {
+                toast.error("กรุณาเข้าสู่ระบบ");
+                return;
+            }
+
+            // เตรียมข้อมูลเพื่อส่ง
+            const answersToSubmit = Object.keys(attemptData.scores).map(questionId => ({
+                question_id: parseInt(questionId),
+                score_earned: attemptData.scores[parseInt(questionId)] || 0,
+                is_correct: attemptData.scores[parseInt(questionId)] === getQuestionMaxScore(attemptData.questions.find((q: Question) => q.question_id === parseInt(questionId))!),
+                feedback: attemptData.feedback[parseInt(questionId)] || "",
+            }));
+
+            const response = await axios.post(
+                `${apiURL}/api/special-quiz/attempt/${attemptId}/grade`,
+                { answers: answersToSubmit },
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            if (response.data.success) {
+                toast.success("บันทึกการให้คะแนนเรียบร้อยแล้ว");
+                
+                // รีเฟรชข้อมูล
+                loadData();
+            } else {
+                toast.error(response.data.message || "ไม่สามารถบันทึกการให้คะแนนได้");
+            }
+        } catch (error) {
+            console.error("Error saving quick grading:", error);
+            toast.error("เกิดข้อผิดพลาดในการบันทึกการให้คะแนน");
+        } finally {
+            setQuickGradingSaving(prev => ({ ...prev, [attemptId]: false }));
+        }
     };
 
     // ฟังก์ชันเลือกงานที่จะตรวจ
@@ -467,6 +611,7 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
             setLoading(true);
             const token = localStorage.getItem("token");
 
+            // Set selectedAttemptId so it can be used in grading save
             const response = await axios.get(
                 `${apiURL}/api/special-quiz/attempt/${attemptId}`,
                 {
@@ -478,7 +623,9 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
 
             if (response.data.success) {
                 const attempt: Attempt = response.data.attempt;
-
+                
+                // Set current attempt ID for saving later
+                setCurrentAttemptId(attemptId);
                 setAttemptAnswers(attempt.answers);
                 setStudentInfo({
                     fullname: `${attempt.first_name} ${attempt.last_name}`,
@@ -488,7 +635,7 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
 
                 // ดึงข้อมูลแบบทดสอบ
                 const quizResponse = await axios.get(
-                    `${apiURL}/api/special-quiz/quiz/${attempt.quiz_id}`,
+                    `${apiURL}/api/courses/quizzes/${attempt.quiz_id}`,
                     {
                         headers: {
                             Authorization: `Bearer ${token}`,
@@ -497,6 +644,16 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
                 );
 
                 if (quizResponse.data.success) {
+                    console.log('Full quiz response:', quizResponse.data);
+                    console.log('Quiz questions data:', quizResponse.data.quiz.questions);
+                    console.log('Quiz questions individual:', quizResponse.data.quiz.questions.map((q: any) => ({
+                        question_id: q.question_id,
+                        title: q.title,
+                        score: q.score,
+                        max_score: q.max_score,
+                        points: q.points,
+                        allFields: Object.keys(q)
+                    })));
                     setQuestions(quizResponse.data.quiz.questions);
                     setQuizTitle(quizResponse.data.quiz.title);
 
@@ -517,7 +674,8 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
                     let total = 0;
                     let maxTotal = 0;
                     quizResponse.data.quiz.questions.forEach((q: Question) => {
-                        maxTotal += q.score;
+                        const questionScore = getQuestionMaxScore(q);
+                        maxTotal += questionScore;
                         if (initialScores[q.question_id] !== undefined) {
                             total += initialScores[q.question_id];
                         }
@@ -657,7 +815,7 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
                                 </div>
                             </div>
                             <p className="text-muted mt-2 mb-0">
-                                เกณฑ์ผ่าน: {Math.ceil(totalMaxScore * 0.65)} คะแนน (
+                                เกณฑ์ผ่าน: {totalMaxScore > 0 ? Math.ceil(totalMaxScore * 0.65) : 0} คะแนน (
                                 {totalMaxScore > 0
                                     ? Math.ceil((totalScore / totalMaxScore) * 100)
                                     : 0}
@@ -679,7 +837,7 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
                                     <div className="card-header d-flex justify-content-between align-items-center">
                                         <h5 className="mb-0">คำถามที่ {index + 1}</h5>
                                         <span className="badge bg-primary">
-                                            คะแนนเต็ม: {question.score} คะแนน
+                                            คะแนนเต็ม: {getQuestionMaxScore(question)} คะแนน
                                         </span>
                                     </div>
                                     <div className="card-body">
@@ -747,17 +905,19 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
                                                             type="number"
                                                             className="form-control"
                                                             min="0"
-                                                            max={question.score}
+                                                            max={getQuestionMaxScore(question)}
                                                             value={scores[answer.question_id] || 0}
-                                                            onChange={(e) =>
+                                                            onChange={(e) => {
+                                                                const inputValue = e.target.value;
+                                                                const score = inputValue === '' ? 0 : parseInt(inputValue, 10);
                                                                 handleScoreChange(
                                                                     answer.question_id,
-                                                                    parseInt(e.target.value)
-                                                                )
-                                                            }
+                                                                    score
+                                                                );
+                                                            }}
                                                         />
                                                         <span className="input-group-text">
-                                                            / {question.score}
+                                                            / {getQuestionMaxScore(question)}
                                                         </span>
                                                     </div>
                                                 </div>
@@ -776,7 +936,7 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
                                                                 if (e.target.checked) {
                                                                     handleScoreChange(
                                                                         answer.question_id,
-                                                                        question.score
+                                                                        getQuestionMaxScore(question)
                                                                     );
                                                                 } else {
                                                                     handleScoreChange(answer.question_id, 0);
@@ -875,19 +1035,40 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
         return (
             <div className="grading-container">
                 <div className="grading-content">
-                    <div className="d-flex align-items-center mb-4">
-                        <button
-                            className="btn btn-outline-secondary me-3"
-                            onClick={handleBack}
-                        >
-                            <i className="fas fa-arrow-left me-2"></i>
-                            กลับ
-                        </button>
-                        <div>
-                            <h4 className="mb-0">งานที่รอตรวจ</h4>
-                            <p className="text-muted mb-0">
-                                {selectedSubject?.subject_code} - {selectedSubject?.subject_title}
-                            </p>
+                    <div className="d-flex align-items-center justify-content-between mb-4">
+                        <div className="d-flex align-items-center">
+                            <button
+                                className="btn btn-outline-secondary me-3"
+                                onClick={handleBack}
+                            >
+                                <i className="fas fa-arrow-left me-2"></i>
+                                กลับ
+                            </button>
+                            <div>
+                                <h4 className="mb-0">งานที่รอตรวจ</h4>
+                                <p className="text-muted mb-0">
+                                    {selectedSubject?.subject_code} - {selectedSubject?.subject_title}
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div className="btn-group" role="group">
+                            <button
+                                type="button"
+                                className={`btn ${viewMode === 'card' ? 'btn-primary' : 'btn-outline-primary'}`}
+                                onClick={() => setViewMode('card')}
+                            >
+                                <i className="fas fa-th-large me-2"></i>
+                                แบบการ์ด
+                            </button>
+                            <button
+                                type="button"
+                                className={`btn ${viewMode === 'table' ? 'btn-danger' : 'btn-outline-danger'}`}
+                                onClick={() => setViewMode('table')}
+                            >
+                                <i className="fas fa-table me-2"></i>
+                                ตรวจด่วน
+                            </button>
                         </div>
                     </div>
 
@@ -896,7 +1077,7 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
                             <i className="fas fa-info-circle me-2"></i>
                             ไม่พบงานที่รอตรวจในรายวิชานี้
                         </div>
-                    ) : (
+                    ) : viewMode === 'card' ? (
                         <div className="row">
                             {selectedSubject?.attempts.map((attempt) => (
                                 <div key={attempt.attempt_id} className="col-md-6 col-lg-4 mb-4">
@@ -951,6 +1132,145 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
                                     </div>
                                 </div>
                             ))}
+                        </div>
+                    ) : (
+                        <div className="table-responsive">
+                            <div className="row">
+                                {selectedSubject?.attempts.map((attempt, index) => {
+                                    const attemptData = quickGradingData[attempt.attempt_id];
+                                    if (!attemptData) return null;
+
+                                    const totalScore = Object.values(attemptData.scores).reduce((sum: number, score: number) => sum + score, 0);
+                                    const maxTotalScore = attemptData.questions.reduce((sum: number, q: Question) => sum + getQuestionMaxScore(q), 0);
+
+                                    return (
+                                        <div key={attempt.attempt_id} className="col-12 mb-4">
+                                            <div className="card border-danger">
+                                                <div className="card-header bg-danger text-white">
+                                                    <div className="row align-items-center">
+                                                        <div className="col-md-6">
+                                                            <h6 className="mb-0">
+                                                                #{index + 1} - {attempt.first_name} {attempt.last_name}
+                                                            </h6>
+                                                            <small>{attempt.email}</small>
+                                                        </div>
+                                                        <div className="col-md-3">
+                                                            <small>แบบทดสอบ: {attempt.quiz_title}</small><br />
+                                                            <small>{new Date(attempt.end_time).toLocaleString('th-TH', {
+                                                                month: 'short',
+                                                                day: 'numeric',
+                                                                hour: '2-digit',
+                                                                minute: '2-digit'
+                                                            })}</small>
+                                                        </div>
+                                                        <div className="col-md-3 text-end">
+                                                            <div className="h5 mb-0">
+                                                                คะแนน: {totalScore}/{maxTotalScore}
+                                                            </div>
+                                                            <small>({maxTotalScore > 0 ? Math.round((totalScore/maxTotalScore)*100) : 0}%)</small>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="card-body">
+                                                    <div className="row">
+                                                        {attemptData.questions.map((question: Question, qIndex: number) => {
+                                                            const answer = attempt.answers?.find(a => a.question_id === question.question_id);
+                                                            const currentScore = attemptData.scores[question.question_id] || 0;
+                                                            const maxScore = getQuestionMaxScore(question);
+
+                                                            return (
+                                                                <div key={question.question_id} className="col-md-6 col-lg-4 mb-3">
+                                                                    <div className="border rounded p-3 h-100">
+                                                                        <div className="d-flex justify-content-between align-items-center mb-2">
+                                                                            <strong>คำถามที่ {qIndex + 1}</strong>
+                                                                            <span className="badge bg-primary">{maxScore} คะแนน</span>
+                                                                        </div>
+                                                                        
+                                                                        <div className="mb-2">
+                                                                            <small className="text-muted">คำถาม:</small>
+                                                                            <div className="small fw-bold" style={{fontSize: '0.85rem'}}>
+                                                                                {question.title}
+                                                                            </div>
+                                                                        </div>
+
+                                                                        <div className="mb-2">
+                                                                            <small className="text-muted">คำตอบ:</small>
+                                                                            <div className="small p-2 bg-light rounded" style={{fontSize: '0.8rem', maxHeight: '60px', overflow: 'hidden'}}>
+                                                                                {answer?.text_answer || 'ไม่มีคำตอบ'}
+                                                                            </div>
+                                                                        </div>
+
+                                                                        <div className="d-flex align-items-center gap-2">
+                                                                            <div className="input-group input-group-sm">
+                                                                                <input
+                                                                                    type="number"
+                                                                                    className="form-control form-control-sm"
+                                                                                    min="0"
+                                                                                    max={maxScore}
+                                                                                    value={currentScore}
+                                                                                    onChange={(e) => handleQuickScoreChange(
+                                                                                        attempt.attempt_id,
+                                                                                        question.question_id,
+                                                                                        parseInt(e.target.value) || 0
+                                                                                    )}
+                                                                                    style={{width: '60px'}}
+                                                                                />
+                                                                                <span className="input-group-text">/{maxScore}</span>
+                                                                            </div>
+                                                                            <button
+                                                                                className="btn btn-outline-success btn-sm"
+                                                                                onClick={() => handleQuickScoreChange(
+                                                                                    attempt.attempt_id,
+                                                                                    question.question_id,
+                                                                                    maxScore
+                                                                                )}
+                                                                                title="ให้คะแนนเต็ม"
+                                                                            >
+                                                                                ✓
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                                <div className="card-footer">
+                                                    <div className="d-flex justify-content-between align-items-center">
+                                                        <div>
+                                                            <strong>คะแนนรวม: {totalScore}/{maxTotalScore}</strong>
+                                                            <span className="ms-2 text-muted">
+                                                                ({maxTotalScore > 0 ? Math.round((totalScore/maxTotalScore)*100) : 0}% - 
+                                                                {totalScore >= Math.ceil(maxTotalScore * 0.65) ? 
+                                                                    <span className="text-success"> ผ่าน</span> : 
+                                                                    <span className="text-danger"> ไม่ผ่าน</span>
+                                                                })
+                                                            </span>
+                                                        </div>
+                                                        <button
+                                                            className="btn btn-danger"
+                                                            onClick={() => handleQuickSave(attempt.attempt_id)}
+                                                            disabled={quickGradingSaving[attempt.attempt_id]}
+                                                        >
+                                                            {quickGradingSaving[attempt.attempt_id] ? (
+                                                                <>
+                                                                    <span className="spinner-border spinner-border-sm me-2"></span>
+                                                                    กำลังบันทึก...
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <i className="fas fa-save me-2"></i>
+                                                                    บันทึกคะแนน
+                                                                </>
+                                                            )}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
                         </div>
                     )}
                 </div>

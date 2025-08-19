@@ -1,9 +1,7 @@
 import DashboardBanner from "../../dashboard-common/DashboardBanner"
 import DashboardCounter from "./DashboardCounter"
 import DashboardReviewTable from "./DashboardReviewTable"
-import { Link } from "react-router-dom"
 import DashboardSidebar from "../../dashboard-common/DashboardSidebar"
-import BtnArrow from "../../../svg/BtnArrow"
 
 const DashboardHomeArea = () => {
    return (
@@ -24,7 +22,7 @@ const DashboardHomeArea = () => {
                      </div>
                      <div className="dashboard__content-wrap">
                         <div className="dashboard__content-title">
-                           <h4 className="title">หลักสูตรของฉัน</h4>
+                        <h4 className="title">วิชาของฉัน</h4>
                         </div>
                         <div className="row">
                            <div className="col-12">
@@ -33,9 +31,7 @@ const DashboardHomeArea = () => {
                               </div>
                            </div>
                         </div>
-                        <div className="load-more-btn text-center mt-20">
-                           <Link to="#" className="link-btn">หลักสูตรทั้งหมด <BtnArrow /></Link>
-                        </div>
+               
                      </div>
                   </div>
                </div>

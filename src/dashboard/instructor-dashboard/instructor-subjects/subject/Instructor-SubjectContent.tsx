@@ -1331,7 +1331,7 @@ const InstructorSubjectContent = () => {
                                     {selectedStudent.totalCoursesEnrolled}
                                   </h3>
                                   <p style={{ fontSize: '0.9rem', marginBottom: '0', opacity: '0.9' }}>
-                                    หลักสูตรทั้งหมด
+                                    วิชาทั้งหมด
                                   </p>
                                 </div>
                               </div>

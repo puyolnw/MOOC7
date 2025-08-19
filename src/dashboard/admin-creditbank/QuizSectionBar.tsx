@@ -1668,10 +1668,30 @@ const handleDeleteQuiz = async () => {
           flex: 1;
           overflow-y: auto;
           padding: 0;
+          max-height: calc(100vh - 200px);
         }
 
         .question-form-container {
           padding: 1.5rem;
+        }
+
+        /* Custom scrollbar for modal body */
+        .question-modal-body::-webkit-scrollbar {
+          width: 8px;
+        }
+
+        .question-modal-body::-webkit-scrollbar-track {
+          background: #f1f1f1;
+          border-radius: 4px;
+        }
+
+        .question-modal-body::-webkit-scrollbar-thumb {
+          background: #c1c1c1;
+          border-radius: 4px;
+        }
+
+        .question-modal-body::-webkit-scrollbar-thumb:hover {
+          background: #a8a8a8;
         }
 
         .error-alert {

@@ -12,11 +12,20 @@ interface Choice {
   isCorrect: boolean;
 }
 
+interface QuestionAttachment {
+  id: string;
+  file: File;
+  name: string;
+  size: number;
+  type: string;
+}
+
 interface BaseQuestionData {
   title: string;
   description: string;
   score: number;
   quizzes: string[];
+  attachments?: QuestionAttachment[];
 }
 
 interface ObjectiveQuestionData extends BaseQuestionData {
@@ -84,6 +93,10 @@ const AddQuestions: React.FC<AddQuestionsProps> = ({ onSubmit, onCancel }) => {
   // Form helpers
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [newChoiceText, setNewChoiceText] = useState("");
+  
+  // File attachments
+  const [selectedFiles, setSelectedFiles] = useState<QuestionAttachment[]>([]);
+  const [isUploadingFile ] = useState(false);
 
   // ===== EFFECTS =====
   useEffect(() => {
@@ -321,6 +334,47 @@ const AddQuestions: React.FC<AddQuestionsProps> = ({ onSubmit, onCancel }) => {
     setQuestionData(prev => ({ ...prev, quizzes: updatedQuizzes }));
   };
 
+  // File attachment handlers
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    const newAttachments: QuestionAttachment[] = Array.from(files).map(file => ({
+      id: generateId(),
+      file,
+      name: file.name,
+      size: file.size,
+      type: file.type
+    }));
+
+    setSelectedFiles(prev => [...prev, ...newAttachments]);
+    
+    // Update question data
+    setQuestionData(prev => ({
+      ...prev,
+      attachments: [...(prev.attachments || []), ...newAttachments]
+    }));
+
+    // Reset input
+    e.target.value = '';
+  };
+
+  const handleRemoveFile = (fileId: string) => {
+    setSelectedFiles(prev => prev.filter(file => file.id !== fileId));
+    setQuestionData(prev => ({
+      ...prev,
+      attachments: prev.attachments?.filter(file => file.id !== fileId) || []
+    }));
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
   // Form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -336,27 +390,37 @@ const AddQuestions: React.FC<AddQuestionsProps> = ({ onSubmit, onCancel }) => {
     try {
       const apiUrl = import.meta.env.VITE_API_URL;
       
-      let apiData: any = {
-        title: questionData.title,
-        description: questionData.description,
-        category: questionData.category,
-        type: questionData.type,
-        score: questionData.score,
-        quizzes: questionData.quizzes
-      };
+      // Use FormData for file uploads
+      const formData = new FormData();
+      
+      // Add basic question data
+      formData.append('title', questionData.title);
+      formData.append('description', questionData.description);
+      formData.append('category', questionData.category);
+      formData.append('type', questionData.type);
+      formData.append('score', questionData.score.toString());
+      formData.append('quizzes', JSON.stringify(questionData.quizzes));
 
       if (questionData.category === "objective") {
         const objData = questionData as ObjectiveQuestionData;
-        apiData = {
-          ...apiData,
-          choices: objData.choices.map(choice => ({
-            text: choice.text,
-            isCorrect: choice.isCorrect
-          }))
-        };
+        formData.append('choices', JSON.stringify(objData.choices.map(choice => ({
+          text: choice.text,
+          isCorrect: choice.isCorrect
+        }))));
       }
 
-      const response = await axios.post(`${apiUrl}/api/courses/questions`, apiData);
+      // Add file attachments
+      if (selectedFiles.length > 0) {
+        selectedFiles.forEach((attachment) => {
+          formData.append(`attachments`, attachment.file);
+        });
+      }
+
+      const response = await axios.post(`${apiUrl}/api/courses/questions`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
       
       setApiSuccess("สร้างคำถามสำเร็จ");
       
@@ -368,6 +432,7 @@ const AddQuestions: React.FC<AddQuestionsProps> = ({ onSubmit, onCancel }) => {
       setCurrentStep('category');
       setSelectedCategory(null);
       setErrors({});
+      setSelectedFiles([]);
       
     } catch (error) {
       console.error("Error submitting question:", error);
@@ -494,6 +559,54 @@ const AddQuestions: React.FC<AddQuestionsProps> = ({ onSubmit, onCancel }) => {
             max="100"
           />
           {errors.score && <div className="invalid-feedback">{errors.score}</div>}
+        </div>
+
+        {/* File Attachments Section */}
+        <div className="mb-3">
+          <label htmlFor="attachments" className="form-label">
+            <i className="fas fa-paperclip me-2"></i>
+            ไฟล์แนบคำถาม (ไม่บังคับ)
+          </label>
+          <input
+            type="file"
+            className="form-control"
+            id="attachments"
+            multiple
+            onChange={handleFileUpload}
+            accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif"
+            disabled={isUploadingFile}
+          />
+          <small className="text-muted">
+            อัปโหลดไฟล์เพื่อใช้เป็นโจทย์หรือเอกสารประกอบคำถาม (รองรับ: PDF, Word, Excel, PowerPoint, รูปภาพ)
+          </small>
+
+          {/* Display selected files */}
+          {selectedFiles.length > 0 && (
+            <div className="mt-3">
+              <h6 className="text-primary">ไฟล์ที่แนบ ({selectedFiles.length} ไฟล์)</h6>
+              <div className="list-group">
+                {selectedFiles.map((file) => (
+                  <div key={file.id} className="list-group-item d-flex justify-content-between align-items-center">
+                    <div className="d-flex align-items-center">
+                      <i className="fas fa-file me-2 text-primary"></i>
+                      <div>
+                        <div className="fw-bold">{file.name}</div>
+                        <small className="text-muted">{formatFileSize(file.size)}</small>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      className="btn btn-outline-danger btn-sm"
+                      onClick={() => handleRemoveFile(file.id)}
+                      title="ลบไฟล์"
+                    >
+                      <i className="fas fa-times"></i>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -696,6 +809,24 @@ const AddQuestions: React.FC<AddQuestionsProps> = ({ onSubmit, onCancel }) => {
               <small className="text-muted">
                 ข้อสอบประเภทเติมคำ - ต้องให้อาจารย์ตรวจให้คะแนน
               </small>
+            </div>
+          )}
+
+          {/* Show attached files in preview */}
+          {selectedFiles.length > 0 && (
+            <div className="mt-3 pt-3 border-top">
+              <h6>ไฟล์แนบประกอบคำถาม:</h6>
+              <div className="list-group">
+                {selectedFiles.map((file) => (
+                  <div key={file.id} className="list-group-item d-flex align-items-center">
+                    <i className="fas fa-file me-2 text-primary"></i>
+                    <div>
+                      <div className="fw-bold">{file.name}</div>
+                      <small className="text-muted">{formatFileSize(file.size)}</small>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 

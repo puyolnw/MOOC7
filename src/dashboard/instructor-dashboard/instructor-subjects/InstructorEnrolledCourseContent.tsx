@@ -1,6 +1,6 @@
 "use client"
 import { useEffect, useState } from "react";
-
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
 // Define interfaces for our data structure
@@ -26,6 +26,7 @@ interface CourseDetail {
 
 
 const InstructorEnrolledCourseContent = () => {
+   const navigate = useNavigate();
    const [isLoop, setIsLoop] = useState(false);
    console.log(isLoop)
    const [loading, setLoading] = useState(true);
@@ -59,62 +60,62 @@ const InstructorEnrolledCourseContent = () => {
 
             // Fetch instructor's subjects
             const response = await axios.get(
-               `${apiURL}/api/courses/subjects/instructors/cou`, 
+               `${apiURL}/api/courses/subjects/instructors/courses`, 
                config
             );
 
             if (response.data.success) {
-               console.log("=== INSTRUCTOR COURSES PAGE ===");
-               console.log("API Response:", response.data.courses); // Debug log
-               console.log("Number of courses from API:", response.data.courses.length);
+               console.log("=== INSTRUCTOR SUBJECTS PAGE ===");
+               console.log("API Response:", response.data.subjects); // Debug log
+               console.log("Number of subjects from API:", response.data.subjects.length);
                
                // Transform the API response to match our component's data structure
-               const transformedData: CourseDetail[] = response.data.courses.map((course: any) => {
-                  // Debug log for each course
-                  console.log("Course data:", {
-                     id: course.subject_id,
-                     name: course.subject_name,
-                     cover_id: course.cover_image_file_id,
-                     cover_image: course.cover_image
+               const transformedData: CourseDetail[] = response.data.subjects.map((subject: any) => {
+                  // Debug log for each subject
+                  console.log("Subject data:", {
+                     id: subject.subject_id,
+                     name: subject.subject_name,
+                     cover_id: subject.cover_image_file_id,
+                     cover_image: subject.cover_image
                   });
                   
                   let thumbUrl = "/assets/img/courses/course_thumb01.jpg";
                   
                   // Try to use cover_image_file_id for the API endpoint first
-                  if (course.cover_image_file_id) {
-                     thumbUrl = `${apiURL}/api/courses/image/${course.cover_image_file_id}`;
+                  if (subject.cover_image_file_id) {
+                     thumbUrl = `${apiURL}/api/courses/image/${subject.cover_image_file_id}`;
                      console.log("Using file ID for image URL:", thumbUrl);
                   } 
                   // If no file ID but we have a cover_image URL, use that
-                  else if (course.cover_image) {
+                  else if (subject.cover_image) {
                      // Extract the file ID from Google Drive URL if possible
-                     const match = course.cover_image.match(/\/d\/([^\/]+)/);
+                     const match = subject.cover_image.match(/\/d\/([^\/]+)/);
                      if (match && match[1]) {
                         thumbUrl = `${apiURL}/api/courses/image/${match[1]}`;
                         console.log("Extracted file ID from URL:", match[1]);
                         console.log("Using extracted file ID for image URL:", thumbUrl);
                      } else {
                         // Use the direct URL as fallback
-                        thumbUrl = course.cover_image;
+                        thumbUrl = subject.cover_image;
                         console.log("Using direct cover_image URL:", thumbUrl);
                      }
                   }
                   
                   return {
-                     id: course.subject_id,
-                     subject_id: course.subject_id,
-                     subject_code: course.subject_code,
-                     title: course.subject_name,
-                     tag: course.subject_code || "Course",
+                     id: subject.subject_id,
+                     subject_id: subject.subject_id,
+                     subject_code: subject.subject_code,
+                     title: subject.subject_name,
+                     tag: subject.subject_code || "Subject",
                      thumb: thumbUrl,
                      avatar_thumb: "/assets/img/courses/details_instructors01.jpg",
                      avatar_name: "Instructor",
                      review: "4.5",
                      book: "10",
                      time: "23h",
-                     mortarboard: course.enrollment_count || "0",
-                     enrollment_count: course.enrollment_count || 0,
-                     completion_count: course.completion_count || 0
+                     mortarboard: subject.enrollment_count || "0",
+                     enrollment_count: subject.enrollment_count || 0,
+                     completion_count: subject.completion_count || 0
                   };
                });
 
@@ -132,7 +133,12 @@ const InstructorEnrolledCourseContent = () => {
       };
 
       fetchInstructorCourses();
-   }, []);
+      }, []);
+
+    // ฟังก์ชันสำหรับการคลิกการ์ด
+    const handleCourseClick = (subjectId: number) => {
+       navigate(`/instructor/subject/${subjectId}/overview`);
+    };
 
    return (
       <>
@@ -362,8 +368,12 @@ const InstructorEnrolledCourseContent = () => {
                      ) : (
                      <div className="row">
                      {courseData.map((item) => (
-                        <div key={item.id} className="col-lg-6 col-md-6 col-sm-12 mb-4">
-                        <div className="courses__item courses__item-two shine__animate-item" style={{ textDecoration: 'none', color: 'inherit' }}>
+                     <div key={item.id} className="col-lg-6 col-md-6 col-sm-12 mb-4">
+                     <div 
+                            className="courses__item courses__item-two shine__animate-item" 
+                            style={{ textDecoration: 'none', color: 'inherit', cursor: 'pointer' }}
+                            onClick={() => handleCourseClick(item.subject_id!)}
+                         >
                               <div className="courses__item-thumb courses__item-thumb-two">
                                  <div className="shine__animate-link">
                                  <img 
