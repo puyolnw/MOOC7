@@ -615,6 +615,9 @@ const handleDeleteQuiz = async () => {
       }
 
       // ✅ ปรับ format ข้อมูลให้ตรงกับ API
+      console.log('questionData.choices:', questionData.choices);
+      console.log('questionData.choices type:', typeof questionData.choices);
+      
       const formattedData = {
         title: questionData.title || questionData.question_text,
         description: questionData.description || '',

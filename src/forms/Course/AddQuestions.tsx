@@ -197,6 +197,13 @@ const AddQuestions: React.FC<AddQuestionsProps> = ({ onSubmit, onCancel }) => {
         newErrors.choices = "ต้องมีตัวเลือกอย่างน้อย 2 ตัวเลือก";
         isValid = false;
       }
+      
+      // ตรวจสอบว่าตัวเลือกทุกตัวมีข้อความ
+      const emptyChoices = objData.choices.filter(choice => !choice.text || choice.text.trim() === "");
+      if (emptyChoices.length > 0) {
+        newErrors.choices = "กรุณากรอกข้อความให้ครบทุกตัวเลือก";
+        isValid = false;
+      }
 
       const correctAnswers = objData.choices.filter(c => c.isCorrect);
       
