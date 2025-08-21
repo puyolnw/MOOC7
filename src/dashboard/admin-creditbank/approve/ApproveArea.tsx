@@ -15,10 +15,14 @@ interface PaymentSlip {
   approved: boolean;
   approved_at: string | null;
   approved_by: number | null;
+  rejected_at: string | null;
+  rejected_by: number | null;
+  rejection_reason: string | null;
   subject_title: string;
   user_name: string;
   user_email: string;
   approved_by_name: string | null;
+  rejected_by_name: string | null;
 }
 
 interface PaginationProps {
@@ -191,7 +195,8 @@ const ApproveArea: React.FC = () => {
     if (statusFilter !== 'all') {
       results = results.filter(slip => {
         if (statusFilter === 'approved') return slip.approved;
-        if (statusFilter === 'pending') return !slip.approved;
+        if (statusFilter === 'pending') return !slip.approved && !slip.rejected_at;
+        if (statusFilter === 'rejected') return slip.rejected_at;
         return true;
       });
     }
@@ -276,12 +281,89 @@ const ApproveArea: React.FC = () => {
     }
   };
 
-  const StatusBadge = ({ approved }: { approved: boolean }) => {
+  const handleRejectPayment = async (slipId: number) => {
+    const reason = window.prompt("กรุณาระบุเหตุผลในการปฏิเสธ (ไม่บังคับ):");
+    if (reason !== null) { // User didn't cancel
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) {
+          toast.error("กรุณาเข้าสู่ระบบก่อนใช้งาน");
+          return;
+        }
+
+        // หา subject_id จาก slip ที่ต้องการ reject
+        const slipToReject = paymentSlips.find(slip => slip.id === slipId);
+        if (!slipToReject) {
+          toast.error("ไม่พบข้อมูลการชำระเงินที่ต้องการ");
+          return;
+        }
+
+        const response = await axios.patch(`${apiURL}/api/learn/subject/${slipToReject.subject_id}/reject-payment`, 
+          { reason: reason || 'ไม่ระบุเหตุผล' },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (response.data.success) {
+          // อัปเดตสถานะใน state
+          setPaymentSlips(prev => prev.map(slip => 
+            slip.id === slipId
+              ? { ...slip, approved: false, approved_at: null, rejected_at: new Date().toISOString(), rejected_by: null, rejection_reason: reason || 'ไม่ระบุเหตุผล' }
+              : slip
+          ));
+          setFilteredSlips(prev => prev.map(slip => 
+            slip.id === slipId
+              ? { ...slip, approved: false, approved_at: null, rejected_at: new Date().toISOString(), rejected_by: null, rejection_reason: reason || 'ไม่ระบุเหตุผล' }
+              : slip
+          ));
+          toast.success("ปฏิเสธการชำระเงินสำเร็จ");
+        } else {
+          toast.error(response.data.message || "เกิดข้อผิดพลาดในการปฏิเสธ");
+        }
+      } catch (error: any) {
+        console.error("Error rejecting payment:", error);
+        
+        // จัดการ token หมดอายุ
+        if (error.response?.status === 401) {
+          const errorCode = error.response.data?.code;
+          if (errorCode === 'TOKEN_EXPIRED' || errorCode === 'INVALID_TOKEN') {
+            toast.error("เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่");
+            localStorage.removeItem('token');
+            setTimeout(() => {
+              window.location.href = '/login';
+            }, 2000);
+          } else {
+            toast.error("ไม่พบข้อมูลการเข้าสู่ระบบ กรุณาเข้าสู่ระบบใหม่");
+          }
+        } else {
+          toast.error("เกิดข้อผิดพลาดในการปฏิเสธ");
+        }
+      }
+    }
+  };
+
+  const StatusBadge = ({ approved, rejected_at, rejection_reason }: { approved: boolean; rejected_at?: string | null; rejection_reason?: string | null }) => {
     if (approved) {
       return (
         <span className="badge bg-success-subtle text-success rounded-pill px-3 py-1 small">
           อนุมัติแล้ว
         </span>
+      );
+    } else if (rejected_at) {
+      return (
+        <div>
+          <span className="badge bg-danger-subtle text-danger rounded-pill px-3 py-1 small">
+            ถูกปฏิเสธ
+          </span>
+          {rejection_reason && (
+            <div className="text-muted small mt-1">
+              เหตุผล: {rejection_reason}
+            </div>
+          )}
+        </div>
       );
     } else {
       return (
@@ -440,6 +522,7 @@ const ApproveArea: React.FC = () => {
                           <option value="all">ทุกสถานะ</option>
                           <option value="pending">รออนุมัติ</option>
                           <option value="approved">อนุมัติแล้ว</option>
+                          <option value="rejected">ถูกปฏิเสธ</option>
                         </select>
                       </div>
                       <div className="col-md-6 mb-3">
@@ -548,10 +631,19 @@ const ApproveArea: React.FC = () => {
                                   </div>
                                 </td>
                                 <td className="text-center">
-                                  <StatusBadge approved={slip.approved} />
+                                  <StatusBadge 
+                                    approved={slip.approved} 
+                                    rejected_at={slip.rejected_at}
+                                    rejection_reason={slip.rejection_reason}
+                                  />
                                   {slip.approved && slip.approved_at && (
                                     <div className="text-muted small mt-1">
                                       อนุมัติเมื่อ {new Date(slip.approved_at).toLocaleString('th-TH')}
+                                    </div>
+                                  )}
+                                  {slip.rejected_at && (
+                                    <div className="text-muted small mt-1">
+                                      ถูกปฏิเสธเมื่อ {new Date(slip.rejected_at).toLocaleString('th-TH')}
                                     </div>
                                   )}
                                 </td>
@@ -564,13 +656,31 @@ const ApproveArea: React.FC = () => {
                                     >
                                       <i className={`fas ${showDetails === slip.id ? 'fa-eye-slash' : 'fa-eye'}`}></i>
                                     </button>
-                                    {!slip.approved && (
+                                    {!slip.approved && !slip.rejected_at && (
+                                      <>
+                                        <button
+                                          className="btn btn-outline-success btn-sm"
+                                          onClick={() => handleApprovePayment(slip.id)}
+                                          title="อนุมัติ"
+                                        >
+                                          <i className="fas fa-check"></i>
+                                        </button>
+                                        <button
+                                          className="btn btn-outline-danger btn-sm"
+                                          onClick={() => handleRejectPayment(slip.id)}
+                                          title="ปฏิเสธ"
+                                        >
+                                          <i className="fas fa-times"></i>
+                                        </button>
+                                      </>
+                                    )}
+                                    {slip.rejected_at && (
                                       <button
-                                        className="btn btn-outline-success btn-sm"
-                                        onClick={() => handleApprovePayment(slip.id)}
-                                        title="อนุมัติ"
+                                        className="btn btn-outline-warning btn-sm"
+                                        onClick={() => handleRejectPayment(slip.id)}
+                                        title="แก้ไขเหตุผลการปฏิเสธ"
                                       >
-                                        <i className="fas fa-check"></i>
+                                        <i className="fas fa-edit"></i>
                                       </button>
                                     )}
                                   </div>

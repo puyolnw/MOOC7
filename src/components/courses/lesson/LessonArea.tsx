@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import axios from "axios";
 import LessonFaq from "./LessonFaq";
 import LessonNavTav from "./LessonNavTav";
@@ -127,8 +127,66 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
     const [initialLessonSet, setInitialLessonSet] = useState<boolean>(false);
     // เพิ่ม state สำหรับควบคุม activeAccordion ใน sidebar
     const [sidebarActiveAccordion, setSidebarActiveAccordion] = useState<number | null>(null);
+    // ✅ เพิ่ม state เพื่อป้องกันการเรียก updatePaymentStatus ซ้ำ
+    const [completionStatusSent, setCompletionStatusSent] = useState(false);
+    // ✅ เพิ่ม ref เพื่อป้องกันการ refresh ซ้ำ
+    const refreshInProgressRef = useRef(false);
     // ✅ Task 5: ลบ paymentStatus state
     // const [paymentStatus, setPaymentStatus] = useState<any>(null);
+
+    // ✅ เพิ่ม ref เพื่อเก็บค่า accordion state ที่ต้องการรักษาไว้
+    const intendedAccordionState = useRef<number | null>(null);
+    
+    // ✅ เพิ่ม useEffect เพื่อติดตามการเปลี่ยนแปลงของ sidebarActiveAccordion
+    useEffect(() => {
+        console.log("🎯 LessonArea sidebarActiveAccordion changed to:", sidebarActiveAccordion);
+        
+        // ✅ เพิ่มการตรวจสอบว่า accordion state ถูกเปลี่ยนแปลงโดยใคร
+        const stackTrace = new Error().stack;
+        console.log("🎯 Accordion state change stack trace:", stackTrace);
+        
+        // ✅ ถ้า accordion state ถูกเปลี่ยนแปลงโดยไม่ได้ตั้งใจ ให้คืนค่ากลับมา
+        if (intendedAccordionState.current !== null && intendedAccordionState.current !== sidebarActiveAccordion) {
+            console.log("⚠️ Accordion state was unexpectedly changed, restoring to intended state:", intendedAccordionState.current);
+            // ✅ ใช้ setTimeout เพื่อป้องกัน infinite loop
+            setTimeout(() => {
+                setSidebarActiveAccordion(intendedAccordionState.current);
+            }, 0);
+        }
+        
+        // ✅ เพิ่มการอัปเดต intendedAccordionState เมื่อ sidebarActiveAccordion เปลี่ยน
+        if (sidebarActiveAccordion !== null && intendedAccordionState.current !== sidebarActiveAccordion) {
+            console.log("🎯 Updating intendedAccordionState to match current sidebarActiveAccordion:", sidebarActiveAccordion);
+            intendedAccordionState.current = sidebarActiveAccordion;
+        }
+    }, [sidebarActiveAccordion]);
+
+    // ✅ เพิ่ม useEffect เพื่อติดตามการเปลี่ยนแปลงของ lessonData และป้องกันการ reset accordion
+    useEffect(() => {
+        if (lessonData.length > 0 && intendedAccordionState.current !== null) {
+            console.log("🎯 LessonArea lessonData changed, preserving accordion state:", intendedAccordionState.current);
+            
+            // ✅ เพิ่มการตรวจสอบว่า lessonData เปลี่ยนจริงหรือไม่ (ไม่ใช่แค่ re-render)
+            const currentAccordionState = sidebarActiveAccordion;
+            
+            // ✅ รักษา accordion state ไว้เมื่อ lessonData เปลี่ยน
+            if (sidebarActiveAccordion !== intendedAccordionState.current) {
+                console.log("🎯 Restoring accordion state after lessonData change:", intendedAccordionState.current);
+                // ✅ ใช้ setTimeout เพื่อป้องกัน infinite loop
+                setTimeout(() => {
+                    setSidebarActiveAccordion(intendedAccordionState.current);
+                }, 0);
+            }
+            
+            // ✅ เพิ่มการตรวจสอบว่า accordion state ถูกเปลี่ยนแปลงโดยไม่ได้ตั้งใจหรือไม่
+            setTimeout(() => {
+                if (sidebarActiveAccordion !== intendedAccordionState.current) {
+                    console.log("⚠️ Accordion state was unexpectedly changed after lessonData update, restoring...");
+                    setSidebarActiveAccordion(intendedAccordionState.current);
+                }
+            }, 100);
+        }
+    }, [lessonData]); // ✅ ลบ dependency ที่ไม่จำเป็นออกเพื่อป้องกัน infinite loop
 
     // ฟังก์ชันสกัด YouTube ID จาก URL (ใช้ useCallback เพื่อป้องกัน re-creation)
     const extractYoutubeId = useCallback((url?: string): string | null => {
@@ -196,22 +254,25 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
                                     // เพิ่มแบบทดสอบ Sub Lesson (ถ้ามี)
                                     if (subLesson.quiz) {
                                         let quizStatus: "passed" | "failed" | "awaiting_review" = "failed";
+                                        let isCompleted = false;
+                                        
                                         if (subLesson.quiz.progress?.passed) {
                                             quizStatus = "passed";
+                                            isCompleted = true;
+                                        } else if (subLesson.quiz.progress?.awaiting_review) {
+                                            quizStatus = "awaiting_review";
+                                            isCompleted = true; // ✅ awaiting_review ถือว่าเสร็จแล้ว
                                         } else if (subLesson.quiz.progress?.completed && !subLesson.quiz.progress?.passed) {
                                             quizStatus = "failed";
-                                        } else if (subLesson.quiz.progress?.awaiting_review || (subLesson.quiz.type === "special_fill_in_blank" && subLesson.quiz.progress?.completed && !subLesson.quiz.progress?.passed)) {
-                                            quizStatus = "awaiting_review";
+                                            isCompleted = true; // ✅ completed แม้จะไม่ผ่านก็ถือว่าเสร็จแล้ว
                                         }
+                                        
                                         sectionItems.push({
                                             id: subIndex * 2 + 1,
                                             lesson_id: subLesson.lesson_id,
                                             title: `${lessonIndex + 1}.${subIndex + 1}.2 แบบทดสอบท้ายบท`,
-                                            lock: !subLesson.progress?.video_completed, // ล็อคถ้า video ยังไม่เสร็จ
-                                            completed:
-                                                subLesson.quiz.progress?.passed ||
-                                                subLesson.quiz.progress?.awaiting_review ||
-                                                false,
+                                            lock: !subLesson.progress?.video_completed,
+                                            completed: isCompleted, // ✅ ใช้ isCompleted แทนการคำนวณซับซ้อน
                                             type: "quiz",
                                             quizType: subLesson.quiz.type,
                                             duration: subLesson.quiz.progress?.passed
@@ -229,22 +290,25 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
                             // เพิ่ม Big Lesson Quiz (ถ้ามี)
                             if (lesson.quiz) {
                                 let quizStatus: "passed" | "failed" | "awaiting_review" = "failed";
+                                let isCompleted = false;
+                                
                                 if (lesson.quiz.progress?.passed) {
                                     quizStatus = "passed";
+                                    isCompleted = true;
+                                } else if (lesson.quiz.progress?.awaiting_review) {
+                                    quizStatus = "awaiting_review";
+                                    isCompleted = true; // ✅ awaiting_review ถือว่าเสร็จแล้ว
                                 } else if (lesson.quiz.progress?.completed && !lesson.quiz.progress?.passed) {
                                     quizStatus = "failed";
-                                } else if (lesson.quiz.progress?.awaiting_review || (lesson.quiz.type === "special_fill_in_blank" && lesson.quiz.progress?.completed && !lesson.quiz.progress?.passed)) {
-                                    quizStatus = "awaiting_review";
+                                    isCompleted = true; // ✅ completed แม้จะไม่ผ่านก็ถือว่าเสร็จแล้ว
                                 }
+                                
                                 sectionItems.push({
                                     id: sectionItems.length,
                                     lesson_id: lesson.lesson_id,
                                     title: `${lessonIndex + 1}.X แบบทดสอบท้ายบทใหญ่`,
                                     lock: !sectionItems.every(item => item.completed), // ล็อคถ้ายังมี item ที่ไม่เสร็จ
-                                    completed:
-                                        lesson.quiz.progress?.passed ||
-                                        lesson.quiz.progress?.awaiting_review ||
-                                        false,
+                                    completed: isCompleted, // ✅ ใช้ isCompleted แทนการคำนวณซับซ้อน
                                     type: "quiz",
                                     quizType: lesson.quiz.type,
                                     duration: lesson.quiz.progress?.passed
@@ -292,22 +356,25 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
 
                             if (lesson.quiz) {
                                 let quizStatus: "passed" | "failed" | "awaiting_review" = "failed";
+                                let isCompleted = false;
+                                
                                 if (lesson.quiz.progress?.passed) {
                                     quizStatus = "passed";
+                                    isCompleted = true;
+                                } else if (lesson.quiz.progress?.awaiting_review) {
+                                    quizStatus = "awaiting_review";
+                                    isCompleted = true; // ✅ awaiting_review ถือว่าเสร็จแล้ว
                                 } else if (lesson.quiz.progress?.completed && !lesson.quiz.progress?.passed) {
                                     quizStatus = "failed";
-                                } else if (lesson.quiz.progress?.awaiting_review || (lesson.quiz.type === "special_fill_in_blank" && lesson.quiz.progress?.completed && !lesson.quiz.progress?.passed)) {
-                                    quizStatus = "awaiting_review";
+                                    isCompleted = true; // ✅ completed แม้จะไม่ผ่านก็ถือว่าเสร็จแล้ว
                                 }
+                                
                                 sectionItems.push({
                                     id: 1,
                                     lesson_id: lesson.lesson_id,
                                     title: `${lessonIndex + 1}.2 แบบทดสอบท้ายบท`,
-                                    lock: !lesson.progress?.video_completed, // ล็อคถ้า video ยังไม่เสร็จ
-                                    completed:
-                                        lesson.quiz.progress?.passed ||
-                                        lesson.quiz.progress?.awaiting_review ||
-                                        false,
+                                    lock: !lesson.progress?.video_completed,
+                                    completed: isCompleted, // ✅ ใช้ isCompleted แทนการคำนวณซับซ้อน
                                     type: "quiz",
                                     quizType: lesson.quiz.type,
                                     duration: lesson.quiz.progress?.passed
@@ -643,6 +710,8 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
             setCurrentQuizData(null);
             // อัปเดต sidebarActiveAccordion ให้ตรงกับแบบทดสอบก่อนเรียนใหญ่
             setSidebarActiveAccordion(-1000);
+            intendedAccordionState.current = -1000;
+            console.log("🎯 Set intendedAccordionState to -1000 for big pre-test");
         } else if (bigPreTest && hasLeftBigPreTest) {
             console.log("🎯 ข้าม Big Pre-test เพราะได้ออกจากแล้ว - ไปบทเรียนแรกแทน");
             // ข้าม Big Pre-test และไปบทเรียนแรกแทน
@@ -699,8 +768,10 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
                         }
                         
                         // อัปเดต sidebarActiveAccordion ให้ตรงกับ section ที่เลือก
-                        setSidebarActiveAccordion(section.id);
-                        
+                        // setSidebarActiveAccordion(section.id); // ✅ ลบการเปลี่ยน accordion state เพื่อป้องกันการปิด
+                        intendedAccordionState.current = section.id;
+                        console.log("🎯 Setting intendedAccordionState to:", section.id, "for video lesson:", item.title);
+                        console.log("🎥 ไปบทเรียนถัดไป (video):", item.title);
                         foundLesson = true;
                         break;
                     }
@@ -733,6 +804,8 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
                     setCurrentQuizData(null);
                     // อัปเดต sidebarActiveAccordion ให้ตรงกับแบบทดสอบหลังเรียน
                     setSidebarActiveAccordion(-2000);
+                    intendedAccordionState.current = -2000;
+                    foundLesson = true;
                 } else if (lessonData.length > 0 && lessonData[0].items.length > 0) {
                     // Fallback: ใช้บทเรียนแรก
                     console.log("🎯 Fallback - ใช้บทเรียนแรก");
@@ -770,7 +843,8 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
                     }
                     
                     // อัปเดต sidebarActiveAccordion ให้ตรงกับ section แรก
-                    setSidebarActiveAccordion(firstSection.id);
+                        // setSidebarActiveAccordion(firstSection.id); // ✅ ลบการเปลี่ยน accordion state เพื่อป้องกันการปิด
+                        intendedAccordionState.current = firstSection.id;
                 }
             }
         }
@@ -795,13 +869,22 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
                 setCurrentQuizData(null);
                 // ✅ ไม่ต้อง reset YouTube ID ที่นี่
                 setSidebarActiveAccordion(null);
+                intendedAccordionState.current = null;
                 // ✅ Reset progress และ status states
                 setProgress(0);
+                // ✅ Reset refresh flag เมื่อเปลี่ยนวิชา
+                refreshInProgressRef.current = false;
+                
+                // ✅ Reset completion status flag เมื่อเปลี่ยนวิชา
+                setCompletionStatusSent(false);
                 
                 // ✅ ล้าง flag เมื่อเปลี่ยนวิชา
                 localStorage.removeItem('hasLeftBigPreTest');
                 
                 console.log("🔄 Reset states เสร็จสิ้น");
+                
+                // ✅ เพิ่มการตรวจสอบว่า intendedAccordionState ถูกตั้งค่าหรือไม่
+                console.log("🔄 intendedAccordionState after reset:", intendedAccordionState.current);
                 
                 // โหลดข้อมูลใหม่
                 await Promise.all([
@@ -836,8 +919,10 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
             );
 
             if (response.data.success) {
-                const { progressPercentage } = response.data;
-                setProgress(progressPercentage || 0);
+                const { progress_percentage } = response.data.progress;
+                // ✅ ใช้ progress จาก backend แทนการคำนวณเอง
+                setProgress(progress_percentage || 0);
+                console.log(`📊 Subject progress from backend: ${progress_percentage}%`);
             }
         } catch (error) {
             console.error("Error fetching subject progress:", error);
@@ -865,6 +950,48 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
             });
         }
     }, [currentSubjectId]);
+
+    // ✅ แก้ไข Progress Calculation useEffect เพื่อใช้ progress จาก backend แทน
+    useEffect(() => {
+        if (lessonData.length > 0) {
+            // ✅ ใช้ progress จาก backend แทนการคำนวณเอง
+            // Progress จะถูกคำนวณโดย updateSubjectProgress และ updateCourseProgress ใน backend
+            // และส่งกลับมาใน response ของ video progress และ quiz submission
+            
+            console.log("🎯 Using progress from backend - no local calculation needed");
+        }
+    }, [lessonData]);
+
+    // ✅ ลบ Progress Calculation useEffect เดิมที่คำนวณเอง
+    // useEffect(() => {
+    //     if (lessonData.length > 0) {
+    //         let totalItems = 0;
+    //         let completedItems = 0;
+
+    //         lessonData.forEach(section => {
+    //             section.items.forEach(item => {
+    //                 totalItems++;
+    //                 if (item.completed) {
+    //                     completedItems++;
+    //                 }
+    //             });
+    //         });
+
+    //         const newProgress = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
+            
+    //         // ✅ เพิ่มการตรวจสอบว่า progress เปลี่ยนจริงหรือไม่
+    //         if (Math.abs(newProgress - progress) > 0.1) {
+    //             console.log("🎯 Progress calculation:", { completedItems, totalItems, newProgress, currentProgress: progress });
+                
+    //             // ✅ ใช้ setTimeout เพื่อป้องกันการกระพริบ
+    //             const timeoutId = setTimeout(() => {
+    //                 setProgress(newProgress);
+    //             }, 100);
+                
+    //             return () => clearTimeout(timeoutId);
+    //         }
+    //     }
+    // }, [lessonData, progress]);
 
     // ปรับสูตร progress bar ให้นับ pre/post test และทั้ง video/quiz
     useEffect(() => {
@@ -896,18 +1023,22 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
         
         const newProgress = calculatedProgress + lessonProgress;
         
-        // ป้องกันการ update progress ที่ไม่จำเป็น
+        // ✅ ป้องกันการ update progress ที่ไม่จำเป็น และป้องกันการกระพริบ
         if (Math.abs(newProgress - progress) > 0.1) {
             console.log("📊 Progress calculation:", {
                 bigPreTest: bigPreTest?.completed ? 10 : 0,
                 postTest: postTest?.completed ? 10 : 0,
                 lessonProgress: `${completedItems}/${totalItems} = ${lessonProgress.toFixed(1)}%`,
-                totalProgress: newProgress.toFixed(1) + "%"
+                totalProgress: newProgress.toFixed(1) + "%",
+                previousProgress: progress.toFixed(1) + "%"
             });
             
+            // ✅ ใช้ setTimeout เพื่อป้องกันการกระพริบ
+            setTimeout(() => {
             setProgress(newProgress);
+            }, 50);
         }
-    }, [lessonData, subjectQuizzes, progress]);
+    }, [lessonData, subjectQuizzes]); // ✅ ลบ progress ออกจาก dependency array เพื่อป้องกัน infinite loop
 
     // ตั้งค่าบทเรียนแรกเมื่อข้อมูลพร้อม
     useEffect(() => {
@@ -922,7 +1053,7 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
             // ✅ เพิ่มการป้องกันไม่ให้ setInitialLesson ถูกเรียกซ้ำ
             // เมื่ออยู่ในระหว่างการเปลี่ยนบทเรียน
             if (currentLessonId && currentLessonId.includes("-")) {
-                console.log("🎯 ป้องกันการเรียก setInitialLesson ซ้ำเมื่ออยู่ในระหว่างการเปลี่ยนบทเรียน (useEffect 1)");
+                console.log("🎯 ป้องกันการเรียก setInitialLesson ซ้ำเมื่ออยู่ในระหว่างการเปลี่ยนบทเรียน");
                 return;
             }
             
@@ -1064,6 +1195,113 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
         }
     }, [loading, lessonData, subjectQuizzes, initialLessonSet]);
 
+    // ✅ เพิ่มฟังก์ชันสำหรับอัปเดตสถานะการเรียนจบอัตโนมัติ
+    const updatePaymentStatus = useCallback(async () => {
+        if (!currentSubjectId || completionStatusSent) return;
+
+        try {
+            // ตรวจสอบว่าเรียนจบแล้วหรือไม่
+            if (progress >= 100) {
+                // อัปเดตสถานะใน enrollments
+                await axios.post(
+                    `${API_URL}/api/learn/subject/${currentSubjectId}/update-completion`,
+                    {},
+                    {
+                        headers: {
+                            Authorization: `Bearer ${localStorage.getItem("token")}`,
+                        },
+                    }
+                );
+                
+                console.log("✅ อัปเดตสถานะการเรียนจบสำเร็จ");
+                setCompletionStatusSent(true); // ✅ ตั้งค่า flag เพื่อป้องกันการเรียกซ้ำ
+            }
+        } catch (error) {
+            console.error("Error updating payment status:", error);
+        }
+    }, [currentSubjectId, progress, API_URL, completionStatusSent]);
+
+    // ✅ เพิ่มฟังก์ชันสำหรับตรวจสอบและอัปเดต quiz state
+    const updateQuizState = useCallback(async (quizId: number) => {
+        if (!quizId) return;
+        
+        try {
+            console.log("🔄 Updating quiz state for quizId:", quizId);
+            
+            // เรียก API เพื่อดึงข้อมูล quiz state ล่าสุด
+            const response = await axios.get(
+                `${API_URL}/api/learn/quiz/${quizId}/progress`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem("token")}`,
+                    },
+                }
+            );
+            
+            if (response.data.success) {
+                const quizProgress = response.data.progress;
+                console.log("🔄 Quiz progress from API:", quizProgress);
+                
+                // อัปเดต lessonData ด้วยข้อมูลล่าสุด
+                setLessonData((prevData) => {
+                    return prevData.map((section) => {
+                        const updatedItems = section.items.map((item) => {
+                            if (item.quiz_id === quizId) {
+                                const updatedItem = {
+                                    ...item,
+                                    completed: quizProgress.completed || quizProgress.passed || quizProgress.awaiting_review,
+                                    status: (quizProgress.awaiting_review ? "awaiting_review" : 
+                                           quizProgress.passed ? "passed" : 
+                                           quizProgress.completed ? "failed" : "failed") as "passed" | "failed" | "awaiting_review"
+                                };
+                                console.log("🔄 Updated item:", updatedItem);
+                                return updatedItem;
+                            }
+                            return item;
+                        });
+                        
+                        return {
+                            ...section,
+                            items: updatedItems
+                        };
+                    });
+                });
+            }
+        } catch (error) {
+            console.error("Error updating quiz state:", error);
+        }
+    }, [API_URL]);
+
+    // ✅ เพิ่ม useEffect เพื่อเรียกใช้ฟังก์ชัน
+    useEffect(() => {
+        if (progress >= 100 && !completionStatusSent) {
+            updatePaymentStatus();
+        }
+    }, [progress, updatePaymentStatus, completionStatusSent]);
+
+    // ✅ ลบ useEffect ที่ซ้ำซ้อนและทำให้เกิด infinite loop
+    // useEffect(() => {
+    //     console.log("🎯 LessonArea sidebarActiveAccordion changed to:", sidebarActiveAccordion);
+    //     
+    //     // ✅ เพิ่มการตรวจสอบว่า accordion state ถูกเปลี่ยนแปลงโดยใคร
+    //     const stackTrace = new Error().stack;
+    //     console.log("🎯 Accordion state change stack trace:", stackTrace);
+    // }, [sidebarActiveAccordion]);
+
+    // ✅ เพิ่ม useEffect หลักเพื่อป้องกัน accordion ปิดตลอดเวลา
+    // useEffect(() => {
+    //     // ถ้ามี intendedAccordionState และไม่ใช่ null ให้รักษาไว้เสมอ
+    //     if (intendedAccordionState.current !== null) {
+    //         console.log("🎯 LessonArea continuously protecting accordion state:", intendedAccordionState.current);
+    //         
+    //         // ตรวจสอบว่า accordion state ตรงกับที่ต้องการหรือไม่
+    //         if (sidebarActiveAccordion !== intendedAccordionState.current) {
+    //             console.log("🎯 Accordion state mismatch detected, restoring...");
+    //             setSidebarActiveAccordion(intendedAccordionState.current);
+    //         }
+    //     }
+    // }, [sidebarActiveAccordion]); // ✅ เพิ่ม dependency array เพื่อป้องกัน infinite loop
+
     // อัปเดตสถานะการเรียนจบของแต่ละบทเรียน
     const updateLessonCompletionStatus = async (data: SectionData[]) => {
         try {
@@ -1148,6 +1386,10 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
     // ฟังก์ชันเมื่อบทเรียนเสร็จสิ้น
     const handleLessonComplete = async () => {
         const [sectionId, itemId] = currentLessonId.split("-").map(Number);
+        
+        console.log("🎯 handleLessonComplete called:", { sectionId, itemId, currentLessonId });
+        console.log("🎯 Current lesson data:", currentLessonData);
+        console.log("🎯 Current view:", currentView);
     
         // อัปเดต state ท้องถิ่นก่อน (optimistic update)
         setLessonData((prevLessonData) => {
@@ -1196,14 +1438,34 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
 
         // รอให้ state update เสร็จแล้วค่อย refresh ข้อมูลจาก API
         try {
-            await fetchSubjectProgress();
+            // ✅ เพิ่มการป้องกันการ refresh ซ้ำโดยใช้ ref
+            if (!refreshInProgressRef.current) {
+                refreshInProgressRef.current = true;
+                
+                console.log("🔄 Starting lesson refresh after completion...");
+                
+                // ✅ อัปเดต quiz state ถ้าเป็น quiz
+                if (currentView === "quiz" && currentLessonData?.quiz_id) {
+                    console.log("🔄 Updating quiz state after completion:", currentLessonData.quiz_id);
+                    await updateQuizState(currentLessonData.quiz_id);
+                }
             
             // Refresh ข้อมูลแบบทดสอบและบทเรียนโดยไม่ reset sidebar
             await refreshLessonDataWithoutReset();
+                
+                // Reset flag หลังจากเสร็จสิ้น
+                setTimeout(() => {
+                    refreshInProgressRef.current = false;
+                }, 1000);
             
             console.log("✅ Lesson completed successfully - staying on current lesson");
+            } else {
+                console.log("⚠️ Lesson refresh already in progress, skipping...");
+            }
         } catch (error) {
             console.error("Error refreshing progress:", error);
+            // Reset flag ในกรณีที่เกิด error
+            refreshInProgressRef.current = false;
         }
     };
 
@@ -1214,6 +1476,8 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
         updatedData: SectionData[]
     ) => {
         console.log("🔍 Finding next lesson:", { currentSectionId, currentItemId, updatedData });
+        console.log("🔍 Current lesson data:", currentLessonData);
+        console.log("🔍 Current view:", currentView);
         
         let foundNext = false;
 
@@ -1255,7 +1519,6 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
                                 console.log("🎥 ตั้งค่า YouTube ID สำหรับวิดีโอ:", videoId);
                             } else {
                                 console.log("⚠️ ไม่สามารถสกัด YouTube ID จาก URL:", item.video_url);
-                                setYoutubeId("");
                             }
                         } else if (item.type === "quiz") {
                             setYoutubeId(""); // Clear YouTube ID สำหรับ quiz
@@ -1268,8 +1531,9 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
                         
                         // ✅ อัปเดต sidebarActiveAccordion ให้ตรงกับ section ที่เลือก
                         // และป้องกันการกลับไป Big Pre-test อีก
-                        setSidebarActiveAccordion(section.id);
-                        
+                        intendedAccordionState.current = section.id;
+                        console.log("🎯 Setting sidebarActiveAccordion to:", section.id, "for video lesson:", item.title);
+                        console.log("🎥 ไปบทเรียนถัดไป (video):", item.title);
                         foundNext = true;
                         break;
                     }
@@ -1300,6 +1564,7 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
                     });
                     setCurrentQuizData(null);
                     setSidebarActiveAccordion(-2000);
+                    intendedAccordionState.current = -2000;
                     foundNext = true;
                 }
             }
@@ -1311,15 +1576,378 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
         const currentSection = updatedData.find((s) => s.id === currentSectionId);
         const currentItem = currentSection?.items[currentItemId];
         
+        console.log("🔍 Current section and item:", { currentSection, currentItem, currentSectionId, currentItemId });
+        
         if (currentItem && currentItem.type === "video") {
             // ✅ ถ้าบทเรียนปัจจุบันเป็น video ให้ตรวจสอบว่ามีแบบทดสอบหรือไม่
             if (currentItem.quiz_id) {
                 console.log("🎯 บทเรียนปัจจุบันมีแบบทดสอบ - ไปทำแบบทดสอบก่อน");
+                
+                // ✅ อัปเดต currentLessonData ด้วย quiz_id ที่ถูกต้อง
+                setCurrentLessonData({
+                    ...currentItem,
+                    quiz_id: currentItem.quiz_id,
+                    big_lesson_id: currentSection.id,
+                });
+                
                 setCurrentQuizDataFromLesson(currentItem, currentSection);
                 setCurrentView("quiz");
                 setYoutubeId(""); // Clear YouTube ID สำหรับ quiz
                 return true;
             }
+        }
+        
+        // ✅ ถ้าเป็นแบบทดสอบท้ายบท ให้ไปบทเรียนถัดไป (section ถัดไป)
+        if (currentItem && currentItem.type === "quiz") {
+            console.log("🎯 บทเรียนปัจจุบันเป็นแบบทดสอบท้ายบท - ไปบทเรียนถัดไป");
+            
+            // ✅ ตรวจสอบว่าเป็น Big Lesson Quiz หรือไม่
+            if (currentItem.title.includes("แบบทดสอบท้ายบทใหญ่")) {
+                console.log("🎯 เป็น Big Lesson Quiz - ไป post-test หรือจบหลักสูตร");
+                
+                // ตรวจสอบว่ามีแบบทดสอบหลังเรียนหรือไม่
+                const postTest = subjectQuizzes.find(q => q.type === "post_test");
+                if (postTest && !postTest.locked) {
+                    console.log("✅ Found post-test as next content:", postTest.title);
+                    
+                    setCurrentLessonId(`-2000-${postTest.quiz_id}`);
+                    setCurrentLesson(postTest.title);
+                    setCurrentView("quiz");
+                    setYoutubeId(""); // Reset YouTube ID สำหรับแบบทดสอบ
+                    
+                    setCurrentLessonData({
+                        id: postTest.quiz_id,
+                        lesson_id: 0,
+                        title: postTest.title,
+                        lock: false,
+                        completed: postTest.completed || false,
+                        type: "quiz",
+                        quizType: "special",
+                        duration: postTest.completed ? "100%" : "0%",
+                        quiz_id: postTest.quiz_id,
+                        status: postTest.status || "not_started"
+                    });
+                    setCurrentQuizData(null);
+                    
+                    // อัปเดต sidebarActiveAccordion ให้ตรงกับแบบทดสอบหลังเรียน
+                    setSidebarActiveAccordion(-2000);
+                    
+                    foundNext = true;
+                    return foundNext;
+                } else {
+                    console.log("🎉 Course completed! No more lessons or quizzes available.");
+                    alert("ยินดีด้วย! คุณได้เรียนจบหลักสูตรนี้แล้ว 🎉");
+                    return true;
+                }
+            }
+            
+            // ✅ ตรวจสอบว่าเป็น Sub Lesson Quiz (1.1.2) หรือไม่
+            if (currentItem.title.includes("แบบทดสอบท้ายบท") && !currentItem.title.includes("ใหญ่")) {
+                console.log("🎯 เป็น Sub Lesson Quiz - ไป Big Lesson Quiz (1.X)");
+                
+                // หา Big Lesson Quiz ใน section เดียวกัน
+                const bigLessonQuiz = currentSection.items.find(item => 
+                    item.title.includes("แบบทดสอบท้ายบทใหญ่")
+                );
+                
+                if (bigLessonQuiz && !bigLessonQuiz.lock) {
+                    console.log("✅ Found Big Lesson Quiz:", bigLessonQuiz.title);
+                    
+                    setCurrentLessonId(`${currentSectionId}-${bigLessonQuiz.id}`);
+                    setCurrentLesson(bigLessonQuiz.title);
+                    
+                    // ✅ อัปเดต currentLessonData ด้วย quiz_id ที่ถูกต้อง
+                    setCurrentLessonData({
+                        ...bigLessonQuiz,
+                        quiz_id: bigLessonQuiz.quiz_id,
+                        big_lesson_id: currentSection.id,
+                    });
+                    
+                    setCurrentQuizDataFromLesson(bigLessonQuiz, currentSection);
+                    setCurrentView("quiz");
+                    setYoutubeId(""); // Clear YouTube ID สำหรับ quiz
+                    
+                    // อัปเดต sidebarActiveAccordion ให้ตรงกับ section เดียวกัน
+                    intendedAccordionState.current = currentSectionId;
+                    
+                    foundNext = true;
+                    return foundNext;
+                }
+            }
+            
+            // ✅ ตรวจสอบว่าเป็น Big Lesson Quiz (1.X) หรือไม่
+            if (currentItem.title.includes("แบบทดสอบท้ายบทใหญ่")) {
+                console.log("🎯 เป็น Big Lesson Quiz - ไปบทเรียนถัดไป (section ถัดไป)");
+                
+                // ✅ แก้ไข: หา section ถัดไปในลำดับที่ถูกต้อง
+                const currentSectionIndex = updatedData.findIndex(s => s.id === currentSectionId);
+                console.log("🔍 Current section index:", currentSectionIndex, "Total sections:", updatedData.length);
+                
+                if (currentSectionIndex !== -1 && currentSectionIndex + 1 < updatedData.length) {
+                    // หา section ถัดไปในลำดับ
+                    const nextSection = updatedData[currentSectionIndex + 1];
+                    console.log("✅ Found next section in sequence:", nextSection.id, nextSection.title);
+                    
+                    // ค้นหา item แรกใน section ถัดไป
+                    for (let i = 0; i < nextSection.items.length; i++) {
+                        const item = nextSection.items[i];
+                        console.log(`🔍 Checking next section ${nextSection.id}, item ${i}:`, item.title, "Lock:", item.lock, "Complete:", item.completed);
+                        
+                        if (!item.lock) {
+                            if (item.type === "video" && item.video_url) {
+                                const videoId = extractYoutubeId(item.video_url);
+                                if (videoId) {
+                                    setCurrentLessonId(`${nextSection.id}-${i}`);
+                                    setCurrentLesson(item.title);
+                                    setCurrentLessonData(item);
+                                    setCurrentView("video");
+                                    setYoutubeId(videoId);
+                                    
+                                    // อัปเดต sidebarActiveAccordion ให้ตรงกับ section ที่เลือก
+                                    intendedAccordionState.current = nextSection.id;
+                                    console.log("🎯 Setting sidebarActiveAccordion to:", nextSection.id, "for next video lesson:", item.title);
+                                    console.log("🎥 Going to next lesson (video):", item.title);
+                                    return true;
+                                }
+                            } else if (item.type === "quiz") {
+                                setCurrentLessonId(`${nextSection.id}-${i}`);
+                                setCurrentLesson(item.title);
+                                
+                                // ✅ อัปเดต currentLessonData ด้วย quiz_id ที่ถูกต้อง
+                                setCurrentLessonData({
+                                    ...item,
+                                    quiz_id: item.quiz_id,
+                                    big_lesson_id: nextSection.id,
+                                });
+                                
+                                setCurrentQuizDataFromLesson(item, nextSection);
+                                setCurrentView("quiz");
+                                setYoutubeId(""); // Clear YouTube ID สำหรับ quiz
+                                
+                                // อัปเดต sidebarActiveAccordion ให้ตรงกับ section ที่เลือก
+                                intendedAccordionState.current = nextSection.id;
+                                console.log("🎯 Setting sidebarActiveAccordion to:", nextSection.id, "for next quiz lesson:", item.title);
+                                console.log("📝 Going to next lesson (quiz):", item.title, "with quiz_id:", item.quiz_id);
+                                return true;
+                            }
+                        }
+                    }
+                    
+                    // ถ้าไม่พบ item ที่สามารถเรียนได้ใน section ถัดไป ให้ไป section ถัดไปอีก
+                    console.log("🔍 ไม่พบ item ที่สามารถเรียนได้ใน section ถัดไป - ไป section ถัดไปอีก");
+                    for (let s = currentSectionIndex + 2; s < updatedData.length; s++) {
+                        const section = updatedData[s];
+                        for (let i = 0; i < section.items.length; i++) {
+                            const item = section.items[i];
+                            if (!item.lock) {
+                                if (item.type === "video" && item.video_url) {
+                                    const videoId = extractYoutubeId(item.video_url);
+                                    if (videoId) {
+                                        setCurrentLessonId(`${section.id}-${i}`);
+                                        setCurrentLesson(item.title);
+                                        setCurrentLessonData(item);
+                                        setCurrentView("video");
+                                        setYoutubeId(videoId);
+                                        intendedAccordionState.current = section.id;
+                                        console.log("🎯 Setting sidebarActiveAccordion to:", section.id, "for next available video lesson:", item.title);
+                                        console.log("🎥 Going to next available lesson (video):", item.title);
+                                        foundNext = true;
+                                        break;
+                                    }
+                                } else if (item.type === "quiz") {
+                                    setCurrentLessonId(`${section.id}-${i}`);
+                                    setCurrentLesson(item.title);
+                                    setCurrentLessonData({
+                                        ...item,
+                                        quiz_id: item.quiz_id,
+                                        big_lesson_id: section.id,
+                                    });
+                                    setCurrentQuizDataFromLesson(item, section);
+                                    setCurrentView("quiz");
+                                    setYoutubeId("");
+                                    intendedAccordionState.current = section.id;
+                                    console.log("🎯 Setting sidebarActiveAccordion to:", section.id, "for next available quiz lesson:", item.title);
+                                    console.log("📝 Going to next available lesson (quiz):", item.title, "with quiz_id:", item.quiz_id);
+                                    foundNext = true;
+                                    break;
+                                }
+                            }
+                        }
+                        if (foundNext) break;
+                    }
+                    
+                    if (foundNext) {
+                        return foundNext;
+                    }
+                } else {
+                    console.log("🔍 ไม่มี section ถัดไปในลำดับ - ไป post-test");
+                }
+                
+                // ถ้าไม่พบบทเรียนถัดไป ให้ไป post-test
+                console.log("🔍 ไม่พบบทเรียนถัดไป - ไป post-test");
+                const postTest = subjectQuizzes.find(q => q.type === "post_test");
+                if (postTest && !postTest.locked) {
+                    console.log("✅ Found post-test as next content:", postTest.title);
+                    
+                    setCurrentLessonId(`-2000-${postTest.quiz_id}`);
+                    setCurrentLesson(postTest.title);
+                    setCurrentView("quiz");
+                    setYoutubeId(""); // Reset YouTube ID สำหรับแบบทดสอบ
+                    
+                    setCurrentLessonData({
+                        id: postTest.quiz_id,
+                        lesson_id: 0,
+                        title: postTest.title,
+                        lock: false,
+                        completed: postTest.completed || false,
+                        type: "quiz",
+                        quizType: "special",
+                        duration: postTest.completed ? "100%" : "0%",
+                        quiz_id: postTest.quiz_id,
+                        status: postTest.status || "not_started"
+                    });
+                    setCurrentQuizData(null);
+                    
+                    // อัปเดต sidebarActiveAccordion ให้ตรงกับแบบทดสอบหลังเรียน
+                    setSidebarActiveAccordion(-2000);
+                    intendedAccordionState.current = -2000;
+                    
+                    console.log("📝 Going to post-test:", postTest.title);
+                    return true;
+                } else {
+                    console.log("🎉 Course completed! No more lessons or quizzes available.");
+                    alert("ยินดีด้วย! คุณได้เรียนจบหลักสูตรนี้แล้ว 🎉");
+                    return true;
+                }
+            }
+            
+            // ✅ ตรวจสอบว่าเป็น quiz อื่นๆ หรือไม่
+            console.log("🎯 เป็น quiz อื่นๆ - ไป item ถัดไปใน section เดียวกัน");
+            
+            // ✅ แก้ไข: ไป item ถัดไปใน section เดียวกันแทนที่จะเรียก findAndSetNextLesson ซ้ำ
+            if (currentSection && currentItemId + 1 < currentSection.items.length) {
+                const nextItem = currentSection.items[currentItemId + 1];
+                console.log(`🔍 Checking next item in same section:`, nextItem.title, "Lock:", nextItem.lock, "Complete:", nextItem.completed);
+                
+                if (!nextItem.lock) {
+                    if (nextItem.type === "video" && nextItem.video_url) {
+                        const videoId = extractYoutubeId(nextItem.video_url);
+                        if (videoId) {
+                            setCurrentLessonId(`${currentSectionId}-${currentItemId + 1}`);
+                            setCurrentLesson(nextItem.title);
+                            setCurrentLessonData(nextItem);
+                            setCurrentView("video");
+                            setYoutubeId(videoId);
+                            console.log("🎥 ไป item ถัดไปใน section เดียวกัน (video):", nextItem.title);
+                            return true;
+                        }
+                    } else if (nextItem.type === "quiz") {
+                        setCurrentLessonId(`${currentSectionId}-${currentItemId + 1}`);
+                        setCurrentLesson(nextItem.title);
+                        
+                        setCurrentLessonData({
+                            ...nextItem,
+                            quiz_id: nextItem.quiz_id,
+                            big_lesson_id: currentSection.id,
+                        });
+                        
+                        setCurrentQuizDataFromLesson(nextItem, currentSection);
+                        setCurrentView("quiz");
+                        setYoutubeId("");
+                        console.log("📝 ไป item ถัดไปใน section เดียวกัน (quiz):", nextItem.title, "with quiz_id:", nextItem.quiz_id);
+                        return true;
+                    }
+                }
+            }
+            
+            // ✅ ถ้าไม่มี item ถัดไปใน section เดียวกัน ให้ไป section ถัดไป
+            console.log("🔍 ไม่มี item ถัดไปใน section เดียวกัน - ไป section ถัดไป");
+            
+            for (let s = 0; s < updatedData.length; s++) {
+                const section = updatedData[s];
+                
+                // ข้าม section ปัจจุบัน
+                if (section.id === currentSectionId) {
+                    continue;
+                }
+                
+                // ค้นหา item แรกใน section นี้
+                for (let i = 0; i < section.items.length; i++) {
+                    const item = section.items[i];
+                    console.log(`🔍 Checking section ${section.id}, item ${i}:`, item.title, "Lock:", item.lock, "Complete:", item.completed);
+                    
+                    if (!item.lock) {
+                        if (item.type === "video" && item.video_url) {
+                            const videoId = extractYoutubeId(item.video_url);
+                            if (videoId) {
+                                setCurrentLessonId(`${section.id}-${i}`);
+                                setCurrentLesson(item.title);
+                                setCurrentLessonData(item);
+                                setCurrentView("video");
+                                setYoutubeId(videoId);
+                                intendedAccordionState.current = section.id;
+                                console.log("🎯 Setting sidebarActiveAccordion to:", section.id, "for video lesson:", item.title);
+                                console.log("🎥 ไปบทเรียนถัดไป (video):", item.title);
+                                return true;
+                            }
+                        } else if (item.type === "quiz") {
+                            setCurrentLessonId(`${section.id}-${i}`);
+                            setCurrentLesson(item.title);
+                            
+                            setCurrentLessonData({
+                                ...item,
+                                quiz_id: item.quiz_id,
+                                big_lesson_id: section.id,
+                            });
+                            
+                            setCurrentQuizDataFromLesson(item, section);
+                            setCurrentView("quiz");
+                            setYoutubeId("");
+                            intendedAccordionState.current = section.id;
+                            console.log("🎯 Setting sidebarActiveAccordion to:", section.id, "for quiz lesson:", item.title);
+                            console.log("📝 ไปบทเรียนถัดไป (quiz):", item.title, "with quiz_id:", item.quiz_id);
+                            return true;
+                        }
+                    }
+                }
+            }
+            
+            // ✅ ถ้าไม่พบบทเรียนถัดไป ให้ไป post-test
+            console.log("🔍 ไม่พบบทเรียนถัดไป - ไป post-test");
+            const postTest = subjectQuizzes.find(q => q.type === "post_test");
+            if (postTest && !postTest.locked) {
+                console.log("✅ Found post-test as next content:", postTest.title);
+                
+                setCurrentLessonId(`-2000-${postTest.quiz_id}`);
+                setCurrentLesson(postTest.title);
+                setCurrentView("quiz");
+                setYoutubeId(""); // Reset YouTube ID สำหรับแบบทดสอบ
+                
+                setCurrentLessonData({
+                    id: postTest.quiz_id,
+                    lesson_id: 0,
+                    title: postTest.title,
+                    lock: false,
+                    completed: postTest.completed || false,
+                    type: "quiz",
+                    quizType: "special",
+                    duration: postTest.completed ? "100%" : "0%",
+                    quiz_id: postTest.quiz_id,
+                    status: postTest.status || "not_started"
+                });
+                setCurrentQuizData(null);
+                
+                // อัปเดต sidebarActiveAccordion ให้ตรงกับแบบทดสอบหลังเรียน
+                setSidebarActiveAccordion(-2000);
+                intendedAccordionState.current = -2000;
+                
+                console.log("📝 Going to post-test:", postTest.title);
+                return true;
+            }
+            
+            console.log("🎉 Course completed! No more lessons or quizzes available.");
+            alert("ยินดีด้วย! คุณได้เรียนจบหลักสูตรนี้แล้ว 🎉");
+            return true;
         }
         
         // ✅ ถ้าไม่มีแบบทดสอบหรือเป็นแบบทดสอบแล้ว ให้ไปบทเรียนถัดไป
@@ -1334,6 +1962,7 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
                     const videoId = extractYoutubeId(nextItem.video_url);
                     if (videoId) {
                         setCurrentLessonId(`${currentSectionId}-${currentItemId + 1}`);
+                        setCurrentLesson(nextItem.title); // ✅ เพิ่มการอัปเดตชื่อบทเรียน
                         setCurrentLessonData(nextItem);
                         setCurrentView("video");
                         setYoutubeId(videoId);
@@ -1342,10 +1971,19 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
                     }
                 } else if (nextItem.type === "quiz") {
                     setCurrentLessonId(`${currentSectionId}-${currentItemId + 1}`);
+                    setCurrentLesson(nextItem.title); // ✅ เพิ่มการอัปเดตชื่อบทเรียน
+                    
+                    // ✅ อัปเดต currentLessonData ด้วย quiz_id ที่ถูกต้อง
+                    setCurrentLessonData({
+                        ...nextItem,
+                        quiz_id: nextItem.quiz_id,
+                        big_lesson_id: currentSection.id,
+                    });
+                    
                     setCurrentQuizDataFromLesson(nextItem, currentSection);
                     setCurrentView("quiz");
                     setYoutubeId(""); // Clear YouTube ID สำหรับ quiz
-                    console.log("📝 ไป item ถัดไปใน section เดียวกัน (quiz):", nextItem.title);
+                    console.log("📝 ไป item ถัดไปใน section เดียวกัน (quiz):", nextItem.title, "with quiz_id:", nextItem.quiz_id);
                     foundNext = true;
                 }
             }
@@ -1373,19 +2011,35 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
                             const videoId = extractYoutubeId(item.video_url);
                             if (videoId) {
                                 setCurrentLessonId(`${section.id}-${i}`);
+                                setCurrentLesson(item.title); // ✅ เพิ่มการอัปเดตชื่อบทเรียน
                                 setCurrentLessonData(item);
                                 setCurrentView("video");
                                 setYoutubeId(videoId);
+                                // ✅ อัปเดต sidebarActiveAccordion ให้ตรงกับ section ที่เลือก
+                                console.log("🎯 Setting sidebarActiveAccordion to:", section.id, "for video lesson:", item.title);
+                                intendedAccordionState.current = section.id;
                                 console.log("🎥 ไปบทเรียนถัดไป (video):", item.title);
                                 foundNext = true;
                                 break;
                             }
                         } else if (item.type === "quiz") {
                             setCurrentLessonId(`${section.id}-${i}`);
+                            setCurrentLesson(item.title); // ✅ เพิ่มการอัปเดตชื่อบทเรียน
+                            
+                            // ✅ อัปเดต currentLessonData ด้วย quiz_id ที่ถูกต้อง
+                            setCurrentLessonData({
+                                ...item,
+                                quiz_id: item.quiz_id,
+                                big_lesson_id: section.id,
+                            });
+                            
                             setCurrentQuizDataFromLesson(item, section);
                             setCurrentView("quiz");
                             setYoutubeId(""); // Clear YouTube ID สำหรับ quiz
-                            console.log("📝 ไปบทเรียนถัดไป (quiz):", item.title);
+                            // ✅ อัปเดต sidebarActiveAccordion ให้ตรงกับ section ที่เลือก
+                            console.log("🎯 Setting sidebarActiveAccordion to:", section.id, "for quiz lesson:", item.title);
+                            intendedAccordionState.current = section.id;
+                            console.log("📝 ไปบทเรียนถัดไป (quiz):", item.title, "with quiz_id:", item.quiz_id);
                             foundNext = true;
                             break;
                         }
@@ -1452,48 +2106,24 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
         const [sectionId, itemId] = currentLessonId.split("-").map(Number);
         console.log("🔍 Going to next lesson from section:", sectionId, "item:", itemId);
         
-        try {
-            // ✅ เพิ่มการป้องกันไม่ให้ setInitialLesson ถูกเรียกซ้ำ
-            // เมื่ออยู่ใน big pre-test และกดปุ่ม "บทเรียนถัดไป"
+        // ✅ ตรวจสอบว่ากำลังอยู่ใน big pre-test หรือไม่
             if (sectionId === -1000) {
                 console.log("🎯 ป้องกันการเรียก setInitialLesson ซ้ำเมื่ออยู่ใน big pre-test");
-                // ตั้งค่า flag เพื่อป้องกันการ reset state
                 setInitialLessonSet(true);
-                
-                // ✅ เพิ่มการป้องกันไม่ให้กลับไป Big Pre-test อีก
-                // โดยการตั้งค่า currentLessonId เป็น null ชั่วคราว
-                setCurrentLessonId("");
-            }
-            
-            // ✅ เพิ่มการป้องกันไม่ให้กลับไป Big Pre-test อีก
-            // โดยการตรวจสอบ flag ใน localStorage
-            const hasLeftBigPreTest = localStorage.getItem('hasLeftBigPreTest') === 'true';
-            if (hasLeftBigPreTest && sectionId === -1000) {
-                console.log("🎯 ป้องกันการกลับไป Big Pre-test อีก - ไปบทเรียนถัดไปแทน");
-                // ไปบทเรียนถัดไปแทนการกลับไป Big Pre-test
-                const nextSection = lessonData.find(s => s.id !== -1000);
-                if (nextSection) {
-                    const firstItem = nextSection.items.find(item => !item.lock);
-                    if (firstItem) {
-                        setCurrentLessonId(`${nextSection.id}-${firstItem.id}`);
-                        setCurrentLesson(firstItem.title);
-                        setCurrentView(firstItem.type);
-                        setCurrentLessonData({
-                            ...firstItem,
-                            quiz_id: firstItem.type === "quiz" ? firstItem.quiz_id : nextSection.quiz_id,
-                            big_lesson_id: nextSection.id,
-                        });
-                        setSidebarActiveAccordion(nextSection.id);
+            localStorage.setItem('hasLeftBigPreTest', 'true');
+        }
+        
+        // ✅ ตรวจสอบว่ากำลังอยู่ใน post-test หรือไม่
+        if (sectionId === -2000) {
+            console.log("🎯 กำลังอยู่ใน post-test - ไม่มีอะไรถัดไป");
+            alert("คุณได้เรียนจบหลักสูตรนี้แล้ว! 🎉");
                         return;
-                    }
-                }
             }
             
+        // ✅ ใช้ findAndSetNextLesson เพื่อไปบทเรียนถัดไป
             findAndSetNextLesson(sectionId, itemId, lessonData);
             console.log("✅ Next lesson navigation completed");
-        } catch (error) {
-            console.error("❌ Error in goToNextLesson:", error);
-        }
+        
     }, [currentLessonId, lessonData, findAndSetNextLesson]);
 
     // ฟังก์ชันช่วยตั้งค่า Quiz Data
@@ -1549,6 +2179,12 @@ const handleSelectLesson = useCallback((
     title: string,
     type: "video" | "quiz"
 ) => {
+    console.log("🎯 handleSelectLesson called:", { sectionId, itemId, title, type });
+    
+    // ✅ เก็บค่า accordion state ปัจจุบันไว้
+    const currentAccordionState = sidebarActiveAccordion;
+    console.log("🎯 Current accordion state:", currentAccordionState);
+    
     // ✅ Reset state เมื่อเลือกบทเรียนใหม่
     setCurrentView(type);
     
@@ -1577,6 +2213,12 @@ const handleSelectLesson = useCallback((
         
         setCurrentLessonData(specialQuizData);
         setCurrentQuizData(null);
+        
+        // ✅ อัปเดต accordion state สำหรับแบบทดสอบพิเศษ
+        const specialAccordionId = sectionId;
+        // setSidebarActiveAccordion(specialAccordionId); // ✅ ลบการเปลี่ยน accordion state เพื่อป้องกันการปิด
+        intendedAccordionState.current = specialAccordionId;
+        
         return;
     }
 
@@ -1605,8 +2247,10 @@ const handleSelectLesson = useCallback((
             setCurrentLesson(item.title);
             setCurrentSubjectId(section.subject_id);
             
-            // อัปเดต sidebarActiveAccordion ให้ตรงกับแบบทดสอบที่เลือก
-            setSidebarActiveAccordion(sectionId);
+            // ✅ อัปเดต sidebarActiveAccordion ให้ตรงกับ section ที่เลือก
+            // setSidebarActiveAccordion(sectionId); // ✅ ลบการเปลี่ยน accordion state เพื่อป้องกันการปิด
+            intendedAccordionState.current = sectionId;
+            console.log("🎯 Keeping accordion state at:", sidebarActiveAccordion, "for lesson:", title);
 
             setCurrentLessonData({
                 ...item,
@@ -1646,20 +2290,89 @@ const handleSelectLesson = useCallback((
                 } else if (lesson && lesson.quiz) {
                     setCurrentQuizData(lesson.quiz);
                 }
+                
+                // ✅ อัปเดต quiz state เพื่อให้ตรงกับ backend
+                if (item.quiz_id) {
+                    console.log("🔄 Updating quiz state for selected quiz:", item.quiz_id);
+                    updateQuizState(item.quiz_id);
+                }
             }
         }
     }
-}, [lessonData, courseData, extractYoutubeId]);
+    
+    // ✅ ตรวจสอบว่า accordion state ยังคงเหมือนเดิมหรือไม่
+    setTimeout(() => {
+        if (sidebarActiveAccordion !== currentAccordionState) {
+            console.log("⚠️ Accordion state changed unexpectedly in handleSelectLesson, restoring...");
+            setSidebarActiveAccordion(currentAccordionState);
+            intendedAccordionState.current = currentAccordionState;
+        }
+    }, 50); // ✅ ลด timeout จาก 100ms เป็น 50ms
+    
+}, [lessonData, courseData, extractYoutubeId, sidebarActiveAccordion]);
 
-// Memoized navigation callback สำหรับ onNextLesson
-    // ✅ Task 6: ฟังก์ชันไปบทก่อนหน้า
+    // ✅ เพิ่มฟังก์ชัน refreshLessonDataWithoutReset ที่หายไป
+    const refreshLessonDataWithoutReset = useCallback(async () => {
+        try {
+            // เก็บค่า sidebarActiveAccordion ปัจจุบันไว้
+            const currentActiveAccordion = sidebarActiveAccordion;
+            console.log("🔄 refreshLessonDataWithoutReset - เก็บค่า sidebarActiveAccordion:", currentActiveAccordion);
+            console.log("🔄 refreshLessonDataWithoutReset - currentLessonId:", currentLessonId);
+            
+            // ✅ เพิ่มการตรวจสอบและตั้งค่า intendedAccordionState ถ้ายังเป็น null
+            if (intendedAccordionState.current === null && currentActiveAccordion !== null) {
+                console.log("🎯 Setting intendedAccordionState from currentActiveAccordion:", currentActiveAccordion);
+                intendedAccordionState.current = currentActiveAccordion;
+            }
+            
+            // ✅ เพิ่มการตรวจสอบว่า currentActiveAccordion เป็น null หรือไม่
+            if (currentActiveAccordion === null) {
+                console.log("⚠️ currentActiveAccordion is null, trying to restore from intendedAccordionState");
+                if (intendedAccordionState.current !== null) {
+                    console.log("🎯 Restoring sidebarActiveAccordion from intendedAccordionState:", intendedAccordionState.current);
+                    setSidebarActiveAccordion(intendedAccordionState.current);
+                }
+            }
+            
+            // ✅ คืนค่า sidebarActiveAccordion ทันทีเพื่อป้องกันการปิด accordion
+            setSidebarActiveAccordion(currentActiveAccordion);
+            intendedAccordionState.current = currentActiveAccordion;
+            console.log("🔄 หลังเรียก setSidebarActiveAccordion - sidebarActiveAccordion state:", currentActiveAccordion);
+            
+            // ✅ เพิ่มการตรวจสอบว่า accordion state ถูกตั้งค่าถูกต้องหรือไม่
+            setTimeout(() => {
+                console.log("🔄 ตรวจสอบ accordion state หลังจาก refresh:", {
+                    expected: currentActiveAccordion,
+                    actual: sidebarActiveAccordion,
+                    currentLessonId: currentLessonId,
+                    intendedAccordionState: intendedAccordionState.current
+                });
+                
+                // ✅ ถ้า accordion state ไม่ตรงกับที่คาดหวัง ให้คืนค่ากลับมา
+                if (sidebarActiveAccordion !== currentActiveAccordion) {
+                    console.log("⚠️ Accordion state mismatch detected, restoring...");
+                    setSidebarActiveAccordion(currentActiveAccordion);
+                    intendedAccordionState.current = currentActiveAccordion;
+                }
+                
+                // ✅ เพิ่มการตรวจสอบ intendedAccordionState
+                if (intendedAccordionState.current !== currentActiveAccordion) {
+                    console.log("🎯 Updating intendedAccordionState to match currentActiveAccordion");
+                    intendedAccordionState.current = currentActiveAccordion;
+                }
+            }, 50); // ✅ ลด timeout จาก 100ms เป็น 50ms
+            
+        } catch (error) {
+            console.error("Error in refreshLessonDataWithoutReset:", error);
+        }
+    }, [currentSubjectId, courseId, subjectId, API_URL]);
+
+    // ✅ เพิ่มฟังก์ชันที่ขาดหายไป
     const handlePreviousLesson = useCallback(() => {
         if (!currentLessonId) return;
 
         const [currentSectionId, currentItemId] = currentLessonId.split("-").map(Number);
         let foundPrevious = false;
-
-        // ✅ ไม่ต้อง reset YouTube ID ที่นี่
 
         // หาบทเรียนก่อนหน้า
         for (let sectionIndex = lessonData.length - 1; sectionIndex >= 0; sectionIndex--) {
@@ -1685,9 +2398,9 @@ const handleSelectLesson = useCallback((
                                 setCurrentView(prevItem.type);
                                 
                                 // อัปเดต sidebarActiveAccordion ให้ตรงกับ section ที่เลือก
-                                setSidebarActiveAccordion(prevSection.id);
+                                intendedAccordionState.current = prevSection.id;
                                 
-                                // ✅ ตั้งค่า YouTube ID ทันทีเมื่อเปลี่ยนบทเรียน
+                                // ตั้งค่า YouTube ID ทันทีเมื่อเปลี่ยนบทเรียน
                                 if (prevItem.type === "video" && prevItem.video_url) {
                                     const videoId = extractYoutubeId(prevItem.video_url);
                                     if (videoId) {
@@ -1698,7 +2411,7 @@ const handleSelectLesson = useCallback((
                                         setYoutubeId("");
                                     }
                                 } else if (prevItem.type === "quiz") {
-                                    // ✅ Reset YouTube ID เมื่อเปลี่ยนเป็นแบบทดสอบ
+                                    // Reset YouTube ID เมื่อเปลี่ยนเป็นแบบทดสอบ
                                     setYoutubeId("");
                                 }
                                 
@@ -1717,10 +2430,13 @@ const handleSelectLesson = useCallback((
                 }
             }
         }
-    }, [currentLessonId, lessonData, courseData, extractYoutubeId]);
+    }, [currentLessonId, lessonData, extractYoutubeId]);
 
 const handleNextLesson = useCallback(() => {
         console.log("🚀 handleNextLesson called with currentLessonId:", currentLessonId);
+        console.log("🚀 Current lesson data:", currentLessonData);
+        console.log("🚀 Current view:", currentView);
+        console.log("🚀 Lesson data length:", lessonData?.length);
         
         if (!currentLessonId || !lessonData) {
             console.error("❌ Missing currentLessonId or lessonData");
@@ -1730,359 +2446,260 @@ const handleNextLesson = useCallback(() => {
         const [sectionId, itemId] = currentLessonId.split("-").map(Number);
         console.log("🔍 Parsed sectionId:", sectionId, "itemId:", itemId);
         
-        // ✅ ไม่ต้อง reset YouTube ID ที่นี่
-        
-        try {
+        // ✅ ตรวจสอบว่ากำลังอยู่ใน big pre-test หรือไม่
+        if (sectionId === -1000) {
+            console.log("🎯 กำลังอยู่ใน big pre-test - ไปบทเรียนแรก");
             findAndSetNextLesson(sectionId, itemId, lessonData);
-            console.log("✅ Next lesson navigation completed");
-        } catch (error) {
-            console.error("❌ Error in handleNextLesson:", error);
+            return;
         }
         
-    }, [currentLessonId, lessonData, findAndSetNextLesson]);
-
-    // ✅ Task 5: ลบ handleUploadSlip function ทั้งหมด
-    // const handleUploadSlip = async (file: File) => {
-    //     if (!currentSubjectId) return;
-
-    //     try {
-    //         const formData = new FormData();
-    //         formData.append('slip', file);
-
-    //         const response = await axios.post(
-    //             `${API_URL}/api/learn/subject/${currentSubjectId}/upload-slip`,
-    //             formData,
-    //             {
-    //                 headers: {
-    //                     Authorization: `Bearer ${localStorage.getItem("token")}`,
-    //                     'Content-Type': 'multipart/form-data',
-    //                 },
-    //             }
-    //         );
-
-    //         if (response.data.success) {
-    //             alert("อัปโหลดสลิปสำเร็จ รอ admin อนุมัติ");
-    //             await fetchPaymentStatus(); // รีเฟรชสถานะ
-    //         }
-    //     } catch (error: any) {
-    //         console.error("Error uploading slip:", error);
-    //         alert(error.response?.data?.message || "เกิดข้อผิดพลาดในการอัปโหลดสลิป");
-    //     }
-    // };
-
-    // ฟังก์ชัน refresh ข้อมูลบทเรียนโดยไม่ reset sidebar (สำหรับใช้ใน handleLessonComplete)
-    const refreshLessonDataWithoutReset = useCallback(async () => {
-        try {
-            // เก็บค่า sidebarActiveAccordion ปัจจุบันไว้
-            const currentActiveAccordion = sidebarActiveAccordion;
-            
-            // Refresh ข้อมูลแบบทดสอบและบทเรียน
-            await Promise.allSettled([
-                // Refresh ข้อมูลแบบทดสอบ (pre-test, post-test) ก่อน
-                (async () => {
-                    try {
-                        if (currentSubjectId) {
-                            const response = await axios.get(
-                                `${API_URL}/api/learn/subject/${currentSubjectId}/quizzes`,
-                                {
-                                    headers: {
-                                        Authorization: `Bearer ${localStorage.getItem("token")}`,
-                                    },
-                                }
-                            );
-
-                            if (response.data.success) {
-                                const quizzes: any[] = [];
-                                // --- ดึงข้อมูล big pre/post test ---
-                                let bigPreTestCompleted = false;
-                                if (response.data.pre_test) {
-                                    const bigPreTest = response.data.pre_test;
-                                    bigPreTestCompleted = bigPreTest.progress?.passed || false;
-                                    quizzes.push({
-                                        quiz_id: bigPreTest.quiz_id,
-                                        title: bigPreTest.title || "แบบทดสอบก่อนเรียนใหญ่",
-                                        description: bigPreTest.description,
-                                        type: "big_pre_test", // แยกจาก pre-test ของแต่ละบทเรียน
-                                        locked: false,
-                                        completed: bigPreTest.progress?.completed || false,
-                                        passed: bigPreTest.progress?.passed || false,
-                                        status: bigPreTest.progress?.awaiting_review ? "awaiting_review" :
-                                                bigPreTest.progress?.passed ? "passed" :
-                                                bigPreTest.progress?.completed ? "failed" : "not_started",
-                                        score: bigPreTest.progress?.score,
-                                        max_score: bigPreTest.progress?.max_score,
-                                    });
-                                }
-                                
-                                // --- เช็คว่าทุกบทเรียนผ่านหรือยัง ---
-                                let allLessonsPassed = true;
-                                let totalItems = 0;
-                                let completedItems = 0;
-                                
-                                if (lessonData.length > 0) {
-                                    for (const section of lessonData) {
-                                        // นับทุก item ใน section (ไม่ว่าจะมี quiz หรือไม่)
-                                        for (const item of section.items) {
-                                            totalItems++;
-                                            if (item.completed) completedItems++;
-                                        }
-                                    }
-                                    
-                                    // ตรวจสอบว่าเรียนผ่านครบ 90% หรือไม่
-                                    const overallProgress = totalItems > 0 ? (completedItems / totalItems) * 100 : 0;
-                                    
-                                    // ต้องผ่านอย่างน้อย 90% ของทั้งหมด
-                                    if (overallProgress < 90) {
-                                        allLessonsPassed = false;
-                                    }
-                                }
-                                
-                                // --- post test ---
-                                if (response.data.post_test) {
-                                    const postTest = response.data.post_test;
-                                    // ล็อค posttest ถ้า big pretest ยังไม่ผ่าน หรือ บทเรียนยังไม่ผ่านครบ
-                                    let locked = false;
-                                    if (!bigPreTestCompleted || !allLessonsPassed) {
-                                        locked = true;
-                                    }
-                                    
-                                    quizzes.push({
-                                        quiz_id: postTest.quiz_id,
-                                        title: postTest.title || "แบบทดสอบหลังเรียน",
-                                        description: postTest.description,
-                                        type: "post_test",
-                                        locked,
-                                        completed: postTest.progress?.completed || false,
-                                        passed: postTest.progress?.passed || false,
-                                        status: postTest.progress?.awaiting_review ? "awaiting_review" :
-                                                postTest.progress?.passed ? "passed" :
-                                                postTest.progress?.completed ? "failed" : "not_started",
-                                        score: postTest.progress?.score,
-                                        max_score: postTest.progress?.max_score,
-                                    });
-                                }
-                                setSubjectQuizzes(quizzes);
-                                console.log("🔄 Refreshed subject quizzes:", quizzes);
-                            }
-                        }
-                    } catch (error) {
-                        console.error("Error refreshing subject quizzes:", error);
-                    }
-                })(),
-                
-                // Refresh lesson data โดยไม่ reset sidebar
-                (async () => {
-                    try {
-                        const response = await axios.get(
-                            `${API_URL}/api/learn/course/${courseId}/full-content`,
-                            {
-                                headers: {
-                                    Authorization: `Bearer ${localStorage.getItem("token")}`,
-                                },
-                            }
-                        );
-
-                        if (response.data.success && response.data.course) {
-                            const subject = response.data.course.subjects.find(
-                                (s: any) => s.subject_id === subjectId
-                            );
-
-                            if (subject && subject.lessons && subject.lessons.length > 0) {
-                                const sections: SectionData[] = [];
-                                
-                                subject.lessons.forEach((lesson: any, lessonIndex: number) => {
-                                    // ใช้ logic เดียวกับ fetchCourseData แต่ไม่ reset states อื่นๆ
-                                    if (lesson.is_big_lesson) {
-                                        // Big Lesson logic...
-                                        const sectionItems: LessonItem[] = [];
-                                        
-                                        if (lesson.sub_lessons && lesson.sub_lessons.length > 0) {
-                                            lesson.sub_lessons.forEach((subLesson: any, subIndex: number) => {
-                                                // เพิ่มวิดีโอ Sub Lesson
-                                                sectionItems.push({
-                                                    id: subIndex * 2,
-                                                    lesson_id: subLesson.lesson_id,
-                                                    title: `${lessonIndex + 1}.${subIndex + 1} 📹 ${subLesson.title}`,
-                                                    lock: false,
-                                                    completed: subLesson.progress?.video_completed || false,
-                                                    type: "video",
-                                                    quizType: "none",
-                                                    duration: subLesson.progress?.video_completed ? "100%" : "0%",
-                                                    video_url: subLesson.video_url,
-                                                    quiz_id: subLesson.quiz ? subLesson.quiz.quiz_id : undefined,
-                                                    status: subLesson.progress?.video_completed ? "passed" : "failed",
-                                                });
-
-                                                // เพิ่มแบบทดสอบ Sub Lesson (ถ้ามี)
-                                                if (subLesson.quiz) {
-                                                    let quizStatus: "passed" | "failed" | "awaiting_review" = "failed";
-                                                    if (subLesson.quiz.progress?.passed) {
-                                                        quizStatus = "passed";
-                                                    } else if (subLesson.quiz.progress?.completed && !subLesson.quiz.progress?.passed) {
-                                                        quizStatus = "failed";
-                                                    } else if (subLesson.quiz.progress?.awaiting_review || (subLesson.quiz.type === "special_fill_in_blank" && subLesson.quiz.progress?.completed && !subLesson.quiz.progress?.passed)) {
-                                                        quizStatus = "awaiting_review";
-                                                    }
-                                                    sectionItems.push({
-                                                        id: subIndex * 2 + 1,
-                                                        lesson_id: subLesson.lesson_id,
-                                                        title: `${lessonIndex + 1}.${subIndex + 1}.2 แบบทดสอบท้ายบท`,
-                                                        lock: !subLesson.progress?.video_completed,
-                                                        completed:
-                                                            subLesson.quiz.progress?.passed ||
-                                                            subLesson.quiz.progress?.awaiting_review ||
-                                                            false,
-                                                        type: "quiz",
-                                                        quizType: subLesson.quiz.type,
-                                                        duration: subLesson.quiz.progress?.passed
-                                                            ? "100%"
-                                                            : subLesson.quiz.progress?.awaiting_review
-                                                            ? "50%"
-                                                            : "0%",
-                                                        quiz_id: subLesson.quiz.quiz_id,
-                                                        status: quizStatus,
-                                                    });
-                                                }
-                                            });
-                                        }
-
-                                        // เพิ่ม Big Lesson Quiz (ถ้ามี)
-                                        if (lesson.quiz) {
-                                            let quizStatus: "passed" | "failed" | "awaiting_review" = "failed";
-                                            if (lesson.quiz.progress?.passed) {
-                                                quizStatus = "passed";
-                                            } else if (lesson.quiz.progress?.completed && !lesson.quiz.progress?.passed) {
-                                                quizStatus = "failed";
-                                            } else if (lesson.quiz.progress?.awaiting_review || (lesson.quiz.type === "special_fill_in_blank" && lesson.quiz.progress?.completed && !lesson.quiz.progress?.passed)) {
-                                                quizStatus = "awaiting_review";
-                                            }
-                                            sectionItems.push({
-                                                id: sectionItems.length,
-                                                lesson_id: lesson.lesson_id,
-                                                title: `${lessonIndex + 1}.X แบบทดสอบท้ายบทใหญ่`,
-                                                lock: !sectionItems.every(item => item.completed),
-                                                completed:
-                                                    lesson.quiz.progress?.passed ||
-                                                    lesson.quiz.progress?.awaiting_review ||
-                                                    false,
-                                                type: "quiz",
-                                                quizType: lesson.quiz.type,
-                                                duration: lesson.quiz.progress?.passed
-                                                    ? "100%"
-                                                    : lesson.quiz.progress?.awaiting_review
-                                                    ? "50%"
-                                                    : "0%",
-                                                quiz_id: lesson.quiz.quiz_id,
-                                                status: quizStatus,
-                                            });
-                                        }
-
-                                        let count = "";
-                                        if (lesson.quiz?.progress?.awaiting_review) {
-                                            count = "รอตรวจ";
-                                        } else {
-                                            const allCompleted = sectionItems.every(item => item.completed);
-                                            count = allCompleted ? "ผ่าน" : "ไม่ผ่าน";
-                                        }
-
-                                        sections.push({
-                                            id: lesson.lesson_id,
-                                            subject_id: subject.subject_id,
-                                            title: `บทที่ ${lessonIndex + 1}: ${lesson.title}`,
-                                            count: count,
-                                            items: sectionItems,
-                                            quiz_id: lesson.quiz ? lesson.quiz.quiz_id : undefined,
-                                        });
-                                    } else {
-                                        // ระบบเดิม - Lesson ปกติ
-                                        const sectionItems: LessonItem[] = [];
-                                        sectionItems.push({
-                                            id: 0,
-                                            lesson_id: lesson.lesson_id,
-                                            title: `${lessonIndex + 1}.1 📹 ${lesson.title}`,
-                                            lock: false,
-                                            completed: lesson.progress?.video_completed || false,
-                                            type: "video",
-                                            quizType: "none",
-                                            duration: lesson.progress?.video_completed ? "100%" : "0%",
-                                            video_url: lesson.video_url,
-                                            quiz_id: lesson.quiz ? lesson.quiz.quiz_id : undefined,
-                                            status: lesson.progress?.video_completed ? "passed" : "failed",
-                                        });
-
-                                        if (lesson.quiz) {
-                                            let quizStatus: "passed" | "failed" | "awaiting_review" = "failed";
-                                            if (lesson.quiz.progress?.passed) {
-                                                quizStatus = "passed";
-                                            } else if (lesson.quiz.progress?.completed && !lesson.quiz.progress?.passed) {
-                                                quizStatus = "failed";
-                                            } else if (lesson.quiz.progress?.awaiting_review || (lesson.quiz.type === "special_fill_in_blank" && lesson.quiz.progress?.completed && !lesson.quiz.progress?.passed)) {
-                                                quizStatus = "awaiting_review";
-                                            }
-                                            sectionItems.push({
-                                                id: 1,
-                                                lesson_id: lesson.lesson_id,
-                                                title: `${lessonIndex + 1}.2 แบบทดสอบท้ายบท`,
-                                                lock: !lesson.progress?.video_completed,
-                                                completed:
-                                                    lesson.quiz.progress?.passed ||
-                                                    lesson.quiz.progress?.awaiting_review ||
-                                                    false,
-                                                type: "quiz",
-                                                quizType: lesson.quiz.type,
-                                                duration: lesson.quiz.progress?.passed
-                                                    ? "100%"
-                                                    : lesson.quiz.progress?.awaiting_review
-                                                    ? "50%"
-                                                    : "0%",
-                                                quiz_id: lesson.quiz.quiz_id,
-                                                status: quizStatus,
-                                            });
-                                        }
-
-                                        let count = "";
-                                        if (lesson.quiz?.progress?.awaiting_review) {
-                                            count = "รอตรวจ";
-                                        } else {
-                                            if (lesson.progress?.overall_completed) {
-                                                count = "ผ่าน";
-                                            } else {
-                                                count = "ไม่ผ่าน";
-                                            }
-                                        }
-
-                                        sections.push({
-                                            id: lesson.lesson_id,
-                                            subject_id: subject.subject_id,
-                                            title: `บทที่ ${lessonIndex + 1}: ${lesson.title}`,
-                                            count: count,
-                                            items: sectionItems,
-                                            quiz_id: lesson.quiz ? lesson.quiz.quiz_id : undefined,
-                                        });
-                                    }
-                                });
-                                
-                                setLessonData(sections);
-                                await updateLessonCompletionStatus(sections);
-                                console.log("🔄 Refreshed lesson data:", sections);
-                            }
-                        }
-                    } catch (error) {
-                        console.error("Error refreshing lesson data:", error);
-                    }
-                })()
-            ]);
-            
-            // คืนค่า sidebarActiveAccordion กลับมา
-            setTimeout(() => {
-                setSidebarActiveAccordion(currentActiveAccordion);
-                console.log("🔄 Restored sidebarActiveAccordion:", currentActiveAccordion);
-            }, 100);
-            
-        } catch (error) {
-            console.error("Error in refreshLessonDataWithoutReset:", error);
+        // ✅ ตรวจสอบว่ากำลังอยู่ใน post-test หรือไม่
+        if (sectionId === -2000) {
+            console.log("🎯 กำลังอยู่ใน post-test - ไม่มีอะไรถัดไป");
+            alert("คุณได้เรียนจบหลักสูตรนี้แล้ว! 🎉");
+            return;
         }
-    }, [sidebarActiveAccordion, currentSubjectId, lessonData, courseId, subjectId, API_URL]);
+        
+        // ✅ ตรวจสอบว่ากำลังอยู่ใน video หรือไม่
+        if (currentView === "video" && currentLessonData?.type === "video") {
+            console.log("🎯 กำลังอยู่ใน video - ตรวจสอบว่ามี quiz ท้ายบทหรือไม่");
+            
+            const currentSection = lessonData.find(s => s.id === sectionId);
+            if (currentSection) {
+                // หา quiz ท้ายบทใน section เดียวกัน
+                const endOfLessonQuiz = currentSection.items.find(item => 
+                    item.type === "quiz" && 
+                    item.title.includes("แบบทดสอบท้ายบท") && 
+                    !item.title.includes("ใหญ่")
+                );
+                
+                if (endOfLessonQuiz && !endOfLessonQuiz.lock) {
+                    console.log("✅ Found end-of-lesson quiz:", endOfLessonQuiz.title);
+                    
+                    setCurrentLessonId(`${sectionId}-${endOfLessonQuiz.id}`);
+                    setCurrentLesson(endOfLessonQuiz.title);
+                    
+                    // ✅ อัปเดต currentLessonData ด้วย quiz_id ที่ถูกต้อง
+                    setCurrentLessonData({
+                        ...endOfLessonQuiz,
+                        quiz_id: endOfLessonQuiz.quiz_id,
+                        big_lesson_id: currentSection.id,
+                    });
+                    
+                    setCurrentQuizDataFromLesson(endOfLessonQuiz, currentSection);
+                    setCurrentView("quiz");
+                    setYoutubeId(""); // Clear YouTube ID สำหรับ quiz
+                    
+                    console.log("📝 Going to end-of-lesson quiz:", endOfLessonQuiz.title, "with quiz_id:", endOfLessonQuiz.quiz_id);
+                    return;
+                }
+            }
+            
+            // ถ้าไม่มี quiz ท้ายบท ให้ไป item ถัดไปใน section เดียวกัน
+            console.log("🎯 ไม่มี quiz ท้ายบท - ไป item ถัดไปใน section เดียวกัน");
+            findAndSetNextLesson(sectionId, itemId, lessonData);
+            return;
+        }
+        
+        // ✅ ตรวจสอบว่ากำลังอยู่ใน quiz หรือไม่
+        if (currentView === "quiz" && currentLessonData?.type === "quiz") {
+            console.log("🎯 กำลังอยู่ใน quiz - ตรวจสอบประเภทของ quiz");
+            
+            const currentSection = lessonData.find(s => s.id === sectionId);
+            if (currentSection) {
+                // ✅ ตรวจสอบว่าเป็น Sub Lesson Quiz (1.1.2) หรือไม่
+                if (currentLessonData.title.includes("แบบทดสอบท้ายบท") && !currentLessonData.title.includes("ใหญ่")) {
+                    console.log("🎯 เป็น Sub Lesson Quiz - ไป Big Lesson Quiz (1.X)");
+                    
+                    // หา Big Lesson Quiz ใน section เดียวกัน
+                    const bigLessonQuiz = currentSection.items.find(item => 
+                        item.type === "quiz" && 
+                        item.title.includes("แบบทดสอบท้ายบทใหญ่")
+                    );
+                    
+                    if (bigLessonQuiz && !bigLessonQuiz.lock) {
+                        console.log("✅ Found Big Lesson Quiz:", bigLessonQuiz.title);
+                        
+                        setCurrentLessonId(`${sectionId}-${bigLessonQuiz.id}`);
+                        setCurrentLesson(bigLessonQuiz.title);
+                        
+                        // ✅ อัปเดต currentLessonData ด้วย quiz_id ที่ถูกต้อง
+                        setCurrentLessonData({
+                            ...bigLessonQuiz,
+                            quiz_id: bigLessonQuiz.quiz_id,
+                            big_lesson_id: currentSection.id,
+                        });
+                        
+                        setCurrentQuizDataFromLesson(bigLessonQuiz, currentSection);
+                        setCurrentView("quiz");
+                        setYoutubeId(""); // Clear YouTube ID สำหรับ quiz
+                        
+                        console.log("📝 Going to Big Lesson Quiz:", bigLessonQuiz.title, "with quiz_id:", bigLessonQuiz.quiz_id);
+                        return;
+                    }
+                }
+                
+                // ✅ ตรวจสอบว่าเป็น Big Lesson Quiz (1.X) หรือไม่
+                if (currentLessonData.title.includes("แบบทดสอบท้ายบทใหญ่")) {
+                    console.log("🎯 เป็น Big Lesson Quiz - ไปบทเรียนถัดไป (section ถัดไป)");
+                    
+                    // ✅ แก้ไข: หา section ถัดไปในลำดับที่ถูกต้อง
+                    const currentSectionIndex = lessonData.findIndex(s => s.id === sectionId);
+                    console.log("🔍 Current section index:", currentSectionIndex, "Total sections:", lessonData.length);
+                    
+                    if (currentSectionIndex !== -1 && currentSectionIndex + 1 < lessonData.length) {
+                        // หา section ถัดไปในลำดับ
+                        const nextSection = lessonData[currentSectionIndex + 1];
+                        console.log("✅ Found next section in sequence:", nextSection.id, nextSection.title);
+                        
+                        // ค้นหา item แรกใน section ถัดไป
+                        for (let i = 0; i < nextSection.items.length; i++) {
+                            const item = nextSection.items[i];
+                            console.log(`🔍 Checking next section ${nextSection.id}, item ${i}:`, item.title, "Lock:", item.lock, "Complete:", item.completed);
+                            
+                            if (!item.lock) {
+                                if (item.type === "video" && item.video_url) {
+                                    const videoId = extractYoutubeId(item.video_url);
+                                    if (videoId) {
+                                        setCurrentLessonId(`${nextSection.id}-${i}`);
+                                        setCurrentLesson(item.title);
+                                        setCurrentLessonData(item);
+                                        setCurrentView("video");
+                                        setYoutubeId(videoId);
+                                        
+                                        // อัปเดต sidebarActiveAccordion ให้ตรงกับ section ที่เลือก
+                                        intendedAccordionState.current = nextSection.id;
+                                        console.log("🎯 Setting sidebarActiveAccordion to:", nextSection.id, "for next video lesson:", item.title);
+                                        console.log("🎥 Going to next lesson (video):", item.title);
+                                        return;
+                                    }
+                                } else if (item.type === "quiz") {
+                                    setCurrentLessonId(`${nextSection.id}-${i}`);
+                                    setCurrentLesson(item.title);
+                                    
+                                    // ✅ อัปเดต currentLessonData ด้วย quiz_id ที่ถูกต้อง
+                                    setCurrentLessonData({
+                                        ...item,
+                                        quiz_id: item.quiz_id,
+                                        big_lesson_id: nextSection.id,
+                                    });
+                                    
+                                    setCurrentQuizDataFromLesson(item, nextSection);
+                                    setCurrentView("quiz");
+                                    setYoutubeId(""); // Clear YouTube ID สำหรับ quiz
+                                    
+                                    // อัปเดต sidebarActiveAccordion ให้ตรงกับ section ที่เลือก
+                                    intendedAccordionState.current = nextSection.id;
+                                    console.log("🎯 Setting sidebarActiveAccordion to:", nextSection.id, "for next quiz lesson:", item.title);
+                                    console.log("📝 Going to next lesson (quiz):", item.title, "with quiz_id:", item.quiz_id);
+                                    return;
+                                }
+                            }
+                        }
+                        
+                        // ถ้าไม่พบ item ที่สามารถเรียนได้ใน section ถัดไป ให้ไป section ถัดไปอีก
+                        console.log("🔍 ไม่พบ item ที่สามารถเรียนได้ใน section ถัดไป - ไป section ถัดไปอีก");
+                        let foundNext = false;
+                        for (let s = currentSectionIndex + 2; s < lessonData.length; s++) {
+                            const section = lessonData[s];
+                            for (let i = 0; i < section.items.length; i++) {
+                                const item = section.items[i];
+                                if (!item.lock) {
+                                    if (item.type === "video" && item.video_url) {
+                                        const videoId = extractYoutubeId(item.video_url);
+                                        if (videoId) {
+                                            setCurrentLessonId(`${section.id}-${i}`);
+                                            setCurrentLesson(item.title);
+                                            setCurrentLessonData(item);
+                                            setCurrentView("video");
+                                            setYoutubeId(videoId);
+                                            intendedAccordionState.current = section.id;
+                                            console.log("🎯 Setting sidebarActiveAccordion to:", section.id, "for next available video lesson:", item.title);
+                                            console.log("🎥 Going to next available lesson (video):", item.title);
+                                            foundNext = true;
+                                            break;
+                                        }
+                                    } else if (item.type === "quiz") {
+                                        setCurrentLessonId(`${section.id}-${i}`);
+                                        setCurrentLesson(item.title);
+                                        setCurrentLessonData({
+                                            ...item,
+                                            quiz_id: item.quiz_id,
+                                            big_lesson_id: section.id,
+                                        });
+                                        setCurrentQuizDataFromLesson(item, section);
+                                        setCurrentView("quiz");
+                                        setYoutubeId("");
+                                        intendedAccordionState.current = section.id;
+                                        console.log("🎯 Setting sidebarActiveAccordion to:", section.id, "for next available quiz lesson:", item.title);
+                                        console.log("📝 Going to next available lesson (quiz):", item.title, "with quiz_id:", item.quiz_id);
+                                        foundNext = true;
+                                        break;
+                                    }
+                                }
+                            }
+                            if (foundNext) break;
+                        }
+                        
+                        if (foundNext) {
+                            return;
+                        }
+                                        } else {
+                        console.log("🔍 ไม่มี section ถัดไปในลำดับ - ไป post-test");
+                    }
+                    
+                    // ถ้าไม่พบบทเรียนถัดไป ให้ไป post-test
+                    console.log("🔍 ไม่พบบทเรียนถัดไป - ไป post-test");
+                    const postTest = subjectQuizzes.find(q => q.type === "post_test");
+                    if (postTest && !postTest.locked) {
+                        console.log("✅ Found post-test as next content:", postTest.title);
+                        
+                        setCurrentLessonId(`-2000-${postTest.quiz_id}`);
+                        setCurrentLesson(postTest.title);
+                        setCurrentView("quiz");
+                        setYoutubeId(""); // Reset YouTube ID สำหรับแบบทดสอบ
+                        
+                        setCurrentLessonData({
+                            id: postTest.quiz_id,
+                            lesson_id: 0,
+                            title: postTest.title,
+                            lock: false,
+                            completed: postTest.completed || false,
+                                                type: "quiz",
+                            quizType: "special",
+                            duration: postTest.completed ? "100%" : "0%",
+                            quiz_id: postTest.quiz_id,
+                            status: postTest.status || "not_started"
+                        });
+                        setCurrentQuizData(null);
+                        
+                        // อัปเดต sidebarActiveAccordion ให้ตรงกับแบบทดสอบหลังเรียน
+                        setSidebarActiveAccordion(-2000);
+                        intendedAccordionState.current = -2000;
+                        
+                        console.log("📝 Going to post-test:", postTest.title);
+                        return;
+                                        } else {
+                        console.log("🎉 Course completed! No more lessons or quizzes available.");
+                        alert("ยินดีด้วย! คุณได้เรียนจบหลักสูตรนี้แล้ว 🎉");
+                        return;
+                    }
+                }
+                
+                // ✅ ตรวจสอบว่าเป็น quiz อื่นๆ หรือไม่
+                console.log("🎯 เป็น quiz อื่นๆ - ไป item ถัดไปใน section เดียวกัน");
+                findAndSetNextLesson(sectionId, itemId, lessonData);
+                return;
+            }
+        }
+        
+        // ✅ ถ้าไม่ตรงกับเงื่อนไขข้างต้น ให้ใช้ findAndSetNextLesson
+        console.log("🎯 ใช้ findAndSetNextLesson สำหรับการนำทางทั่วไป");
+        findAndSetNextLesson(sectionId, itemId, lessonData);
+        
+    }, [currentLessonId, lessonData, findAndSetNextLesson, sidebarActiveAccordion, currentLessonData, currentView, subjectQuizzes, extractYoutubeId]);
+            
+            
 
     // ฟังก์ชัน refresh progress/lesson/subject (ใช้ useCallback เพื่อป้องกัน re-creation)  
     const refreshProgress = useCallback(async () => {
@@ -2093,8 +2710,6 @@ const handleNextLesson = useCallback(() => {
             const results = await Promise.allSettled([
                 fetchCourseData(),
                 fetchSubjectProgress(), 
-                // ✅ Task 5: ลบการเรียก fetchPaymentStatus
-                // fetchPaymentStatus(),
                 fetchSubjectQuizzes(),
                 fetchInstructors()
             ]);
@@ -2111,7 +2726,7 @@ const handleNextLesson = useCallback(() => {
         } finally {
             setLoading(false);
         }
-    }, [fetchCourseData, fetchSubjectProgress, fetchSubjectQuizzes, fetchInstructors]); // ✅ Task 5: ลบ fetchPaymentStatus dependency
+    }, [fetchCourseData, fetchSubjectProgress, fetchSubjectQuizzes, fetchInstructors]);
 
     // Loading skeleton component
     const LoadingSkeleton = () => (
@@ -2144,8 +2759,6 @@ const handleNextLesson = useCallback(() => {
     if (loading) {
         return <LoadingSkeleton />;
     }
-
-
 
     return (
         <section className="lesson__area section-pb-120" style={{
@@ -2272,7 +2885,7 @@ const handleNextLesson = useCallback(() => {
                              backdropFilter: 'blur(10px)',
                              border: '1px solid rgba(255, 255, 255, 0.2)'
                          }}>
-                             {/* ✅ Modern Navigation Controls */}
+                            {/* Navigation Controls */}
                             <div className="lesson-navigation-controls mb-4" style={{
                                 background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                                 padding: '20px',
@@ -2367,7 +2980,6 @@ const handleNextLesson = useCallback(() => {
                                     onNextLesson={handleNextLesson}
                                     lessonId={currentLessonData?.lesson_id || 0}
                                     onRefreshProgress={refreshProgress}
-                                    // ✅ เพิ่ม: ส่ง onGoToNextLesson สำหรับแบบทดสอบของแต่ละบท
                                     onGoToNextLesson={goToNextLesson}
                                 />
                             ) : (
@@ -2377,7 +2989,6 @@ const handleNextLesson = useCallback(() => {
                                     youtubeId={youtubeId}
                                     lessonId={currentLessonData?.lesson_id || 0}
                                     onNextLesson={handleNextLesson}
-                                    // ✅ เพิ่ม: ส่ง onGoToNextLesson สำหรับวิดีโอบทเรียน
                                     onGoToNextLesson={goToNextLesson}
                                 />
                             )}

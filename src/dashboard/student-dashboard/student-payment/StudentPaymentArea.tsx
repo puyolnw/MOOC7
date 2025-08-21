@@ -52,7 +52,7 @@ const StudentPaymentArea: React.FC = () => {
       setIsLoading(true);
       // Get token from localStorage for authentication
       const token = localStorage.getItem('token');
-      const response = await axios.get(`${apiURL}/api/data/student/completed-subjects`, {
+      const response = await axios.get(`${apiURL}/api/learn/student/completed-subjects`, {
         headers: {
           Authorization: `Bearer ${token}`
         }

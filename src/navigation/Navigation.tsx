@@ -197,8 +197,8 @@ const AppNavigation = () => {
         <Route path="/instructor-lessons/create-new" element={<InsAddlessonspage />} />
         <Route path="/instructor-subjects/create-new" element={<InsAddSubjectspage />} />
         <Route path="/instructor-grading" element={<InsGradingpage />} />
-         <Route path="/ins-creditbank" element={<Inscrepage />} />
-         <Route path="/instructor/subject/:subjectId/overview" element={<InstructorSubjectOverviewPage />} />
+        <Route path="/ins-creditbank" element={<Inscrepage />} />
+        <Route path="/instructor/subject/:subjectId/overview" element={<InstructorSubjectOverviewPage />} />
         </Route>
 
         <Route element={<PrivateRoute allowedRoles={["student"]} />}>
