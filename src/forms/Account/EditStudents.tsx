@@ -23,8 +23,14 @@ interface StudentData {
   // เพิ่มฟิลด์สำหรับนักเรียน
   schoolName?: string;
   studyProgram?: string;
+  studyProgramOther?: string;
   gradeLevel?: string;
   address?: string;
+  // เพิ่มฟิลด์ที่ขาดหายไป
+  gpa?: string;
+  phone?: string;
+  // เพิ่มฟิลด์สถานะ
+  status?: string;
 }
 
 interface EditStudentsProps {
@@ -43,6 +49,16 @@ const EditStudents: React.FC<EditStudentsProps> = ({ onSubmit, onCancel }) => {
   // ตัวเลือกโรงเรียนและแผนการเรียน
   const schoolNames = ['โรงเรียน1', 'โรงเรียน2'];
   const studyPrograms = ['วิทย์-คณิต', 'ศิลป์-ภาษา', 'ศิลป์-คำนวณ', 'ศิลป์-สังคม'];
+  
+  // ตัวเลือกระดับชั้นตามระบบ ม1-6
+  const gradeLevels = [
+    { value: 'ม1', label: 'มัธยมศึกษาปีที่ 1' },
+    { value: 'ม2', label: 'มัธยมศึกษาปีที่ 2' },
+    { value: 'ม3', label: 'มัธยมศึกษาปีที่ 3' },
+    { value: 'ม4', label: 'มัธยมศึกษาปีที่ 4' },
+    { value: 'ม5', label: 'มัธยมศึกษาปีที่ 5' },
+    { value: 'ม6', label: 'มัธยมศึกษาปีที่ 6' },
+  ];
 
   // State for loading and errors
   const [isLoading, setIsLoading] = useState(false);
@@ -68,8 +84,14 @@ const EditStudents: React.FC<EditStudentsProps> = ({ onSubmit, onCancel }) => {
     // ฟิลด์สำหรับนักเรียน
     schoolName: "",
     studyProgram: "",
+    studyProgramOther: "",
     gradeLevel: "",
     address: "",
+    // ฟิลด์ที่เพิ่มเข้ามา
+    gpa: "",
+    phone: "",
+    // เพิ่มฟิลด์สถานะ
+    status: "",
   });
 
   // State for errors
@@ -85,8 +107,14 @@ const EditStudents: React.FC<EditStudentsProps> = ({ onSubmit, onCancel }) => {
     // ฟิลด์สำหรับนักเรียน
     schoolName: "",
     studyProgram: "",
+    studyProgramOther: "",
     gradeLevel: "",
     address: "",
+    // ฟิลด์ที่เพิ่มเข้ามา
+    gpa: "",
+    phone: "",
+    // เพิ่มฟิลด์สถานะ
+    status: "",
   });
 
   // Fetch student data and departments
@@ -109,19 +137,54 @@ const EditStudents: React.FC<EditStudentsProps> = ({ onSubmit, onCancel }) => {
           return;
         }
 
-        // Fetch student data
-        const studentRes = await axios.get(`${apiURL}/api/accounts/students/${id}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        if (!studentRes.data.success) {
-          throw new Error(studentRes.data.message || "ไม่พบข้อมูลนักศึกษา");
-        }
-
-        const student = studentRes.data.student;
+        // ดึงข้อมูลจาก endpoint ที่ถูกต้องตามประเภทผู้ใช้
+        let student;
+        let isSchoolStudent = false;
         
-        // ตรวจสอบประเภทผู้ใช้จาก education_level 
-        const isSchoolStudent = student.education_level === 'มัธยมต้น' || student.education_level === 'มัธยมปลาย';
+        try {
+          // ลองดึงข้อมูลจาก university students ก่อน
+          const studentRes = await axios.get(`${apiURL}/api/accounts/students/${id}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          
+          if (studentRes.data.success) {
+            student = studentRes.data.student;
+                    // ตรวจสอบประเภทผู้ใช้จาก grade_level หรือ education_level
+        const gradeLevel = student.grade_level || student.education_level;
+        isSchoolStudent = gradeLevel && (gradeLevel.startsWith('ม') || gradeLevel === 'มัธยมต้น' || gradeLevel === 'มัธยมปลาย');
+            
+            if (isSchoolStudent) {
+              // ถ้าเป็นนักเรียน ให้ดึงข้อมูลจาก school_students endpoint
+              const schoolStudentRes = await axios.get(`${apiURL}/api/accounts/school_students/${id}`, {
+                headers: { Authorization: `Bearer ${token}` },
+              });
+              
+              if (schoolStudentRes.data.success) {
+                // รวมข้อมูลจากทั้งสอง endpoint
+                student = { ...student, ...schoolStudentRes.data.school_student };
+              }
+            }
+          } else {
+            throw new Error(studentRes.data.message || "ไม่พบข้อมูลนักศึกษา");
+          }
+        } catch (error) {
+          // ถ้าดึงจาก university students ไม่ได้ ลองดึงจาก school_students
+          try {
+            const schoolStudentRes = await axios.get(`${apiURL}/api/accounts/school_students/${id}`, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            
+            if (schoolStudentRes.data.success) {
+              student = schoolStudentRes.data.school_student;
+              isSchoolStudent = true;
+            } else {
+              throw new Error(schoolStudentRes.data.message || "ไม่พบข้อมูลนักเรียน");
+            }
+          } catch (schoolError) {
+            throw new Error("ไม่พบข้อมูลผู้ใช้ในระบบ");
+          }
+        }
+        
         setUserType(isSchoolStudent ? 1 : 0);
         
         setStudentData({
@@ -136,8 +199,14 @@ const EditStudents: React.FC<EditStudentsProps> = ({ onSubmit, onCancel }) => {
           // ฟิลด์สำหรับนักเรียน
           schoolName: student.school_name || "",
           studyProgram: student.study_program || "",
-          gradeLevel: student.grade_level || student.education_level || "",
+          studyProgramOther: student.study_program === 'อื่น ๆ' ? student.study_program_other || "" : "",
+          gradeLevel: student.grade_level || "",
           address: student.address || "",
+          // ฟิลด์ที่เพิ่มเข้ามา
+          gpa: student.gpa ? String(student.gpa) : "",
+          phone: student.phone || "",
+          // เพิ่มฟิลด์สถานะ
+          status: student.status || "active",
         });
 
         // Fetch departments
@@ -193,8 +262,14 @@ const EditStudents: React.FC<EditStudentsProps> = ({ onSubmit, onCancel }) => {
       // ฟิลด์สำหรับนักเรียน
       schoolName: "",
       studyProgram: "",
+      studyProgramOther: "",
       gradeLevel: "",
       address: "",
+      // ฟิลด์ที่เพิ่มเข้ามา
+      gpa: "",
+      phone: "",
+      // เพิ่มฟิลด์สถานะ
+      status: "",
     };
 
     // Validate username
@@ -241,8 +316,8 @@ const EditStudents: React.FC<EditStudentsProps> = ({ onSubmit, onCancel }) => {
         isValid = false;
       } else {
         const year = parseInt(studentData.academicYear);
-        if (isNaN(year) || year < 1 || year > 10) {
-          newErrors.academicYear = "ชั้นปีต้องเป็นตัวเลขระหว่าง 1-10";
+        if (isNaN(year) || year < 1 || year > 4) {
+          newErrors.academicYear = "ชั้นปีต้องเป็นตัวเลขระหว่าง 1-4";
           isValid = false;
         }
       }
@@ -256,6 +331,29 @@ const EditStudents: React.FC<EditStudentsProps> = ({ onSubmit, onCancel }) => {
       // Validate education level
       if (!studentData.educationLevel) {
         newErrors.educationLevel = "กรุณาเลือกระดับการศึกษา";
+        isValid = false;
+      }
+
+      // ตรวจสอบ GPA สำหรับนักศึกษา
+      if (studentData.gpa && studentData.gpa.trim()) {
+        const gpaValue = parseFloat(studentData.gpa);
+        if (isNaN(gpaValue) || gpaValue < 0 || gpaValue > 4) {
+          newErrors.gpa = "GPA ต้องอยู่ระหว่าง 0.00 - 4.00";
+          isValid = false;
+        }
+      }
+
+      // ตรวจสอบเบอร์โทรศัพท์สำหรับนักศึกษา
+      if (studentData.phone && studentData.phone.trim()) {
+        if (studentData.phone.length < 10) {
+          newErrors.phone = "เบอร์โทรศัพท์ต้องมีอย่างน้อย 10 หลัก";
+          isValid = false;
+        }
+      }
+
+      // ตรวจสอบสถานะ
+      if (!studentData.status) {
+        newErrors.status = "กรุณาเลือกสถานะ";
         isValid = false;
       }
     } else {
@@ -281,6 +379,29 @@ const EditStudents: React.FC<EditStudentsProps> = ({ onSubmit, onCancel }) => {
       // Validate address
       if (!studentData.address?.trim()) {
         newErrors.address = "กรุณากรอกที่อยู่";
+        isValid = false;
+      }
+
+      // ตรวจสอบ GPA
+      if (studentData.gpa && studentData.gpa.trim()) {
+        const gpaValue = parseFloat(studentData.gpa);
+        if (isNaN(gpaValue) || gpaValue < 0 || gpaValue > 4) {
+          newErrors.gpa = "GPA ต้องอยู่ระหว่าง 0.00 - 4.00";
+          isValid = false;
+        }
+      }
+
+      // ตรวจสอบเบอร์โทรศัพท์
+      if (studentData.phone && studentData.phone.trim()) {
+        if (studentData.phone.length < 10) {
+          newErrors.phone = "เบอร์โทรศัพท์ต้องมีอย่างน้อย 10 หลัก";
+          isValid = false;
+        }
+      }
+
+      // ตรวจสอบสถานะ
+      if (!studentData.status) {
+        newErrors.status = "กรุณาเลือกสถานะ";
         isValid = false;
       }
     }
@@ -311,30 +432,60 @@ const EditStudents: React.FC<EditStudentsProps> = ({ onSubmit, onCancel }) => {
 
       // Validate and convert numbers safely
       const studentCodeNum = parseInt(studentData.studentCode);
-      const academicYearNum = parseInt(studentData.academicYear);
       
       if (isNaN(studentCodeNum) || studentCodeNum <= 0) {
         toast.error("รหัสนักศึกษาต้องเป็นตัวเลขที่มากกว่า 0");
         return;
       }
       
-      if (isNaN(academicYearNum) || academicYearNum < 1) {
-        toast.error("ชั้นปีต้องเป็นตัวเลขที่มากกว่า 0");
-        return;
+      // ตรวจสอบ academic_year เฉพาะนักศึกษา
+      let academicYearNum: number | undefined;
+      if (userType === 0) {
+        academicYearNum = parseInt(studentData.academicYear);
+        if (isNaN(academicYearNum) || academicYearNum < 1) {
+          toast.error("ชั้นปีต้องเป็นตัวเลขที่มากกว่า 0");
+          return;
+        }
       }
 
-      const formData = {
-        username: studentData.username,
-        email: studentData.email,
-        student_code: studentCodeNum,
-        department_id: studentData.department,
-        education_level: studentData.educationLevel,
-        academic_year: academicYearNum,
-        first_name: studentData.firstName,
-        last_name: studentData.lastName,
-      };
+      // สร้างข้อมูลตามประเภทผู้ใช้
+      const formData = userType === 0 
+        ? {
+            // ข้อมูลสำหรับนักศึกษา
+            username: studentData.username,
+            email: studentData.email,
+            student_code: studentCodeNum,
+            department_id: studentData.department,
+            education_level: studentData.educationLevel,
+            academic_year: academicYearNum,
+            first_name: studentData.firstName,
+            last_name: studentData.lastName,
+            gpa: studentData.gpa ? parseFloat(studentData.gpa) : undefined,
+            phone: studentData.phone || undefined,
+            status: studentData.status,
+          }
+        : {
+            // ข้อมูลสำหรับนักเรียน
+            username: studentData.username,
+            email: studentData.email,
+            first_name: studentData.firstName,
+            last_name: studentData.lastName,
+            student_code: studentCodeNum,
+            school_name: studentData.schoolName,
+            study_program: studentData.studyProgram === 'อื่น ๆ' ? studentData.studyProgramOther : studentData.studyProgram,
+            grade_level: studentData.gradeLevel, // จะเป็น ม1, ม2, ม3, ม4, ม5, ม6
+            address: studentData.address,
+            gpa: studentData.gpa ? parseFloat(studentData.gpa) : undefined,
+            phone: studentData.phone || undefined,
+            status: studentData.status,
+          };
 
-      const response = await axios.put(`${apiURL}/api/accounts/students/${id}`, formData, {
+      // เลือก API endpoint ตามประเภทผู้ใช้
+      const apiEndpoint = userType === 0 
+        ? `${apiURL}/api/accounts/students/${id}`  // นักศึกษา
+        : `${apiURL}/api/accounts/school_students/user/${id}`; // นักเรียน
+
+      const response = await axios.put(apiEndpoint, formData, {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
@@ -603,8 +754,11 @@ const EditStudents: React.FC<EditStudentsProps> = ({ onSubmit, onCancel }) => {
                     onChange={handleInputChange}
                   >
                     <option value="">เลือกระดับชั้น</option>
-                    <option value="มัธยมต้น">มัธยมต้น</option>
-                    <option value="มัธยมปลาย">มัธยมปลาย</option>
+                    {gradeLevels.map((level) => (
+                      <option key={level.value} value={level.value}>
+                        {level.label}
+                      </option>
+                    ))}
                   </select>
                   {errors.gradeLevel && <div className="invalid-feedback">{errors.gradeLevel}</div>}
                 </>
@@ -709,8 +863,25 @@ const EditStudents: React.FC<EditStudentsProps> = ({ onSubmit, onCancel }) => {
                         {program}
                       </option>
                     ))}
+                    <option value="อื่น ๆ">อื่น ๆ (กรอกเอง)</option>
                   </select>
                   {errors.studyProgram && <div className="invalid-feedback">{errors.studyProgram}</div>}
+                  
+                  {/* ฟิลด์สำหรับแผนการเรียนอื่นๆ */}
+                  {studentData.studyProgram === 'อื่น ๆ' && (
+                    <div className="mt-2">
+                      <input
+                        type="text"
+                        className={`form-control ${errors.studyProgramOther ? "is-invalid" : ""}`}
+                        id="studyProgramOther"
+                        name="studyProgramOther"
+                        value={studentData.studyProgramOther}
+                        onChange={handleInputChange}
+                        placeholder="กรอกแผนการเรียน"
+                      />
+                      {errors.studyProgramOther && <div className="invalid-feedback">{errors.studyProgramOther}</div>}
+                    </div>
+                  )}
                 </>
               )}
             </div>
@@ -736,6 +907,69 @@ const EditStudents: React.FC<EditStudentsProps> = ({ onSubmit, onCancel }) => {
               </div>
             </div>
           )}
+
+          {/* เพิ่มฟิลด์ GPA และเบอร์โทรสำหรับทั้งสองประเภท */}
+          <div className="row mb-3">
+            <div className="col-md-6">
+              <label htmlFor="gpa" className="form-label">
+                GPA <span className="text-muted">(ไม่บังคับ)</span>
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                max="4"
+                className={`form-control ${errors.gpa ? "is-invalid" : ""}`}
+                id="gpa"
+                name="gpa"
+                value={studentData.gpa}
+                onChange={handleInputChange}
+                placeholder="0.00 - 4.00"
+              />
+              {errors.gpa && <div className="invalid-feedback">{errors.gpa}</div>}
+              <small className="form-text text-muted">GPA ระหว่าง 0.00 - 4.00</small>
+            </div>
+
+            <div className="col-md-6">
+              <label htmlFor="phone" className="form-label">
+                เบอร์โทรศัพท์ <span className="text-muted">(ไม่บังคับ)</span>
+              </label>
+              <input
+                type="tel"
+                className={`form-control ${errors.phone ? "is-invalid" : ""}`}
+                id="phone"
+                name="phone"
+                value={studentData.phone}
+                onChange={handleInputChange}
+                placeholder="เบอร์โทรศัพท์"
+              />
+              {errors.phone && <div className="invalid-feedback">{errors.phone}</div>}
+              <small className="form-text text-muted">เบอร์โทรศัพท์ 10 หลัก</small>
+            </div>
+          </div>
+
+          {/* เพิ่มฟิลด์สถานะ */}
+          <div className="row mb-3">
+            <div className="col-md-6">
+              <label htmlFor="status" className="form-label">
+                สถานะ <span className="text-danger">*</span>
+              </label>
+              <select
+                className={`form-select ${errors.status ? "is-invalid" : ""}`}
+                id="status"
+                name="status"
+                value={studentData.status}
+                onChange={handleInputChange}
+              >
+                <option value="">เลือกสถานะ</option>
+                <option value="active">ปกติ</option>
+                <option value="inactive">พ้นสภาพ</option>
+                <option value="pending">พักการเรียน</option>
+              </select>
+              {errors.status && <div className="invalid-feedback">{errors.status}</div>}
+              <small className="form-text text-muted">สถานะการใช้งานในระบบ</small>
+            </div>
+          </div>
         </div>
       </div>
 

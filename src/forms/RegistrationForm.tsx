@@ -3,7 +3,7 @@ import * as yup from 'yup';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import axios from 'axios';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect} from 'react';
 import BtnArrow from '../svg/BtnArrow';
 import '../../public/assets/css/option.css';
 
@@ -22,6 +22,24 @@ interface FormData {
    academic_year: number;
    phone: string;
    gpa: number;
+}
+
+// เพิ่ม interface สำหรับนักเรียนมัธยม
+interface SchoolFormData {
+   username: string;
+   first_name: string;
+   last_name: string;
+   email: string;
+   password: string;
+   cpassword: string;
+   student_code: string;
+   school_name: string;
+   study_program: string;
+   study_program_other?: string;
+   grade_level: string;
+   address: string;
+   phone: string;
+   gpa: string;
 }
 
 interface Department {
@@ -66,6 +84,45 @@ const schema = yup
    })
    .required();
 
+// เพิ่ม schema สำหรับนักเรียนมัธยม
+const schoolSchema = yup
+   .object({
+      username: yup
+         .string()
+         .required('กรุณากรอกชื่อผู้ใช้')
+         .min(3, 'ชื่อผู้ใช้ต้องมีอย่างน้อย 3 ตัวอักษร'),
+      first_name: yup.string().required('กรุณากรอกชื่อจริง'),
+      last_name: yup.string().required('กรุณากรอกนามสกุล'),
+      email: yup.string().required('กรุณากรอกอีเมล').email('รูปแบบอีเมลไม่ถูกต้อง'),
+      password: yup
+         .string()
+         .required('กรุณากรอกรหัสผ่าน')
+         .min(6, 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร'),
+      cpassword: yup
+         .string()
+         .required('กรุณายืนยันรหัสผ่าน')
+         .oneOf([yup.ref('password')], 'รหัสผ่านไม่ตรงกัน'),
+      student_code: yup.string().required('กรุณากรอกรหัสนักเรียน'),
+      school_name: yup.string().required('กรุณาเลือกโรงเรียน'),
+      study_program: yup.string().required('กรุณาเลือกแผนการเรียน'),
+      study_program_other: yup.string().when('study_program', {
+         is: 'อื่น ๆ',
+         then: (schema) => schema.required('กรุณากรอกแผนการเรียน')
+      }),
+      grade_level: yup.string().required('กรุณาเลือกระดับชั้น'),
+      address: yup.string().required('กรุณากรอกที่อยู่'),
+      phone: yup.string().required('กรุณากรอกเบอร์โทรศัพท์'),
+      gpa: yup
+         .string()
+         .required('กรุณากรอก GPA')
+         .test('gpa-range', 'GPA ต้องอยู่ระหว่าง 0.00 - 4.00', (value) => {
+            if (!value) return false;
+            const numValue = parseFloat(value);
+            return numValue >= 0 && numValue <= 4;
+         }),
+   })
+   .required();
+
 const tab_title: string[] = ["นักศึกษา", "นักเรียน"];
 
 // เพิ่ม mock data สำหรับ school_name dropdown
@@ -91,27 +148,19 @@ const RegistrationForm = () => {
       resolver: yupResolver(schema),
    });
 
-   const [departments, setDepartments] = useState<Department[]>([]);
-   const [tabIndex, setTabIndex] = useState<number>(0); // 0 = นักศึกษา, 1 = นักเรียน
-   const [schoolFields, setSchoolFields] = useState({
-      username: '',
-      first_name: '',
-      last_name: '',
-      email: '',
-      student_code: '',
-      school_name: '',
-      study_program: '',
-      study_program_other: '',
-      education_level: '',
-      grade_level: '',
-      password: '',
-      cpassword: '',
-      address: '',
-      phone: '',
-      gpa: '',
+   // เพิ่ม useForm สำหรับนักเรียนมัธยม
+   const {
+      register: registerSchool,
+      handleSubmit: handleSchoolSubmit,
+      reset: resetSchool,
+      formState: { errors: schoolErrors },
+      watch,
+   } = useForm<SchoolFormData>({
+      resolver: yupResolver(schoolSchema),
    });
 
-   const formRef = useRef<HTMLFormElement>(null);
+   const [departments, setDepartments] = useState<Department[]>([]);
+   const [tabIndex, setTabIndex] = useState<number>(0); // 0 = นักศึกษา, 1 = นักเรียน
 
    useEffect(() => {
       const fetchDepartments = async () => {
@@ -141,8 +190,8 @@ const RegistrationForm = () => {
             department_id: data.department_id,
             education_level: data.education_level,
             academic_year: data.academic_year,
-            phone: data.phone,
-            gpa: data.gpa,
+            phone: data.phone || undefined,
+            gpa: data.gpa || undefined,
          };
 
          const response = await axios.post(`${apiURL}/api/auth/register`, payload);
@@ -214,41 +263,25 @@ const RegistrationForm = () => {
       }
    };
 
-   // เพิ่มฟังก์ชันสำหรับนักเรียนมัธยม
-   const handleStudentSubmit = async (e: React.FormEvent) => {
-      e.preventDefault();
-      // Validate required fields
-      const requiredFields: (keyof typeof schoolFields)[] = [
-         'username', 'first_name', 'last_name', 'email', 'student_code',
-         'school_name', 'study_program', 'grade_level', 'password', 'cpassword', 'address', 'education_level', 'phone', 'gpa'
-      ];
-      for (const key of requiredFields) {
-         if (!schoolFields[key]) {
-            toast.error('กรุณากรอกข้อมูลให้ครบถ้วน', { position: 'top-center', theme: 'light' });
-            return;
-         }
-      }
-      if (schoolFields.password !== schoolFields.cpassword) {
-         toast.error('รหัสผ่านไม่ตรงกัน', { position: 'top-center', theme: 'light' });
-         return;
-      }
+      // เพิ่มฟังก์ชันสำหรับนักเรียนมัธยม
+   const onSchoolSubmit = async (data: SchoolFormData) => {
       try {
          const payload = {
-            username: schoolFields.username,
-            first_name: schoolFields.first_name,
-            last_name: schoolFields.last_name,
-            email: schoolFields.email,
-            password: schoolFields.password,
-            cpassword: schoolFields.cpassword,
+            username: data.username,
+            first_name: data.first_name,
+            last_name: data.last_name,
+            email: data.email,
+            password: data.password,
+            cpassword: data.cpassword,
             role_id: 1,
-            student_code: schoolFields.student_code,
-            school_name: schoolFields.school_name,
-            study_program: schoolFields.study_program === 'อื่น ๆ' ? schoolFields.study_program_other : schoolFields.study_program,
-            grade_level: schoolFields.grade_level,
-            address: schoolFields.address,
-            education_level: schoolFields.education_level,
-            phone: schoolFields.phone,
-            gpa: schoolFields.gpa,
+            student_code: data.student_code,
+            school_name: data.school_name,
+            study_program: data.study_program === 'อื่น ๆ' ? data.study_program_other : data.study_program,
+            grade_level: data.grade_level,
+            address: data.address,
+            education_level: data.grade_level.startsWith('ม1') || data.grade_level.startsWith('ม2') || data.grade_level.startsWith('ม3') ? 'มัธยมต้น' : 'มัธยมปลาย', // กำหนดตาม grade_level
+            phone: data.phone || undefined,
+            gpa: data.gpa || undefined,
          };
          const response = await axios.post(`${apiURL}/api/auth/register`, payload);
          if (response.data.success) {
@@ -259,10 +292,7 @@ const RegistrationForm = () => {
                   window.location.href = '/login';
                }
             });
-            setSchoolFields({
-               username: '', first_name: '', last_name: '', email: '', student_code: '', school_name: '', study_program: '', study_program_other: '', education_level: '', grade_level: '', password: '', cpassword: '', address: '', phone: '', gpa: ''
-            });
-            if (formRef.current) formRef.current.reset();
+            resetSchool();
          } else {
             toast.error(response.data.message || 'เกิดข้อผิดพลาดในการสมัครสมาชิก', {
                position: 'top-center',
@@ -279,7 +309,7 @@ const RegistrationForm = () => {
    };
 
    return (
-      <form onSubmit={tabIndex === 1 ? handleStudentSubmit : handleSubmit(onSubmit)} className="account__form" ref={formRef}>
+      <form onSubmit={tabIndex === 1 ? handleSchoolSubmit(onSchoolSubmit) : handleSubmit(onSubmit)} className="account__form">
          {/* Tab UI */}
          <div style={{ display: 'flex', gap: '1rem', marginBottom: 24 }}>
             {tab_title.map((title, idx) => (
@@ -470,11 +500,11 @@ const RegistrationForm = () => {
                   <label htmlFor="username">ชื่อผู้ใช้</label>
                   <input
                      type="text"
+                     {...registerSchool('username')}
                      id="username"
-                     value={schoolFields.username}
-                     onChange={e => setSchoolFields(f => ({ ...f, username: e.target.value }))}
                      placeholder="ชื่อผู้ใช้"
                   />
+                  <p className="form_error">{schoolErrors.username?.message}</p>
                </div>
                <div className="row gutter-20">
                   <div className="col-md-6">
@@ -482,11 +512,11 @@ const RegistrationForm = () => {
                         <label htmlFor="first-name">ชื่อจริง</label>
                         <input
                            type="text"
+                           {...registerSchool('first_name')}
                            id="first-name"
-                           value={schoolFields.first_name}
-                           onChange={e => setSchoolFields(f => ({ ...f, first_name: e.target.value }))}
                            placeholder="ชื่อจริง"
                         />
+                        <p className="form_error">{schoolErrors.first_name?.message}</p>
                      </div>
                   </div>
                   <div className="col-md-6">
@@ -494,11 +524,11 @@ const RegistrationForm = () => {
                         <label htmlFor="last-name">นามสกุล</label>
                         <input
                            type="text"
+                           {...registerSchool('last_name')}
                            id="last-name"
-                           value={schoolFields.last_name}
-                           onChange={e => setSchoolFields(f => ({ ...f, last_name: e.target.value }))}
                            placeholder="นามสกุล"
                         />
+                        <p className="form_error">{schoolErrors.last_name?.message}</p>
                      </div>
                   </div>
                </div>
@@ -506,28 +536,27 @@ const RegistrationForm = () => {
                   <label htmlFor="email">อีเมล</label>
                   <input
                      type="email"
+                     {...registerSchool('email')}
                      id="email"
-                     value={schoolFields.email}
-                     onChange={e => setSchoolFields(f => ({ ...f, email: e.target.value }))}
                      placeholder="อีเมล"
                   />
+                  <p className="form_error">{schoolErrors.email?.message}</p>
                </div>
                <div className="form-grp">
                   <label htmlFor="student-code">รหัสนักเรียน</label>
                   <input
                      type="text"
+                     {...registerSchool('student_code')}
                      id="student-code"
-                     value={schoolFields.student_code}
-                     onChange={e => setSchoolFields(f => ({ ...f, student_code: e.target.value }))}
                      placeholder="รหัสนักเรียน"
                   />
+                  <p className="form_error">{schoolErrors.student_code?.message}</p>
                </div>
                <div className="form-grp">
                   <label htmlFor="school-name">ชื่อโรงเรียน</label>
                   <select
+                     {...registerSchool('school_name')}
                      id="school-name"
-                     value={schoolFields.school_name}
-                     onChange={e => setSchoolFields(f => ({ ...f, school_name: e.target.value }))}
                      className="input-like-select"
                   >
                      <option value="">เลือกโรงเรียน</option>
@@ -535,13 +564,13 @@ const RegistrationForm = () => {
                         <option key={name} value={name}>{name}</option>
                      ))}
                   </select>
+                  <p className="form_error">{schoolErrors.school_name?.message}</p>
                </div>
                <div className="form-grp">
                   <label htmlFor="study-program">แผนการเรียน</label>
                   <select
+                     {...registerSchool('study_program')}
                      id="study-program"
-                     value={schoolFields.study_program}
-                     onChange={e => setSchoolFields(f => ({ ...f, study_program: e.target.value }))}
                      className="input-like-select"
                   >
                      <option value="">เลือกแผนการเรียน</option>
@@ -550,107 +579,77 @@ const RegistrationForm = () => {
                      ))}
                      <option value="อื่น ๆ">อื่น ๆ (กรอกเอง)</option>
                   </select>
-                  {schoolFields.study_program === 'อื่น ๆ' && (
+                  <p className="form_error">{schoolErrors.study_program?.message}</p>
+                  {watch('study_program') === 'อื่น ๆ' && (
                      <input
                         type="text"
                         style={{ marginTop: 8 }}
                         placeholder="กรอกแผนการเรียน"
-                        value={schoolFields.study_program_other}
-                        onChange={e => setSchoolFields(f => ({ ...f, study_program_other: e.target.value }))}
+                        {...registerSchool('study_program_other')}
                      />
                   )}
+                  {watch('study_program') === 'อื่น ๆ' && schoolErrors.study_program_other && (
+                     <p className="form_error">{schoolErrors.study_program_other.message}</p>
+                  )}
                </div>
+
                <div className="form-grp">
-                  <label htmlFor="education-level">ระดับการศึกษา</label>
+                  <label htmlFor="grade-level">ระดับชั้น</label>
                   <select
-                     id="education-level"
-                     value={schoolFields.education_level}
-                     onChange={e => setSchoolFields(f => ({ ...f, education_level: e.target.value }))}
-                     className="input-like-select"
-                  >
-                     <option value="">เลือกระดับการศึกษา</option>
-                     <option value="มัธยมต้น">มัธยมต้น</option>
-                     <option value="มัธยมปลาย">มัธยมปลาย</option>
-                  </select>
-               </div>
-               <div className="form-grp">
-                  <label htmlFor="grade-level">ชั้นมัธยม</label>
-                  <select
+                     {...registerSchool('grade_level')}
                      id="grade-level"
-                     value={schoolFields.grade_level}
-                     onChange={e => setSchoolFields(f => ({ ...f, grade_level: e.target.value }))}
                      className="input-like-select"
                   >
-                     <option value="">เลือกชั้นมัธยม</option>
-                     {schoolFields.education_level === "มัธยมต้น" && (
-                        <>
-                           <option value="ม.1">มัธยมศึกษาปีที่ 1</option>
-                           <option value="ม.2">มัธยมศึกษาปีที่ 2</option>
-                           <option value="ม.3">มัธยมศึกษาปีที่ 3</option>
-                        </>
-                     )}
-                     {schoolFields.education_level === "มัธยมปลาย" && (
-                        <>
-                           <option value="ม.4">มัธยมศึกษาปีที่ 4</option>
-                           <option value="ม.5">มัธยมศึกษาปีที่ 5</option>
-                           <option value="ม.6">มัธยมศึกษาปีที่ 6</option>
-                        </>
-                     )}
-                     {!schoolFields.education_level && (
-                        <>
-                           <option value="ม.1">มัธยมศึกษาปีที่ 1</option>
-                           <option value="ม.2">มัธยมศึกษาปีที่ 2</option>
-                           <option value="ม.3">มัธยมศึกษาปีที่ 3</option>
-                           <option value="ม.4">มัธยมศึกษาปีที่ 4</option>
-                           <option value="ม.5">มัธยมศึกษาปีที่ 5</option>
-                           <option value="ม.6">มัธยมศึกษาปีที่ 6</option>
-                        </>
-                     )}
+                     <option value="">เลือกระดับชั้น</option>
+                     <option value="ม1">มัธยมศึกษาปีที่ 1</option>
+                     <option value="ม2">มัธยมศึกษาปีที่ 2</option>
+                     <option value="ม3">มัธยมศึกษาปีที่ 3</option>
+                     <option value="ม4">มัธยมศึกษาปีที่ 4</option>
+                     <option value="ม5">มัธยมศึกษาปีที่ 5</option>
+                     <option value="ม6">มัธยมศึกษาปีที่ 6</option>
                   </select>
+                  <p className="form_error">{schoolErrors.grade_level?.message}</p>
                </div>
                <div className="form-grp">
                   <label htmlFor="password">รหัสผ่าน</label>
                   <input
                      type="password"
+                     {...registerSchool('password')}
                      id="password"
-                     value={schoolFields.password}
-                     onChange={e => setSchoolFields(f => ({ ...f, password: e.target.value }))}
                      placeholder="รหัสผ่าน"
                   />
+                  <p className="form_error">{schoolErrors.password?.message}</p>
                </div>
                <div className="form-grp">
                   <label htmlFor="cpassword">ยืนยันรหัสผ่าน</label>
                   <input
                      type="password"
+                     {...registerSchool('cpassword')}
                      id="cpassword"
-                     value={schoolFields.cpassword}
-                     onChange={e => setSchoolFields(f => ({ ...f, cpassword: e.target.value }))}
                      placeholder="ยืนยันรหัสผ่าน"
                   />
-                  {schoolFields.cpassword && schoolFields.cpassword !== schoolFields.password && (
-                    <p className="form_error">รหัสผ่านไม่ตรงกัน</p>
-                  )}
+                  <p className="form_error">{schoolErrors.cpassword?.message}</p>
                </div>
                <div className="form-grp">
                   <label htmlFor="address">ที่อยู่</label>
                   <input
                      type="text"
+                     {...registerSchool('address')}
                      id="address"
-                     value={schoolFields.address}
-                     onChange={e => setSchoolFields(f => ({ ...f, address: e.target.value }))}
                      placeholder="ที่อยู่"
                   />
+                  <p className="form_error">{schoolErrors.address?.message}</p>
                </div>
 
                <div className="form-grp">
                   <label htmlFor="phone">เบอร์โทรศัพท์</label>
                   <input
                      type="text"
+                     {...registerSchool('phone')}
                      id="phone"
-                     value={schoolFields.phone}
-                     onChange={e => setSchoolFields(f => ({ ...f, phone: e.target.value }))}
                      placeholder="เบอร์โทรศัพท์"
                   />
+                  <p className="form_error">{schoolErrors.phone?.message}</p>
                </div>
 
                <div className="form-grp">
@@ -660,11 +659,11 @@ const RegistrationForm = () => {
                      step="0.01"
                      min="0"
                      max="4"
+                     {...registerSchool('gpa')}
                      id="gpa"
-                     value={schoolFields.gpa}
-                     onChange={e => setSchoolFields(f => ({ ...f, gpa: e.target.value }))}
                      placeholder="0.00 - 4.00"
                   />
+                  <p className="form_error">{schoolErrors.gpa?.message}</p>
                </div>
             </>
          )}
