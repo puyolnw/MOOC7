@@ -66,7 +66,7 @@ const LessonFaq = ({
   subjectId,
   subjectQuizzes: externalSubjectQuizzes,
   // เพิ่ม prop ใหม่เพื่อให้รู้ว่ากำลังเรียนบทไหนอยู่
-  currentLessonId,
+  // currentLessonId,
   // เพิ่ม prop สำหรับควบคุม activeAccordion จากภายนอก
   activeAccordion: externalActiveAccordion,
   onAccordionChange,

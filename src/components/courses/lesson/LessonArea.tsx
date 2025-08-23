@@ -167,7 +167,7 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
             console.log("🎯 LessonArea lessonData changed, preserving accordion state:", intendedAccordionState.current);
             
             // ✅ เพิ่มการตรวจสอบว่า lessonData เปลี่ยนจริงหรือไม่ (ไม่ใช่แค่ re-render)
-            const currentAccordionState = sidebarActiveAccordion;
+            // const currentAccordionState = sidebarActiveAccordion;
             
             // ✅ รักษา accordion state ไว้เมื่อ lessonData เปลี่ยน
             if (sidebarActiveAccordion !== intendedAccordionState.current) {
