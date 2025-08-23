@@ -28,6 +28,8 @@ interface Student {
     school_name?: string;
     study_program?: string;
     grade_level?: string;
+    gpa?: number;
+    phone?: string;
     created_at: string;
     // Quiz/Test Results
     total_quizzes_taken?: number;
@@ -201,12 +203,14 @@ const AccountStudentArea: React.FC = () => {
                                 student_code: schoolStudent.student_code,
                                 department_id: null, // นักเรียนมัธยมไม่มี department
                                 education_level: schoolStudent.grade_level === 'ม.1' || schoolStudent.grade_level === 'ม.2' || schoolStudent.grade_level === 'ม.3' ? 'มัธยมต้น' : 'มัธยมปลาย',
-                                department_name: 'ไม่ระบุ', // นักเรียนมัธยมไม่มีสาขา
+                                department_name: schoolStudent.school_name || 'ไม่ระบุ', // ใช้ชื่อโรงเรียนแทนสาขา
                                 academic_year: null, // นักเรียนมัธยมไม่มีปีการศึกษา
                                 school_name: schoolStudent.school_name,
                                 study_program: schoolStudent.study_program,
                                 grade_level: schoolStudent.grade_level,
-                                created_at: schoolStudent.created_at || new Date().toISOString()
+                                gpa: schoolStudent.gpa,
+                                phone: schoolStudent.phone,
+                                created_at: schoolStudent.created_at
                             };
                         });
 
@@ -350,15 +354,15 @@ const AccountStudentArea: React.FC = () => {
         switch (status) {
             case "active":
                 badgeClass = "badge bg-success-subtle text-success rounded-pill px-3 py-1 small";
-                statusText = "เปิดใช้งาน";
+                statusText = "ปกติ";
                 break;
             case "inactive":
                 badgeClass = "badge bg-danger-subtle text-danger rounded-pill px-3 py-1 small";
-                statusText = "ปิดใช้งาน";
+                statusText = "พ้นสภาพ";
                 break;
             case "pending":
-                badgeClass = "badge bg-danger-subtle text-danger rounded-pill px-3 py-1 small";
-                statusText = "รอการยืนยัน";
+                badgeClass = "badge bg-warning-subtle text-warning rounded-pill px-3 py-1 small";
+                statusText = "พักการเรียน";
                 break;
             default:
                 badgeClass = "badge bg-secondary-subtle text-secondary rounded-pill px-3 py-1 small";
@@ -568,9 +572,9 @@ const AccountStudentArea: React.FC = () => {
                                                     onChange={(e) => setStatusFilter(e.target.value)}
                                                 >
                                                     <option value="all">ทุกสถานะ</option>
-                                                    <option value="active">เปิดใช้งาน</option>
-                                                    <option value="inactive">ปิดใช้งาน</option>
-                                                    <option value="pending">รอการยืนยัน</option>
+                                                    <option value="active">ปกติ</option>
+                                                    <option value="inactive">พ้นสภาพ</option>
+                                                    <option value="pending">พักการเรียน</option>
                                                 </select>
                                             </div>
 
@@ -726,19 +730,31 @@ const AccountStudentArea: React.FC = () => {
                                                                     <div>
                                                                         <div className="fw-medium">
                                                                             <i className="fas fa-school me-1 text-primary"></i>
-                                                                            {student.school_name || 'ไม่ระบุโรงเรียน'}
+                                                                            {student.school_name || student.department_name || 'ไม่ระบุ'}
                                                                         </div>
                                                                         <div className="text-muted small mt-1">
                                                                             <span className="badge bg-info me-2">
-                                                                                {student.grade_level || 'ไม่ระบุชั้น'}
+                                                                                {student.grade_level || student.education_level || 'ไม่ระบุ'}
                                                                             </span>
-                                                                            <span className="text-muted">
-                                                                                ปีการศึกษา {student.academic_year || 'ไม่ระบุ'}
-                                                                            </span>
+                                                                            {student.academic_year && (
+                                                                                <span className="text-muted">
+                                                                                    ปีการศึกษา {student.academic_year}
+                                                                                </span>
+                                                                            )}
                                                                         </div>
                                                                         {student.study_program && (
                                                                             <div className="text-muted small">
                                                                                 <i className="fas fa-book me-1"></i>{student.study_program}
+                                                                            </div>
+                                                                        )}
+                                                                        {student.gpa && (
+                                                                            <div className="text-muted small">
+                                                                                <i className="fas fa-chart-line me-1"></i>GPA: {student.gpa}
+                                                                            </div>
+                                                                        )}
+                                                                        {student.phone && (
+                                                                            <div className="text-muted small">
+                                                                                <i className="fas fa-phone me-1"></i>{student.phone}
                                                                             </div>
                                                                         )}
                                                                     </div>
@@ -747,7 +763,7 @@ const AccountStudentArea: React.FC = () => {
                                                                 <td className="text-center">
                                                                     <StatusBadge status={student.status} />
                                                                     <div className="text-muted small mt-1">
-                                                                        ลงทะเบียน {new Date(student.created_at).toLocaleDateString('th-TH')}
+                                                                        ลงทะเบียน {student.created_at ? new Date(student.created_at).toLocaleDateString('th-TH') : 'ไม่ระบุ'}
                                                                     </div>
                                                                 </td>
                                                                 <td>
@@ -794,7 +810,7 @@ const AccountStudentArea: React.FC = () => {
                                                                                             <table className="table table-sm mb-0">
                                                                                                 <tbody>
                                                                                                     <tr>
-                                                                                                        <td><strong>รหัสนักเรียน:</strong></td>
+                                                                                                        <td><strong>รหัสนักเรียน/นักศึกษา:</strong></td>
                                                                                                         <td>{student.student_code}</td>
                                                                                                     </tr>
                                                                                                     <tr>
@@ -806,13 +822,25 @@ const AccountStudentArea: React.FC = () => {
                                                                                                         <td>{student.email}</td>
                                                                                                     </tr>
                                                                                                     <tr>
-                                                                                                        <td><strong>สาขาวิชา:</strong></td>
-                                                                                                        <td>{student.department_name}</td>
+                                                                                                        <td><strong>สาขาวิชา/โรงเรียน:</strong></td>
+                                                                                                        <td>{student.department_name || student.school_name || 'ไม่ระบุ'}</td>
                                                                                                     </tr>
                                                                                                     <tr>
                                                                                                         <td><strong>ระดับการศึกษา:</strong></td>
-                                                                                                        <td>{student.education_level}</td>
+                                                                                                        <td>{student.education_level || student.grade_level || 'ไม่ระบุ'}</td>
                                                                                                     </tr>
+                                                                                                    {student.gpa && (
+                                                                                                        <tr>
+                                                                                                            <td><strong>GPA:</strong></td>
+                                                                                                            <td>{student.gpa}</td>
+                                                                                                        </tr>
+                                                                                                    )}
+                                                                                                    {student.phone && (
+                                                                                                        <tr>
+                                                                                                            <td><strong>เบอร์โทรศัพท์:</strong></td>
+                                                                                                            <td>{student.phone}</td>
+                                                                                                        </tr>
+                                                                                                    )}
                                                                                                 </tbody>
                                                                                             </table>
                                                                                         </div>
@@ -828,7 +856,7 @@ const AccountStudentArea: React.FC = () => {
                                                                                                 <tbody>
                                                                                                     <tr>
                                                                                                         <td><strong>วันที่ลงทะเบียน:</strong></td>
-                                                                                                        <td>{new Date(student.created_at).toLocaleDateString('th-TH')}</td>
+                                                                                                        <td>{student.created_at ? new Date(student.created_at).toLocaleDateString('th-TH') : 'ไม่ระบุ'}</td>
                                                                                                     </tr>
                                                                                                     {student.school_name && (
                                                                                                         <tr>
@@ -838,8 +866,20 @@ const AccountStudentArea: React.FC = () => {
                                                                                                     )}
                                                                                                     {student.study_program && (
                                                                                                         <tr>
-                                                                                                            <td><strong>สาขาการเรียน:</strong></td>
+                                                                                                            <td><strong>แผนการเรียน:</strong></td>
                                                                                                             <td>{student.study_program}</td>
+                                                                                                        </tr>
+                                                                                                    )}
+                                                                                                    {student.academic_year && (
+                                                                                                        <tr>
+                                                                                                            <td><strong>ชั้นปีการศึกษา:</strong></td>
+                                                                                                            <td>{student.academic_year}</td>
+                                                                                                        </tr>
+                                                                                                    )}
+                                                                                                    {student.grade_level && (
+                                                                                                        <tr>
+                                                                                                            <td><strong>ระดับชั้น:</strong></td>
+                                                                                                            <td>{student.grade_level}</td>
                                                                                                         </tr>
                                                                                                     )}
                                                                                                 </tbody>

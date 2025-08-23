@@ -21,6 +21,7 @@ interface FormData {
    education_level: string;
    academic_year: number;
    phone: string;
+   gpa: number;
 }
 
 interface Department {
@@ -57,6 +58,11 @@ const schema = yup
          .min(1, 'ชั้นปีต้องมากกว่า 0')
          .max(4, 'ชั้นปีต้องไม่เกิน 4'),
       phone: yup.string().required('กรุณากรอกเบอร์โทรศัพท์'),
+      gpa: yup
+         .number()
+         .min(0, 'GPA ต้องไม่ต่ำกว่า 0.00')
+         .max(4, 'GPA ต้องไม่เกิน 4.00')
+         .required('กรุณากรอก GPA'),
    })
    .required();
 
@@ -101,6 +107,8 @@ const RegistrationForm = () => {
       password: '',
       cpassword: '',
       address: '',
+      phone: '',
+      gpa: '',
    });
 
    const formRef = useRef<HTMLFormElement>(null);
@@ -133,6 +141,8 @@ const RegistrationForm = () => {
             department_id: data.department_id,
             education_level: data.education_level,
             academic_year: data.academic_year,
+            phone: data.phone,
+            gpa: data.gpa,
          };
 
          const response = await axios.post(`${apiURL}/api/auth/register`, payload);
@@ -210,7 +220,7 @@ const RegistrationForm = () => {
       // Validate required fields
       const requiredFields: (keyof typeof schoolFields)[] = [
          'username', 'first_name', 'last_name', 'email', 'student_code',
-         'school_name', 'study_program', 'grade_level', 'password', 'cpassword', 'address', 'education_level'
+         'school_name', 'study_program', 'grade_level', 'password', 'cpassword', 'address', 'education_level', 'phone', 'gpa'
       ];
       for (const key of requiredFields) {
          if (!schoolFields[key]) {
@@ -237,6 +247,8 @@ const RegistrationForm = () => {
             grade_level: schoolFields.grade_level,
             address: schoolFields.address,
             education_level: schoolFields.education_level,
+            phone: schoolFields.phone,
+            gpa: schoolFields.gpa,
          };
          const response = await axios.post(`${apiURL}/api/auth/register`, payload);
          if (response.data.success) {
@@ -248,7 +260,7 @@ const RegistrationForm = () => {
                }
             });
             setSchoolFields({
-               username: '', first_name: '', last_name: '', email: '', student_code: '', school_name: '', study_program: '', study_program_other: '', education_level: '', grade_level: '', password: '', cpassword: '', address: ''
+               username: '', first_name: '', last_name: '', email: '', student_code: '', school_name: '', study_program: '', study_program_other: '', education_level: '', grade_level: '', password: '', cpassword: '', address: '', phone: '', gpa: ''
             });
             if (formRef.current) formRef.current.reset();
          } else {
@@ -403,15 +415,28 @@ const RegistrationForm = () => {
                      {...register('academic_year', { valueAsNumber: true })}
                      id="academic-year"
                      className="input-like-select"
-                     defaultValue=""
                   >
-                     <option value="" disabled>เลือกชั้นปี</option>
+                     <option value="">เลือกชั้นปีการศึกษา</option>
                      <option value="1">1</option>
                      <option value="2">2</option>
                      <option value="3">3</option>
                      <option value="4">4</option>
                   </select>
                   <p className="form_error">{errors.academic_year?.message}</p>
+               </div>
+
+               <div className="form-grp">
+                  <label htmlFor="gpa">GPA</label>
+                  <input
+                     type="number"
+                     step="0.01"
+                     min="0"
+                     max="4"
+                     {...register('gpa', { valueAsNumber: true })}
+                     id="gpa"
+                     placeholder="0.00 - 4.00"
+                  />
+                  <p className="form_error">{errors.gpa?.message}</p>
                </div>
 
                <div className="form-grp">
@@ -555,9 +580,8 @@ const RegistrationForm = () => {
                      value={schoolFields.grade_level}
                      onChange={e => setSchoolFields(f => ({ ...f, grade_level: e.target.value }))}
                      className="input-like-select"
-                     defaultValue=""
                   >
-                     <option value="" disabled>เลือกชั้นปี</option>
+                     <option value="">เลือกชั้นมัธยม</option>
                      {schoolFields.education_level === "มัธยมต้น" && (
                         <>
                            <option value="ม.1">มัธยมศึกษาปีที่ 1</option>
@@ -615,6 +639,31 @@ const RegistrationForm = () => {
                      value={schoolFields.address}
                      onChange={e => setSchoolFields(f => ({ ...f, address: e.target.value }))}
                      placeholder="ที่อยู่"
+                  />
+               </div>
+
+               <div className="form-grp">
+                  <label htmlFor="phone">เบอร์โทรศัพท์</label>
+                  <input
+                     type="text"
+                     id="phone"
+                     value={schoolFields.phone}
+                     onChange={e => setSchoolFields(f => ({ ...f, phone: e.target.value }))}
+                     placeholder="เบอร์โทรศัพท์"
+                  />
+               </div>
+
+               <div className="form-grp">
+                  <label htmlFor="gpa">GPA</label>
+                  <input
+                     type="number"
+                     step="0.01"
+                     min="0"
+                     max="4"
+                     id="gpa"
+                     value={schoolFields.gpa}
+                     onChange={e => setSchoolFields(f => ({ ...f, gpa: e.target.value }))}
+                     placeholder="0.00 - 4.00"
                   />
                </div>
             </>
