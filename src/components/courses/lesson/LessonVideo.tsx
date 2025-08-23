@@ -40,11 +40,70 @@ const LessonVideo = ({
   const [lastSavedTime, setLastSavedTime] = useState<Date | null>(null);
   const [savedPosition, setSavedPosition] = useState<number | null>(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [currentUserId, setCurrentUserId] = useState<string>('');
 
   // สร้าง key สำหรับ localStorage
   const getStorageKey = () => {
     const userId = localStorage.getItem('userId') || 'anonymous';
     return `video_progress_lesson_${lessonId}_${youtubeId}_user_${userId}`;
+  };
+
+  // ล้าง localStorage ของ user เก่าเมื่อเปลี่ยน user
+  const clearOldUserData = (newUserId: string) => {
+    if (currentUserId && currentUserId !== newUserId) {
+      console.log(`เปลี่ยน user จาก ${currentUserId} เป็น ${newUserId} - ล้างข้อมูลเก่า`);
+      
+      // ล้างข้อมูลทั้งหมดของ user เก่า
+      const allKeys = Object.keys(localStorage);
+      const oldUserKeys = allKeys.filter(key => key.includes(`user_${currentUserId}`));
+      
+      oldUserKeys.forEach(key => {
+        console.log(`ล้างข้อมูล user เก่า: ${key}`);
+        localStorage.removeItem(key);
+      });
+      
+      // อัปเดต currentUserId
+      setCurrentUserId(newUserId);
+    } else if (!currentUserId) {
+      // ครั้งแรกที่โหลด
+      setCurrentUserId(newUserId);
+    }
+  };
+
+  // ตรวจสอบและล้างข้อมูล user เก่า
+  const checkAndClearUserData = () => {
+    const userId = localStorage.getItem('userId') || 'anonymous';
+    if (userId !== currentUserId) {
+      clearOldUserData(userId);
+    }
+  };
+
+  // ล้างข้อมูลทั้งหมดของ user ปัจจุบัน (สำหรับกรณี logout)
+  const clearCurrentUserData = () => {
+    if (currentUserId && currentUserId !== '') {
+      console.log(`ล้างข้อมูลทั้งหมดของ user ปัจจุบัน: ${currentUserId}`);
+      
+      const allKeys = Object.keys(localStorage);
+      const currentUserKeys = allKeys.filter(key => key.includes(`user_${currentUserId}`));
+      
+      currentUserKeys.forEach(key => {
+        console.log(`ล้างข้อมูล: ${key}`);
+        localStorage.removeItem(key);
+      });
+      
+      setCurrentUserId(''); // ตั้งค่าเป็น '' เฉพาะเมื่อ currentUserId มีค่า
+    }
+  };
+
+  // ตรวจสอบการ logout (เมื่อไม่มี userId หรือ token)
+  const checkLogout = () => {
+    const userId = localStorage.getItem('userId');
+    const token = localStorage.getItem('token');
+    
+    if (!userId || !token) {
+      console.log('ตรวจพบการ logout - ล้างข้อมูลทั้งหมด');
+      clearCurrentUserData();
+    }
   };
 
   // บันทึกความก้าวหน้าไปที่ localStorage
@@ -89,11 +148,15 @@ const LessonVideo = ({
       console.log("ไม่สามารถเชื่อมต่ออินเทอร์เน็ต");
       return null;
     }
-
+  
+    const token = localStorage.getItem('token');
+    if (!token || token === 'null' || token === 'undefined') {
+      console.log("ไม่มี token หรือ token ไม่ถูกต้อง - ข้ามการบันทึกไปยัง server");
+      return null;
+    }
+  
     try {
       const apiURL = import.meta.env.VITE_API_URL;
-      const token = localStorage.getItem('token');
-      
       const response = await axios.post(
         `${apiURL}/api/learn/lesson/${lessonId}/video-progress`,
         {
@@ -112,17 +175,21 @@ const LessonVideo = ({
     }
     return null;
   };
-
-  // โหลดความก้าวหน้าจาก Server
+  
   const loadFromServer = async () => {
     if (!isOnline) {
       console.log("ไม่สามารถเชื่อมต่ออินเทอร์เน็ต");
       return null;
     }
-
+  
+    const token = localStorage.getItem('token');
+    if (!token || token === 'null' || token === 'undefined') {
+      console.log("ไม่มี token หรือ token ไม่ถูกต้อง - ข้ามการโหลดจาก server");
+      return null;
+    }
+  
     try {
       const apiURL = import.meta.env.VITE_API_URL;
-      const token = localStorage.getItem('token');
       const response = await axios.get(
         `${apiURL}/api/learn/lesson/${lessonId}/video-progress`,
         { headers: { Authorization: `Bearer ${token}` } }
@@ -133,9 +200,13 @@ const LessonVideo = ({
         console.log("โหลดจาก Server:", progressData);
         
         if (progressData.video_completed) {
+          console.log("🌐 โหลดจาก Server ใน loadFromServer - วิดีโอเสร็จแล้ว");
           setIsCompleted(true);
           hasCompletedRef.current = true;
-          onComplete();
+          // ✅ ป้องกันการเรียก onComplete ซ้ำ
+          if (typeof onComplete === 'function') {
+            onComplete();
+          }
         }
         
         return {
@@ -167,11 +238,14 @@ const LessonVideo = ({
         if (currentTime > 0) {
           // ตรวจสอบว่าดูจบแล้วหรือยัง
           if (currentTime >= duration * 0.9 && !hasCompletedRef.current) {
-            console.log("วิดีโอดูจบแล้ว (90%)");
+            console.log("วิดีโอดูจบแล้ว (90%) - AutoSave");
             setIsCompleted(true);
             setShowCompletionModal(true);
             hasCompletedRef.current = true;
-            onComplete();
+            // ✅ ป้องกันการเรียก onComplete ซ้ำ
+            if (typeof onComplete === 'function') {
+              onComplete();
+            }
           }
         }
       }
@@ -278,46 +352,95 @@ const LessonVideo = ({
     };
   }, []);
 
+  // ตรวจสอบการเปลี่ยนแปลงของ userId (ครั้งแรกเท่านั้น)
+  useEffect(() => {
+    console.log("🔍 ตรวจสอบ userId ครั้งแรก");
+    checkAndClearUserData();
+  }, []); // ✅ เรียกครั้งเดียวตอน mount
+
+  // ตรวจสอบ userId เมื่อ currentUserId เปลี่ยน
+  useEffect(() => {
+    const userId = localStorage.getItem('userId') || 'anonymous';
+    const token = localStorage.getItem('token');
+  
+    // ตรวจสอบการเปลี่ยนแปลงของ userId
+    if (userId !== currentUserId) {
+      clearOldUserData(userId);
+    }
+  
+    // ตรวจสอบการ logout เฉพาะเมื่อ userId และ token มีค่า
+    if (userId !== 'anonymous' && token) {
+      checkLogout();
+    }
+  }, [currentUserId]); // ✅ เพิ่ม semicolon และ dependency array ครบ
 
 
   // เมื่อ lessonId หรือ youtubeId เปลี่ยน
   useEffect(() => {
-    console.log(`โหลดวิดีโอ Lesson ID: ${lessonId}, YouTube ID: ${youtubeId}`);
+    console.log(`🔄 โหลดวิดีโอใหม่: Lesson ID: ${lessonId}, YouTube ID: ${youtubeId}`);
+    
+    // ✅ ตรวจสอบและล้างข้อมูล user เก่าก่อน (เรียกครั้งเดียว)
+    const userId = localStorage.getItem('userId') || 'anonymous';
+    if (userId !== currentUserId) {
+      checkAndClearUserData();
+    }
     
     // ✅ รีเซ็ตสถานะทั้งหมดเมื่อเปลี่ยนบทเรียน
     hasCompletedRef.current = false;
     setProgress(0);
     setShowCompletionModal(false);
     setIsCompleted(false);
+    setSavedPosition(null);
+    setLastSavedTime(null);
     
-    // ✅ รีเซ็ต player state
+    // รีเซ็ต player state
     if (playerRef.current) {
       playerRef.current.currentTime = 0;
       playerRef.current.pause();
     }
     
-    // โหลดข้อมูลจาก localStorage ก่อน
+    // ล้าง localStorage ของบทเรียนเก่า
+    const currentStorageKey = getStorageKey();
+    const allKeys = Object.keys(localStorage);
+    const lessonKeys = allKeys.filter(key => key.includes('video_progress_lesson_'));
+    
+    lessonKeys.forEach(key => {
+      if (key !== currentStorageKey) {
+        console.log(`ล้าง localStorage เก่า: ${key}`);
+        localStorage.removeItem(key);
+      }
+    });
+    
+    // โหลดข้อมูลจาก localStorage
     const localProgress = loadFromLocalStorage();
     if (localProgress) {
       setProgress(localProgress.percentage || 0);
       setSavedPosition(localProgress.position > 0 ? localProgress.position : null);
       
-      if (localProgress.completed) {
+      if (localProgress.completed && !hasCompletedRef.current) {
+        console.log("📱 โหลดจาก localStorage - วิดีโอเสร็จแล้ว");
         setIsCompleted(true);
         hasCompletedRef.current = true;
-        onComplete();
+        // ✅ ป้องกันการเรียก onComplete ซ้ำ
+        if (typeof onComplete === 'function') {
+          onComplete();
+        }
       }
     }
     
-    // โหลดข้อมูลจาก Server (ถ้าออนไลน์)
+    // โหลดข้อมูลจาก Server
     const loadServerProgress = async () => {
       const serverProgress = await loadFromServer();
       if (serverProgress && serverProgress.position > 0) {
         setSavedPosition(serverProgress.position);
-        if (serverProgress.completed) {
+        if (serverProgress.completed && !hasCompletedRef.current) {
+          console.log("🌐 โหลดจาก Server - วิดีโอเสร็จแล้ว");
           setIsCompleted(true);
           hasCompletedRef.current = true;
-          onComplete();
+          // ✅ ป้องกันการเรียก onComplete ซ้ำ
+          if (typeof onComplete === 'function') {
+            onComplete();
+          }
         }
       }
     };
@@ -326,12 +449,12 @@ const LessonVideo = ({
     return () => {
       stopAutoSave();
     };
-  }, [lessonId, youtubeId]);
+  }, [lessonId, youtubeId]); // ✅ ลบ onComplete ออกจาก dependency array
 
   // สร้าง player
   useEffect(() => {
-    if (containerRef.current && youtubeId) { // Changed condition to only check youtubeId
-      console.log(`สร้าง player สำหรับ YouTube ID: ${youtubeId}`);
+    if (containerRef.current && youtubeId && !playerRef.current) {
+      console.log(`🎬 สร้าง player ใหม่สำหรับ YouTube ID: ${youtubeId}`);
       
       // ล้าง container เดิม
       while (containerRef.current.firstChild) {
@@ -409,7 +532,7 @@ const LessonVideo = ({
           
           // ตรวจสอบว่าดูจบแล้วหรือยัง (90%)
           if (currentProgress >= 90 && !hasCompletedRef.current) {
-            console.log("วิดีโอดูถึง 90% - ถือว่าจบ");
+            console.log("วิดีโอดูถึง 90% - ถือว่าจบ - TimeUpdate");
             setIsCompleted(true);
             setShowCompletionModal(true);
             hasCompletedRef.current = true;
@@ -417,7 +540,10 @@ const LessonVideo = ({
             // บันทึกทันที
             saveToLocalStorage(currentTime, duration);
             saveToServer(currentTime, duration);
-            onComplete();
+            // ✅ ป้องกันการเรียก onComplete ซ้ำ
+            if (typeof onComplete === 'function') {
+              onComplete();
+            }
           }
         }
       });
@@ -433,7 +559,7 @@ const LessonVideo = ({
 
       // เมื่อวิดีโอจบ
       playerRef.current.on('ended', () => {
-        console.log("วิดีโอจบแล้ว");
+        console.log("วิดีโอจบแล้ว - Ended Event");
         stopAutoSave();
         
         if (playerRef.current) {
@@ -444,7 +570,10 @@ const LessonVideo = ({
           if (!hasCompletedRef.current) {
             setIsCompleted(true);
             hasCompletedRef.current = true;
-            onComplete();
+            // ✅ ป้องกันการเรียก onComplete ซ้ำ
+            if (typeof onComplete === 'function') {
+              onComplete();
+            }
           }
           
           setShowCompletionModal(true);
@@ -476,6 +605,15 @@ const LessonVideo = ({
   useEffect(() => {
     return () => {
       stopAutoSave();
+      // ล้างข้อมูลเมื่อ component unmount
+      if (playerRef.current) {
+        // บันทึกครั้งสุดท้ายก่อน destroy
+        if (playerRef.current.currentTime && playerRef.current.duration) {
+          saveToLocalStorage(playerRef.current.currentTime, playerRef.current.duration);
+          saveToServer(playerRef.current.currentTime, playerRef.current.duration);
+        }
+        playerRef.current.destroy();
+      }
     };
   }, []);
 
