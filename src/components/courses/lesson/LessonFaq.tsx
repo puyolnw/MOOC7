@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import './LessonFaq.css';
 
 
@@ -66,7 +66,7 @@ const LessonFaq = ({
   subjectId,
   subjectQuizzes: externalSubjectQuizzes,
   // เพิ่ม prop ใหม่เพื่อให้รู้ว่ากำลังเรียนบทไหนอยู่
-  currentLessonId,
+  // currentLessonId,
   // เพิ่ม prop สำหรับควบคุม activeAccordion จากภายนอก
   activeAccordion: externalActiveAccordion,
   onAccordionChange,
@@ -84,16 +84,61 @@ const LessonFaq = ({
   const [error, setError] = useState<string | null>(null);
 
   // ใช้ controlled accordion ถ้ามีการส่งค่าจากภายนอก
-  const currentActiveAccordion = externalActiveAccordion !== undefined ? externalActiveAccordion : activeAccordion;
+  const currentActiveAccordion = useMemo(() => {
+    return externalActiveAccordion !== undefined ? externalActiveAccordion : activeAccordion;
+  }, [externalActiveAccordion, activeAccordion]);
   
   // ✅ เพิ่ม debug log เพื่อดูการเปลี่ยนแปลงของ activeAccordion
   useEffect(() => {
     console.log("🎯 LessonFaq currentActiveAccordion changed:", currentActiveAccordion);
-  }, [currentActiveAccordion]);
+    console.log("🎯 LessonFaq externalActiveAccordion:", externalActiveAccordion);
+    console.log("🎯 LessonFaq local activeAccordion:", activeAccordion);
+    console.log("🎯 LessonFaq onAccordionChange exists:", !!onAccordionChange);
+  }, [currentActiveAccordion, externalActiveAccordion, activeAccordion, onAccordionChange]);
+  
+  // ✅ เพิ่ม useEffect เพื่อ sync local state กับ external state เมื่อมีการเปลี่ยนแปลงจากภายนอก
+  useEffect(() => {
+    if (externalActiveAccordion !== undefined && externalActiveAccordion !== activeAccordion) {
+      console.log("🎯 LessonFaq syncing local state with external state:", externalActiveAccordion);
+      setActiveAccordion(externalActiveAccordion);
+    }
+  }, [externalActiveAccordion, activeAccordion]);
+
+  // ✅ เพิ่ม useEffect เพื่อป้องกัน accordion ถูกปิดโดยไม่ได้ตั้งใจ
+  useEffect(() => {
+    // ถ้ามี externalActiveAccordion และไม่ใช่ null ให้รักษาไว้
+    if (externalActiveAccordion !== undefined && externalActiveAccordion !== null) {
+      console.log("🎯 LessonFaq preserving accordion state:", externalActiveAccordion);
+      
+      // ✅ เพิ่มการป้องกัน accordion ปิดโดยไม่ได้ตั้งใจ
+      if (activeAccordion !== externalActiveAccordion) {
+        console.log("🎯 LessonFaq syncing local accordion state with external:", externalActiveAccordion);
+        setActiveAccordion(externalActiveAccordion);
+      }
+    }
+  }, [externalActiveAccordion]);
+
+  // ✅ เพิ่ม useEffect เพื่อป้องกัน accordion ปิดเมื่อมีการเปลี่ยนแปลง state อื่นๆ
+  useEffect(() => {
+    // ถ้ามี externalActiveAccordion และไม่ใช่ null ให้รักษาไว้เสมอ
+    if (externalActiveAccordion !== undefined && externalActiveAccordion !== null) {
+      console.log("🎯 LessonFaq continuously protecting accordion state:", externalActiveAccordion);
+      
+      // ตรวจสอบว่า accordion state ตรงกับที่ต้องการหรือไม่
+      if (activeAccordion !== externalActiveAccordion) {
+        console.log("🎯 LessonFaq accordion state mismatch detected, restoring...");
+        // ✅ ใช้ setTimeout เพื่อป้องกัน infinite loop
+        setTimeout(() => {
+          setActiveAccordion(externalActiveAccordion);
+        }, 0);
+      }
+    }
+  }, [externalActiveAccordion]); // ✅ ลบ activeAccordion ออกจาก dependency array เพื่อป้องกัน infinite loop
   
   // ฟังก์ชันสำหรับอัปเดต accordion
   const updateActiveAccordion = (accordionId: number | null) => {
-    console.log("🎯 LessonFaq updateActiveAccordion:", accordionId);
+    console.log("🎯 LessonFaq updateActiveAccordion called with:", accordionId);
+    console.log("🎯 LessonFaq onAccordionChange exists:", !!onAccordionChange);
     if (onAccordionChange) {
       console.log("🎯 เรียก onAccordionChange จากภายนอก");
       onAccordionChange(accordionId);
@@ -155,15 +200,19 @@ const LessonFaq = ({
       setLoadingQuizzes(false);
       setError(null);
       
+      // ✅ ป้องกันการ override activeAccordion เมื่อมีการควบคุมจากภายนอก
       // ตรวจสอบว่ามีแบบทดสอบก่อนเรียนหรือไม่ และตั้งค่า activeAccordion
-              const preTest = externalSubjectQuizzes.find(q => q.type === "pre_test" || q.type === "big_pre_test");
-      if (preTest) {
-        setActiveAccordion(-1000);
+      // แต่ไม่ override ถ้ามีการควบคุมจากภายนอก
+      if (!onAccordionChange) {
+        const preTest = externalSubjectQuizzes.find(q => q.type === "pre_test" || q.type === "big_pre_test");
+        if (preTest) {
+          setActiveAccordion(-1000);
+        }
       }
     } else {
       setSubjectQuizzes([]);
     }
-  }, [externalSubjectQuizzes]);
+  }, [externalSubjectQuizzes, onAccordionChange]);
 
   useEffect(() => {
     // ✅ ลบ useEffect ที่ override locked property เป็น false
@@ -247,7 +296,39 @@ const LessonFaq = ({
   };
 
   const toggleAccordion = (id: number) => {
-    updateActiveAccordion(currentActiveAccordion === id ? null : id);
+    console.log("🎯 LessonFaq toggleAccordion called with id:", id);
+    console.log("🎯 LessonFaq currentActiveAccordion:", currentActiveAccordion);
+    console.log("🎯 LessonFaq externalActiveAccordion:", externalActiveAccordion);
+    
+    // ✅ ป้องกันการปิด accordion โดยไม่ได้ตั้งใจ
+    // ถ้ามีการควบคุมจากภายนอก และ accordion ปัจจุบันเปิดอยู่ ให้ไม่ปิด
+    if (onAccordionChange && externalActiveAccordion === id) {
+      console.log("🎯 LessonFaq preventing accordion close - controlled by parent");
+      return;
+    }
+    
+    // ✅ ถ้ามีการควบคุมจากภายนอก ให้เปิด accordion ใหม่ได้ แต่ไม่ปิด accordion ที่เปิดอยู่
+    if (onAccordionChange) {
+      console.log("🎯 LessonFaq opening new accordion:", id);
+      onAccordionChange(id);
+      return;
+    }
+    
+    // ถ้าไม่มีการควบคุมจากภายนอก ให้ทำงานแบบปกติ
+    const newState = currentActiveAccordion === id ? null : id;
+    console.log("🎯 LessonFaq setting accordion to:", newState);
+    updateActiveAccordion(newState);
+    
+    // ✅ เพิ่มการป้องกัน accordion ปิดโดยไม่ได้ตั้งใจ
+    setTimeout(() => {
+      if (activeAccordion !== newState && newState !== null) {
+        console.log("⚠️ Accordion state was unexpectedly changed, restoring...");
+        // ✅ ใช้ setTimeout เพื่อป้องกัน infinite loop
+        setTimeout(() => {
+          setActiveAccordion(newState);
+        }, 0);
+      }
+    }, 50);
   };
 
   // ✅ Task 5: ลบ fetchBankAccounts function ที่ไม่ใช้แล้ว
@@ -322,53 +403,59 @@ const LessonFaq = ({
     );
   };
 
-  // เปิดแอคคอร์เดียนแรกที่ยังไม่เสร็จ หรือแบบทดสอบก่อนเรียน
-  useEffect(() => {
-    console.log("🎯 LessonFaq useEffect - currentLessonId:", currentLessonId);
-    
-    // ถ้ามี currentLessonId ให้เปิด accordion ที่ตรงกับบทเรียนปัจจุบัน
-    if (currentLessonId) {
-      const [sectionId] = currentLessonId.split("-").map(Number);
-      console.log("🎯 แยก sectionId:", sectionId);
-      
-      // ตรวจสอบว่าเป็นแบบทดสอบพิเศษหรือไม่
-      if (sectionId < 0) {
-        // แบบทดสอบก่อน/หลังเรียน
-        console.log("🎯 แบบทดสอบพิเศษ - เปิด accordion:", sectionId);
-        updateActiveAccordion(sectionId);
-        return;
-      }
-      
-      // บทเรียนปกติ - เปิด accordion ของ section ที่กำลังเรียน
-      console.log("🎯 บทเรียนปกติ - เปิด accordion:", sectionId);
-      updateActiveAccordion(sectionId);
-      return;
-    }
-    
-    // ถ้าไม่มี currentLessonId (กรณีเริ่มต้น) ให้ใช้ logic เดิม
-    // ตรวจสอบว่ามีแบบทดสอบก่อนเรียนหรือไม่
-    const preTest = externalSubjectQuizzes?.find(q => q.type === "pre_test" || q.type === "big_pre_test");
-    
-    if (preTest) {
-      // ถ้ามีแบบทดสอบก่อนเรียน ให้เปิดแอคคอร์เดียนของแบบทดสอบก่อนเรียน
-      console.log("🎯 เริ่มต้น - เปิดแบบทดสอบก่อนเรียน");
-      updateActiveAccordion(-1000);
-    } else if (lessonData.length > 0) {
-      // ถ้าไม่มีแบบทดสอบก่อนเรียน ให้เปิดแอคคอร์เดียนแรกที่ยังไม่เสร็จ
-      for (const section of lessonData) {
-        for (const item of section.items) {
-          if (!item.completed) {
-            console.log("🎯 เริ่มต้น - เปิดบทเรียนแรกที่ยังไม่เสร็จ:", section.id);
-            updateActiveAccordion(section.id);
-            return;
-          }
-        }
-      }
-      // ถ้าทุกบทเรียนเสร็จแล้ว ให้เปิดแอคคอร์เดียนแรก
-      console.log("🎯 เริ่มต้น - ทุกบทเรียนเสร็จแล้ว เปิดแอคคอร์เดียนแรก");
-      updateActiveAccordion(lessonData[0].id);
-    }
-  }, [currentLessonId, lessonData, externalSubjectQuizzes]);
+  // ✅ ลบ useEffect ที่ซับซ้อนและขัดแย้งกัน - ให้ parent component ควบคุม accordion state แทน
+  // useEffect(() => {
+  //   console.log("🎯 LessonFaq useEffect - currentLessonId:", currentLessonId);
+  //   
+  //   // ✅ ป้องกันการ override accordion state เมื่อมีการควบคุมจากภายนอก
+  //   if (onAccordionChange) {
+  //     console.log("🎯 มีการควบคุม accordion จากภายนอก - ไม่ override state");
+  //     return;
+  //   }
+  //   
+  //   // ถ้ามี currentLessonId ให้เปิด accordion ที่ตรงกับบทเรียนปัจจุบัน
+  //   if (currentLessonId) {
+  //     const [sectionId] = currentLessonId.split("-").map(Number);
+  //     console.log("🎯 แยก sectionId:", sectionId);
+  //     
+  //     // ตรวจสอบว่าเป็นแบบทดสอบพิเศษหรือไม่
+  //     if (sectionId < 0) {
+  //       // แบบทดสอบก่อน/หลังเรียน
+  //       console.log("🎯 แบบทดสอบพิเศษ - เปิด accordion:", sectionId);
+  //       updateActiveAccordion(sectionId);
+  //       return;
+  //     }
+  //     
+  //       // บทเรียนปกติ - เปิด accordion ของ section ที่กำลังเรียน
+  //       console.log("🎯 บทเรียนปกติ - เปิด accordion:", sectionId);
+  //       updateActiveAccordion(sectionId);
+  //       return;
+  //     }
+  //     
+  //     // ถ้าไม่มี currentLessonId (กรณีเริ่มต้น) ให้ใช้ logic เดิม
+  //     // ตรวจสอบว่ามีแบบทดสอบก่อนเรียนหรือไม่
+  //     const preTest = externalSubjectQuizzes?.find(q => q.type === "pre_test" || q.type === "big_pre_test");
+  //     
+  //     if (preTest) {
+  //       // ถ้ามีแบบทดสอบก่อนเรียน ให้เปิดแอคคอร์เดียนของแบบทดสอบก่อนเรียน
+  //       console.log("🎯 เริ่มต้น - เปิดแบบทดสอบก่อนเรียน");
+  //       updateActiveAccordion(-1000);
+  //     } else if (lessonData.length > 0) {
+  //       // ถ้าไม่มีแบบทดสอบก่อนเรียน ให้เปิดแอคคอร์เดียนแรกที่ยังไม่เสร็จ
+  //       for (const section of lessonData) {
+  //         for (const item of section.items) {
+  //           if (!item.completed) {
+  //             console.log("🎯 เริ่มต้น - เปิดบทเรียนแรกที่ยังไม่เสร็จ:", section.id);
+  //             updateActiveAccordion(section.id);
+  //             return;
+  //           }
+  //         }
+  //       }
+  //       // ถ้าทุกบทเรียนเสร็จแล้ว ให้เปิดแอคคอร์เดียนแรก
+  //       console.log("🎯 เริ่มต้น - ทุกบทเรียนเสร็จแล้ว เปิดแอคคอร์เดียนแรก");
+  //       updateActiveAccordion(lessonData[0].id);
+  //     }
+  //   }, [currentLessonId, lessonData, externalSubjectQuizzes, onAccordionChange]);
 
   return (
     <div className="accordion" id="accordionExample">
