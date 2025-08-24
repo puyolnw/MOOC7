@@ -4,6 +4,7 @@ import LessonFaq from "./LessonFaq";
 import LessonNavTav from "./LessonNavTav";
 import LessonVideo from "./LessonVideo";
 import LessonQuiz from "./LessonQuiz";
+import ScoreProgressBar from "./ScoreProgressBar";
 import "./LessonArea.css";
 
 // เพิ่มการใช้ API URL จาก .env
@@ -21,6 +22,25 @@ interface LessonItem {
     duration: string;
     video_url?: string;
     quiz_id?: number;
+    quiz?: {
+        progress?: {
+            passed?: boolean;
+            completed?: boolean;
+            awaiting_review?: boolean;
+        };
+        score?: number;
+        max_score?: number;
+        actual_score?: number;
+        type?: string;
+        quiz_details?: {
+            max_score: number;
+            total_questions: number;
+            questions_breakdown: {
+                question_id: number;
+                score: number;
+            }[];
+        };
+    };
     status?: "passed" | "failed" | "awaiting_review";
 }
 
@@ -127,6 +147,70 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
     const [initialLessonSet, setInitialLessonSet] = useState<boolean>(false);
     // เพิ่ม state สำหรับควบคุม activeAccordion ใน sidebar
     const [sidebarActiveAccordion, setSidebarActiveAccordion] = useState<number | null>(null);
+    // เพิ่ม state สำหรับเก็บข้อมูลคะแนนจาก Score Management
+    const [scoreItems, setScoreItems] = useState<any[]>([]);
+
+    // ฟังก์ชันคำนวณคะแนนต่างๆ สำหรับ Real Score System
+    const calculateCurrentScore = useCallback((): number => {
+        // ใช้ข้อมูลจาก scoreItems (เหมือนหน้าเฉลี่ย)
+        if (scoreItems.length === 0) return 0;
+        
+        let totalScore = 0;
+        
+        // คำนวณคะแนนที่ได้จาก quiz ที่ผ่านแล้ว
+        scoreItems.forEach(item => {
+            if (item.type === 'quiz' && item.progress?.passed) {
+                totalScore += item.user_score || 0; // คะแนนที่ผู้ใช้ได้
+            }
+        });
+
+        return totalScore;
+    }, [scoreItems]);
+
+    const calculateMaxScore = useCallback((): number => {
+        // ใช้ข้อมูลจาก scoreItems (เหมือนหน้าเฉลี่ย)
+        if (scoreItems.length === 0) return 0;
+        
+        let maxScore = 0;
+        
+        // คำนวณคะแนนเต็มจาก actual_score ของแต่ละ quiz
+        scoreItems.forEach(item => {
+            if (item.type === 'quiz' && item.actual_score > 0) {
+                maxScore += item.actual_score; // คะแนนที่กำหนดไว้
+            }
+        });
+
+        return maxScore;
+    }, [scoreItems]);
+
+    const calculatePassingScore = useCallback((): number => {
+        const maxScore = calculateMaxScore();
+        // ใช้เกณฑ์ผ่าน default 80% (สามารถดึงจาก API ได้ในอนาคต)
+        const passingPercentage = 80;
+        return Math.ceil(maxScore * (passingPercentage / 100));
+    }, [calculateMaxScore]);
+
+    // ฟังก์ชันดึงข้อมูลคะแนนจาก Score Management API
+    const fetchScoreItems = useCallback(async () => {
+        try {
+            const token = localStorage.getItem("token");
+            if (!token || !currentSubjectId) return;
+
+            const response = await axios.get(
+                `${API_URL}/api/subjects/${currentSubjectId}/scores`,
+                {
+                    headers: { Authorization: `Bearer ${token}` }
+                }
+            );
+
+            if (response.data.success) {
+                setScoreItems(response.data.scoreItems || []);
+                console.log('📊 Score Items loaded:', response.data.scoreItems);
+            }
+        } catch (error) {
+            console.error('Error fetching score items:', error);
+        }
+    }, [currentSubjectId]);
     // ✅ Task 5: ลบ paymentStatus state
     // const [paymentStatus, setPaymentStatus] = useState<any>(null);
 
@@ -922,7 +1006,7 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
             // ✅ เพิ่มการป้องกันไม่ให้ setInitialLesson ถูกเรียกซ้ำ
             // เมื่ออยู่ในระหว่างการเปลี่ยนบทเรียน
             if (currentLessonId && currentLessonId.includes("-")) {
-                console.log("🎯 ป้องกันการเรียก setInitialLesson ซ้ำเมื่ออยู่ในระหว่างการเปลี่ยนบทเรียน (useEffect 1)");
+                console.log("🎯 ป้องกันการเรียก setInitialLesson ซ้ำเมื่ออยู่ในระหว่างการเปลี่ยนบทเรียน");
                 return;
             }
             
@@ -932,6 +1016,13 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
             }
         }
     }, [loading, lessonData, subjectQuizzes, initialLessonSet]);
+
+    // useEffect สำหรับดึงข้อมูลคะแนน
+    useEffect(() => {
+        if (currentSubjectId) {
+            fetchScoreItems();
+        }
+    }, [currentSubjectId, fetchScoreItems]);
 
 
 
@@ -2189,78 +2280,14 @@ const handleNextLesson = useCallback(() => {
                                 activeAccordion={sidebarActiveAccordion}
                                 onAccordionChange={setSidebarActiveAccordion}
                             />
-                            <div className="lesson__progress" style={{
-                                background: 'linear-gradient(135deg, #667eea, #764ba2)',
-                                padding: '20px',
-                                borderRadius: '15px',
-                                marginTop: '25px',
-                                boxShadow: '0 8px 25px rgba(102, 126, 234, 0.2)'
-                            }}>
-                                <h4 style={{
-                                    color: 'white',
-                                    fontSize: '1.1rem',
-                                    fontWeight: '600',
-                                    marginBottom: '15px',
-                                    textAlign: 'center'
-                                }}>📊 ความคืบหน้า</h4>
-                                <div className="progress-container" style={{marginBottom: '15px'}}>
-                                    <div className="progress-bar-wrapper" style={{
-                                        background: 'rgba(255, 255, 255, 0.2)',
-                                        borderRadius: '20px',
-                                        height: '12px',
-                                        overflow: 'hidden',
-                                        position: 'relative'
-                                    }}>
-                                        <div
-                                            className="progress-bar"
-                                            style={{ 
-                                                width: `${progress}%`,
-                                                background: 'linear-gradient(90deg, #ffd700, #ffed4e)',
-                                                height: '100%',
-                                                borderRadius: '20px',
-                                                transition: 'width 0.6s ease-out',
-                                                boxShadow: '0 2px 10px rgba(255, 215, 0, 0.4)'
-                                            }}
-                                        ></div>
-                                    </div>
-                                    <div className="progress-percentage" style={{
-                                        color: 'white',
-                                        fontWeight: '700',
-                                        fontSize: '1.2rem',
-                                        textAlign: 'center',
-                                        marginTop: '10px'
-                                    }}>
-                                        {progress.toFixed(0)}%
-                                    </div>
-                                </div>
-                                <div className="progress-status" style={{
-                                    textAlign: 'center',
-                                    padding: '10px',
-                                    background: 'rgba(255, 255, 255, 0.15)',
-                                    borderRadius: '10px'
-                                }}>
-                                    <span className="status-text" style={{color: 'rgba(255, 255, 255, 0.8)'}}>สถานะ: </span>
-                                    <span className="status-value" style={{
-                                        color: progress < 100 ? '#ffd700' : '#4ade80',
-                                        fontWeight: '600'
-                                    }}>
-                                        {progress < 100 ? "🎯 กำลังเรียน" : "🎉 เรียนจบแล้ว"}
-                                    </span>
-                                </div>
-                                {progress >= 100 && (
-                                    <div className="mt-3" style={{textAlign: 'center'}}>
-                                        <div className="alert alert-success" role="alert" style={{marginBottom: '12px'}}>
-                                            คุณเรียนบทเรียนนี้ทั้งหมดแล้ว กรุณาชำระเงินเพื่อรับใบประกาศ
-                                        </div>
-                                        <a href="/student-payment" className="btn btn-light" style={{
-                                            borderRadius: '10px',
-                                            fontWeight: 600
-                                        }}>
-                                            ไปหน้าชำระเงิน
-                                        </a>
-                                    </div>
-                                )}
-                            </div>
+                            <ScoreProgressBar
+                                currentScore={calculateCurrentScore()}
+                                maxScore={calculateMaxScore()}
+                                passingScore={calculatePassingScore()}
+                                progressPercentage={progress}
+                                subjectTitle={currentSubjectTitle}
+                            />
+                       
                         </div>
                     </div>
                     <div className="col-xl-9 col-lg-8 lesson__main">

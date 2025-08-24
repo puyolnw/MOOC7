@@ -4,16 +4,73 @@
 This project manages documentation/code tasks using a multi-file system:
 - `tasks.md` (MD1): Contains task requirements and detailed instructions
 - `status.md` (MD2): Tracks completion status of all tasks (1-30 items)
-- `database.sql`: Database schema file containing table structures (headers only, no data)
+- `database.sql`: FINAL database schema file with ALL columns ready (NO migration needed)
 
 ## Database Reference
-**IMPORTANT**: Always read `database.sql` file first to understand the database structure before working on any database-related tasks. This file contains table definitions, column names, and relationships but NO actual data.
+**IMPORTANT**: Always read `database.sql` file first to understand the database structure before working on any database-related tasks. This file is the LATEST and COMPLETE database schema with all columns already added. NO migration needed.
+
+**🚨 CRITICAL**: 
+- `database.sql` is the FINAL database state
+- All scoring system columns are ALREADY PRESENT
+- DO NOT create migration scripts
+- DO NOT add new columns
+- Database is 100% ready for coding
 
 Common database tasks may include:
-- Writing queries based on table structure
-- Creating documentation about database schema  
-- Generating API endpoints based on table columns
-- Creating forms or UI components that match database fields
+- Writing queries based on existing table structure in database.sql
+- Creating documentation about current database schema  
+- Generating API endpoints based on existing columns in database.sql
+- Creating forms or UI components that match existing database fields
+
+## 🎯 **Real Score System Logic (Updated)**
+
+### **Core Changes from Percentage to Real Score:**
+1. **Subject Total Score**: วิชาแต่ละวิชามีคะแนนรวมจริง (เช่น 70 คะแนน = 100%)
+2. **Quiz Real Score**: แบบทดสอบมีคะแนนจริง (เช่น 10 คะแนนต่อ quiz)
+3. **Video Lessons**: บทเรียนวิดีโอไม่มีคะแนน (0 คะแนน)
+4. **Big Lesson Score**: คะแนน Big Lesson = ผลรวม Quiz ข้างใน
+5. **Passing Criteria**: เปอร์เซ็นต์ของคะแนนรวม (เช่น 80% ของ 70 คะแนน = 56 คะแนน)
+
+### **Database Schema (Already Present):**
+```sql
+-- subjects table
+passing_percentage DECIMAL(5,2) DEFAULT 80.00  -- เกณฑ์ผ่าน (เปอร์เซ็นต์)
+auto_distribute_score BOOLEAN DEFAULT true     -- เปิด/ปิดการแบ่งอัตโนมัติ
+
+-- quizzes table  
+weight_percentage DECIMAL(5,2) DEFAULT 0       -- คะแนนจริงของ quiz
+is_fixed_weight BOOLEAN DEFAULT false          -- ล็อคคะแนนหรือไม่
+quiz_type VARCHAR(20) DEFAULT 'post_lesson'    -- pre_lesson/post_lesson
+
+-- lessons table
+weight_percentage DECIMAL(5,2) DEFAULT 0       -- คะแนนจริงของ lesson (ส่วนใหญ่ = 0)
+is_fixed_weight BOOLEAN DEFAULT false          -- ล็อคคะแนนหรือไม่
+
+-- big_lessons table
+weight_percentage DECIMAL(5,2) DEFAULT 0       -- คะแนนจริงของ big lesson
+is_fixed_weight BOOLEAN DEFAULT false          -- ล็อคคะแนนหรือไม่
+```
+
+### **Frontend Logic (ScoreManagementTab.tsx):**
+1. **Display Real Scores**: แสดงคะแนนจริงแทนเปอร์เซ็นต์
+2. **Auto Distribution**: แบ่งคะแนนอัตโนมัติเมื่อเพิ่ม/ลดรายการ
+3. **Fixed Scores**: ล็อคคะแนนบางรายการได้
+4. **Total Calculation**: คำนวณคะแนนรวมจริง
+5. **Passing Criteria**: แสดงเกณฑ์ผ่านเป็นคะแนนจริง
+
+### **Backend Logic (ScoreManagement.js):**
+1. **GET /api/subjects/:id/scores**: ดึงข้อมูลคะแนนจริงทั้งหมด
+2. **PUT /api/subjects/:id/scores**: บันทึกคะแนนจริง
+3. **Auto Distribution**: แบ่งคะแนนอัตโนมัติเมื่อมีการเปลี่ยนแปลง
+4. **Validation**: ตรวจสอบคะแนนรวมและเกณฑ์ผ่าน
+
+### **Key Features Implemented:**
+✅ **Real Score Display**: แสดงคะแนนจริงแทนเปอร์เซ็นต์  
+✅ **Auto Distribution**: แบ่งคะแนนอัตโนมัติ  
+✅ **Fixed Score Locking**: ล็อคคะแนนบางรายการ  
+✅ **Passing Criteria**: เกณฑ์ผ่านแบบ user กำหนด  
+✅ **Big Lesson Calculation**: คะแนน Big Lesson = ผลรวม Quiz  
+✅ **Video Lessons = 0**: บทเรียนวิดีโอไม่มีคะแนน  
 
 ## React Project Structure & Coding Guidelines
 
@@ -152,41 +209,103 @@ import SEO from '[relative-path]/components/SEO';
 5. **Responsive Design**: ใช้ Bootstrap classes
 6. **TypeScript Interfaces**: สร้าง interface สำหรับข้อมูลที่ใช้
 
-## 🚨 การจัดการ Authentication (ไม่ต้องใช้)
-**สำคัญ**: ตั้งแต่วันที่ 2025-08-06 เป็นต้นไป **ไม่ต้องใช้ authentication** ในการสร้าง API endpoints และ frontend ใหม่
+## 🔐 การจัดการ Authentication & Authorization (อัปเดต 2025-01-15)
+**สำคัญ**: โปรเจคนี้ **ใช้ authentication และ role-based authorization**
 
-### ❌ สิ่งที่ไม่ต้องทำอีกต่อไป:
-- ไม่ต้องใส่ `authenticate` middleware ใน backend routes
-- ไม่ต้องใส่ `restrictTo(role_id)` middleware 
-- ไม่ต้องส่ง `Authorization: Bearer ${token}` header ใน frontend
-- ไม่ต้อง `localStorage.getItem('token')` 
-- ไม่ต้องตรวจสอบ user role หรือ permissions
+### 🎯 **User Roles ที่ถูกต้อง:**
+- **role_id = 1**: student (นักเรียนทั่วไป)
+- **role_id = 2**: instructor (ผู้สอน)
+- **role_id = 3**: manager (ผู้จัดการหลักสูตร)
+- **role_id = 4**: admin (ผู้ดูแลระบบ)
 
-### ✅ วิธีการใหม่:
+### ✅ **วิธีการที่ถูกต้อง:**
 **Backend:**
 ```js
-// ✅ ถูกต้อง - เปิดให้ทุกคนใช้
-router.get('/api/example', async (req, res) => {
+// ✅ ใช้ authentication + role restriction
+router.post('/api/subjects/:id/scores', authenticate, restrictTo(2, 3, 4), async (req, res) => {
+  // เฉพาะ instructor, manager, admin เท่านั้น
+  const userId = req.user.id;
+  const userRole = req.user.role_id;
+  
+  // ตรวจสอบสิทธิ์เพิ่มเติมสำหรับ instructor
+  if (userRole === 2) {
+    const hasPermission = await checkSubjectInstructorPermission(userId, req.params.id);
+    if (!hasPermission) {
+      return res.status(403).json({ message: 'ไม่มีสิทธิ์แก้ไขวิชานี้' });
+    }
+  }
+  // manager, admin มีสิทธิ์ทุกวิชา
 });
 
-// ❌ ผิด - ไม่ต้องใช้แล้ว
-router.get('/api/example', authenticate, restrictTo(1), async (req, res) => {
-  const userId = req.user.id;
-  // ... logic
+// ✅ API ที่ทุกคนเข้าถึงได้
+router.get('/api/subjects/public', async (req, res) => {
+  // ไม่ต้อง authenticate สำหรับข้อมูลสาธารณะ
 });
 ```
 
 **Frontend:**
 ```tsx
-// ✅ ถูกต้อง - ไม่ต้องส่ง token
-const response = await axios.get(`${apiURL}/api/example`);
-
-// ❌ ผิด - ไม่ต้องส่ง Authorization header แล้ว
+// ✅ ส่ง token สำหรับ protected routes
 const token = localStorage.getItem("token");
-const response = await axios.get(`${apiURL}/api/example`, {
+const response = await axios.post(`${apiURL}/api/subjects/${id}/scores`, data, {
   headers: { Authorization: `Bearer ${token}` }
 });
+
+// ✅ ไม่ส่ง token สำหรับ public routes
+const response = await axios.get(`${apiURL}/api/subjects/public`);
 ```
+
+### 🔒 **Permission Matrix สำหรับ Scoring System:**
+| API Function | Student (1) | Instructor (2) | Manager (3) | Admin (4) |
+|--------------|-------------|----------------|-------------|-----------|
+| ดู Progress ตัวเอง | ✅ | ✅ | ✅ | ✅ |
+| ดู Progress นักเรียน | ❌ | ✅ (วิชาที่สอน) | ✅ (หลักสูตรที่จัดการ) | ✅ (ทุกคน) |
+| แก้ไข Weight | ❌ | ✅ (วิชาที่สอน) | ✅ (หลักสูตรที่จัดการ) | ✅ (ทุกวิชา) |
+| เปิด/ปิด Auto-distribute | ❌ | ✅ (วิชาที่สอน) | ✅ (หลักสูตรที่จัดการ) | ✅ (ทุกวิชา) |
+| แก้ไข Passing % | ❌ | ✅ (วิชาที่สอน) | ✅ (หลักสูตรที่จัดการ) | ✅ (ทุกวิชา) |
+
+### 🛡️ **Security Best Practices:**
+- ใช้ `authenticate` middleware สำหรับ protected routes
+- ใช้ `restrictTo(roles)` สำหรับ role-based access
+- เพิ่ม granular permission checking (เช่น instructor ต้องสอนวิชานั้น)
+- Log ทุกการเปลี่ยนแปลงใน audit trail
+- Validate input ทั้ง client และ server side
+
+## 📊 **Scoring System Project Guidelines (เพิ่ม 2025-01-15)**
+
+### 🎯 **Project Context: Auto-Distribution Scoring System**
+งานนี้เป็นการปรับปรุงระบบคะแนนให้เป็น **Auto-Distribution 100%** พร้อมเกณฑ์ผ่านที่ **User กำหนดเอง**
+
+**Core Features:**
+- Auto Weight Distribution (คะแนนแบ่งอัตโนมัติ 100%)
+- Custom Passing Criteria (เกณฑ์ผ่านตามวิชา แทนที่ 65%)
+- Fixed vs Auto Weights (กำหนดคะแนนตายตัวได้บางรายการ)
+- Pre/Post Test Logic (แยก logic แบบทดสอบก่อน/หลังเรียน)
+
+### 🔧 **Technical Requirements:**
+- **แก้ไขระบบเดิม** (ไม่สร้างใหม่)
+- **Backward Compatible** (ระบบเดิมยังใช้ได้)
+- **Feature Flag Approach** (`auto_distribute_score` boolean)
+- **Dual-Mode Logic** (เก่า/ใหม่ทำงานพร้อมกัน)
+
+### 🚨 **Critical Issues ที่ต้องระวัง:**
+1. **Hard-coded 65%** - ต้องแก้ทุกจุดให้ใช้ `subject.passing_percentage`
+2. **User Permissions** - ต้องมี `subject_instructors` checking
+3. **Migration Strategy** - จัดการข้อมูลเก่าอย่างปลอดภัย
+4. **Audit Trail** - Log ทุกการเปลี่ยนแปลงใน `score_change_logs`
+5. **Performance** - เพิ่ม database indexes ที่จำเป็น
+
+### 📋 **Implementation Phases:**
+**Phase 1 (Critical)**: Security, Migration, Hard-coded fixes
+**Phase 2 (Performance)**: Indexing, Error handling, Validation
+**Phase 3 (Enhancement)**: Real-time, Mobile UI, Testing
+
+### 🎯 **Success Criteria:**
+- ระบบเดิมยังทำงานได้ 100%
+- ฟีเจอร์ใหม่ทำงานได้ถูกต้อง
+- Performance ไม่ช้าลง
+- มี audit trail ครบถ้วน
+- Mobile responsive
 
 ## Task Status Categories
 **✅ เคลียแล้ว** - Task completed, no action needed
@@ -194,21 +313,24 @@ const response = await axios.get(`${apiURL}/api/example`, {
 **❌ ยังไม่ทำ** - Not started, needs to be worked on
 
 ## Workflow Process
-1. **Read `database.sql` first** to understand database structure
+1. **Read `database.sql` first** to understand database structure (NO migration needed - columns already exist)
 2. **Read `status.md` second** to understand current progress
 3. **Skip ✅ เคลียแล้ว tasks** - these are completely done
 4. **Skip 🔄 รอเทส tasks** - these are waiting for user feedback
-5. **Focus only on ❌ ยังไม่ทำ tasks**
-6. Reference `tasks.md` for detailed instructions on pending tasks
-7. Execute tasks in numerical order (1, 2, 3...)
-8. **IMMEDIATELY update `status.md` after completing each task:**
+5. **Focus IMMEDIATELY on ❌ ยังไม่ทำ tasks and START CODING**
+6. **DO NOT create new tasks.md or status.md** - they already exist and are complete
+7. **START WITH ACTUAL IMPLEMENTATION** - backend fixes, frontend components, APIs
+8. Execute tasks in numerical order (1, 2, 3...)
+9. **IMMEDIATELY update `status.md` after completing each task:**
    - If task involves code changes → mark as **🔄 รอเทส**
    - If task is simple/documentation only → mark as **✅ เคลียแล้ว**
-9. **Update Progress Overview section** in `status.md` to reflect new counts
-10. **Continue to next task** and repeat the process
+10. **Update Progress Overview section** in `status.md` to reflect new counts
 
 ## Important Rules
-- **ALWAYS reference database.sql for any database-related tasks**
+- **ALWAYS reference database.sql for any database-related tasks (columns already exist)**
+- **DO NOT create migration scripts or add database columns**
+- **DO NOT recreate tasks.md or status.md files - they exist and are complete**
+- **START CODING IMMEDIATELY** - focus on backend fixes and frontend components
 - **NEVER modify tasks marked as ✅ เคลียแล้ว**
 - **NEVER modify tasks marked as 🔄 รอเทส** (wait for user confirmation)
 - Only work on **❌ ยังไม่ทำ** status tasks
@@ -218,11 +340,11 @@ const response = await axios.get(`${apiURL}/api/example`, {
 - **Work on tasks ONE BY ONE and update status AFTER EACH TASK**
 
 ## File Reading Order
-1. `database.sql` (understand data structure)
-2. `status.md` (check current progress)
-3. `tasks.md` (get detailed instructions)
-4. Execute work
-5. Update `status.md`
+1. `database.sql` (understand data structure - ALL columns exist already)
+2. `status.md` (check current progress - only 5 tasks left)
+3. `tasks.md` (get detailed instructions for remaining tasks)
+4. **START CODING IMMEDIATELY** - no more planning needed
+5. Update `status.md` after each completed task
 
 ## Status Update Process (REQUIRED AFTER EACH TASK)
 **ทุกครั้งที่ทำ task เสร็จ ต้องอัปเดท status.md ทันที โดย:**
@@ -271,6 +393,8 @@ Last Updated: [current date and time]
 
 ## Database-Related Task Guidelines
 - Always check table relationships in `database.sql` before writing queries
-- Reference exact column names from the schema file
+- Reference exact column names from the schema file (ALL scoring columns already exist)
 - Consider foreign key relationships when designing features
-- Ask user about data types or constraints if unclear from schema
+- **DO NOT create migration scripts** - database is ready
+- **DO NOT add new columns** - everything needed is already there
+- Focus on using existing columns: passing_percentage, auto_distribute_score, weight_percentage, etc.
