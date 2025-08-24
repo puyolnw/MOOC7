@@ -25,8 +25,12 @@ interface StudentData {
   // เพิ่มฟิลด์สำหรับนักเรียน
   schoolName?: string;
   studyProgram?: string;
+  studyProgramOther?: string;
   gradeLevel?: string;
   address?: string;
+  // เพิ่มฟิลด์ที่ขาดหายไป
+  gpa?: string;
+  phone?: string;
 }
 
 interface AddStudentsProps {
@@ -52,6 +56,16 @@ const AddStudents: React.FC<AddStudentsProps> = ({ onSubmit, onCancel }) => {
     'ศิลป์-ภาษา',
     'ศิลป์-คำนวณ',
     'ศิลป์-สังคม',
+  ];
+  
+  // ตัวเลือกระดับชั้นตามระบบ ม1-6
+  const gradeLevels = [
+    { value: 'ม1', label: 'มัธยมศึกษาปีที่ 1' },
+    { value: 'ม2', label: 'มัธยมศึกษาปีที่ 2' },
+    { value: 'ม3', label: 'มัธยมศึกษาปีที่ 3' },
+    { value: 'ม4', label: 'มัธยมศึกษาปีที่ 4' },
+    { value: 'ม5', label: 'มัธยมศึกษาปีที่ 5' },
+    { value: 'ม6', label: 'มัธยมศึกษาปีที่ 6' },
   ];
 
   // State สำหรับการโหลดและข้อผิดพลาด
@@ -81,8 +95,12 @@ const AddStudents: React.FC<AddStudentsProps> = ({ onSubmit, onCancel }) => {
     // ฟิลด์สำหรับนักเรียน
     schoolName: "",
     studyProgram: "",
+    studyProgramOther: "",
     gradeLevel: "",
     address: "",
+    // ฟิลด์ที่เพิ่มเข้ามา
+    gpa: "",
+    phone: "",
   });
 
   // State สำหรับข้อผิดพลาดในการตรวจสอบข้อมูล
@@ -100,8 +118,12 @@ const AddStudents: React.FC<AddStudentsProps> = ({ onSubmit, onCancel }) => {
     // ฟิลด์สำหรับนักเรียน
     schoolName: "",
     studyProgram: "",
+    studyProgramOther: "",
     gradeLevel: "",
     address: "",
+    // ฟิลด์ที่เพิ่มเข้ามา
+    gpa: "",
+    phone: "",
   });
 
   // ดึงข้อมูลแผนกจาก API
@@ -176,8 +198,12 @@ const AddStudents: React.FC<AddStudentsProps> = ({ onSubmit, onCancel }) => {
       // ฟิลด์สำหรับนักเรียน
       schoolName: "",
       studyProgram: "",
+      studyProgramOther: "",
       gradeLevel: "",
       address: "",
+      // ฟิลด์ที่เพิ่มเข้ามา
+      gpa: "",
+      phone: "",
     };
 
     // ตรวจสอบชื่อผู้ใช้
@@ -256,6 +282,23 @@ const AddStudents: React.FC<AddStudentsProps> = ({ onSubmit, onCancel }) => {
         newErrors.educationLevel = "กรุณาเลือกระดับการศึกษา";
         isValid = false;
       }
+
+      // ตรวจสอบ GPA สำหรับนักศึกษา
+      if (studentData.gpa && studentData.gpa.trim()) {
+        const gpaValue = parseFloat(studentData.gpa);
+        if (isNaN(gpaValue) || gpaValue < 0 || gpaValue > 4) {
+          newErrors.gpa = "GPA ต้องอยู่ระหว่าง 0.00 - 4.00";
+          isValid = false;
+        }
+      }
+
+      // ตรวจสอบเบอร์โทรศัพท์สำหรับนักศึกษา
+      if (studentData.phone && studentData.phone.trim()) {
+        if (studentData.phone.length < 10) {
+          newErrors.phone = "เบอร์โทรศัพท์ต้องมีอย่างน้อย 10 หลัก";
+          isValid = false;
+        }
+      }
     } else {
       // ตรวจสอบเฉพาะนักเรียน
       // ตรวจสอบระดับชั้น
@@ -280,6 +323,23 @@ const AddStudents: React.FC<AddStudentsProps> = ({ onSubmit, onCancel }) => {
       if (!studentData.address?.trim()) {
         newErrors.address = "กรุณากรอกที่อยู่";
         isValid = false;
+      }
+
+      // ตรวจสอบ GPA
+      if (studentData.gpa && studentData.gpa.trim()) {
+        const gpaValue = parseFloat(studentData.gpa);
+        if (isNaN(gpaValue) || gpaValue < 0 || gpaValue > 4) {
+          newErrors.gpa = "GPA ต้องอยู่ระหว่าง 0.00 - 4.00";
+          isValid = false;
+        }
+      }
+
+      // ตรวจสอบเบอร์โทรศัพท์
+      if (studentData.phone && studentData.phone.trim()) {
+        if (studentData.phone.length < 10) {
+          newErrors.phone = "เบอร์โทรศัพท์ต้องมีอย่างน้อย 10 หลัก";
+          isValid = false;
+        }
       }
     }
 
@@ -326,15 +386,18 @@ const AddStudents: React.FC<AddStudentsProps> = ({ onSubmit, onCancel }) => {
             department_id: studentData.department,
             education_level: studentData.educationLevel,
             academic_year: parseInt(studentData.academicYear),
+            gpa: studentData.gpa ? parseFloat(studentData.gpa) : undefined,
+            phone: studentData.phone || undefined,
           }
         : {
             // ข้อมูลสำหรับนักเรียน
             ...baseFormData,
             school_name: studentData.schoolName,
-            study_program: studentData.studyProgram,
-            education_level: studentData.gradeLevel, // ใช้ gradeLevel เป็น education_level สำหรับนักเรียน
-            grade_level: studentData.gradeLevel,
+            study_program: studentData.studyProgram === 'อื่น ๆ' ? studentData.studyProgramOther : studentData.studyProgram,
+            grade_level: studentData.gradeLevel, // จะเป็น ม1, ม2, ม3, ม4, ม5, ม6
             address: studentData.address,
+            gpa: studentData.gpa ? parseFloat(studentData.gpa) : undefined,
+            phone: studentData.phone || undefined,
           };
 
       // ส่งข้อมูลไปยัง API
@@ -650,8 +713,11 @@ const AddStudents: React.FC<AddStudentsProps> = ({ onSubmit, onCancel }) => {
                     onChange={handleInputChange}
                   >
                     <option value="">เลือกระดับชั้น</option>
-                    <option value="มัธยมต้น">มัธยมต้น</option>
-                    <option value="มัธยมปลาย">มัธยมปลาย</option>
+                    {gradeLevels.map((level) => (
+                      <option key={level.value} value={level.value}>
+                        {level.label}
+                      </option>
+                    ))}
                   </select>
                   {errors.gradeLevel && <div className="invalid-feedback">{errors.gradeLevel}</div>}
                 </>
@@ -756,8 +822,25 @@ const AddStudents: React.FC<AddStudentsProps> = ({ onSubmit, onCancel }) => {
                         {program}
                       </option>
                     ))}
+                    <option value="อื่น ๆ">อื่น ๆ (กรอกเอง)</option>
                   </select>
                   {errors.studyProgram && <div className="invalid-feedback">{errors.studyProgram}</div>}
+                  
+                  {/* ฟิลด์สำหรับแผนการเรียนอื่นๆ */}
+                  {studentData.studyProgram === 'อื่น ๆ' && (
+                    <div className="mt-2">
+                      <input
+                        type="text"
+                        className={`form-control ${errors.studyProgramOther ? "is-invalid" : ""}`}
+                        id="studyProgramOther"
+                        name="studyProgramOther"
+                        value={studentData.studyProgramOther}
+                        onChange={handleInputChange}
+                        placeholder="กรอกแผนการเรียน"
+                      />
+                      {errors.studyProgramOther && <div className="invalid-feedback">{errors.studyProgramOther}</div>}
+                    </div>
+                  )}
                 </>
               )}
             </div>
@@ -783,6 +866,46 @@ const AddStudents: React.FC<AddStudentsProps> = ({ onSubmit, onCancel }) => {
               </div>
             </div>
           )}
+
+          {/* เพิ่มฟิลด์ GPA และเบอร์โทรสำหรับทั้งสองประเภท */}
+          <div className="row mb-3">
+            <div className="col-md-6">
+              <label htmlFor="gpa" className="form-label">
+                GPA <span className="text-muted">(ไม่บังคับ)</span>
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                max="4"
+                className={`form-control ${errors.gpa ? "is-invalid" : ""}`}
+                id="gpa"
+                name="gpa"
+                value={studentData.gpa}
+                onChange={handleInputChange}
+                placeholder="0.00 - 4.00"
+              />
+              {errors.gpa && <div className="invalid-feedback">{errors.gpa}</div>}
+              <small className="form-text text-muted">GPA ระหว่าง 0.00 - 4.00</small>
+            </div>
+
+            <div className="col-md-6">
+              <label htmlFor="phone" className="form-label">
+                เบอร์โทรศัพท์ <span className="text-muted">(ไม่บังคับ)</span>
+              </label>
+              <input
+                type="tel"
+                className={`form-control ${errors.phone ? "is-invalid" : ""}`}
+                id="phone"
+                name="phone"
+                value={studentData.phone}
+                onChange={handleInputChange}
+                placeholder="เบอร์โทรศัพท์"
+              />
+              {errors.phone && <div className="invalid-feedback">{errors.phone}</div>}
+              <small className="form-text text-muted">เบอร์โทรศัพท์ 10 หลัก</small>
+            </div>
+          </div>
         </div>
       </div>
 

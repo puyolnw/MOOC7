@@ -135,6 +135,8 @@ const AccountStudentArea: React.FC = () => {
     const [academicYears, setAcademicYears] = useState<number[]>([]);
     const [showDetails, setShowDetails] = useState<number | null>(null);
     const [userTypeFilter, setUserTypeFilter] = useState('all'); // all, university, school
+    const [sortBy, setSortBy] = useState('created_at'); // created_at, grade_level, academic_year, name
+    const [sortOrder, setSortOrder] = useState('desc'); // desc (ใหม่สุด), asc (เก่าสุด)
 
     // ดึงข้อมูลนักศึกษาและแผนก
     useEffect(() => {
@@ -302,16 +304,90 @@ const AccountStudentArea: React.FC = () => {
             });
         }
 
+        // Sort ข้อมูล
+        results = sortStudents(results);
+        
         setFilteredStudents(results);
         setTotalPages(Math.ceil(results.length / itemsPerPage));
         if (currentPage !== 1) {
             setCurrentPage(1);
         }
-    }, [searchTerm, statusFilter, departmentFilter, schoolFilter, yearFilter, gradeFilter, userTypeFilter, students, itemsPerPage]);
+    }, [searchTerm, statusFilter, departmentFilter, schoolFilter, yearFilter, gradeFilter, userTypeFilter, students, itemsPerPage, sortBy, sortOrder]);
 
     const indexOfLastItem = currentPage * itemsPerPage;
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
     const currentItems = filteredStudents.slice(indexOfFirstItem, indexOfLastItem);
+
+    // ฟังก์ชัน sort ข้อมูล
+    const sortStudents = (studentsToSort: Student[]) => {
+        return [...studentsToSort].sort((a, b) => {
+            let aValue: any;
+            let bValue: any;
+
+            switch (sortBy) {
+                case 'created_at':
+                    aValue = new Date(a.created_at || 0);
+                    bValue = new Date(b.created_at || 0);
+                    break;
+                case 'grade_level':
+                    // แปลงระดับชั้นเป็นตัวเลขสำหรับ sort
+                    aValue = convertGradeLevelToNumber(a.grade_level || '');
+                    bValue = convertGradeLevelToNumber(b.grade_level || '');
+                    break;
+                case 'academic_year':
+                    aValue = a.academic_year || 0;
+                    bValue = b.academic_year || 0;
+                    break;
+                case 'name':
+                    aValue = `${a.first_name || ''} ${a.last_name || ''}`.toLowerCase();
+                    bValue = `${b.first_name || ''} ${b.last_name || ''}`.toLowerCase();
+                    break;
+                default:
+                    aValue = a.created_at ? new Date(a.created_at) : new Date(0);
+                    bValue = b.created_at ? new Date(b.created_at) : new Date(0);
+            }
+
+            if (sortOrder === 'asc') {
+                return aValue > bValue ? 1 : -1;
+            } else {
+                return aValue < bValue ? 1 : -1;
+            }
+        });
+    };
+
+    // ฟังก์ชันแปลงระดับชั้นเป็นตัวเลขสำหรับ sort
+    const convertGradeLevelToNumber = (gradeLevel: string): number => {
+        const gradeMap: { [key: string]: number } = {
+            'ม1': 1, 'ม.1': 1, 'มัธยมศึกษาปีที่ 1': 1,
+            'ม2': 2, 'ม.2': 2, 'มัธยมศึกษาปีที่ 2': 2,
+            'ม3': 3, 'ม.3': 3, 'มัธยมศึกษาปีที่ 3': 3,
+            'ม4': 4, 'ม.4': 4, 'มัธยมศึกษาปีที่ 4': 4,
+            'ม5': 5, 'ม.5': 5, 'มัธยมศึกษาปีที่ 5': 5,
+            'ม6': 6, 'ม.6': 6, 'มัธยมศึกษาปีที่ 6': 6,
+            'มัธยมต้น': 1.5,
+            'มัธยมปลาย': 4.5
+        };
+        return gradeMap[gradeLevel] || 0;
+    };
+
+    // ฟังก์ชันแปลงระดับชั้นเป็นข้อความที่อ่านง่าย
+    const formatGradeLevel = (gradeLevel: string): string => {
+        const gradeMap: { [key: string]: string } = {
+            'ม1': 'มัธยมศึกษาปีที่ 1',
+            'ม2': 'มัธยมศึกษาปีที่ 2',
+            'ม3': 'มัธยมศึกษาปีที่ 3',
+            'ม4': 'มัธยมศึกษาปีที่ 4',
+            'ม5': 'มัธยมศึกษาปีที่ 5',
+            'ม6': 'มัธยมศึกษาปีที่ 6',
+            'ม.1': 'มัธยมศึกษาปีที่ 1',
+            'ม.2': 'มัธยมศึกษาปีที่ 2',
+            'ม.3': 'มัธยมศึกษาปีที่ 3',
+            'ม.4': 'มัธยมศึกษาปีที่ 4',
+            'ม.5': 'มัธยมศึกษาปีที่ 5',
+            'ม.6': 'มัธยมศึกษาปีที่ 6'
+        };
+        return gradeMap[gradeLevel] || gradeLevel;
+    };
 
     const handlePageChange = (pageNumber: number) => {
         setCurrentPage(pageNumber);
@@ -541,6 +617,8 @@ const AccountStudentArea: React.FC = () => {
                                                     setYearFilter('all');
                                                     setGradeFilter('all');
                                                     setUserTypeFilter('all');
+                                                    setSortBy('created_at');
+                                                    setSortOrder('desc');
                                                 }}
                                             >
                                                 <i className="fas fa-undo me-1"></i>ล้างตัวกรอง
@@ -575,6 +653,37 @@ const AccountStudentArea: React.FC = () => {
                                                     <option value="active">ปกติ</option>
                                                     <option value="inactive">พ้นสภาพ</option>
                                                     <option value="pending">พักการเรียน</option>
+                                                </select>
+                                            </div>
+
+                                            {/* Sort Controls */}
+                                            <div className="col-md-3 mb-3">
+                                                <label className="form-label small">เรียงตาม</label>
+                                                <select
+                                                    className="form-select form-select-sm"
+                                                    value={sortBy}
+                                                    onChange={(e) => setSortBy(e.target.value)}
+                                                >
+                                                    <option value="created_at">วันที่ลงทะเบียน</option>
+                                                    <option value="name">ชื่อ-นามสกุล</option>
+                                                    {userTypeFilter !== 'school' && (
+                                                        <option value="academic_year">ชั้นปีการศึกษา</option>
+                                                    )}
+                                                    {userTypeFilter !== 'university' && (
+                                                        <option value="grade_level">ระดับชั้น</option>
+                                                    )}
+                                                </select>
+                                            </div>
+
+                                            <div className="col-md-3 mb-3">
+                                                <label className="form-label small">ลำดับ</label>
+                                                <select
+                                                    className="form-select form-select-sm"
+                                                    value={sortOrder}
+                                                    onChange={(e) => setSortOrder(e.target.value)}
+                                                >
+                                                    <option value="desc">ใหม่สุด</option>
+                                                    <option value="asc">เก่าสุด</option>
                                                 </select>
                                             </div>
 
@@ -640,8 +749,12 @@ const AccountStudentArea: React.FC = () => {
                                                             onChange={(e) => setGradeFilter(e.target.value)}
                                                         >
                                                             <option value="all">ทุกระดับ</option>
-                                                            <option value="มัธยมต้น">มัธยมต้น</option>
-                                                            <option value="มัธยมปลาย">มัธยมปลาย</option>
+                                                            <option value="ม1">มัธยมศึกษาปีที่ 1</option>
+                                                            <option value="ม2">มัธยมศึกษาปีที่ 2</option>
+                                                            <option value="ม3">มัธยมศึกษาปีที่ 3</option>
+                                                            <option value="ม4">มัธยมศึกษาปีที่ 4</option>
+                                                            <option value="ม5">มัธยมศึกษาปีที่ 5</option>
+                                                            <option value="ม6">มัธยมศึกษาปีที่ 6</option>
                                                         </select>
                                                     </div>
                                                 </>
@@ -721,7 +834,8 @@ const AccountStudentArea: React.FC = () => {
                                                                                 <i className="fas fa-envelope me-1"></i>{student.email}
                                                                             </div>
                                                                             <div className="text-muted small">
-                                                                                <i className="fas fa-graduation-cap me-1"></i>{student.department_name || 'ไม่ระบุสาขา'}
+                                                                                <i className="fas fa-graduation-cap me-1"></i>
+                                                                                {student.school_name || student.department_name || 'ไม่ระบุสาขา'}
                                                                             </div>
                                                                         </div>
                                                                     </div>
@@ -734,7 +848,7 @@ const AccountStudentArea: React.FC = () => {
                                                                         </div>
                                                                         <div className="text-muted small mt-1">
                                                                             <span className="badge bg-info me-2">
-                                                                                {student.grade_level || student.education_level || 'ไม่ระบุ'}
+                                                                                {student.grade_level ? formatGradeLevel(student.grade_level) : (student.education_level || 'ไม่ระบุ')}
                                                                             </span>
                                                                             {student.academic_year && (
                                                                                 <span className="text-muted">
@@ -776,7 +890,7 @@ const AccountStudentArea: React.FC = () => {
                                                                             <i className={`fas ${showDetails === student.student_id ? 'fa-eye-slash' : 'fa-eye'}`}></i>
                                                                         </button>
                                                                         <Link
-                                                                            to={`/admin-account/students/edit/${student.student_id}`}
+                                                                            to={`/admin-account/students/edit/${student.user_id}`}
                                                                             className="btn btn-outline-primary btn-sm"
                                                                             title="แก้ไข"
                                                                         >
@@ -821,13 +935,13 @@ const AccountStudentArea: React.FC = () => {
                                                                                                         <td><strong>อีเมล:</strong></td>
                                                                                                         <td>{student.email}</td>
                                                                                                     </tr>
-                                                                                                    <tr>
-                                                                                                        <td><strong>สาขาวิชา/โรงเรียน:</strong></td>
-                                                                                                        <td>{student.department_name || student.school_name || 'ไม่ระบุ'}</td>
-                                                                                                    </tr>
+                                                                                                                                                                        <tr>
+                                                                        <td><strong>สาขาวิชา/โรงเรียน:</strong></td>
+                                                                        <td>{student.school_name || student.department_name || 'ไม่ระบุ'}</td>
+                                                                    </tr>
                                                                                                     <tr>
                                                                                                         <td><strong>ระดับการศึกษา:</strong></td>
-                                                                                                        <td>{student.education_level || student.grade_level || 'ไม่ระบุ'}</td>
+                                                                                                        <td>{student.grade_level ? formatGradeLevel(student.grade_level) : (student.education_level || 'ไม่ระบุ')}</td>
                                                                                                     </tr>
                                                                                                     {student.gpa && (
                                                                                                         <tr>
@@ -879,7 +993,7 @@ const AccountStudentArea: React.FC = () => {
                                                                                                     {student.grade_level && (
                                                                                                         <tr>
                                                                                                             <td><strong>ระดับชั้น:</strong></td>
-                                                                                                            <td>{student.grade_level}</td>
+                                                                                                            <td>{formatGradeLevel(student.grade_level)}</td>
                                                                                                         </tr>
                                                                                                     )}
                                                                                                 </tbody>
