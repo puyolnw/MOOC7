@@ -3,6 +3,7 @@ import axios from 'axios';
 import QuizSectionBar from './QuizSectionBar';
 import PrePostSection from './PrePostSection';
 import InsSection from './Inssection';
+import { ScoreManagementTab } from './ScoreManagementTab.tsx';
 import "./lessons.css";
 import "./mega.css";
 
@@ -2169,6 +2170,16 @@ const AdminLessonsArea: React.FC<AdminLessonsAreaProps> = ({
             </div>
             <div className="tab-indicator"></div>
           </button>
+          <button
+            className={`tab-btn modern-tab ${activeTab === 'scores' ? 'active' : ''}`}
+            onClick={() => setActiveTab('scores')}
+          >
+            <div className="tab-content">
+              <i className="fas fa-percentage"></i>
+              <span>คะแนน</span>
+            </div>
+            <div className="tab-indicator"></div>
+          </button>
         </div>
 
         <div className="tabs-content">
@@ -2216,6 +2227,11 @@ const AdminLessonsArea: React.FC<AdminLessonsAreaProps> = ({
                 </div>
               </div>
             </div>
+          )}
+          {activeTab === 'scores' && (
+            <ScoreManagementTab
+              subject={subject}
+            />
           )}
         </div>
       </div>

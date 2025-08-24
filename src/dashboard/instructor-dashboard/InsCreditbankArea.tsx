@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
+import { toast } from 'react-toastify';
 
 import DashboardBanner from "../dashboard-common/DashboardBanner";
 import DashboardSidebar from "../dashboard-common/DashboardSidebar";
@@ -47,46 +48,24 @@ interface Subject {
   status: string;
   lesson_count: number;
   quiz_count: number;
-  instructors: Instructor[];
-  prerequisites: Subject[];
-  pre_test: Quiz | null;
-  post_test: Quiz | null;
+  instructors: any[];
+  prerequisites: any[];
+  pre_test: any | null;
+  post_test: any | null;
   order_number: number;
-  lessons?: Lesson[];
-}
-
-interface Lesson {
-  lesson_id: number;
-  title: string;
-  description: string;
-  content: string;
-  video_url: string | null;
-  order_number: number;
-  status: string;
+  lessons?: any[];
+  preTest?: any;
+  postTest?: any;
   created_at: string;
+  updated_at: string;
+  department_name?: string;
+  faculty?: string;
+  course_id?: number;
+  enrollment_count?: number;
+  completion_count?: number;
 }
 
-interface Instructor {
-  instructor_id: number;
-  name: string;
-  position: string;
-  avatar_path: string | null;
-  avatar_file_id: string | null;
-  status: string;
-  description: string | null;
-  department: number;
-  ranking_id: number | null;
-  ranking_name?: string;
-}
 
-interface Quiz {
-  quiz_id: number;
-  title: string;
-  description: string;
-  status: string;
-  passing_score_enabled: boolean;
-  passing_score_value: number;
-}
 
 interface Department {
   department_id: number;
@@ -137,7 +116,7 @@ const NavigationBreadcrumb: React.FC<{
               onClick={onFacultyClick}
             >
               <i className="fas fa-home me-2"></i>
-              <span>เลือกคณะ</span>
+              <span>เลือกหลักสูตร</span>
             </button>
           </li>
           {selectedFaculty && (
@@ -242,7 +221,7 @@ const FacultySelection: React.FC<{
           <i className="fas fa-university"></i>
         </div>
         <div className="section-title">
-          <h2>เลือกคณะ</h2>
+          <h2>เลือกหลักสูตร</h2>
           <p>คณะที่ท่านสังกัดและมีการสอนรายวิชา</p>
         </div>
       </div>
@@ -380,7 +359,8 @@ const AllInstructorCoursesList: React.FC<{
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
-  indexOfFirstItem: number;
+  viewMode: 'cards' | 'table';
+  onViewModeChange: (mode: 'cards' | 'table') => void;
 }> = ({ 
   courses, 
   isLoading, 
@@ -390,6 +370,8 @@ const AllInstructorCoursesList: React.FC<{
   currentPage,
   totalPages,
   onPageChange,
+  viewMode,
+  onViewModeChange
 }) => {
   if (isLoading) {
     return (
@@ -437,12 +419,32 @@ const AllInstructorCoursesList: React.FC<{
             )}
           </div>
         </div>
+        
+        {/* View Mode Toggle */}
+        <div className="view-mode-toggle">
+          <button 
+            className={`view-mode-btn ${viewMode === 'cards' ? 'active' : ''}`}
+            onClick={() => onViewModeChange('cards')}
+            title="แสดงแบบการ์ด"
+          >
+            <i className="fas fa-th-large"></i>
+          </button>
+          <button 
+            className={`view-mode-btn ${viewMode === 'table' ? 'active' : ''}`}
+            onClick={() => onViewModeChange('table')}
+            title="แสดงแบบตาราง"
+          >
+            <i className="fas fa-list"></i>
+          </button>
+        </div>
       </div>
 
-      <div className="courses-grid">
-        {/* ลบ Add Course Card - อาจารย์ไม่มีสิทธิ์สร้างหลักสูตรใหม่ */}
-        
-        {courses.map((course, index) => (
+      {/* Conditional Rendering based on View Mode */}
+      {viewMode === 'cards' ? (
+        <div className="courses-grid">
+          {/* ลบ Add Course Card - อาจารย์ไม่มีสิทธิ์สร้างหลักสูตรใหม่ */}
+          
+          {courses.map((course, index) => (
           <div 
             key={`course-${course.course_id}-${index}`} 
             className="course-card"
@@ -457,7 +459,25 @@ const AllInstructorCoursesList: React.FC<{
                 alt={course.title}
                 className="course-image"
                 onError={(e) => {
-                  (e.target as HTMLImageElement).src = 'https://via.placeholder.com/300x200.png?text=ไม่มีรูปภาพ';
+                  const img = e.target as HTMLImageElement;
+                  img.style.display = 'none';
+                  const parent = img.parentElement;
+                  if (parent && !parent.querySelector('.image-placeholder')) {
+                    const placeholder = document.createElement('div');
+                    placeholder.className = 'image-placeholder d-flex align-items-center justify-content-center';
+                    placeholder.style.height = '200px';
+                    placeholder.style.backgroundColor = '#f8f9fa';
+                    placeholder.style.border = '2px dashed #dee2e6';
+                    placeholder.style.borderRadius = '0.5rem';
+                    placeholder.style.color = '#6c757d';
+                    placeholder.innerHTML = `
+                      <div class="text-center">
+                        <i class="fas fa-image fa-3x mb-2" style="opacity: 0.5;"></i>
+                        <p class="mb-0">ไม่มีรูปภาพ</p>
+                      </div>
+                    `;
+                    parent.appendChild(placeholder);
+                  }
                 }}
               />
               <div className="course-card-overlay">
@@ -504,8 +524,80 @@ const AllInstructorCoursesList: React.FC<{
               </div>
             </div>
           </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      ) : (
+        /* Table View */
+        <div className="courses-table-container">
+          <table className="courses-table">
+            <thead>
+              <tr>
+                <th style={{width: "80px"}}>รูปภาพ</th>
+                <th style={{width: "120px"}}>รหัส</th>
+                <th>ชื่อหลักสูตร</th>
+                <th style={{width: "100px"}}>รายวิชา</th>
+                <th style={{width: "150px"}}>คณะ</th>
+              </tr>
+            </thead>
+            <tbody>
+              {courses.filter(course => (course.subject_count || 0) > 0).map((course, index) => (
+                <tr 
+                  key={`course-table-${course.course_id}-${index}`}
+                  onClick={() => onCourseSelect(course)}
+                  className="clickable-row"
+                >
+                  <td>
+                    <div className="course-thumbnail">
+                      <img
+                        src={course.cover_image_file_id 
+                          ? `${import.meta.env.VITE_API_URL}/api/courses/image/${course.cover_image_file_id}`
+                          : 'https://via.placeholder.com/60x40.png?text=ไม่มีรูป'
+                        }
+                        alt={course.title}
+                        onError={(e) => {
+                          const img = e.target as HTMLImageElement;
+                          img.style.display = 'none';
+                          const parent = img.parentElement;
+                          if (parent && !parent.querySelector('.image-placeholder-small')) {
+                            const placeholder = document.createElement('div');
+                            placeholder.className = 'image-placeholder-small';
+                            placeholder.innerHTML = '<i class="fas fa-image"></i>';
+                            parent.appendChild(placeholder);
+                          }
+                        }}
+                      />
+                    </div>
+                  </td>
+                  <td>
+                    <strong>{course.course_code || 'ไม่ระบุ'}</strong>
+                  </td>
+                  <td>
+                    <div className="course-title-cell">
+                      <strong 
+                        className="clickable-title"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onCourseSelect(course);
+                        }}
+                        style={{ cursor: 'pointer', color: '#007bff' }}
+                      >
+                        {course.title}
+                      </strong>
+                      <small className="text-muted d-block">{course.description ? course.description.substring(0, 50) + '...' : ''}</small>
+                    </div>
+                  </td>
+                  <td className="text-center">
+                    <span className="badge bg-primary rounded-pill">
+                      {course.subject_count || 0}
+                    </span>
+                  </td>
+                  <td>{course.faculty || 'ไม่ระบุคณะ'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
       
       {totalPages > 1 && (
         <div className="pagination-nav">
@@ -546,7 +638,9 @@ const EditableCourseDetail: React.FC<{
   onBack: () => void;
   onSubjectSelect: (subject: Subject) => void;
   onCourseUpdate: (updatedCourse: Course) => void;
-}> = ({ course, onSubjectSelect }) => {
+  viewMode: 'cards' | 'table';
+  onViewModeChange: (mode: 'cards' | 'table') => void;
+}> = ({ course, onSubjectSelect, viewMode, onViewModeChange }) => {
   const apiURL = import.meta.env.VITE_API_URL;
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [filteredSubjects, setFilteredSubjects] = useState<Subject[]>([]);
@@ -570,22 +664,31 @@ const EditableCourseDetail: React.FC<{
   }, [searchTerm, subjects]);
 
   const fetchSubjects = async () => {
+    if (!course) return;
+    
     setIsLoading(true);
     try {
       const token = localStorage.getItem('token');
       const response = await axios.get(
-        `${apiURL}/api/courses/${course.course_id}/subjects`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        `${apiURL}/api/courses/subjects/instructors/courses`,
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
       );
       
       if (response.data.success) {
-        setSubjects(response.data.subjects || []);
-        setFilteredSubjects(response.data.subjects || []);
+        // กรองเฉพาะรายวิชาที่อยู่ในหลักสูตรที่เลือก
+        const courseSubjects = response.data.subjects.filter((subject: Subject) => {
+          // ตรวจสอบว่ารายวิชานี้อยู่ในหลักสูตรที่เลือกหรือไม่
+          return subject.course_id === course.course_id;
+        });
+        setSubjects(courseSubjects);
+      } else {
+        toast.error(response.data.message || 'ไม่สามารถดึงข้อมูลรายวิชาได้');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching subjects:', error);
-      setSubjects([]);
-      setFilteredSubjects([]);
+      toast.error(error.response?.data?.message || 'เกิดข้อผิดพลาดในการดึงข้อมูลรายวิชา');
     } finally {
       setIsLoading(false);
     }
@@ -601,7 +704,7 @@ const EditableCourseDetail: React.FC<{
         return `${apiURL}/api/courses/image/${fileIdMatch[1]}`;
       }
     }
-    return 'https://via.placeholder.com/400x250.png?text=ไม่มีรูปภาพ';
+    return 'data:image/svg+xml;base64,' + btoa('<svg xmlns="http://www.w3.org/2000/svg" width="400" height="250" viewBox="0 0 400 250" style="background:#f8f9fa"><text x="50%" y="50%" text-anchor="middle" dy=".3em" font-family="sans-serif" font-size="16" fill="#6c757d">ไม่มีรูปภาพ</text></svg>');
   };
 
   const getVideoEmbedUrl = (videoUrl: string | null): string => {
@@ -620,61 +723,103 @@ const EditableCourseDetail: React.FC<{
   };
 
   const handleDeleteSubject = async (subject: Subject) => {
-    if (!window.confirm(`คุณต้องการลบรายวิชา "${subject.subject_name}" ใช่หรือไม่?\n\nการดำเนินการนี้ไม่สามารถยกเลิกได้`)) {
+    // เพิ่มเงื่อนไขก่อนลบ
+    const confirmDelete = window.confirm(
+      `คุณต้องการลบรายวิชา "${subject.subject_name}" ใช่หรือไม่?\n\n` +
+      `⚠️ การลบจะไม่สามารถกู้คืนได้\n` +
+      `📚 รายวิชานี้มี ${subject.lesson_count || 0} บทเรียน และ ${subject.quiz_count || 0} แบบทดสอบ\n\n` +
+      `หากต้องการลบ กรุณาพิมพ์ "ลบ" ในช่องด้านล่าง:`
+    );
+    
+    if (!confirmDelete) return;
+    
+    const deleteText = prompt('กรุณาพิมพ์ "ลบ" เพื่อยืนยันการลบรายวิชา:');
+    if (deleteText !== 'ลบ') {
+      alert('การลบถูกยกเลิก');
       return;
     }
-
+    
     try {
       const token = localStorage.getItem('token');
       const response = await axios.delete(
-        `${apiURL}/api/courses/subjects/${subject.subject_id}`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        `${apiURL}/api/subjects/${subject.subject_id}`,
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
       );
 
       if (response.data.success) {
-        // Remove deleted subject from state
-        const updatedSubjects = subjects.filter(s => s.subject_id !== subject.subject_id);
-        setSubjects(updatedSubjects);
-        setFilteredSubjects(updatedSubjects);
-        
-        alert('ลบรายวิชาสำเร็จ');
+        toast.success('ลบรายวิชาสำเร็จ');
+        fetchSubjects(); // โหลดข้อมูลใหม่
       } else {
-        alert('ไม่สามารถลบรายวิชาได้: ' + (response.data.message || 'เกิดข้อผิดพลาด'));
+        toast.error(response.data.message || 'ไม่สามารถลบรายวิชาได้');
       }
     } catch (error: any) {
       console.error('Error deleting subject:', error);
-      
-      if (error.response?.status === 400) {
-        alert('ไม่สามารถลบรายวิชาได้: มีข้อมูลที่เกี่ยวข้องอยู่ กรุณาลบข้อมูลที่เกี่ยวข้องก่อน');
-      } else if (error.response?.status === 403) {
-        alert('คุณไม่มีสิทธิ์ลบรายวิชานี้');
-      } else if (error.response?.status === 404) {
-        alert('ไม่พบรายวิชาที่ต้องการลบ');
-      } else {
-        alert('เกิดข้อผิดพลาดในการลบรายวิชา: ' + (error.response?.data?.message || error.message));
-      }
+      toast.error(error.response?.data?.message || 'เกิดข้อผิดพลาดในการลบรายวิชา');
     }
   };
 
   return (
     <div className="course-detail-container">
-      <div className="course-detail-header">
-        <div className="course-header-content">
-          <div className="course-image-section">
-            <div className="course-image-container">
-              <img
-                src={getCourseImageUrl(course)}
-                alt={course.title}
-                className="course-detail-image"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400x250.png?text=ไม่มีรูปภาพ';
-                }}
-              />
+      {/* Course Header - ซ่อนเมื่อเป็น table view */}
+      {viewMode !== 'table' && (
+        <div className="course-detail-header">
+          <div className="course-header-content">
+            <div className="course-image-section">
+              <div className="course-image-container">
+                <img
+                  src={getCourseImageUrl(course)}
+                  alt={course.title}
+                  className="course-detail-image"
+                  onError={(e) => {
+                    const img = e.target as HTMLImageElement;
+                    img.style.display = 'none';
+                    const parent = img.parentElement;
+                    if (parent && !parent.querySelector('.image-placeholder')) {
+                      const placeholder = document.createElement('div');
+                      placeholder.className = 'image-placeholder d-flex align-items-center justify-content-center';
+                      placeholder.style.height = '250px';
+                      placeholder.style.backgroundColor = '#f8f9fa';
+                      placeholder.style.border = '2px dashed #dee2e6';
+                      placeholder.style.borderRadius = '0.5rem';
+                      placeholder.style.color = '#6c757d';
+                      placeholder.innerHTML = `
+                        <div class="text-center">
+                          <i class="fas fa-image fa-4x mb-3" style="opacity: 0.5;"></i>
+                          <p class="mb-0">ไม่มีรูปภาพ</p>
+                        </div>
+                      `;
+                      parent.appendChild(placeholder);
+                    }
+                  }}
+                />
+              </div>
             </div>
-          </div>
-          <div className="course-info-section">
-            <div className="course-header-top">
-              <h1 className="course-detail-title">{course.title}</h1>
+            <div className="course-info-section">
+              <div className="course-header-top">
+                <h1 className="course-detail-title">{course.title}</h1>
+              </div>
+              
+              <div className="course-meta">
+                <div className="meta-item">
+                  <i className="fas fa-building"></i>
+                  <span>{course.department_name}</span>
+                </div>
+                <div className="meta-item">
+                  <i className="fas fa-university"></i>
+                  <span>{course.faculty}</span>
+                </div>
+                <div className="meta-item">
+                  <i className="fas fa-list-alt"></i>
+                  <span>{subjects.length} รายวิชา</span>
+                </div>
+                <div className="meta-item">
+                  <i className="fas fa-calendar"></i>
+                  <span>สร้างเมื่อ {new Date(course.created_at).toLocaleDateString('th-TH')}</span>
+                </div>
+              </div>
+
               <div className="course-badges">
                 {course.course_code && (
                   <span className="course-code-badge">{course.course_code}</span>
@@ -683,25 +828,6 @@ const EditableCourseDetail: React.FC<{
                   {course.status === 'active' ? 'เปิดใช้งาน' : 
                    course.status === 'inactive' ? 'ปิดใช้งาน' : 'ร่าง'}
                 </span>
-              </div>
-            </div>
-            
-            <div className="course-meta">
-              <div className="meta-item">
-                <i className="fas fa-building me-2"></i>
-                <span>{course.department_name}</span>
-              </div>
-              <div className="meta-item">
-                <i className="fas fa-university me-2"></i>
-                <span>{course.faculty}</span>
-              </div>
-              <div className="meta-item">
-                <i className="fas fa-list-alt me-2"></i>
-                <span>{subjects.length} รายวิชา</span>
-              </div>
-              <div className="meta-item">
-                <i className="fas fa-calendar me-2"></i>
-                <span>สร้างเมื่อ {new Date(course.created_at).toLocaleDateString('th-TH')}</span>
               </div>
             </div>
 
@@ -745,7 +871,7 @@ const EditableCourseDetail: React.FC<{
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Subjects Section */}
       <div className="subjects-section">
@@ -775,6 +901,24 @@ const EditableCourseDetail: React.FC<{
                 )}
               </div>
             </div>
+            
+            {/* View Mode Toggle */}
+            <div className="view-mode-toggle">
+              <button 
+                className={`view-mode-btn ${viewMode === 'cards' ? 'active' : ''}`}
+                onClick={() => onViewModeChange('cards')}
+                title="แสดงแบบการ์ด"
+              >
+                <i className="fas fa-th-large"></i>
+              </button>
+              <button 
+                className={`view-mode-btn ${viewMode === 'table' ? 'active' : ''}`}
+                onClick={() => onViewModeChange('table')}
+                title="แสดงแบบตาราง"
+              >
+                <i className="fas fa-list"></i>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -788,14 +932,16 @@ const EditableCourseDetail: React.FC<{
             </div>
           </div>
         ) : (
-          <div className="subjects-grid">
-            {/* เพิ่มปุ่มสร้างรายวิชาใหม่สำหรับอาจารย์ */}
-            <AddSubjectCard 
-              courseId={course.course_id} 
-              onClick={handleAddSubject}
-            />
-            
-            {filteredSubjects.map((subject, index) => (
+          <>
+            {viewMode === 'cards' ? (
+              <div className="subjects-grid">
+                {/* เพิ่มปุ่มสร้างรายวิชาใหม่สำหรับอาจารย์ */}
+                <AddSubjectCard 
+                  courseId={course.course_id} 
+                  onClick={handleAddSubject}
+                />
+                
+                {filteredSubjects.map((subject, index) => (
               <div 
                 key={`subject-${subject.subject_id}-${index}`} 
                 className="subject-card"
@@ -828,12 +974,30 @@ const EditableCourseDetail: React.FC<{
                   <img
                     src={subject.cover_image_file_id 
                       ? `${apiURL}/api/courses/image/${subject.cover_image_file_id}`
-                      : 'https://via.placeholder.com/300x200.png?text=ไม่มีรูปภาพ'
+                      : 'data:image/svg+xml;base64,' + btoa('<svg xmlns="http://www.w3.org/2000/svg" width="300" height="200" viewBox="0 0 300 200" style="background:#f8f9fa"><text x="50%" y="50%" text-anchor="middle" dy=".3em" font-family="sans-serif" font-size="14" fill="#6c757d">ไม่มีรูปภาพ</text></svg>')
                     }
                     alt={subject.subject_name}
                     className="subject-image"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src = 'https://via.placeholder.com/300x200.png?text=ไม่มีรูปภาพ';
+                      const img = e.target as HTMLImageElement;
+                      img.style.display = 'none';
+                      const parent = img.parentElement;
+                      if (parent && !parent.querySelector('.image-placeholder')) {
+                        const placeholder = document.createElement('div');
+                        placeholder.className = 'image-placeholder d-flex align-items-center justify-content-center';
+                        placeholder.style.height = '200px';
+                        placeholder.style.backgroundColor = '#f8f9fa';
+                        placeholder.style.border = '2px dashed #dee2e6';
+                        placeholder.style.borderRadius = '0.5rem';
+                        placeholder.style.color = '#6c757d';
+                        placeholder.innerHTML = `
+                          <div class="text-center">
+                            <i class="fas fa-image fa-3x mb-2" style="opacity: 0.5;"></i>
+                            <p class="mb-0">ไม่มีรูปภาพ</p>
+                          </div>
+                        `;
+                        parent.appendChild(placeholder);
+                      }
                     }}
                   />
                 </div>
@@ -880,13 +1044,13 @@ const EditableCourseDetail: React.FC<{
                         <span>อาจารย์ผู้สอน:</span>
                       </div>
                       <div className="instructors-list">
-                        {subject.instructors.slice(0, 2).map((instructor, idx) => (
+                        {subject.instructors?.slice(0, 2).map((instructor, idx) => (
                           <span key={instructor.instructor_id} className="instructor-name">
                             {instructor.name}
-                            {idx < Math.min(subject.instructors.length, 2) - 1 && ', '}
+                            {idx < Math.min(subject.instructors?.length || 0, 2) - 1 && ', '}
                           </span>
                         ))}
-                        {subject.instructors.length > 2 && (
+                        {subject.instructors && subject.instructors.length > 2 && (
                           <span className="more-instructors">
                             และอีก {subject.instructors.length - 2} คน
                           </span>
@@ -906,8 +1070,131 @@ const EditableCourseDetail: React.FC<{
                   </button>
                 </div>
               </div>
-            ))}
-          </div>
+                ))}
+              </div>
+            ) : (
+              /* Table View */
+              <div className="subjects-table-container">
+                <table className="subjects-table">
+                  <thead>
+                    <tr>
+                      <th style={{width: "80px"}}>รูปภาพ</th>
+                      <th style={{width: "120px"}}>รหัสวิชา</th>
+                      <th>ชื่อรายวิชา</th>
+                      <th style={{width: "80px"}}>หน่วยกิต</th>
+                      <th style={{width: "100px"}}>บทเรียน</th>
+                      <th style={{width: "100px"}}>แบบทดสอบ</th>
+                      <th style={{width: "120px"}}>จัดการ</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr className="table-add-subject">
+                      <td colSpan={7}>
+                        <button 
+                          onClick={handleAddSubject}
+                          className="btn btn-primary btn-sm"
+                        >
+                          <i className="fas fa-plus me-2"></i>
+                          เพิ่มรายวิชาใหม่
+                        </button>
+                      </td>
+                    </tr>
+                    {filteredSubjects.map((subject, index) => (
+                      <tr 
+                        key={`subject-table-${subject.subject_id}-${index}`}
+                        className="clickable-row"
+                      >
+                        <td>
+                          <div className="subject-thumbnail">
+                            <img
+                              src={subject.cover_image_file_id 
+                                ? `${apiURL}/api/courses/image/${subject.cover_image_file_id}`
+                                : 'https://via.placeholder.com/60x40.png?text=ไม่มีรูป'
+                              }
+                              alt={subject.subject_name}
+                              onError={(e) => {
+                                const img = e.target as HTMLImageElement;
+                                img.style.display = 'none';
+                                const parent = img.parentElement;
+                                if (parent && !parent.querySelector('.image-placeholder-small')) {
+                                  const placeholder = document.createElement('div');
+                                  placeholder.className = 'image-placeholder-small';
+                                  placeholder.innerHTML = '<i class="fas fa-image"></i>';
+                                  parent.appendChild(placeholder);
+                                }
+                              }}
+                            />
+                          </div>
+                        </td>
+                        <td>
+                          <strong>{subject.subject_code || 'ไม่ระบุ'}</strong>
+                        </td>
+                        <td>
+                          <div className="course-title-cell">
+                            <strong 
+                              className="clickable-title"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onSubjectSelect(subject);
+                              }}
+                              style={{ cursor: 'pointer', color: '#007bff' }}
+                            >
+                              {subject.subject_name}
+                            </strong>
+                            <small className="text-muted d-block">
+                              {subject.description ? 
+                                (subject.description.length > 60 
+                                  ? `${subject.description.substring(0, 60)}...`
+                                  : subject.description
+                                ) : ''
+                              }
+                            </small>
+                          </div>
+                        </td>
+                        <td className="text-center">
+                          <span className="badge bg-info text-dark rounded-pill">
+                            {subject.credits}
+                          </span>
+                        </td>
+                        <td className="text-center">
+                          <span className="badge bg-primary rounded-pill">
+                            {subject.lesson_count || 0}
+                          </span>
+                        </td>
+                        <td className="text-center">
+                          <span className="badge bg-secondary rounded-pill">
+                            {subject.quiz_count || 0}
+                          </span>
+                        </td>
+
+                        <td>
+                          <div className="d-flex gap-1">
+                            <button
+                              className="btn btn-primary btn-sm"
+                              onClick={() => onSubjectSelect(subject)}
+                              title="เข้าสู่รายวิชา"
+                            >
+                              <i className="fas fa-arrow-right"></i>
+                            </button>
+                            <button
+                              className="btn btn-outline-danger btn-sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteSubject(subject);
+                              }}
+                              title="ลบรายวิชา"
+                            >
+                              <i className="fas fa-trash"></i>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </>
         )}
         {filteredSubjects.length === 0 && !isLoading && (
           <div className="no-subjects">
@@ -1027,8 +1314,29 @@ const InsCreditbankArea: React.FC = () => {
 
   // Add state for initialization
   const [isInitialized, setIsInitialized] = useState(false);
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>(() => {
+    // อ่านจาก URL หรือ localStorage
+    const urlParams = new URLSearchParams(location.search);
+    const urlViewMode = urlParams.get('viewMode');
+    if (urlViewMode === 'table' || urlViewMode === 'cards') {
+      return urlViewMode;
+    }
+    return (localStorage.getItem('ins-creditbank-viewmode') as 'cards' | 'table') || 'cards';
+  }); // เพิ่ม view mode
 
   // ลบ Modal states - อาจารย์ไม่มีสิทธิ์ CRUD คณะและสาขา
+
+  // Handle view mode change with persistence
+  const handleViewModeChange = (newMode: 'cards' | 'table') => {
+    setViewMode(newMode);
+    localStorage.setItem('ins-creditbank-viewmode', newMode);
+    
+    // Update URL to reflect view mode
+    const urlParams = new URLSearchParams(location.search);
+    urlParams.set('viewMode', newMode);
+    const newUrl = `${location.pathname}?${urlParams.toString()}`;
+    window.history.replaceState(null, '', newUrl);
+  };
 
   // ฟังก์ชันใหม่: ดึงหลักสูตรทั้งหมดที่อาจารย์เกี่ยวข้อง
   const fetchAllInstructorCourses = async () => {
@@ -1115,37 +1423,11 @@ const InsCreditbankArea: React.FC = () => {
 
 
 
-  // Initialize - โหลดหลักสูตรทั้งหมดที่อาจารย์เกี่ยวข้องเลย
-  useEffect(() => {
-    const init = async () => {
-      setIsInitialized(false);
-      
-      try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          setError('ไม่พบข้อมูลการเข้าสู่ระบบ กรุณาเข้าสู่ระบบใหม่');
-          setIsInitialized(true);
-          return;
-        }
-
-        // โหลดหลักสูตรทั้งหมดที่อาจารย์เกี่ยวข้องเลย
-        await fetchAllInstructorCourses();
-
-      } catch (error) {
-        console.error('Initialization error:', error);
-        setError('เกิดข้อผิดพลาดในการโหลดข้อมูล');
-      } finally {
-        setIsInitialized(true);
-      }
-    };
-
-    init();
-  }, []); // โหลดครั้งเดียวตอนเริ่มต้น
-
-  // Initialize from URL parameters on component mount - เก็บไว้สำหรับการกลับมาจากหน้าอื่น
+  // Initialize from URL parameters first, then load courses
   useEffect(() => {
     const initializeFromURL = async () => {
-      if (!isInitialized) return; // รอให้ init เสร็จก่อน
+      setIsInitialized(false);
+      setIsLoading(true);
       
       const urlParams = new URLSearchParams(location.search);
       const view = urlParams.get('view');
@@ -1154,9 +1436,72 @@ const InsCreditbankArea: React.FC = () => {
       const courseId = urlParams.get('course');
       const subjectId = urlParams.get('subject');
 
-      console.log('Initializing from URL:', { view, faculty, departmentId, courseId, subjectId });
+      // Initializing from URL parameters
 
-      if (view && faculty) {
+      if (view === 'subject-detail' && courseId && subjectId) {
+        // Direct subject-detail routing (แบบที่ไม่มี faculty parameter)
+        try {
+          setIsLoading(true);
+          
+          // Direct subject-detail routing
+          
+          const token = localStorage.getItem('token');
+          const [courseResponse, subjectResponse] = await Promise.all([
+            axios.get(`${apiURL}/api/courses/${courseId}`, {
+              headers: { Authorization: `Bearer ${token}` }
+            }),
+            axios.get(`${apiURL}/api/courses/subjects/${subjectId}`, {
+              headers: { Authorization: `Bearer ${token}` }
+            })
+          ]);
+          
+          // API responses received successfully
+          
+          if (courseResponse.data.success && subjectResponse.data.success) {
+            const course = courseResponse.data.course;
+            const subject = subjectResponse.data.subject;
+            
+            // Map subject data properly
+            const mappedSubject: Subject = {
+              subject_id: subject.subject_id,
+              subject_code: subject.subject_code || '',
+              subject_name: subject.subject_name || subject.title || '',
+              description: subject.description || '',
+              credits: subject.credits || 0,
+              cover_image: subject.cover_image,
+              cover_image_file_id: subject.cover_image_file_id,
+              video_url: subject.video_url,
+              status: subject.status || 'active',
+              lesson_count: subject.lesson_count || 0,
+              quiz_count: subject.quiz_count || 0,
+              instructors: subject.instructors || [],
+              prerequisites: subject.prerequisites || [],
+              pre_test: subject.pre_test || subject.preTest || null,
+              post_test: subject.post_test || subject.postTest || null,
+              order_number: subject.order_number || 0,
+              lessons: subject.lessons || [],
+              created_at: subject.created_at || new Date().toISOString(),
+              updated_at: subject.updated_at || new Date().toISOString()
+            };
+            
+            setSelectedCourse(course);
+            setSelectedSubject(mappedSubject);
+            setCurrentView('subject-detail');
+            
+            // Successfully set subject-detail view via direct routing
+          } else {
+            console.error('Direct routing API responses not successful');
+            throw new Error('Failed to fetch required data for direct routing');
+          }
+        } catch (error) {
+          console.error('Error in direct subject-detail routing:', error);
+          // ถ้าเกิดข้อผิดพลาด ให้กลับไปหน้า courses
+          await fetchAllInstructorCourses();
+          setError('ไม่สามารถโหลดข้อมูลรายวิชาได้ กลับไปยังหน้าหลักสูตร');
+        } finally {
+          setIsLoading(false);
+        }
+      } else if (view && faculty) {
         try {
           setIsLoading(true);
           
@@ -1246,7 +1591,9 @@ const InsCreditbankArea: React.FC = () => {
                   pre_test: subject.pre_test || subject.preTest || null,
                   post_test: subject.post_test || subject.postTest || null,
                   order_number: subject.order_number || 0,
-                  lessons: subject.lessons || []
+                  lessons: subject.lessons || [],
+                  created_at: subject.created_at || new Date().toISOString(),
+                  updated_at: subject.updated_at || new Date().toISOString()
                 };
                 
                 setSelectedDepartment(department);
@@ -1286,26 +1633,35 @@ const InsCreditbankArea: React.FC = () => {
           setIsLoading(false);
         }
       } else {
-        console.log('No view or faculty in URL, going to faculties');
-        // ถ้าไม่มี parameters ให้ไปหน้า faculties
-        setCurrentView('faculties');
-        setIsLoading(false);
+        console.log('No specific view in URL, loading all instructor courses');
+        // ถ้าไม่มี specific parameters ให้โหลดหลักสูตรทั้งหมด
+        try {
+          const token = localStorage.getItem('token');
+          if (token) {
+            await fetchAllInstructorCourses();
+          } else {
+            setError('ไม่พบข้อมูลการเข้าสู่ระบบ กรุณาเข้าสู่ระบบใหม่');
+          }
+        } catch (error) {
+          console.error('Error loading courses:', error);
+          setError('เกิดข้อผิดพลาดในการโหลดข้อมูล');
+        }
       }
       
       setIsInitialized(true);
+      setIsLoading(false);
     };
 
-    if (!isInitialized) {
-      initializeFromURL();
-    }
-  }, [location.search, isInitialized, apiURL]);
+    // เรียกทุกครั้งที่ component mount หรือ URL เปลี่ยน
+    initializeFromURL();
+  }, [location.search, apiURL]);
 
-  // Load faculties on component mount
+  // Load faculties when needed (only for faculties view)
   useEffect(() => {
-    if (isInitialized) {
+    if (isInitialized && currentView === 'faculties') {
       fetchFaculties();
     }
-  }, [isInitialized]);
+  }, [isInitialized, currentView]);
 
   // Handle browser back/forward buttons
   useEffect(() => {
@@ -1332,9 +1688,10 @@ const InsCreditbankArea: React.FC = () => {
   }, []);
 
   // Update browser history when navigation changes
-  const updateBrowserHistory = (view: string, faculty: string | null, department: Department | null, course: Course | null, subject: Subject | null) => {
-    const state = { view, faculty, department, course, subject };
-    const url = `${location.pathname}?view=${view}${faculty ? `&faculty=${encodeURIComponent(faculty)}` : ''}${department ? `&department=${department.department_id}` : ''}${course ? `&course=${course.course_id}` : ''}${subject ? `&subject=${subject.subject_id}` : ''}`;
+  const updateBrowserHistory = (view: string, faculty: string | null, department: Department | null, course: Course | null, subject: Subject | null, preserveViewMode: boolean = true) => {
+    const currentViewMode = preserveViewMode ? (localStorage.getItem('ins-creditbank-viewmode') || 'cards') : 'cards';
+    const state = { view, faculty, department, course, subject, viewMode: currentViewMode };
+    const url = `${location.pathname}?view=${view}${faculty ? `&faculty=${encodeURIComponent(faculty)}` : ''}${department ? `&department=${department.department_id}` : ''}${course ? `&course=${course.course_id}` : ''}${subject ? `&subject=${subject.subject_id}` : ''}${preserveViewMode ? `&viewMode=${currentViewMode}` : ''}`;
     
     window.history.pushState(state, '', url);
   };
@@ -1713,8 +2070,12 @@ const InsCreditbankArea: React.FC = () => {
     setSelectedCourse(null);
     setSelectedSubject(null);
     setSearchTerm('');
+    // รีเซ็ต viewMode เป็น cards เมื่อกลับไปหน้าหลัก
+    setViewMode('cards');
+    localStorage.setItem('ins-creditbank-viewmode', 'cards');
     // โหลดหลักสูตรทั้งหมดใหม่
     fetchAllInstructorCourses();
+    updateBrowserHistory('courses', null, null, null, null, false);
   };
 
   const handleBackToDepartments = () => {
@@ -1749,7 +2110,7 @@ const InsCreditbankArea: React.FC = () => {
     );
   };
 
-  const handleSubjectUpdate = (updatedSubject: Subject) => {
+  const handleSubjectUpdate = (updatedSubject: any) => {
     setSelectedSubject(updatedSubject);
   };
 
@@ -1915,6 +2276,8 @@ const InsCreditbankArea: React.FC = () => {
                     onBack={handleBackToCourses}
                     onSubjectSelect={handleSubjectSelect}
                     onCourseUpdate={handleCourseUpdate}
+                    viewMode={viewMode}
+                    onViewModeChange={handleViewModeChange}
                   />
                 ) : currentView === 'courses' ? (
                 <AllInstructorCoursesList
@@ -1926,7 +2289,8 @@ const InsCreditbankArea: React.FC = () => {
                 currentPage={currentPage}
                 totalPages={totalPages}
                 onPageChange={handlePageChange}
-                indexOfFirstItem={indexOfFirstItem}
+                viewMode={viewMode}
+                onViewModeChange={handleViewModeChange}
                 />
                 ) : currentView === 'departments' && selectedFaculty ? (
                   <DepartmentSelection
