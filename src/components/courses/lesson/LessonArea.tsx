@@ -147,8 +147,10 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
     const [initialLessonSet, setInitialLessonSet] = useState<boolean>(false);
     // เพิ่ม state สำหรับควบคุม activeAccordion ใน sidebar
     const [sidebarActiveAccordion, setSidebarActiveAccordion] = useState<number | null>(null);
-    // เพิ่ม state สำหรับเก็บข้อมูลคะแนนจาก Score Management
-    const [scoreItems, setScoreItems] = useState<any[]>([]);
+    // ✅ เพิ่ม state สำหรับ hierarchical score structure
+    const [scoreStructure, setScoreStructure] = useState<any>({});
+    // ✅ เพิ่ม state สำหรับ subject passing percentage
+    const [subjectPassingPercentage, setSubjectPassingPercentage] = useState<number>(80);
     // ✅ เพิ่ม state เพื่อป้องกันการเรียก updatePaymentStatus ซ้ำ
     const [completionStatusSent, setCompletionStatusSent] = useState(false);
     // ✅ เพิ่ม ref เพื่อป้องกันการ refresh ซ้ำ
@@ -156,63 +158,96 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
 
     // ฟังก์ชันคำนวณคะแนนต่างๆ สำหรับ Real Score System
     const calculateCurrentScore = useCallback((): number => {
-        // ใช้ข้อมูลจาก scoreItems (เหมือนหน้าเฉลี่ย)
-        if (scoreItems.length === 0) return 0;
+        // ใช้ข้อมูลจาก hierarchical score structure
+        if (!scoreStructure || !scoreStructure.big_lessons) {
+            return 0;
+        }
         
         let totalScore = 0;
         
-        // คำนวณคะแนนที่ได้จาก quiz ที่ผ่านแล้ว
-        scoreItems.forEach(item => {
-            if (item.type === 'quiz' && item.progress?.passed) {
-                totalScore += item.user_score || 0; // คะแนนที่ผู้ใช้ได้
+        // คำนวณคะแนนจาก Big Lessons
+        scoreStructure.big_lessons.forEach((bigLesson: any) => {
+            // คำนวณคะแนนจาก Quiz ใน BigLesson
+            if (bigLesson.quiz && bigLesson.quiz.progress?.passed) {
+                totalScore += parseFloat(bigLesson.quiz.weight_percentage) || 0;
+            }
+            
+            // คำนวณคะแนนจาก Lessons ใน BigLesson
+            if (bigLesson.lessons) {
+                bigLesson.lessons.forEach((lesson: any) => {
+                    // คำนวณคะแนนจาก Video completion (Lesson)
+                    if (lesson.video_completed === true) {
+                        totalScore += parseFloat(lesson.total_weight_in_biglesson) || 0;
+                    }
+                    
+                    // คำนวณคะแนนจาก Lesson Quiz
+                    if (lesson.quiz && lesson.quiz.progress?.passed) {
+                        totalScore += parseFloat(lesson.quiz.weight_percentage) || 0;
+                    }
+                });
             }
         });
+        
+        // คำนวณคะแนนจาก Post-test
+        if (scoreStructure.post_test && scoreStructure.post_test.progress?.passed) {
+            totalScore += parseFloat(scoreStructure.post_test.weight_percentage) || 0;
+        }
 
-        return totalScore;
-    }, [scoreItems]);
+        return Math.round(totalScore * 100) / 100;
+    }, [scoreStructure]);
 
     const calculateMaxScore = useCallback((): number => {
-        // ใช้ข้อมูลจาก scoreItems (เหมือนหน้าเฉลี่ย)
-        if (scoreItems.length === 0) return 0;
+        // ใช้ข้อมูลจาก hierarchical score structure
+        if (!scoreStructure || !scoreStructure.big_lessons) {
+            return 100; // คะแนนเต็มต้องเป็น 100 เสมอ
+        }
         
         let maxScore = 0;
         
-        // คำนวณคะแนนเต็มจาก actual_score ของแต่ละ quiz
-        scoreItems.forEach(item => {
-            if (item.type === 'quiz' && item.actual_score > 0) {
-                maxScore += item.actual_score; // คะแนนที่กำหนดไว้
-            }
+        // คำนวณคะแนนเต็มจาก weight_percentage ของแต่ละ BigLesson
+        scoreStructure.big_lessons.forEach((bigLesson: any) => {
+            maxScore += parseFloat(bigLesson.weight_percentage) || 0;
         });
+        
+        // เพิ่มคะแนนจาก Post-test
+        if (scoreStructure.post_test) {
+            maxScore += parseFloat(scoreStructure.post_test.weight_percentage) || 0;
+        }
 
-        return maxScore;
-    }, [scoreItems]);
+        // ถ้าคำนวณได้ 0 ให้ใช้ 100 แทน
+        return maxScore > 0 ? maxScore : 100;
+    }, [scoreStructure]);
 
     const calculatePassingScore = useCallback((): number => {
         const maxScore = calculateMaxScore();
-        // ใช้เกณฑ์ผ่าน default 80% (สามารถดึงจาก API ได้ในอนาคต)
-        const passingPercentage = 80;
-        return Math.ceil(maxScore * (passingPercentage / 100));
-    }, [calculateMaxScore]);
+        // ✅ ใช้เกณฑ์ผ่านจาก subject.passing_percentage
+        const passingPercentage = subjectPassingPercentage || 80;
+        const passingScore = Math.ceil(maxScore * (passingPercentage / 100));
+        
+        return passingScore;
+    }, [calculateMaxScore, subjectPassingPercentage]);
 
-    // ฟังก์ชันดึงข้อมูลคะแนนจาก Score Management API
+    // ฟังก์ชันดึงข้อมูลคะแนนจาก Score Management API (Hierarchical)
     const fetchScoreItems = useCallback(async () => {
         try {
             const token = localStorage.getItem("token");
-            if (!token || !currentSubjectId) return;
+            if (!token || !currentSubjectId) {
+                return;
+            }
 
             const response = await axios.get(
-                `${API_URL}/api/subjects/${currentSubjectId}/scores`,
+                `${API_URL}/api/learn/subject/${currentSubjectId}/scores-hierarchical`,
                 {
                     headers: { Authorization: `Bearer ${token}` }
                 }
             );
 
-            if (response.data.success) {
-                setScoreItems(response.data.scoreItems || []);
-                console.log('📊 Score Items loaded:', response.data.scoreItems);
+            if (response.data.success && response.data.scoreStructure) {
+                setScoreStructure(response.data.scoreStructure);
+                setSubjectPassingPercentage(Number(response.data.subject?.passing_percentage) || 80);
             }
-        } catch (error) {
-            console.error('Error fetching score items:', error);
+        } catch (error: any) {
+            console.error('❌ Error fetching hierarchical score items:', error);
         }
     }, [currentSubjectId]);
     // ✅ Task 5: ลบ paymentStatus state
@@ -220,57 +255,6 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
 
     // ✅ เพิ่ม ref เพื่อเก็บค่า accordion state ที่ต้องการรักษาไว้
     const intendedAccordionState = useRef<number | null>(null);
-    
-    // ✅ เพิ่ม useEffect เพื่อติดตามการเปลี่ยนแปลงของ sidebarActiveAccordion
-    useEffect(() => {
-        console.log("🎯 LessonArea sidebarActiveAccordion changed to:", sidebarActiveAccordion);
-        
-        // ✅ เพิ่มการตรวจสอบว่า accordion state ถูกเปลี่ยนแปลงโดยใคร
-        const stackTrace = new Error().stack;
-        console.log("🎯 Accordion state change stack trace:", stackTrace);
-        
-        // ✅ ถ้า accordion state ถูกเปลี่ยนแปลงโดยไม่ได้ตั้งใจ ให้คืนค่ากลับมา
-        if (intendedAccordionState.current !== null && intendedAccordionState.current !== sidebarActiveAccordion) {
-            console.log("⚠️ Accordion state was unexpectedly changed, restoring to intended state:", intendedAccordionState.current);
-            // ✅ ใช้ setTimeout เพื่อป้องกัน infinite loop
-            setTimeout(() => {
-                setSidebarActiveAccordion(intendedAccordionState.current);
-            }, 0);
-        }
-        
-        // ✅ เพิ่มการอัปเดต intendedAccordionState เมื่อ sidebarActiveAccordion เปลี่ยน
-        if (sidebarActiveAccordion !== null && intendedAccordionState.current !== sidebarActiveAccordion) {
-            console.log("🎯 Updating intendedAccordionState to match current sidebarActiveAccordion:", sidebarActiveAccordion);
-            intendedAccordionState.current = sidebarActiveAccordion;
-        }
-    }, [sidebarActiveAccordion]);
-
-    // ✅ เพิ่ม useEffect เพื่อติดตามการเปลี่ยนแปลงของ lessonData และป้องกันการ reset accordion
-    useEffect(() => {
-        if (lessonData.length > 0 && intendedAccordionState.current !== null) {
-            console.log("🎯 LessonArea lessonData changed, preserving accordion state:", intendedAccordionState.current);
-            
-            // ✅ เพิ่มการตรวจสอบว่า lessonData เปลี่ยนจริงหรือไม่ (ไม่ใช่แค่ re-render)
-            // const currentAccordionState = sidebarActiveAccordion;
-            
-            // ✅ รักษา accordion state ไว้เมื่อ lessonData เปลี่ยน
-            if (sidebarActiveAccordion !== intendedAccordionState.current) {
-                console.log("🎯 Restoring accordion state after lessonData change:", intendedAccordionState.current);
-                // ✅ ใช้ setTimeout เพื่อป้องกัน infinite loop
-                setTimeout(() => {
-                    setSidebarActiveAccordion(intendedAccordionState.current);
-                }, 0);
-            }
-            
-            // ✅ เพิ่มการตรวจสอบว่า accordion state ถูกเปลี่ยนแปลงโดยไม่ได้ตั้งใจหรือไม่
-            setTimeout(() => {
-                if (sidebarActiveAccordion !== intendedAccordionState.current) {
-                    console.log("⚠️ Accordion state was unexpectedly changed after lessonData update, restoring...");
-                    setSidebarActiveAccordion(intendedAccordionState.current);
-                }
-            }, 100);
-        }
-    }, [lessonData]); // ✅ ลบ dependency ที่ไม่จำเป็นออกเพื่อป้องกัน infinite loop
 
     // ฟังก์ชันสกัด YouTube ID จาก URL (ใช้ useCallback เพื่อป้องกัน re-creation)
     const extractYoutubeId = useCallback((url?: string): string | null => {
@@ -320,19 +304,26 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
                             // เพิ่ม Sub Lessons
                             if (lesson.sub_lessons && lesson.sub_lessons.length > 0) {
                                 lesson.sub_lessons.forEach((subLesson: any, subIndex: number) => {
+                                    // หาข้อมูลจาก hierarchical structure
+                                    const hierarchicalLesson = scoreStructure?.big_lessons?.find((bl: any) => 
+                                        bl.lessons?.some((l: any) => l.id === subLesson.lesson_id)
+                                    )?.lessons?.find((l: any) => l.id === subLesson.lesson_id);
+                                    
+                                    const videoCompleted = hierarchicalLesson?.video_completed === true;
+                                    
                                     // เพิ่มวิดีโอ Sub Lesson
                                     sectionItems.push({
                                         id: subIndex * 2,
                                         lesson_id: subLesson.lesson_id,
                                         title: `${lessonIndex + 1}.${subIndex + 1} 📹 ${subLesson.title}`,
                                         lock: false,
-                                        completed: subLesson.progress?.video_completed || false,
+                                        completed: videoCompleted || false,
                                         type: "video",
                                         quizType: "none",
-                                        duration: subLesson.progress?.video_completed ? "100%" : "0%",
+                                        duration: videoCompleted ? "100%" : "0%",
                                         video_url: subLesson.video_url,
                                         quiz_id: subLesson.quiz ? subLesson.quiz.quiz_id : undefined,
-                                        status: subLesson.progress?.video_completed ? "passed" : "failed",
+                                        status: videoCompleted ? "passed" : "failed",
                                     });
 
                                     // เพิ่มแบบทดสอบ Sub Lesson (ถ้ามี)
@@ -409,13 +400,16 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
                             if (lesson.quiz?.progress?.awaiting_review) {
                                 count = "รอตรวจ";
                             } else {
-                                const allCompleted = sectionItems.every(item => item.completed);
+                                // ใช้ข้อมูลจาก hierarchical structure
+                                const videoCompleted = lesson.video_completed === true;
+                                const quizPassed = lesson.quiz?.progress?.passed === true;
+                                const allCompleted = videoCompleted && (!lesson.quiz || quizPassed);
                                 count = allCompleted ? "ผ่าน" : "ไม่ผ่าน";
                             }
 
                             sections.push({
                                 id: lesson.lesson_id,
-                                subject_id: subject.subject_id,
+                                subject_id: currentSubjectId || subject.subject_id,
                                 title: `บทที่ ${lessonIndex + 1}: ${lesson.title}`,
                                 count: count,
                                 items: sectionItems,
@@ -475,16 +469,16 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
                             if (lesson.quiz?.progress?.awaiting_review) {
                                 count = "รอตรวจ";
                             } else {
-                                if (lesson.progress?.overall_completed) {
-                                    count = "ผ่าน";
-                                } else {
-                                    count = "ไม่ผ่าน";
-                                }
+                                // ใช้ข้อมูลจาก hierarchical structure
+                                const videoCompleted = lesson.video_completed === true;
+                                const quizPassed = lesson.quiz?.progress?.passed === true;
+                                const allCompleted = videoCompleted && (!lesson.quiz || quizPassed);
+                                count = allCompleted ? "ผ่าน" : "ไม่ผ่าน";
                             }
 
                             sections.push({
                                 id: lesson.lesson_id,
-                                subject_id: subject.subject_id,
+                                subject_id: currentSubjectId || subject.subject_id,
                                 title: `บทที่ ${lessonIndex + 1}: ${lesson.title}`,
                                 count: count,
                                 items: sectionItems,
@@ -615,8 +609,8 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
                         description: postTest.description,
                         type: "post_test",
                         locked,
-                        completed: postTest.progress?.completed || false,
-                        passed: postTest.progress?.passed || false,
+                        completed: postTest.progress?.passed === true || postTest.progress?.awaiting_review === true,
+                        passed: postTest.progress?.passed === true,
                         status: postTest.progress?.awaiting_review ? "awaiting_review" :
                                 postTest.progress?.passed ? "passed" :
                                 postTest.progress?.completed ? "failed" : "not_started",
@@ -749,9 +743,9 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
     const setInitialLesson = () => {
         if (initialLessonSet) return;
 
-        console.log("🎯 setInitialLesson เริ่มทำงาน");
-        console.log("📚 subjectQuizzes:", subjectQuizzes);
-        console.log("📖 lessonData:", lessonData);
+        // console.log("🎯 setInitialLesson เริ่มทำงาน");
+        // console.log("📚 subjectQuizzes:", subjectQuizzes);
+        // console.log("📖 lessonData:", lessonData);
 
         // ✅ เพิ่มการป้องกันไม่ให้ setInitialLesson ถูกเรียกซ้ำ
         // เมื่ออยู่ใน big pre-test และกดปุ่ม "บทเรียนถัดไป"
@@ -1006,7 +1000,7 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
                 const { progress_percentage } = response.data.progress;
                 // ✅ ใช้ progress จาก backend แทนการคำนวณเอง
                 setProgress(progress_percentage || 0);
-                console.log(`📊 Subject progress from backend: ${progress_percentage}%`);
+                // console.log(`📊 Subject progress from backend: ${progress_percentage}%`);
             }
         } catch (error) {
             console.error("Error fetching subject progress:", error);
@@ -1042,7 +1036,7 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
             // Progress จะถูกคำนวณโดย updateSubjectProgress และ updateCourseProgress ใน backend
             // และส่งกลับมาใน response ของ video progress และ quiz submission
             
-            console.log("🎯 Using progress from backend - no local calculation needed");
+            // console.log("🎯 Using progress from backend - no local calculation needed");
         }
     }, [lessonData]);
 
@@ -1077,52 +1071,59 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
     //     }
     // }, [lessonData, progress]);
 
-    // ปรับสูตร progress bar ให้นับ pre/post test และทั้ง video/quiz
+    // ปรับสูตร progress bar ให้ใช้ hierarchical score structure
     useEffect(() => {
-        // ต้องรอให้ subjectQuizzes และ lessonData โหลดเสร็จ
-        if (!lessonData || lessonData.length === 0) return;
+        // ต้องรอให้ scoreStructure โหลดเสร็จ
+        if (!scoreStructure || !scoreStructure.big_lessons) return;
         
         let calculatedProgress = 0;
-        const bigPreTest = subjectQuizzes.find(q => q.type === "big_pre_test");
-        const postTest = subjectQuizzes.find(q => q.type === "post_test");
         
-        // คำนวณ progress ของ big pre-test และ post-test (10% + 10% = 20%)
-        if (bigPreTest && bigPreTest.completed) calculatedProgress += 10;
-        if (postTest && postTest.completed) calculatedProgress += 10;
-        
-        // คำนวณ progress ของทุก item ในบทเรียน (80%)
-        let totalItems = 0;
-        let completedItems = 0;
-        
-        lessonData.forEach(section => {
-            // นับทุก item ใน section (ไม่ว่าจะมี quiz หรือไม่)
-            section.items.forEach(item => {
-                totalItems++;
-                if (item.completed) completedItems++;
-            });
+        // คำนวณ progress จาก hierarchical structure
+        scoreStructure.big_lessons.forEach((bigLesson: any) => {
+            const bigLessonWeight = bigLesson.weight_percentage || 0;
+            let bigLessonProgress = 0;
+            
+            // คำนวณ progress จาก Quiz ใน BigLesson
+            if (bigLesson.quiz && bigLesson.quiz.progress?.passed) {
+                bigLessonProgress += bigLesson.quiz.weight_percentage || 0;
+            }
+            
+            // คำนวณ progress จาก Lessons ใน BigLesson
+            if (bigLesson.lessons) {
+                bigLesson.lessons.forEach((lesson: any) => {
+                    if (lesson.quiz && lesson.quiz.progress?.passed) {
+                        bigLessonProgress += lesson.quiz.weight_percentage || 0;
+                    }
+                });
+            }
+            
+            // คำนวณเปอร์เซ็นต์ของ BigLesson นี้
+            const bigLessonPercentage = bigLessonWeight > 0 ? (bigLessonProgress / bigLessonWeight) * 100 : 0;
+            calculatedProgress += (bigLessonWeight / 100) * bigLessonPercentage;
         });
         
-        // คำนวณ progress ของบทเรียนทั้งหมด
-        const lessonProgress = totalItems > 0 ? (completedItems / totalItems) * 80 : 0; // 80% สำหรับบทเรียนทั้งหมด
-        
-        const newProgress = calculatedProgress + lessonProgress;
+        // คำนวณ progress จาก Post-test
+        if (scoreStructure.post_test) {
+            const postTestWeight = scoreStructure.post_test.weight_percentage || 0;
+            if (scoreStructure.post_test.progress?.passed) {
+                calculatedProgress += postTestWeight;
+            }
+        }
         
         // ✅ ป้องกันการ update progress ที่ไม่จำเป็น และป้องกันการกระพริบ
-        if (Math.abs(newProgress - progress) > 0.1) {
-            console.log("📊 Progress calculation:", {
-                bigPreTest: bigPreTest?.completed ? 10 : 0,
-                postTest: postTest?.completed ? 10 : 0,
-                lessonProgress: `${completedItems}/${totalItems} = ${lessonProgress.toFixed(1)}%`,
-                totalProgress: newProgress.toFixed(1) + "%",
-                previousProgress: progress.toFixed(1) + "%"
+        if (Math.abs(calculatedProgress - progress) > 0.1) {
+            console.log("📊 Hierarchical Progress calculation:", {
+                calculatedProgress: calculatedProgress.toFixed(1) + "%",
+                previousProgress: progress.toFixed(1) + "%",
+                scoreStructure: scoreStructure
             });
             
             // ✅ ใช้ setTimeout เพื่อป้องกันการกระพริบ
             setTimeout(() => {
-            setProgress(newProgress);
+                setProgress(calculatedProgress);
             }, 50);
         }
-    }, [lessonData, subjectQuizzes]); // ✅ ลบ progress ออกจาก dependency array เพื่อป้องกัน infinite loop
+    }, [scoreStructure]); // ✅ ใช้ scoreStructure แทน lessonData และ subjectQuizzes
 
     // ตั้งค่าบทเรียนแรกเมื่อข้อมูลพร้อม
     useEffect(() => {
@@ -1456,13 +1457,19 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
 
             // อัปเดต section count
             updatedLessonData.forEach((section) => {
-                const allCompleted = section.items.every((item) => item.completed);
-                const checkAwating = section.items.some((item) => item.status === "awaiting_review");
-                const newCount = checkAwating ? "รอตรวจ" : allCompleted ? "ผ่าน" : "ไม่ผ่าน";
-                
-                if (section.count !== newCount) {
-                    section.count = newCount;
-                    hasChanges = true;
+                // ใช้ข้อมูลจาก hierarchical structure แทน
+                const sectionFromHierarchical = scoreStructure?.big_lessons?.find((bl: any) => bl.id === section.id);
+                if (sectionFromHierarchical) {
+                    const videoCompleted = sectionFromHierarchical.lessons?.every((lesson: any) => lesson.video_completed === true) || false;
+                    const quizPassed = sectionFromHierarchical.quiz?.progress?.passed === true;
+                    const allCompleted = videoCompleted && (!sectionFromHierarchical.quiz || quizPassed);
+                    const checkAwating = sectionFromHierarchical.quiz?.progress?.awaiting_review === true;
+                    const newCount = checkAwating ? "รอตรวจ" : allCompleted ? "ผ่าน" : "ไม่ผ่าน";
+                    
+                    if (section.count !== newCount) {
+                        section.count = newCount;
+                        hasChanges = true;
+                    }
                 }
             });
 
@@ -2682,7 +2689,7 @@ const handleNextLesson = useCallback(() => {
                                     // อัปเดต sidebarActiveAccordion ให้ตรงกับ section ที่เลือก
                                     intendedAccordionState.current = nextSection.id;
                                     console.log("🎯 Setting sidebarActiveAccordion to:", nextSection.id, "for next quiz lesson:", item.title);
-                                    console.log("📝 Going to next lesson (quiz):", item.title, "with quiz_id:", item.quiz_id);
+                                    console.log("🎥 Going to next lesson (quiz):", item.title, "with quiz_id:", item.quiz_id);
                                     return;
                                 }
                             }
@@ -2899,6 +2906,7 @@ const handleNextLesson = useCallback(() => {
                                 passingScore={calculatePassingScore()}
                                 progressPercentage={progress}
                                 subjectTitle={currentSubjectTitle}
+                                passingPercentage={subjectPassingPercentage}
                             />
                        
                         </div>
@@ -3008,6 +3016,7 @@ const handleNextLesson = useCallback(() => {
                                     lessonId={currentLessonData?.lesson_id || 0}
                                     onRefreshProgress={refreshProgress}
                                     onGoToNextLesson={goToNextLesson}
+                                    passingPercentage={subjectPassingPercentage}
                                 />
                             ) : (
                                 <LessonVideo

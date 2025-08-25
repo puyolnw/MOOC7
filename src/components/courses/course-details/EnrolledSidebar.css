@@ -22,7 +22,8 @@
     background-color: white;
     border-radius: 12px;
     width: 90%;
-    max-width: 500px;
+    max-width: 600px;
+    max-height: 80vh;
     box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
     overflow: hidden;
     animation: slideUp 0.4s ease;
@@ -39,13 +40,14 @@
     align-items: center;
     padding: 20px 25px;
     border-bottom: 1px solid #e9ecef;
-    background-color: #f8f9fa;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
   }
   
   .start-learning-modal-header h4 {
     font-size: 20px;
     font-weight: 600;
-    color: #333;
+    color: white;
     margin: 0;
   }
   
@@ -53,23 +55,25 @@
     background: none;
     border: none;
     font-size: 24px;
-    color: #6c757d;
+    color: white;
     cursor: pointer;
     transition: color 0.2s;
   }
   
   .close-button:hover {
-    color: #343a40;
+    color: rgba(255, 255, 255, 0.8);
   }
   
   .start-learning-modal-body {
     padding: 30px 25px;
     text-align: center;
+    max-height: 60vh;
+    overflow-y: auto;
   }
   
   .start-learning-icon {
     font-size: 60px;
-    color: #3f78e0;
+    color: #667eea;
     margin-bottom: 20px;
     animation: bounce 1.5s infinite;
   }
@@ -84,6 +88,109 @@
     font-weight: 600;
     color: #333;
     margin-bottom: 15px;
+  }
+  
+  .start-learning-modal-body p {
+    color: #6c757d;
+    margin-bottom: 25px;
+  }
+  
+  /* Subject Selection Styles */
+  .subject-selection {
+    margin-bottom: 25px;
+    max-height: 300px;
+    overflow-y: auto;
+  }
+  
+  .subject-option {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    margin-bottom: 10px;
+    background-color: #f8f9fa;
+    border: 2px solid transparent;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .subject-option:hover {
+    background-color: #e9ecef;
+    transform: translateX(5px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+  
+  .subject-option.selected {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-color: #667eea;
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
+  }
+  
+  .subject-option.selected:hover {
+    transform: translateX(5px) scale(1.02);
+  }
+  
+  .subject-number {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 16px;
+    margin-right: 15px;
+    flex-shrink: 0;
+  }
+  
+  .subject-option.selected .subject-number {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+  }
+  
+  .subject-info {
+    flex: 1;
+    text-align: left;
+  }
+  
+  .subject-name {
+    font-weight: 600;
+    font-size: 16px;
+    margin-bottom: 4px;
+    color: #333;
+  }
+  
+  .subject-option.selected .subject-name {
+    color: white;
+  }
+  
+  .subject-code {
+    font-size: 14px;
+    color: #6c757d;
+    font-weight: 500;
+  }
+  
+  .subject-option.selected .subject-code {
+    color: rgba(255, 255, 255, 0.8);
+  }
+  
+  .subject-arrow {
+    color: #6c757d;
+    font-size: 16px;
+    transition: transform 0.3s ease;
+  }
+  
+  .subject-option:hover .subject-arrow {
+    transform: translateX(5px);
+  }
+  
+  .subject-option.selected .subject-arrow {
+    color: white;
   }
   
   .next-lesson-info {
@@ -102,11 +209,6 @@
   .subject-title span, .lesson-title span {
     font-weight: 600;
     color: #495057;
-  }
-  
-  .start-learning-modal-body p {
-    color: #6c757d;
-    margin-bottom: 25px;
   }
   
   .start-learning-buttons {
@@ -141,21 +243,28 @@
   }
   
   .btn-start {
-    background-color: #3f78e0;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
-    box-shadow: 0 4px 10px rgba(63, 120, 224, 0.3);
+    box-shadow: 0 4px 10px rgba(102, 126, 234, 0.3);
   }
   
-  .btn-start:hover {
-    background-color: #3567c3;
+  .btn-start:hover:not(:disabled) {
     transform: translateY(-2px);
-    box-shadow: 0 6px 15px rgba(63, 120, 224, 0.4);
+    box-shadow: 0 6px 15px rgba(102, 126, 234, 0.4);
+  }
+  
+  .btn-start:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
   }
   
   /* ปรับแต่งสำหรับหน้าจอขนาดเล็ก */
   @media (max-width: 576px) {
     .start-learning-modal-content {
       width: 95%;
+      max-height: 90vh;
     }
     
     .start-learning-modal-header {
@@ -168,6 +277,7 @@
     
     .start-learning-modal-body {
       padding: 20px;
+      max-height: 70vh;
     }
     
     .start-learning-icon {
@@ -176,6 +286,29 @@
     
     .start-learning-modal-body h5 {
       font-size: 16px;
+    }
+    
+    .subject-selection {
+      max-height: 250px;
+    }
+    
+    .subject-option {
+      padding: 12px;
+    }
+    
+    .subject-number {
+      width: 35px;
+      height: 35px;
+      font-size: 14px;
+      margin-right: 12px;
+    }
+    
+    .subject-name {
+      font-size: 15px;
+    }
+    
+    .subject-code {
+      font-size: 13px;
     }
     
     .start-learning-buttons {

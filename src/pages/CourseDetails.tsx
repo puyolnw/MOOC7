@@ -66,9 +66,10 @@ const CourseDetails = () => {
       (total: number, subject: any) => {
         // รวมแบบทดสอบในบทเรียน
         const lessonQuizCount = parseInt(subject.quiz_count) || 0;
-        // รวมแบบทดสอบก่อนเรียนและหลังเรียน
-        const subjectQuizCount = parseInt(subject.subject_quiz_count) || 0;
-        return total + lessonQuizCount + subjectQuizCount;
+        // รวมแบบทดสอบก่อนเรียนและหลังเรียน (ถ้ามี)
+        const preTestCount = subject.pre_test_id ? 1 : 0;
+        const postTestCount = subject.post_test_id ? 1 : 0;
+        return total + lessonQuizCount + preTestCount + postTestCount;
       },
       0
     ) || 0;
@@ -193,10 +194,10 @@ const CourseDetails = () => {
     category: courseDetails?.category || "",
     department: courseDetails?.department_name || "หลักสูตรกลาง",
     description: courseDetails?.description || "",
-    thumb: courseDetails?.cover_image
+    thumb: courseDetails?.cover_image_file_id
       ? `${apiURL}/api/courses/image/${courseDetails.cover_image_file_id}` 
-      : "/assets/img/courses/course_thumb01.jpg",
-    videoUrl: courseDetails?.video_url || "", // ตรวจสอบว่ามีการส่ง video_url จาก API
+      : courseDetails?.cover_image || "/assets/img/courses/course_thumb01.jpg",
+    videoUrl: courseDetails?.video_url || "",
     subjects: courseDetails?.subjects || [],
     subjectCount: courseDetails?.subjects?.length || 0,
     totalLessons,
@@ -204,12 +205,12 @@ const CourseDetails = () => {
     instructors: instructors,
     isLoading,
     error,
-    onStartLearning: handleStartLearning, // เพิ่มฟังก์ชันสำหรับเริ่มเรียน
-    onEnroll: handleEnroll, // เพิ่มฟังก์ชันสำหรับลงทะเบียน
-    isEnrolled, // สถานะการลงทะเบียน
-    isAdmin, // สถานะ admin
-    canStartLearning, // สามารถเริ่มเรียนได้หรือไม่
-    enrollmentLoading, // สถานะการลงทะเบียน
+    onStartLearning: handleStartLearning,
+    onEnroll: handleEnroll,
+    isEnrolled,
+    isAdmin,
+    canStartLearning,
+    enrollmentLoading,
   };
 
   return (

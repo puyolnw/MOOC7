@@ -42,21 +42,81 @@ const Sidebar = ({
         const token = localStorage.getItem("token");
         if (!token) return;
 
+        // ใช้ API ใหม่ที่ใช้ hierarchical structure
         const response = await axios.get(
-          `${apiURL}/api/learn/subject/${subject_id}/progress`,
+          `${apiURL}/api/learn/subject/${subject_id}/scores-hierarchical`,
           {
             headers: { Authorization: `Bearer ${token}` }
           }
         );
 
         if (response.data.success) {
+          // คำนวณ progress จาก hierarchical structure
+          const hierarchicalData = response.data.scoreStructure;
+          
+          // ตรวจสอบว่ามีข้อมูล hierarchical structure หรือไม่
+          if (!hierarchicalData) {
+            console.warn("No hierarchical structure data found");
+            setProgress({
+              progressPercentage: 0,
+              completedBigLessons: 0,
+              totalBigLessons: 0,
+              subjectPassed: false
+            });
+            return;
+          }
+
+          let totalBigLessons = 0;
+          let completedBigLessons = 0;
+          let totalPercentage = 0;
+
+          // นับ big lessons และ progress
+          if (hierarchicalData.big_lessons && Array.isArray(hierarchicalData.big_lessons)) {
+            totalBigLessons = hierarchicalData.big_lessons.length;
+            hierarchicalData.big_lessons.forEach((bigLesson: any) => {
+              if (bigLesson.lessons && Array.isArray(bigLesson.lessons)) {
+                const totalVideos = bigLesson.lessons.length;
+                const completedVideos = bigLesson.lessons.filter((lesson: any) => lesson.video_completed).length;
+                if (totalVideos > 0 && completedVideos === totalVideos) {
+                  completedBigLessons++;
+                }
+              }
+            });
+          }
+
+          // คำนวณเปอร์เซ็นต์รวม
+          if (totalBigLessons > 0) {
+            const bigLessonProgress = (completedBigLessons / totalBigLessons) * 80;
+            let testProgress = 0;
+            
+            // เพิ่ม progress จาก pre-test และ post-test
+            if (hierarchicalData.pre_test && hierarchicalData.post_test) {
+              if (hierarchicalData.pre_test.progress?.completed) testProgress += 10;
+              if (hierarchicalData.post_test.progress?.completed) testProgress += 10;
+            } else if (hierarchicalData.post_test && hierarchicalData.post_test.progress?.completed) {
+              testProgress += 20;
+            } else if (hierarchicalData.pre_test && hierarchicalData.pre_test.progress?.completed) {
+              testProgress += 20;
+            }
+            
+            totalPercentage = Math.round(bigLessonProgress + testProgress);
+          }
+
           const progressData = {
-            progressPercentage: response.data.progressPercentage || 0,
-            completedLessons: response.data.completedLessons || 0,
-            totalLessons: response.data.totalLessons || 0,
-            subjectPassed: response.data.subjectPassed || false
+            progressPercentage: totalPercentage,
+            completedBigLessons: completedBigLessons,
+            totalBigLessons: totalBigLessons,
+            subjectPassed: totalPercentage >= 100
           };
           setProgress(progressData);
+        } else {
+          // ถ้า API ไม่สำเร็จ ให้ตั้งค่า default
+          setProgress({
+            progressPercentage: 0,
+            completedBigLessons: 0,
+            totalBigLessons: 0,
+            subjectPassed: false
+          });
         }
       } catch (error) {
         console.error("Error fetching subject progress:", error);
@@ -136,7 +196,7 @@ const Sidebar = ({
                   </span>
                 </div>
                 <div className="mt-2 small">
-                  <div>บทเรียนที่เรียนจบ: {progress.completedLessons}/{progress.totalLessons}</div>
+                  <div>บทเรียนที่เรียนจบ: {progress.completedBigLessons}/{progress.totalBigLessons}</div>
                 </div>
               </>
             ) : null}
@@ -155,16 +215,20 @@ const Sidebar = ({
                 หน่วยกิต
                 <span>{credits} หน่วยกิต</span>
               </li>
-              <li>
-                <InjectableSvg src="/assets/img/icons/course_icon03.svg" alt="img" className="injectable" />
-                บทเรียน
-                <span>{lesson_count}</span>
-              </li>
-              <li>
-                <InjectableSvg src="/assets/img/icons/course_icon04.svg" alt="img" className="injectable" />
-                แบบทดสอบ
-                <span>{quiz_count}</span>
-              </li>
+              {lesson_count > 0 && (
+                <li>
+                  <InjectableSvg src="/assets/img/icons/course_icon03.svg" alt="img" className="injectable" />
+                  บทเรียน
+                  <span>{lesson_count}</span>
+                </li>
+              )}
+              {quiz_count > 0 && (
+                <li>
+                  <InjectableSvg src="/assets/img/icons/course_icon04.svg" alt="img" className="injectable" />
+                  แบบทดสอบ
+                  <span>{quiz_count}</span>
+                </li>
+              )}
             </ul>
           </div>
           <div className="courses__details-social">

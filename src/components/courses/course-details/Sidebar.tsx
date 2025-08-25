@@ -70,21 +70,27 @@ interface SidebarProps {
                 <div className="courses__information-wrap">
                    <h5 className="title">หลักสูตรประกอบด้วย:</h5>
                    <ul className="list-wrap">
-                      <li>
-                         <InjectableSvg src="/assets/img/icons/course_icon01.svg" alt="img" className="injectable" />
-                         วิชา
-                         <span>{subjectCount} วิชา</span>
-                      </li>
-                      <li>
-                         <InjectableSvg src="/assets/img/icons/course_icon03.svg" alt="img" className="injectable" />
-                         บทเรียน
-                         <span>{totalLessons}</span>
-                      </li>
-                      <li>
-                         <InjectableSvg src="/assets/img/icons/course_icon04.svg" alt="img" className="injectable" />
-                         แบบทดสอบ
-                         <span>{totalQuizzes}</span>
-                      </li>
+                      {subjectCount > 0 && (
+                        <li>
+                           <InjectableSvg src="/assets/img/icons/course_icon01.svg" alt="img" className="injectable" />
+                           วิชา
+                           <span>{subjectCount} วิชา</span>
+                        </li>
+                      )}
+                      {totalLessons > 0 && (
+                        <li>
+                           <InjectableSvg src="/assets/img/icons/course_icon03.svg" alt="img" className="injectable" />
+                           บทเรียน
+                           <span>{totalLessons}</span>
+                        </li>
+                      )}
+                      {totalQuizzes > 0 && (
+                        <li>
+                           <InjectableSvg src="/assets/img/icons/course_icon04.svg" alt="img" className="injectable" />
+                           แบบทดสอบ
+                           <span>{totalQuizzes}</span>
+                        </li>
+                      )}
                       <li>
                          <InjectableSvg src="/assets/img/icons/course_icon05.svg" alt="img" className="injectable" />
                          ใบประกาศนียบัตร

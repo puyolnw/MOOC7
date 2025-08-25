@@ -143,7 +143,7 @@ const LessonVideo = ({
   };
 
   // บันทึกความก้าวหน้าไปที่ Server
-  const saveToServer = async (currentTime: number, duration: number) => {
+  const saveToServer = async (currentTime: number, duration: number, completed?: boolean) => {
     if (!isOnline) {
       console.log("ไม่สามารถเชื่อมต่ออินเทอร์เน็ต");
       return null;
@@ -161,13 +161,14 @@ const LessonVideo = ({
         `${apiURL}/api/learn/lesson/${lessonId}/video-progress`,
         {
           position: currentTime,
-          duration: duration
+          duration: duration,
+          completed: completed
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
       if (response.data.success) {
-        console.log(`บันทึก Server: ${currentTime.toFixed(1)}/${duration.toFixed(1)}`);
+        console.log(`บันทึก Server: ${currentTime.toFixed(1)}/${duration.toFixed(1)}, completed: ${completed}`);
         return true;
       }
     } catch (error) {
@@ -262,7 +263,7 @@ const LessonVideo = ({
       if (playerRef.current && playerRef.current.duration > 0) {
         const currentTime = playerRef.current.currentTime;
         const duration = playerRef.current.duration;
-        await saveToServer(currentTime, duration);
+        await saveToServer(currentTime, duration, hasCompletedRef.current);
       }
     }, 30000); // sync ทุก 30 วินาที
   };
@@ -354,7 +355,7 @@ const LessonVideo = ({
 
   // ตรวจสอบการเปลี่ยนแปลงของ userId (ครั้งแรกเท่านั้น)
   useEffect(() => {
-    console.log("🔍 ตรวจสอบ userId ครั้งแรก");
+            // console.log("🔍 ตรวจสอบ userId ครั้งแรก");
     checkAndClearUserData();
   }, []); // ✅ เรียกครั้งเดียวตอน mount
 
@@ -377,7 +378,7 @@ const LessonVideo = ({
 
   // เมื่อ lessonId หรือ youtubeId เปลี่ยน
   useEffect(() => {
-    console.log(`🔄 โหลดวิดีโอใหม่: Lesson ID: ${lessonId}, YouTube ID: ${youtubeId}`);
+            // console.log(`🔄 โหลดวิดีโอใหม่: Lesson ID: ${lessonId}, YouTube ID: ${youtubeId}`);
     
     // ✅ ตรวจสอบและล้างข้อมูล user เก่าก่อน (เรียกครั้งเดียว)
     const userId = localStorage.getItem('userId') || 'anonymous';
@@ -517,7 +518,7 @@ const LessonVideo = ({
         // บันทึกทันทีเมื่อ pause
         if (playerRef.current && playerRef.current.duration > 0) {
           saveToLocalStorage(playerRef.current.currentTime, playerRef.current.duration);
-          saveToServer(playerRef.current.currentTime, playerRef.current.duration);
+          saveToServer(playerRef.current.currentTime, playerRef.current.duration, hasCompletedRef.current);
         }
       });
 
@@ -537,9 +538,9 @@ const LessonVideo = ({
             setShowCompletionModal(true);
             hasCompletedRef.current = true;
             
-            // บันทึกทันที
-            saveToLocalStorage(currentTime, duration);
-            saveToServer(currentTime, duration);
+                    // บันทึกทันที
+        saveToLocalStorage(currentTime, duration);
+        saveToServer(currentTime, duration, true);
             // ✅ ป้องกันการเรียก onComplete ซ้ำ
             if (typeof onComplete === 'function') {
               onComplete();
@@ -553,7 +554,7 @@ const LessonVideo = ({
         if (playerRef.current && playerRef.current.duration > 0) {
           console.log("เลื่อนตำแหน่งวิดีโอ - บันทึกทันที");
           saveToLocalStorage(playerRef.current.currentTime, playerRef.current.duration);
-          saveToServer(playerRef.current.currentTime, playerRef.current.duration);
+          saveToServer(playerRef.current.currentTime, playerRef.current.duration, hasCompletedRef.current);
         }
       });
 
@@ -565,7 +566,7 @@ const LessonVideo = ({
         if (playerRef.current) {
           // บันทึกว่าดูจบแล้ว
           saveToLocalStorage(playerRef.current.duration, playerRef.current.duration);
-          saveToServer(playerRef.current.duration, playerRef.current.duration);
+          saveToServer(playerRef.current.duration, playerRef.current.duration, true);
           
           if (!hasCompletedRef.current) {
             setIsCompleted(true);
@@ -587,18 +588,18 @@ const LessonVideo = ({
       });
     }
 
-    // Cleanup
-    return () => {
-      stopAutoSave();
-      if (playerRef.current) {
-        // บันทึกครั้งสุดท้ายก่อน destroy
-        if (playerRef.current.currentTime && playerRef.current.duration) {
-          saveToLocalStorage(playerRef.current.currentTime, playerRef.current.duration);
-          saveToServer(playerRef.current.currentTime, playerRef.current.duration);
-        }
-        playerRef.current.destroy();
+      // Cleanup
+  return () => {
+    stopAutoSave();
+    if (playerRef.current) {
+      // บันทึกครั้งสุดท้ายก่อน destroy
+      if (playerRef.current.currentTime && playerRef.current.duration) {
+        saveToLocalStorage(playerRef.current.currentTime, playerRef.current.duration);
+        saveToServer(playerRef.current.currentTime, playerRef.current.duration, hasCompletedRef.current);
       }
-    };
+      playerRef.current.destroy();
+    }
+  };
   }, [youtubeId]); // Changed dependency to only youtubeId
 
   // Cleanup เมื่อ component unmount
@@ -610,7 +611,7 @@ const LessonVideo = ({
         // บันทึกครั้งสุดท้ายก่อน destroy
         if (playerRef.current.currentTime && playerRef.current.duration) {
           saveToLocalStorage(playerRef.current.currentTime, playerRef.current.duration);
-          saveToServer(playerRef.current.currentTime, playerRef.current.duration);
+          saveToServer(playerRef.current.currentTime, playerRef.current.duration, hasCompletedRef.current);
         }
         playerRef.current.destroy();
       }

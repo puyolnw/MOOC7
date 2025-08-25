@@ -3,7 +3,7 @@ import axios from 'axios';
 import QuizSectionBar from './QuizSectionBar';
 import PrePostSection from './PrePostSection';
 import InsSection from './Inssection';
-import { ScoreManagementTab } from './ScoreManagementTab.tsx';
+import ScoreManagementTab from './ScoreManagementTab.tsx';
 import "./lessons.css";
 import "./mega.css";
 

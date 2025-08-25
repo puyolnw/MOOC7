@@ -7,6 +7,7 @@ interface ScoreProgressBarProps {
     passingScore: number;
     progressPercentage: number;
     subjectTitle?: string;
+    passingPercentage?: number;
 }
 
 const ScoreProgressBar: React.FC<ScoreProgressBarProps> = ({
@@ -14,11 +15,14 @@ const ScoreProgressBar: React.FC<ScoreProgressBarProps> = ({
     maxScore,
     passingScore,
     progressPercentage,
-    subjectTitle
+    subjectTitle,
+    passingPercentage: propPassingPercentage
 }) => {
-    const scoreNeeded = Math.max(0, passingScore - currentScore);
-    const isPassed = currentScore >= passingScore;
-    const passingPercentage = maxScore > 0 ? (passingScore / maxScore) * 100 : 0;
+    const currentScoreNum = Number(currentScore) || 0;
+    const passingScoreNum = Number(passingScore) || 0;
+    const scoreNeeded = Math.max(0, passingScoreNum - currentScoreNum);
+    const isPassed = currentScoreNum >= passingScoreNum;
+    const passingPercentage = Number(propPassingPercentage) || (maxScore > 0 ? (passingScoreNum / maxScore) * 100 : 0);
 
     return (
         <div className="score-progress-container">
@@ -34,12 +38,12 @@ const ScoreProgressBar: React.FC<ScoreProgressBarProps> = ({
             <div className="score-summary">
                 <div className="score-item">
                     <span className="score-label">คะแนนปัจจุบัน</span>
-                    <span className="score-value current">{currentScore}</span>
+                    <span className="score-value current">{currentScoreNum.toFixed(2)}</span>
                 </div>
                 <div className="score-divider">/</div>
                 <div className="score-item">
                     <span className="score-label">คะแนนเต็ม</span>
-                    <span className="score-value total">{maxScore}</span>
+                    <span className="score-value total">{Number(maxScore).toFixed(2)}</span>
                 </div>
             </div>
 
@@ -50,7 +54,7 @@ const ScoreProgressBar: React.FC<ScoreProgressBarProps> = ({
                     <div 
                         className="progress-bar-fill"
                         style={{ 
-                            width: `${(currentScore / maxScore) * 100}%`
+                            width: `${maxScore > 0 ? Math.min(100, Math.max(0, (currentScoreNum / maxScore) * 100)) : 0}%`
                         }}
                     ></div>
                     
@@ -58,18 +62,18 @@ const ScoreProgressBar: React.FC<ScoreProgressBarProps> = ({
                     <div 
                         className="passing-threshold"
                         style={{ 
-                            left: `${passingPercentage}%`
+                            left: `${Math.min(100, Math.max(0, passingPercentage))}%`
                         }}
                     >
                         <div className="threshold-marker"></div>
-                        <div className="threshold-label">ผ่าน: {passingScore}</div>
+                        <div className="threshold-label">ผ่าน: {passingScoreNum.toFixed(0)}</div>
                     </div>
                 </div>
                 
                 {/* Progress Labels */}
                 <div className="progress-labels">
                     <span>0</span>
-                    <span>{maxScore}</span>
+                    <span>{Number(maxScore).toFixed(0)}</span>
                 </div>
             </div>
 
@@ -78,7 +82,7 @@ const ScoreProgressBar: React.FC<ScoreProgressBarProps> = ({
                 <div className="status-row">
                     <div className="status-item">
                         <span className="status-label">เกณฑ์ผ่าน:</span>
-                        <span className="status-value">{passingScore} คะแนน ({passingPercentage.toFixed(0)}%)</span>
+                        <span className="status-value">{passingScoreNum.toFixed(0)} คะแนน ({passingPercentage.toFixed(0)}%)</span>
                     </div>
                 </div>
                 
@@ -86,7 +90,7 @@ const ScoreProgressBar: React.FC<ScoreProgressBarProps> = ({
                     <div className="status-item">
                         <span className="status-label">คะแนนที่ขาด:</span>
                         <span className={`status-value ${isPassed ? 'passed' : 'needed'}`}>
-                            {isPassed ? 'ผ่านเกณฑ์แล้ว ✓' : `${scoreNeeded} คะแนน`}
+                            {isPassed ? 'ผ่านเกณฑ์แล้ว ✓' : `${scoreNeeded.toFixed(0)} คะแนน`}
                         </span>
                     </div>
                 </div>
@@ -94,7 +98,7 @@ const ScoreProgressBar: React.FC<ScoreProgressBarProps> = ({
                 <div className="status-row">
                     <div className="status-item">
                         <span className="status-label">ความคืบหน้ารวม:</span>
-                        <span className="status-value">{progressPercentage.toFixed(1)}%</span>
+                        <span className="status-value">{Number(progressPercentage).toFixed(1)}%</span>
                     </div>
                 </div>
             </div>

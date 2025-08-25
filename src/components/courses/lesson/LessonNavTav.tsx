@@ -38,13 +38,13 @@ const LessonAttachments = ({ currentLessonId, currentBigLessonId }: { currentLes
 
   const fetchLessonAttachments = async (lessonId?: number) => {
     if (!lessonId) return [];
-    console.log("📎 Fetching lesson attachments for lessonId:", lessonId);
+            // console.log("📎 Fetching lesson attachments for lessonId:", lessonId);
     try {
       const apiURL = import.meta.env.VITE_API_URL;
       const response = await axios.get(
         `${apiURL}/api/learn/lessons/${lessonId}/attachments`
       );
-      console.log("📎 Lesson attachments response:", response.data);
+              // console.log("📎 Lesson attachments response:", response.data);
       if (response.data.success) {
         // Normalize field names for consistency
         return (response.data.attachments || []).map((a: any) => ({
@@ -62,13 +62,13 @@ const LessonAttachments = ({ currentLessonId, currentBigLessonId }: { currentLes
 
   const fetchBigLessonAttachments = async (bigLessonId?: number) => {
     if (!bigLessonId) return [];
-    console.log("📎 Fetching big lesson attachments for bigLessonId:", bigLessonId);
+            // console.log("📎 Fetching big lesson attachments for bigLessonId:", bigLessonId);
     try {
       const apiURL = import.meta.env.VITE_API_URL;
       const response = await axios.get(
         `${apiURL}/api/big-lessons/${bigLessonId}/attachments`
       );
-      console.log("📎 Big lesson attachments response:", response.data);
+              // console.log("📎 Big lesson attachments response:", response.data);
       if (response.data.success) {
         return response.data.attachments || [];
       }
@@ -81,7 +81,7 @@ const LessonAttachments = ({ currentLessonId, currentBigLessonId }: { currentLes
 
   useEffect(() => {
     const fetchAll = async () => {
-      console.log("📎 Fetching all attachments for lessonId:", currentLessonId, "bigLessonId:", currentBigLessonId);
+              // console.log("📎 Fetching all attachments for lessonId:", currentLessonId, "bigLessonId:", currentBigLessonId);
       setLoading(true);
       const [lessonFiles, bigLessonFiles] = await Promise.all([
         fetchLessonAttachments(currentLessonId),
@@ -93,7 +93,7 @@ const LessonAttachments = ({ currentLessonId, currentBigLessonId }: { currentLes
         const dateB = new Date(b.created_at || b.upload_at || 0).getTime();
         return dateB - dateA;
       });
-      console.log("📎 Final attachments:", allFiles);
+              // console.log("📎 Final attachments:", allFiles);
       setAttachments(allFiles);
       setLoading(false);
     };
@@ -179,7 +179,7 @@ const LessonAttachments = ({ currentLessonId, currentBigLessonId }: { currentLes
 const LessonNavTav = ({ description, instructors, currentLessonId, currentBigLessonId }: LessonNavTavProps) => {
    const [activeTab, setActiveTab] = useState(0);
    
-   console.log("🎓 LessonNavTav received instructors:", instructors);
+           // console.log("🎓 LessonNavTav received instructors:", instructors);
 
    const handleTabClick = (index: number) => {
       setActiveTab(index);

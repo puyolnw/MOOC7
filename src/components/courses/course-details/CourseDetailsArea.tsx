@@ -42,15 +42,12 @@ const CourseDetailsArea = ({ single_course, onEnroll }: CourseDetailsAreaProps) 
               <h2 className="title">{single_course.title}</h2>
               <div className="courses__details-meta">
                 <ul className="list-wrap">
-                  {single_course.instructors && single_course.instructors.length > 0 && (
-                    <li className="author-two">
-                      <img src={single_course.instructors[0].avatar || "/assets/img/courses/course_author001.png"} alt="img" />
-                      โดย <Link to="#">{single_course.instructors[0].name}</Link>
-                      {single_course.instructors.length > 1 && ` และอีก ${single_course.instructors.length - 1} ท่าน`}
-                    </li>
+                  {single_course.totalLessons > 0 && (
+                    <li><i className="flaticon-book"></i>{single_course.totalLessons} บทเรียน</li>
                   )}
-                  <li><i className="flaticon-book"></i>{single_course.totalLessons} บทเรียน</li>
-                  <li><i className="flaticon-quiz"></i>{single_course.totalQuizzes} แบบทดสอบก</li>
+                  {single_course.totalQuizzes > 0 && (
+                    <li><i className="flaticon-quiz"></i>{single_course.totalQuizzes} แบบทดสอบ</li>
+                  )}
                 </ul>
               </div>
               <ul className="nav nav-tabs" id="myTab" role="tablist">
@@ -62,7 +59,15 @@ const CourseDetailsArea = ({ single_course, onEnroll }: CourseDetailsAreaProps) 
               </ul>
               <div className="tab-content" id="myTabContent">
                 <div className={`tab-pane fade ${activeTab === 0 ? 'show active' : ''}`} id="overview-tab-pane" role="tabpanel" aria-labelledby="overview-tab">
-                  <Overview description={single_course.description} />
+                  <Overview 
+                    description={single_course.description}
+                    subjectCount={single_course.subjectCount}
+                    totalLessons={single_course.totalLessons}
+                    totalQuizzes={single_course.totalQuizzes}
+                    instructors={single_course.instructors}
+                    department={single_course.department}
+                    category={single_course.category}
+                  />
                 </div>
                 <div className={`tab-pane fade ${activeTab === 1 ? 'show active' : ''}`} id="curriculum-tab-pane" role="tabpanel" aria-labelledby="curriculum-tab">
                   <Curriculum

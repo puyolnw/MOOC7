@@ -21,6 +21,7 @@ interface EnrolledSidebarProps {
 const EnrolledSidebar = ({
   subjectCount,
   totalLessons,
+  totalQuizzes,
   courseId,
   videoUrl,
   coverImage,
@@ -65,6 +66,7 @@ const EnrolledSidebar = ({
         );
 
         if (response.data.success) {
+          console.log("Course Progress Data:", response.data);
           setCourseProgress(response.data);
         }
       } catch (error) {
@@ -126,12 +128,53 @@ const EnrolledSidebar = ({
     ? courseProgress.overallPercentage 
     : initialProgress;
 
+  // Debug logging
+  console.log("EnrolledSidebar Debug:", {
+    courseProgress,
+    calculatedProgress,
+    initialProgress,
+    subjects: courseProgress?.subjects
+  });
+
   const calculatedEnrollmentStatus =
     courseProgress?.overallPercentage === 100
       ? "completed"
       : courseProgress?.overallPercentage > 0
       ? "in_progress"
       : "not_started";
+
+  // คำนวณจำนวนบทเรียนและแบบทดสอบจาก big lessons
+  const calculateBigLessonStats = () => {
+    if (!fullContent || !fullContent.subjects) return { totalBigLessons: 0, totalQuizzes: 0 };
+    
+    let totalBigLessons = 0;
+    let totalQuizzes = 0;
+    
+    fullContent.subjects.forEach((subject: any) => {
+      if (subject.big_lessons) {
+        totalBigLessons += subject.big_lessons.length;
+        subject.big_lessons.forEach((bigLesson: any) => {
+          if (bigLesson.quiz) totalQuizzes++;
+          if (bigLesson.lessons) {
+            bigLesson.lessons.forEach((lesson: any) => {
+              if (lesson.quiz) totalQuizzes++;
+            });
+          }
+        });
+      }
+      // เพิ่ม pre-test และ post-test
+      if (subject.pre_test_id) totalQuizzes++;
+      if (subject.post_test_id) totalQuizzes++;
+    });
+    
+    return { totalBigLessons, totalQuizzes };
+  };
+
+  const { totalBigLessons, totalQuizzes: calculatedTotalQuizzes } = calculateBigLessonStats();
+
+  // จำนวนบทเรียนและแบบทดสอบจาก API
+  const apiTotalLessons = totalBigLessons || totalLessons;
+  const apiTotalQuizzes = calculatedTotalQuizzes || totalQuizzes;
 
 
   const handleStartLearning = async () => {
@@ -145,84 +188,26 @@ const EnrolledSidebar = ({
         return;
       }
 
-      // ถ้ามีข้อมูล fullContent แล้ว ให้หาบทเรียนแรกที่ยังไม่เรียนจบ
-      if (fullContent && fullContent.subjects && fullContent.subjects.length > 0) {
-        let foundNextLesson = false;
-        
-        // ดึงข้อมูลความก้าวหน้าของแต่ละวิชา
-        for (const subject of fullContent.subjects) {
-          try {
-            const progressResponse = await axios.get(
-              `${apiURL}/api/learn/subject/${subject.subject_id}/progress`,
-              {
-                headers: { Authorization: `Bearer ${token}` },
-              }
-            );
-            
-            // ถ้าวิชานี้ยังเรียนไม่จบ
-            if (progressResponse.data.success && 
-                progressResponse.data.progressPercentage < 100) {
-              
-              // หาบทเรียนแรกที่ยังไม่เรียนจบ
-              for (const lesson of subject.lessons) {
-                const lessonProgressResponse = await axios.get(
-                  `${apiURL}/api/learn/lesson/${lesson.lesson_id}/video-progress`,
-                  {
-                    headers: { Authorization: `Bearer ${token}` },
-                  }
-                );
-                
-                // ถ้าไม่มีข้อมูลความก้าวหน้า หรือยังเรียนไม่จบ
-                if (!lessonProgressResponse.data.progress || 
-                    !lessonProgressResponse.data.progress.overall_completed) {
-                  
-                  // เก็บข้อมูลบทเรียนถัดไปที่ควรเรียน
-                  setNextLessonInfo({
-                    title: lesson.title,
-                    subject_title: subject.title,
-                    lesson_id: lesson.lesson_id,
-                    subject_id: subject.subject_id
-                  });
-                  
-                  // แสดง popup
-                  setShowStartModal(true);
-                  foundNextLesson = true;
-                  break;
-                }
-              }
-            }
-            
-            if (foundNextLesson) break;
-          } catch (error) {
-            console.error(`Error checking subject ${subject.subject_id} progress:`, error);
-          }
+      // ดึงข้อมูลวิชาในคอร์สนี้
+      const response = await axios.get(
+        `${apiURL}/api/courses/${courseId}/enrolled-subjects`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
         }
-        
-        // ถ้าไม่พบบทเรียนที่ยังไม่เรียนจบ ให้ไปที่วิชาแรก
-        if (!foundNextLesson) {
-          setNextLessonInfo({
-            title: fullContent.subjects[0].lessons[0].title,
-            subject_title: fullContent.subjects[0].title,
-            lesson_id: fullContent.subjects[0].lessons[0].lesson_id,
-            subject_id: fullContent.subjects[0].subject_id
-          });
-          setShowStartModal(true);
-        }
-      } else {
-        // ถ้ายังไม่มีข้อมูล fullContent ให้ใช้วิธีเดิม
-        const response = await axios.get(
-          `${apiURL}/api/courses/${courseId}/enrolled-subjects`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
+      );
 
-        if (response.data.success && response.data.subjects.length > 0) {
-          const firstSubject = response.data.subjects[0];
-          navigate(`/course-learning/${courseId}/${firstSubject.subject_id}`);
-        } else {
-          setStartError("คุณยังไม่ได้ลงทะเบียนวิชาในคอร์สนี้");
-        }
+      if (response.data.success && response.data.subjects.length > 0) {
+        // แสดง popup ให้เลือกวิชาเสมอ
+        const firstSubject = response.data.subjects[0];
+        setNextLessonInfo({
+          title: "เริ่มเรียนวิชา",
+          subject_title: firstSubject.title || firstSubject.subject_name,
+          lesson_id: 0,
+          subject_id: firstSubject.subject_id
+        });
+        setShowStartModal(true);
+      } else {
+        setStartError("คุณยังไม่ได้ลงทะเบียนวิชาในคอร์สนี้");
       }
     } catch (error) {
       console.error("Error fetching enrolled subjects:", error);
@@ -270,11 +255,6 @@ const EnrolledSidebar = ({
       videoRef.current.appendChild(iframe);
     }
   }, [videoUrl]);
-
-  // จำนวนบทเรียนและแบบทดสอบจาก API
-  const apiTotalLessons = courseProgress?.totalLessons || totalLessons;
-
-
 
   return (
     <>
@@ -345,7 +325,7 @@ const EnrolledSidebar = ({
                 </div>
                 {courseProgress && (
                   <div className="mt-2 small">
-                    <div>บทเรียนที่เรียนจบ: {courseProgress.completedLessons}/{courseProgress.totalLessons}</div>
+                    <div>บทเรียนหลักที่เรียนจบ: {courseProgress.subjects?.reduce((sum: number, subject: any) => sum + (subject.completedBigLessons || 0), 0) || 0}/{courseProgress.subjects?.reduce((sum: number, subject: any) => sum + (subject.totalBigLessons || 0), 0) || 0}</div>
                   </div>
                 )}
               </>
@@ -355,43 +335,56 @@ const EnrolledSidebar = ({
           <div className="courses__information-wrap">
             <h5 className="title">หลักสูตรประกอบด้วย:</h5>
             <ul className="list-wrap">
-            <li>
-                <div className="courses__info-icon">
-                  <i className="flaticon-file"></i>
-                </div>
-                <div className="courses__info-content">
-                  <h6>{subjectCount} วิชา</h6>
-                </div>
-              </li>
-              <li>
-                <div className="courses__info-icon">
-                  <i className="flaticon-video"></i>
-                </div>
-                <div className="courses__info-content">
-                  <h6>{apiTotalLessons} บทเรียน</h6>
-                </div>
-              </li>
+              {subjectCount > 0 && (
+                <li>
+                  <div className="courses__info-icon">
+                    <i className="flaticon-file"></i>
+                  </div>
+                  <div className="courses__info-content">
+                    <h6>{subjectCount} วิชา</h6>
+                  </div>
+                </li>
+              )}
+              {apiTotalLessons > 0 && (
+                <li>
+                  <div className="courses__info-icon">
+                    <i className="flaticon-video"></i>
+                  </div>
+                  <div className="courses__info-content">
+                    <h6>{apiTotalLessons} บทเรียน</h6>
+                  </div>
+                </li>
+              )}
+              {apiTotalQuizzes > 0 && (
+                <li>
+                  <div className="courses__info-icon">
+                    <i className="flaticon-quiz"></i>
+                  </div>
+                  <div className="courses__info-content">
+                    <h6>{apiTotalQuizzes} แบบทดสอบ</h6>
+                  </div>
+                </li>
+              )}
             </ul>
           </div>
 
           <div className="courses__details-action">
-          <button
-  className="btn btn-primary w-100 mb-3"
-  onClick={handleStartLearning}
-  disabled={isStarting}
->
-  {isStarting ? (
-    <>
-      <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-      กำลังเริ่มเรียน...
-    </>
-  ) : (
-    <>
-      {/* แก้ไขตรงนี้ */}
-      <i className="fas fa-play me-2"></i> เริ่มเรียน
-    </>
-  )}
-</button>
+            <button
+              className="btn btn-primary w-100 mb-3"
+              onClick={handleStartLearning}
+              disabled={isStarting}
+            >
+              {isStarting ? (
+                <>
+                  <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                  กำลังเริ่มเรียน...
+                </>
+              ) : (
+                <>
+                  <i className="fas fa-play me-2"></i> เริ่มเรียน
+                </>
+              )}
+            </button>
 
             {startError && (
               <div className="alert alert-danger py-2 small">
@@ -404,13 +397,13 @@ const EnrolledSidebar = ({
       </div>
 
       {/* Video Popup */}
-{isVideoOpen && (
-  <VideoPopup
-    videoId={getYoutubeVideoId(videoUrl)}
-    isVideoOpen={isVideoOpen}  // เพิ่ม prop นี้
-    setIsVideoOpen={setIsVideoOpen}
-  />
-)}
+      {isVideoOpen && (
+        <VideoPopup
+          videoId={getYoutubeVideoId(videoUrl)}
+          isVideoOpen={isVideoOpen}
+          setIsVideoOpen={setIsVideoOpen}
+        />
+      )}
 
 
       {/* Start Learning Modal */}
@@ -418,7 +411,7 @@ const EnrolledSidebar = ({
         <div className="start-learning-modal">
           <div className="start-learning-modal-content">
             <div className="start-learning-modal-header">
-              <h4>เริ่มเรียนหลักสูตร</h4>
+              <h4>เลือกวิชาที่จะเรียน</h4>
               <button 
                 className="close-button" 
                 onClick={() => setShowStartModal(false)}
@@ -428,24 +421,35 @@ const EnrolledSidebar = ({
             </div>
             <div className="start-learning-modal-body">
               <div className="start-learning-icon">
-                <i className="fas fa-book-reader"></i>
+                <i className="fas fa-graduation-cap"></i>
               </div>
               
-              {nextLessonInfo && (
-                <>
-                  <h5>คุณกำลังจะเริ่มเรียน</h5>
-                  <div className="next-lesson-info">
-                    <div className="subject-title">
-                      <span>วิชา:</span> {nextLessonInfo.subject_title}
+              <h5>เลือกวิชาที่คุณต้องการเริ่มเรียน</h5>
+              <p>คุณสามารถเลือกวิชาใดก็ได้ในหลักสูตรนี้</p>
+              
+              <div className="subject-selection">
+                {fullContent?.subjects?.map((subject: any, index: number) => (
+                  <div 
+                    key={subject.subject_id} 
+                    className={`subject-option ${nextLessonInfo?.subject_id === subject.subject_id ? 'selected' : ''}`}
+                    onClick={() => setNextLessonInfo({
+                      title: "เริ่มเรียนวิชา",
+                      subject_title: subject.title || subject.subject_name,
+                      lesson_id: 0,
+                      subject_id: subject.subject_id
+                    })}
+                  >
+                    <div className="subject-number">{index + 1}</div>
+                    <div className="subject-info">
+                      <div className="subject-name">{subject.title || subject.subject_name}</div>
+                      <div className="subject-code">{subject.subject_code}</div>
                     </div>
-                    <div className="lesson-title">
-                      <span>บทเรียน:</span> {nextLessonInfo.title}
+                    <div className="subject-arrow">
+                      <i className="fas fa-chevron-right"></i>
                     </div>
                   </div>
-                </>
-              )}
-              
-              <p>คุณพร้อมที่จะเริ่มเรียนหรือไม่?</p>
+                ))}
+              </div>
               
               <div className="start-learning-buttons">
                 <button 
@@ -457,6 +461,7 @@ const EnrolledSidebar = ({
                 <button 
                   className="btn-start" 
                   onClick={handleConfirmStart}
+                  disabled={!nextLessonInfo}
                 >
                   <i className="fas fa-play"></i> เริ่มเรียนเลย
                 </button>

@@ -41,39 +41,62 @@ const Curriculum: React.FC<CurriculumProps> = ({ subjects, courseId }) => {
       marginBottom: "30px",
     },
     card: {
-      border: "1px solid #e0e0e0",
-      borderRadius: "8px",
+      border: "none",
+      borderRadius: "16px",
       overflow: "hidden",
-      transition: "transform 0.3s, box-shadow 0.3s",
+      transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
       height: "100%",
       display: "flex",
       flexDirection: "column",
       backgroundColor: "#fff",
+      boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+      position: "relative",
     },
     cardImage: {
       width: "100%",
-      height: "180px",
+      height: "200px",
       objectFit: "cover",
-      borderBottom: "1px solid #e0e0e0",
+      borderBottom: "none",
+      transition: "transform 0.4s ease",
     },
     cardHeader: {
       padding: "1.5rem",
-      backgroundColor: "#f8f9fa",
-      borderBottom: "1px solid #e0e0e0",
+      background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+      color: "white",
+      position: "relative",
+      overflow: "hidden",
+    },
+    cardHeaderOverlay: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      background: "rgba(0, 0, 0, 0.1)",
+      zIndex: 1,
     },
     cardCode: {
-      fontSize: "1rem",
-      color: "#6c757d",
+      fontSize: "0.875rem",
+      color: "rgba(255, 255, 255, 0.9)",
       marginBottom: "0.5rem",
+      fontWeight: "500",
+      letterSpacing: "0.5px",
+      position: "relative",
+      zIndex: 2,
     },
     cardTitle: {
       fontSize: "1.25rem",
       marginBottom: "0",
-      color: "#212529",
+      color: "white",
+      fontWeight: "600",
+      lineHeight: "1.3",
+      position: "relative",
+      zIndex: 2,
     },
     cardBody: {
       padding: "1.5rem",
       flexGrow: 1,
+      backgroundColor: "#fafbfc",
     },
     infoList: {
       listStyle: "none",
@@ -81,76 +104,117 @@ const Curriculum: React.FC<CurriculumProps> = ({ subjects, courseId }) => {
       margin: 0,
     },
     infoItem: {
-      marginBottom: "0.75rem",
+      marginBottom: "1rem",
       display: "flex",
       alignItems: "center",
+      padding: "0.75rem",
+      backgroundColor: "white",
+      borderRadius: "8px",
+      boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
+      transition: "transform 0.2s ease, box-shadow 0.2s ease",
+    },
+    infoItemHover: {
+      transform: "translateX(5px)",
+      boxShadow: "0 4px 8px rgba(0, 0, 0, 0.15)",
     },
     icon: {
-      marginRight: "10px",
-      color: "#0d6efd",
-      width: "16px",
+      marginRight: "12px",
+      color: "#667eea",
+      width: "18px",
+      fontSize: "1.1rem",
     },
     cardFooter: {
       padding: "1.5rem",
-      borderTop: "1px solid #e0e0e0",
+      borderTop: "1px solid #e9ecef",
+      backgroundColor: "white",
     },
     button: {
       display: "inline-block",
       width: "100%",
-      padding: "10px 15px",
-      backgroundColor: "#0d6efd",
+      padding: "12px 20px",
+      background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
       color: "white",
       textDecoration: "none",
-      borderRadius: "4px",
+      borderRadius: "8px",
       textAlign: "center",
-      transition: "background-color 0.3s",
+      transition: "all 0.3s ease",
       border: "none",
       cursor: "pointer",
+      fontWeight: "600",
+      fontSize: "0.95rem",
+      position: "relative",
+      overflow: "hidden",
+    },
+    buttonHover: {
+      transform: "translateY(-2px)",
+      boxShadow: "0 8px 25px rgba(102, 126, 234, 0.3)",
     },
     buttonIcon: {
       marginLeft: "8px",
+      transition: "transform 0.3s ease",
     },
     placeholderImage: {
       width: "100%",
-      height: "180px",
-      backgroundColor: "#f0f0f0",
+      height: "200px",
+      background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      color: "#6c757d",
-      fontSize: "1rem",
+      color: "white",
+      fontSize: "1.1rem",
+      fontWeight: "500",
     },
     prerequisitesBadge: {
       display: "inline-block",
-      padding: "0.25rem 0.5rem",
-      fontSize: "0.75rem",
-      fontWeight: "bold",
+      padding: "0.4rem 0.8rem",
+      fontSize: "0.8rem",
+      fontWeight: "600",
       lineHeight: "1",
       textAlign: "center",
       whiteSpace: "nowrap",
       verticalAlign: "baseline",
-      borderRadius: "0.25rem",
-      color: "#fff",
-      backgroundColor: "#6c757d",
+      borderRadius: "20px",
+      color: "white",
+      background: "linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%)",
       marginRight: "0.5rem",
       marginBottom: "0.5rem",
+      boxShadow: "0 2px 4px rgba(255, 107, 107, 0.3)",
     },
     prerequisitesContainer: {
-      marginTop: "1rem",
-      borderTop: "1px dashed #e0e0e0",
-      paddingTop: "1rem",
+      marginTop: "1.5rem",
+      borderTop: "2px dashed #e9ecef",
+      paddingTop: "1.5rem",
     },
     prerequisitesTitle: {
-      fontSize: "0.875rem",
-      fontWeight: "bold",
-      marginBottom: "0.5rem",
+      fontSize: "0.9rem",
+      fontWeight: "600",
+      marginBottom: "0.75rem",
       color: "#495057",
+      display: "flex",
+      alignItems: "center",
     },
     prerequisitesList: {
       display: "flex",
       flexWrap: "wrap",
       margin: "0",
       padding: "0",
+    },
+    orderBadge: {
+      position: "absolute",
+      top: "15px",
+      right: "15px",
+      background: "rgba(255, 255, 255, 0.9)",
+      color: "#667eea",
+      borderRadius: "50%",
+      width: "40px",
+      height: "40px",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      fontWeight: "bold",
+      fontSize: "1.1rem",
+      zIndex: 3,
+      boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
     },
   };
 
@@ -208,12 +272,17 @@ const Curriculum: React.FC<CurriculumProps> = ({ subjects, courseId }) => {
                 <div
                   style={{
                     ...styles.card,
-                    transform: hoveredCard === subject.subject_id ? "translateY(-5px)" : "none",
-                    boxShadow: hoveredCard === subject.subject_id ? "0 10px 20px rgba(0, 0, 0, 0.1)" : "none",
+                    transform: hoveredCard === subject.subject_id ? "translateY(-8px)" : "none",
+                    boxShadow: hoveredCard === subject.subject_id ? "0 20px 40px rgba(0, 0, 0, 0.15)" : "none",
                   }}
                   onMouseEnter={() => setHoveredCard(subject.subject_id)}
                   onMouseLeave={() => setHoveredCard(null)}
                 >
+                  {/* Order Badge */}
+                  <div style={styles.orderBadge}>
+                    {subject.order_number || 1}
+                  </div>
+
                   {subject.cover_image ? (
                     <img
                       src={
@@ -222,7 +291,10 @@ const Curriculum: React.FC<CurriculumProps> = ({ subjects, courseId }) => {
                           : "/assets/img/courses/course_thumb01.jpg"
                       }
                       alt={subject.subject_name || "รายวิชา"}
-                      style={styles.cardImage}
+                      style={{
+                        ...styles.cardImage,
+                        transform: hoveredCard === subject.subject_id ? "scale(1.05)" : "scale(1)",
+                      }}
                       onError={(e) => {
                         (e.target as HTMLImageElement).src = "/assets/img/courses/course_thumb01.jpg";
                       }}
@@ -235,21 +307,37 @@ const Curriculum: React.FC<CurriculumProps> = ({ subjects, courseId }) => {
                   )}
 
                   <div style={styles.cardHeader}>
+                    <div style={styles.cardHeaderOverlay}></div>
                     <h4 style={styles.cardCode}>{subject.subject_code || "ไม่มีรหัสวิชา"}</h4>
                     <h5 style={styles.cardTitle}>{subject.subject_name || "ไม่มีชื่อวิชา"}</h5>
                   </div>
 
                   <div style={styles.cardBody}>
                     <ul style={styles.infoList}>
-                      <li style={styles.infoItem}>
+                      <li 
+                        style={{
+                          ...styles.infoItem,
+                          ...(hoveredCard === subject.subject_id ? styles.infoItemHover : {})
+                        }}
+                      >
                         <i className="fas fa-graduation-cap" style={styles.icon}></i>
                         <span>{subject.credits ?? 0} หน่วยกิต</span>
                       </li>
-                      <li style={styles.infoItem}>
+                      <li 
+                        style={{
+                          ...styles.infoItem,
+                          ...(hoveredCard === subject.subject_id ? styles.infoItemHover : {})
+                        }}
+                      >
                         <i className="fas fa-book" style={styles.icon}></i>
                         <span>{subject.lesson_count ?? 0} บทเรียน</span>
                       </li>
-                      <li style={styles.infoItem}>
+                      <li 
+                        style={{
+                          ...styles.infoItem,
+                          ...(hoveredCard === subject.subject_id ? styles.infoItemHover : {})
+                        }}
+                      >
                         <i className="fas fa-chalkboard-teacher" style={styles.icon}></i>
                         <span>{subject.instructor_count ?? 0} ผู้สอน</span>
                       </li>
@@ -281,13 +369,19 @@ const Curriculum: React.FC<CurriculumProps> = ({ subjects, courseId }) => {
                       to={`/subject-details/${courseId}/${subject.subject_id}`}
                       style={{
                         ...styles.button,
-                        backgroundColor: hoveredButton === subject.subject_id ? "#0b5ed7" : "#0d6efd",
+                        ...(hoveredButton === subject.subject_id ? styles.buttonHover : {}),
                       }}
                       onMouseEnter={() => setHoveredButton(subject.subject_id)}
                       onMouseLeave={() => setHoveredButton(null)}
                     >
                       ดูรายละเอียดรายวิชา
-                      <i className="fas fa-arrow-right" style={styles.buttonIcon}></i>
+                      <i 
+                        className="fas fa-arrow-right" 
+                        style={{
+                          ...styles.buttonIcon,
+                          transform: hoveredButton === subject.subject_id ? "translateX(5px)" : "translateX(0)",
+                        }}
+                      ></i>
                     </Link>
                   </div>
                 </div>

@@ -148,7 +148,7 @@ const SubjectDetailsArea = ({ subject_details, course_id, isEnrolled = false, is
                   id="curriculum-tab-pane"
                   role="tabpanel"
                 >
-                  <Curriculum lessons={lessons} subjectId={subject_id} />
+                  <Curriculum subjectId={subject_id} />
                 </div>
                 <div
                   className={`tab-pane fade ${activeTab === 2 ? "show active" : ""}`}

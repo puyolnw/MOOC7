@@ -16,6 +16,8 @@ interface LessonQuizProps {
     // ✅ เพิ่ม prop ใหม่สำหรับการไปบทเรียนถัดไป (lesson ถัดไป)
     // ใช้สำหรับแบบทดสอบของแต่ละบท เพื่อไปบทเรียนถัดไป (section ถัดไป)
     onGoToNextLesson?: () => void;
+    // ✅ เพิ่ม prop สำหรับเกณฑ์ผ่านแบบทดสอบ
+    passingPercentage?: number;
 }
 
 // Define different question types
@@ -166,6 +168,8 @@ const LessonQuiz = ({
     // ✅ เพิ่ม prop ใหม่สำหรับการไปบทเรียนถัดไป (lesson ถัดไป)
     // ใช้สำหรับแบบทดสอบของแต่ละบท เพื่อไปบทเรียนถัดไป (section ถัดไป)
     onGoToNextLesson,
+    // ✅ เพิ่ม prop สำหรับเกณฑ์ผ่านแบบทดสอบ
+    passingPercentage = 65,
 }: LessonQuizProps) => {
     const [currentQuestion, setCurrentQuestion] = useState(0);
     const [showResult, setShowResult] = useState(false);
@@ -193,8 +197,8 @@ const LessonQuiz = ({
     const [files, setFiles] = useState<{ questionIndex: number; question_id: number; file: File }[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // กำหนดเกณฑ์การผ่าน (65%)
-    const PASSING_PERCENTAGE = 65;
+    // ✅ ใช้เกณฑ์การผ่านจาก prop (default 65%)
+    const PASSING_PERCENTAGE = passingPercentage;
 
     // ✅ เพิ่มฟังก์ชัน reset state ทั้งหมด
     const resetAllStates = () => {

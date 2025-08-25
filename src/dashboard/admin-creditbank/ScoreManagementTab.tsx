@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import './ScoreManagement.css';
 
 // Interface for Subject
 interface Subject {
@@ -19,30 +20,57 @@ interface Subject {
   auto_distribute_score?: boolean;
 }
 
-// Interface for Score Items - ระบบคะแนนจริง
-interface ScoreItem {
+// Interface for Hierarchical Score Structure
+interface BigLesson {
   id: number;
-  type: 'quiz' | 'lesson' | 'big_lesson';
   title: string;
-  actual_score: number; // คะแนนจริง (เช่น 10, 15, 20 คะแนน)
-  weight_percentage?: number; // เก็บจาก database สำหรับ conversion
+  weight_percentage: number;
   is_fixed_weight: boolean;
-  quiz_type?: string; // pre_lesson, post_lesson
-  level?: 'subject' | 'big_lesson' | 'lesson';
-  parent_id?: number | null;
-  parent_type?: 'big_lesson' | 'lesson';
-  children?: ScoreItem[];
-  // เก็บ % สำหรับการแสดงผล (คำนวณอัตโนมัติ)
-  calculated_percentage?: number;
-  // รายละเอียด Quiz
-  quiz_details?: {
-    total_questions: number; // จำนวนข้อทั้งหมด
-    max_score: number; // คะแนนเต็มของ quiz
-    questions_breakdown: {
-      question_id: number;
-      score: number; // คะแนนต่อข้อ
-    }[];
+  quiz?: {
+    id: number;
+    title: string;
+    percentage: number;
+    is_fixed_weight: boolean;
   };
+  lessons: Lesson[];
+  order_number: number;
+  used_percentage?: number;
+  remaining_percentage?: number;
+  status?: 'complete' | 'incomplete' | 'exceeded';
+}
+
+interface Lesson {
+  id: number;
+  title: string;
+  percentage: number;
+  is_fixed_weight: boolean;
+  has_video: boolean;
+  quiz?: {
+    id: number;
+    title: string;
+    percentage: number;
+    is_fixed_weight: boolean;
+  };
+  order_number: number;
+}
+
+interface ScoreStructure {
+  pre_test?: {
+    id: number;
+    title: string;
+  };
+  big_lessons: BigLesson[];
+  post_test?: {
+    id: number;
+    title: string;
+    percentage: number;
+    is_fixed_weight: boolean;
+  };
+  total_used: number;
+  total_remaining: number;
+  is_valid: boolean;
+  errors: string[];
+  warnings: string[];
 }
 
 interface ScoreManagementTabProps {
@@ -50,458 +78,245 @@ interface ScoreManagementTabProps {
 }
 
 const ScoreManagementTab: React.FC<ScoreManagementTabProps> = ({ subject }) => {
-  const [scoreItems, setScoreItems] = useState<ScoreItem[]>([]);
+  const [scoreStructure, setScoreStructure] = useState<ScoreStructure | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const [passingPercentage, setPassingPercentage] = useState<number>(subject.passing_percentage || 80);
-  const [totalScore, setTotalScore] = useState<number>(0); // คะแนนรวมทั้งหมด
-  const [requiredScore, setRequiredScore] = useState<number>(0); // คะแนนที่ต้องทำได้เพื่อผ่าน
-  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
+  const [expandedBigLessons, setExpandedBigLessons] = useState<Set<number>>(new Set());
+  const [expandedLessons, setExpandedLessons] = useState<Set<number>>(new Set());
 
   const apiURL = import.meta.env.VITE_API_URL;
 
-  // Calculate total score and required score
-  const calculateScores = () => {
-    if (!scoreItems.length) return;
-    
-    // คำนวณคะแนนรวม (เฉพาะ Quizzes ที่มีคะแนน)
-    const quizItems = scoreItems.filter(item => 
-      item.type === 'quiz' && item.actual_score > 0
-    );
-    
-    const newTotalScore = quizItems.reduce((sum, item) => 
-      sum + (item.actual_score || 0), 0
-    );
-    
-    const newRequiredScore = Math.ceil((newTotalScore * passingPercentage) / 100);
-    
-    setTotalScore(newTotalScore);
-    setRequiredScore(newRequiredScore);
-    
-    console.log('📊 Score Calculation:', {
-      totalQuizzes: quizItems.length,
-      totalScore: newTotalScore,
-      passingPercentage: passingPercentage,
-      requiredScore: newRequiredScore
-    });
-  };
+  // Fixed PercentageInput Component - แก้ไขปัญหา input bug
+  const PercentageInput: React.FC<{
+    value: number;
+    onChange: (newValue: number) => void;
+    min?: number;
+    max?: number;
+    disabled?: boolean;
+    placeholder?: string;
+  }> = ({ value, onChange, min = 0, max = 100, disabled = false, placeholder = "0" }) => {
+    const [inputValue, setInputValue] = useState(value.toString());
+    const [isFocused, setIsFocused] = useState(false);
+    const inputRef = useRef<HTMLInputElement>(null);
 
-  // Fetch quiz details from backend
-  const fetchQuizDetails = async (quizId: number): Promise<ScoreItem['quiz_details'] | null> => {
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) return null;
-      
-      const response = await axios.get(
-        `${apiURL}/api/quizzes/${quizId}/details`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      
-      if (response.data.success) {
-        return response.data.data;
+    // Only update inputValue from prop when not focused
+    useEffect(() => {
+      if (!isFocused) {
+        setInputValue(value.toString());
       }
-      return null;
-    } catch (error) {
-      console.error('Error fetching quiz details:', error);
-      return null;
-    }
-  };
+    }, [value, isFocused]);
 
-  // Calculate required questions/score to achieve target
-  const calculateRequiredAnswers = (
-    targetScore: number, 
-    quizDetails: ScoreItem['quiz_details']
-  ): { 
-    required_score: number; 
-    required_questions: number; 
-    breakdown: string 
-  } => {
-    if (!quizDetails || !targetScore) {
-      return { required_score: 0, required_questions: 0, breakdown: '' };
-    }
-
-    const required_score = targetScore;
-    const max_score = quizDetails.max_score;
-    
-    // คำนวณจำนวนข้อที่ต้องทำถูก (สมมติว่าทำถูกข้อที่มีคะแนนสูงก่อน)
-    const questions = [...quizDetails.questions_breakdown].sort((a, b) => b.score - a.score);
-    let accumulated_score = 0;
-    let required_questions = 0;
-    
-    for (const question of questions) {
-      if (accumulated_score >= required_score) break;
-      accumulated_score += question.score;
-      required_questions++;
-    }
-
-    const breakdown = `ต้องทำถูก ${required_questions}/${quizDetails.total_questions} ข้อ (${required_score}/${max_score} คะแนน)`;
-    
-    return { required_score, required_questions, breakdown };
-  };
-
-  // Toggle expand/collapse for items
-  const toggleExpanded = async (itemKey: string) => {
-    const newExpanded = new Set(expandedItems);
-    
-    if (newExpanded.has(itemKey)) {
-      newExpanded.delete(itemKey);
-    } else {
-      newExpanded.add(itemKey);
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const newValue = e.target.value;
       
-      // ถ้าเป็น Quiz และกำลังขยาย ให้ดึงข้อมูลรายละเอียด
-      const item = scoreItems.find(i => `${i.type}-${i.id}` === itemKey);
-      if (item && item.type === 'quiz' && !item.quiz_details) {
-        console.log('🔍 Fetching quiz details for:', item.title);
-        const details = await fetchQuizDetails(item.id);
-        if (details) {
-          setScoreItems(prev => 
-            prev.map(i => 
-              i.id === item.id && i.type === 'quiz' 
-                ? { ...i, quiz_details: details }
-                : i
-            )
-          );
-        }
-      }
-    }
-    setExpandedItems(newExpanded);
-  };
-
-  // Helper function to check if parent Big Lesson is locked
-  const isParentBigLessonLocked = (item: ScoreItem, allItems: ScoreItem[]): boolean => {
-    if (!item.parent_id || item.level !== 'big_lesson' && item.level !== 'lesson') {
-      return false;
-    }
-    
-    const parentBigLesson = allItems.find(parent => 
-      parent.type === 'big_lesson' && 
-      parent.id === item.parent_id
-    );
-    
-    return parentBigLesson?.is_fixed_weight || false;
-  };
-
-  // Get display name based on type
-  const getTypeName = (type: string) => {
-    switch (type) {
-      case 'quiz': return 'ทดสอบ';
-      case 'lesson': return 'บทย่อย';
-      case 'big_lesson': return 'บทหลัก';
-      default: return type;
-    }
-  };
-
-
-
-  // Function to render score items as cards
-  const renderScoreItemsCards = () => {
-    const cards: JSX.Element[] = [];
-    
-    // Group items by level and parent
-    const subjectLevelItems = scoreItems.filter(item => item.level === 'subject' || !item.level);
-    const bigLessonItems = scoreItems.filter(item => item.level === 'big_lesson');
-    const lessonItems = scoreItems.filter(item => item.level === 'lesson');
-    
-    // Render Subject-level quizzes first
-    const subjectQuizzes = subjectLevelItems.filter(item => item.type === 'quiz');
-    subjectQuizzes.forEach(item => {
-      cards.push(renderScoreItemCard(item, 0, false));
-    });
-    
-    // Render Big Lessons and their children
-    const bigLessons = subjectLevelItems.filter(item => item.type === 'big_lesson');
-    bigLessons.forEach(bigLesson => {
-      const bigLessonKey = `big_lesson_${bigLesson.id}`;
-      const isExpanded = expandedItems.has(bigLessonKey);
-      
-      // Find children for this big lesson
-      const bigLessonQuiz = bigLessonItems.find(item => 
-        item.type === 'quiz' && item.parent_id === bigLesson.id
-      );
-      const lessons = bigLessonItems.filter(item => 
-        item.type === 'lesson' && item.parent_id === bigLesson.id
-      );
-      
-      const hasChildren = !!bigLessonQuiz || lessons.length > 0;
-      
-      cards.push(renderScoreItemCard(bigLesson, 0, hasChildren, bigLessonKey));
-      
-      // Show children only if expanded
-      if (isExpanded) {
-        // Big Lesson Quiz
-        if (bigLessonQuiz) {
-          cards.push(renderScoreItemCard(bigLessonQuiz, 1, false));
-        }
+      // Allow empty string and valid numbers
+      if (newValue === '' || /^\d*\.?\d*$/.test(newValue)) {
+        setInputValue(newValue);
         
-        // Lessons in this Big Lesson
-        lessons.forEach(lesson => {
-          const lessonKey = `lesson_${lesson.id}`;
-          const isLessonExpanded = expandedItems.has(lessonKey);
-          
-          // Find Lesson Quiz
-          const lessonQuiz = lessonItems.find(item => 
-            item.type === 'quiz' && item.parent_id === lesson.id
-          );
-          
-          const lessonHasChildren = !!lessonQuiz;
-          
-          cards.push(renderScoreItemCard(lesson, 1, lessonHasChildren, lessonKey));
-          
-          // Show lesson quiz only if lesson is expanded
-          if (isLessonExpanded && lessonQuiz) {
-            cards.push(renderScoreItemCard(lessonQuiz, 2, false));
-          }
-        });
+        // ไม่เรียก onChange ทันที รอให้กรอกเสร็จก่อน
+        // จะเรียก onChange ใน handleBlur แทน
       }
-    });
-    
-    return cards;
-  };
+    };
 
-  // Function to render individual score item card
-  const renderScoreItemCard = (item: ScoreItem, indentLevel: number, hasChildren: boolean = false, itemKey?: string) => {
-    const isChild = indentLevel > 0;
-    const isExpanded = itemKey ? expandedItems.has(itemKey) : false;
-    
-    // Determine card styling based on item type and level
-    let cardClass = 'score-item-card mb-3';
-    if (item.type === 'big_lesson') {
-      cardClass += ' big-lesson-card';
-    } else if (item.type === 'lesson') {
-      cardClass += ' lesson-card';
-    } else if (item.type === 'quiz') {
-      cardClass += ' quiz-card';
-    }
-    
-    if (isChild) {
-      cardClass += ' child-card';
-    }
-    
+    const handleFocus = () => {
+      setIsFocused(true);
+    };
+
+    const handleBlur = () => {
+      setIsFocused(false);
+      validateAndSubmit();
+    };
+
+    const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        inputRef.current?.blur();
+      }
+    };
+
+    const validateAndSubmit = () => {
+      const numValue = parseFloat(inputValue);
+      
+      if (isNaN(numValue) || numValue < min) {
+        setInputValue(min.toString());
+        onChange(min);
+      } else if (numValue > max) {
+        setInputValue(max.toString());
+        onChange(max);
+    } else {
+        // Format the number properly
+        const formatted = numValue % 1 === 0 ? numValue.toString() : numValue.toFixed(2);
+        setInputValue(formatted);
+        // เรียก onChange เมื่อ validate เสร็จแล้วเท่านั้น
+        onChange(numValue);
+      }
+    };
+
     return (
       <div 
-        key={`${item.type}-${item.id}-${item.level || 'subject'}`} 
-        className={cardClass}
-        style={{
-          marginLeft: isChild ? `${indentLevel * 2}rem` : '0',
-          border: '1px solid #dee2e6',
-          borderRadius: '0.5rem'
-        }}
+        className="score-table-percentage-input-wrapper"
+        onClick={(e) => e.stopPropagation()}
       >
-        <div className="card-body">
-          <div className="row align-items-center">
-            {/* Type and Title Column */}
-            <div className="col-md-6">
-              <div className="d-flex align-items-center mb-2">
-                {hasChildren && (
-                  <button
-                    className="btn p-0 me-2 expand-toggle-btn"
-                    onClick={() => itemKey && toggleExpanded(itemKey)}
-                    title={isExpanded ? 'ยุบรายการ' : 'ขยายรายการ'}
-                  >
-                    <i className={`fas ${isExpanded ? 'fa-minus-circle' : 'fa-plus-circle'} ${isExpanded ? 'text-danger' : 'text-success'}`}></i>
-                  </button>
-                )}
-                {!hasChildren && isChild && (
-                  <span className="me-2 child-indicator">
-                    <i className="fas fa-arrow-right text-muted"></i>
-                  </span>
-                )}
-                <span className={`badge badge-sm me-2 ${
-                  item.type === 'quiz' ? 'bg-warning text-dark' :
-                  item.type === 'lesson' ? 'bg-success' :
-                  'bg-info'
-                }`}>
-                  {getTypeName(item.type)}
-                </span>
-              </div>
-              
-              <h6 className="card-title mb-1" title={item.title}>
-                {item.title}
-              </h6>
-              
-              {item.quiz_type && (
-                <small className="text-muted d-block">
-                  {item.quiz_type === 'pre_lesson' ? 'ก่อนเรียน' : 'หลังเรียน'}
-                </small>
-              )}
-
-            </div>
-            
-            {/* Score Input Column */}
-            <div className="col-md-3">
-              <label className="form-label small text-muted">คะแนน</label>
-              
-              {item.type === 'lesson' && !item.parent_id ? (
-                // Lesson ไม่มี Quiz = 0 คะแนน (แสดงผลอ่าน)
-                <div className="input-group input-group-sm">
-                  <input
-                    type="number"
-                    className="form-control"
-                    value={0}
-                    disabled
-                    style={{
-                      backgroundColor: '#f8f9fa',
-                      color: '#6c757d',
-                      fontSize: '0.875rem',
-                    }}
-                  />
-                  <span className="input-group-text">คะแนน</span>
-                  <span className="input-group-text">
-                    <i className="fas fa-video text-muted" title="วิดีโอ - ไม่มีคะแนน"></i>
-                  </span>
-                </div>
-              ) : item.type === 'big_lesson' ? (
-                // Big Lesson = ผลรวมของ Quiz ภายใน (แสดงผลอ่าน)
-                <div className="input-group input-group-sm">
-                  <input
-                    type="number"
-                    className="form-control"
-                    value={item.actual_score || 0}
-                    disabled
-                    style={{
-                      backgroundColor: '#e7f3ff',
-                      color: '#0066cc',
-                      fontSize: '0.875rem',
-                      fontWeight: 'bold'
-                    }}
-                  />
-                  <span className="input-group-text">คะแนน</span>
-                  <span className="input-group-text">
-                    <i className="fas fa-calculator text-info" title="รวมจาก Quiz ภายใน"></i>
-                  </span>
-                </div>
-              ) : (
-                // Quiz = กรอกคะแนนได้
-                <div className="input-group input-group-sm">
-                  <input
-                    type="number"
-                    className="form-control"
-                    value={item.actual_score || 0}
-                    onChange={(e) => handleScoreChange(item.id, Number(e.target.value))}
-                    min="0"
-                    step="1"
-                    style={{
-                      backgroundColor: '#fff',
-                      color: '#333',
-                      fontSize: '0.875rem',
-                      fontWeight: '500'
-                    }}
-                  />
-                  <span className="input-group-text">คะแนน</span>
-                </div>
-              )}
-              
-              {item.type === 'quiz' && item.actual_score > 0 && (
-                <small className="text-success d-block mt-1">
-                  <i className="fas fa-percent me-1"></i>
-                  = {((item.actual_score / totalScore) * 100).toFixed(1)}% ของวิชา
-                </small>
-              )}
-              
-              {/* Quiz Details Breakdown */}
-              {item.type === 'quiz' && item.quiz_details && (
-                <div className="mt-2 p-2 bg-light rounded quiz-details-box">
-                  <div className="row">
-                    <div className="col-md-6">
-                      <small className="text-muted d-block">
-                        <i className="fas fa-question-circle me-1 text-info"></i>
-                        <strong>จำนวนข้อ:</strong> {item.quiz_details.total_questions} ข้อ
-                      </small>
-                      <small className="text-muted d-block">
-                        <i className="fas fa-trophy me-1 text-warning"></i>
-                        <strong>คะแนนเต็ม:</strong> {item.quiz_details.max_score} คะแนน
-                      </small>
-                    </div>
-                    <div className="col-md-6">
-                      {item.actual_score > 0 && (() => {
-                        const required = calculateRequiredAnswers(item.actual_score, item.quiz_details);
-                        return (
-                          <small className="text-success d-block">
-                            <i className="fas fa-bullseye me-1"></i>
-                            <strong>{required.breakdown}</strong>
-                          </small>
-                        );
-                      })()}
-                    </div>
-                  </div>
-                  
-                  {/* Questions breakdown */}
-                  {item.quiz_details.questions_breakdown.length > 0 && (
-                    <div className="mt-2">
-                      <small className="text-muted d-block mb-1">
-                        <i className="fas fa-list me-1"></i>
-                        <strong>รายละเอียดคำถาม:</strong>
-                      </small>
-                      <div className="questions-breakdown">
-                        {item.quiz_details.questions_breakdown.map((q, index) => (
-                          <span key={q.question_id} className="badge bg-secondary me-1 mb-1">
-                            ข้อ {index + 1}: {q.score} คะแนน
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-              
-              {/* Loading state for quiz details */}
-              {item.type === 'quiz' && !item.quiz_details && isExpanded && (
-                <div className="mt-2 p-2 bg-light rounded text-center">
-                  <small className="text-muted">
-                    <i className="fas fa-spinner fa-spin me-1"></i>
-                    กำลังโหลดรายละเอียด Quiz...
-                  </small>
-                </div>
-              )}
-            </div>
-            
-            {/* Lock Toggle Column */}
-            <div className="col-md-3">
-              <label className="form-label small text-muted">ล็อค</label>
-              <div className="form-check form-switch">
-                <input
-                  className="form-check-input"
-                  type="checkbox"
-                  checked={item.is_fixed_weight}
-                  onChange={() => handleFixedWeightToggle(item.id)}
-                  disabled={isParentBigLessonLocked(item, scoreItems) && item.type !== 'big_lesson'}
-                />
-                <label className="form-check-label">
-                  {item.is_fixed_weight ? 'ล็อค' : 'อัตโนมัติ'}
-                </label>
-              </div>
-              {item.type === 'big_lesson' && (
-                <small className="d-block text-info">
-                  <i className="fas fa-info-circle me-1"></i>
-                  รวมคะแนนจาก Quiz ภายใน
-                </small>
-              )}
-              {isParentBigLessonLocked(item, scoreItems) && item.type !== 'big_lesson' && (
-                <small className="d-block text-warning">
-                  <i className="fas fa-lock me-1"></i>
-                  ถูกล็อคโดยบทเรียนหลัก
-                </small>
-              )}
-            </div>
-          </div>
-        </div>
+        <input
+          ref={inputRef}
+          type="text"
+          className="score-table-percentage-input"
+          value={inputValue}
+          onChange={handleInputChange}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+          onKeyPress={handleKeyPress}
+          disabled={disabled}
+          placeholder={placeholder}
+          onClick={(e) => e.stopPropagation()}
+        />
+        <span 
+          className="score-table-percentage-suffix"
+          onClick={(e) => e.stopPropagation()}
+        >
+          %
+        </span>
       </div>
     );
   };
 
+  // คำนวณเปอร์เซ็นต์แบบ hierarchical
+  const calculateBigLessonProgress = (bigLesson: BigLesson) => {
+    const usedPercentage = (bigLesson.quiz?.percentage || 0) + 
+      bigLesson.lessons.reduce((sum, lesson) => 
+        sum + lesson.percentage + (lesson.quiz?.percentage || 0), 0
+      );
+    
+    const remainingPercentage = bigLesson.weight_percentage - usedPercentage;
+    
+    let status: 'complete' | 'incomplete' | 'exceeded' = 'incomplete';
+    if (usedPercentage === bigLesson.weight_percentage) {
+      status = 'complete';
+    } else if (usedPercentage > bigLesson.weight_percentage) {
+      status = 'exceeded';
+    }
 
+    return {
+      usedPercentage,
+      remainingPercentage,
+      status,
+      progressText: `ใช้ไป ${usedPercentage}% / เหลือ ${remainingPercentage}%`
+    };
+  };
 
-  // Fetch score items for the subject
-  useEffect(() => {
-    fetchScoreItems();
-  }, [subject.subject_id]);
+  const calculateTotalValidation = () => {
+    if (!scoreStructure) return { totalUsed: 0, isValid: false, errors: [] };
 
-  // Calculate scores when items or passing percentage change
-  useEffect(() => {
-    calculateScores();
-  }, [scoreItems, passingPercentage]);
+    const totalUsed = scoreStructure.big_lessons.reduce((sum, bl) => sum + bl.weight_percentage, 0) +
+      (scoreStructure.post_test?.percentage || 0);
 
-  const fetchScoreItems = async () => {
+    return {
+      totalUsed,
+      isValid: totalUsed === 100,
+      errors: totalUsed > 100 ? [`เกิน 100% (${totalUsed}%)`] : 
+              totalUsed < 100 ? [`ไม่ครบ 100% (${totalUsed}%)`] : []
+    };
+  };
+
+  // Toggle functions - ทำให้ collapse ใช้งานง่ายขึ้น
+  const toggleBigLesson = (bigLessonId: number) => {
+    setExpandedBigLessons(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(bigLessonId)) {
+        newSet.delete(bigLessonId);
+      } else {
+        newSet.add(bigLessonId);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleLesson = (lessonId: number) => {
+    setExpandedLessons(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(lessonId)) {
+        newSet.delete(lessonId);
+      } else {
+        newSet.add(lessonId);
+      }
+      return newSet;
+    });
+  };
+
+  // Handler functions
+  const handleBigLessonUpdate = (bigLessonId: number, newValue: number) => {
+    if (!scoreStructure) return;
+    
+    setScoreStructure(prev => {
+      if (!prev) return prev;
+      
+      const updatedBigLessons = prev.big_lessons.map(bl => 
+        bl.id === bigLessonId ? { ...bl, weight_percentage: newValue } : bl
+      );
+      
+      return { ...prev, big_lessons: updatedBigLessons };
+    });
+  };
+
+  const handleQuizUpdate = (parentId: number, type: 'big_lesson' | 'lesson', newValue: number) => {
+    if (!scoreStructure) return;
+    
+    setScoreStructure(prev => {
+      if (!prev) return prev;
+      
+      if (type === 'big_lesson') {
+        const updatedBigLessons = prev.big_lessons.map(bl => 
+          bl.id === parentId && bl.quiz ? 
+            { ...bl, quiz: { ...bl.quiz, percentage: newValue } } : bl
+        );
+        return { ...prev, big_lessons: updatedBigLessons };
+      } else {
+        const updatedBigLessons = prev.big_lessons.map(bl => ({
+          ...bl,
+          lessons: bl.lessons.map(lesson => 
+            lesson.id === parentId && lesson.quiz ?
+              { ...lesson, quiz: { ...lesson.quiz, percentage: newValue } } : lesson
+          )
+        }));
+        return { ...prev, big_lessons: updatedBigLessons };
+      }
+    });
+  };
+
+  const handleLessonUpdate = (lessonId: number, newValue: number) => {
+    if (!scoreStructure) return;
+    
+    setScoreStructure(prev => {
+      if (!prev) return prev;
+      
+      const updatedBigLessons = prev.big_lessons.map(bl => ({
+        ...bl,
+        lessons: bl.lessons.map(lesson => 
+          lesson.id === lessonId ? { ...lesson, percentage: newValue } : lesson
+        )
+      }));
+      
+      return { ...prev, big_lessons: updatedBigLessons };
+    });
+  };
+
+  const handlePostTestUpdate = (newValue: number) => {
+    if (!scoreStructure || !scoreStructure.post_test) return;
+    
+    setScoreStructure(prev => {
+      if (!prev || !prev.post_test) return prev;
+      
+      return {
+        ...prev,
+        post_test: { ...prev.post_test, percentage: newValue }
+      };
+    });
+  };
+
+  // API functions
+  const fetchScoreStructure = async () => {
     setIsLoading(true);
     setError(null);
 
@@ -520,8 +335,7 @@ const ScoreManagementTab: React.FC<ScoreManagementTabProps> = ({ subject }) => {
       );
 
       if (response.data.success) {
-        setScoreItems(response.data.scoreItems || []);
-        // อัปเดตเกณฑ์ผ่านจาก API response
+        setScoreStructure(response.data.scoreStructure || null);
         if (response.data.subject?.passing_percentage !== undefined) {
           setPassingPercentage(response.data.subject.passing_percentage);
         }
@@ -529,103 +343,25 @@ const ScoreManagementTab: React.FC<ScoreManagementTabProps> = ({ subject }) => {
         setError(response.data.message || "ไม่สามารถโหลดข้อมูลคะแนนได้");
       }
     } catch (err: any) {
-      console.error("Error fetching score items:", err);
+      console.error("Error fetching score structure:", err);
       setError(err.response?.data?.message || "เกิดข้อผิดพลาดในการโหลดข้อมูลคะแนน");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleScoreChange = (itemId: number, newScore: number) => {
-    if (newScore < 0) {
-      toast.error("คะแนนต้องไม่น้อยกว่า 0");
+  const handleSaveHierarchicalScores = async () => {
+    if (!scoreStructure) {
+      toast.error("ไม่พบข้อมูลโครงสร้างคะแนนที่จะบันทึก");
       return;
     }
 
-    // อัปเดตค่าทันที
-    setScoreItems(prev => 
-      prev.map(item =>
-        item.id === itemId
-          ? { ...item, actual_score: newScore }
-          : item
-      )
-    );
-
-    console.log('📝 Score Updated:', { itemId, newScore });
-  };
-
-  // ลบ Smart Weight Distribution - ไม่ต้องใช้ในระบบคะแนนจริง
-
-  // ลบฟังก์ชันทั้งหมดที่เกี่ยวข้องกับ Weight Distribution
-
-  const handleFixedWeightToggle = (itemId: number) => {
-    setScoreItems(prev => {
-      const item = prev.find(i => i.id === itemId);
-      if (!item) return prev;
-      
-      const newFixedState = !item.is_fixed_weight;
-      
-      // หาก item นี้เป็น Big Lesson และกำลังจะล็อค
-      if (item.type === 'big_lesson' && newFixedState) {
-        // ล็อค Big Lesson + ล็อคส่วนประกอบภายในทั้งหมด
-        return prev.map(i => {
-          if (i.id === itemId) {
-            return { ...i, is_fixed_weight: newFixedState };
-          }
-          // ล็อคส่วนประกอบภายใน Big Lesson นี้
-          if (i.parent_id === itemId) {
-            return { ...i, is_fixed_weight: true };
-          }
-          return i;
-        });
-      }
-      
-      // หาก item นี้เป็น Big Lesson และกำลังจะปลดล็อค
-      if (item.type === 'big_lesson' && !newFixedState) {
-        // ปลดล็อค Big Lesson + ปลดล็อคส่วนประกอบภายในทั้งหมด
-        return prev.map(i => {
-          if (i.id === itemId) {
-            return { ...i, is_fixed_weight: newFixedState };
-          }
-          // ปลดล็อคส่วนประกอบภายใน Big Lesson นี้
-          if (i.parent_id === itemId) {
-            return { ...i, is_fixed_weight: false };
-          }
-          return i;
-        });
-      }
-      
-      // สำหรับ item อื่นๆ
-      return prev.map(i =>
-        i.id === itemId
-          ? { ...i, is_fixed_weight: newFixedState }
-          : i
-      );
-    });
-  };
-
-  const handleAutoDistribute = () => {
-    const confirmReset = window.confirm(
-      "การรีเซ็ตจะล้างคะแนนทั้งหมด (ยกเว้น Quiz ที่ล็อค)\nคุณต้องการดำเนินการต่อหรือไม่?"
-    );
-
-    if (!confirmReset) {
+    const validation = calculateTotalValidation();
+    if (!validation.isValid) {
+      toast.error(`ไม่สามารถบันทึกได้: ${validation.errors.join(', ')}`);
       return;
     }
-
-    setScoreItems(prev => 
-      prev.map(item => ({
-        ...item,
-        actual_score: item.is_fixed_weight ? item.actual_score : 0
-      }))
-    );
-
-    toast.success("รีเซ็ตคะแนนสำเร็จ - กรุณาตั้งคะแนนใหม่");
-  };
-
-  // ลบ performFrontendAutoDistribution - ไม่ใช้ในระบบคะแนนจริง
-
-  const handleSaveWeights = async () => {
+    
     try {
       const token = localStorage.getItem("token");
       if (!token) {
@@ -633,43 +369,121 @@ const ScoreManagementTab: React.FC<ScoreManagementTabProps> = ({ subject }) => {
         return;
       }
 
-      // แปลงคะแนนจริงกลับเป็น % สำหรับ Backend API
-      const updates = scoreItems.filter(item => item.type === 'quiz').map(item => {
-        const percentage = totalScore > 0 ? (item.actual_score / totalScore) * 100 : 0;
-        return {
-          itemId: item.id,
-          itemType: item.type,
-          weight: percentage,
-          isFixed: item.is_fixed_weight
-        };
-      });
+      setIsSaving(true);
 
-      console.log('💾 Saving score updates:', { updates, totalScore });
-      console.log('🎯 API URL:', `${apiURL}/api/subjects/${subject.subject_id}/scores`);
-      console.log('📤 Request payload:', { updates });
+      const payload = {
+        updates: {
+          big_lessons: scoreStructure.big_lessons.map(bl => ({
+            id: bl.id,
+            weight_percentage: bl.weight_percentage,
+            is_fixed_weight: bl.is_fixed_weight,
+            quiz: bl.quiz ? {
+              id: bl.quiz.id,
+              percentage: bl.quiz.percentage,
+              is_fixed_weight: bl.quiz.is_fixed_weight
+            } : null,
+            lessons: bl.lessons.map(lesson => ({
+              id: lesson.id,
+              percentage: lesson.percentage,
+              is_fixed_weight: lesson.is_fixed_weight,
+              quiz: lesson.quiz ? {
+                id: lesson.quiz.id,
+                percentage: lesson.quiz.percentage,
+                is_fixed_weight: lesson.quiz.is_fixed_weight
+              } : null
+            }))
+          })),
+          post_test: scoreStructure.post_test ? {
+            id: scoreStructure.post_test.id,
+            percentage: scoreStructure.post_test.percentage,
+            is_fixed_weight: scoreStructure.post_test.is_fixed_weight
+          } : null
+        }
+      };
+
+      console.log("บันทึกข้อมูลคะแนน:", payload);
+      console.log("🎯 Sending request to:", `${apiURL}/api/subjects/${subject.subject_id}/scores-hierarchical`);
+      console.log("📝 Payload:", JSON.stringify(payload, null, 2));
 
       const response = await axios.put(
-        `${apiURL}/api/subjects/${subject.subject_id}/scores`,
-        { updates },
+        `${apiURL}/api/subjects/${subject.subject_id}/scores-hierarchical`,
+        payload,
         {
           headers: { Authorization: `Bearer ${token}` }
         }
       );
 
-      console.log('📥 Backend response:', response.data);
+      console.log("✅ Response received:", response.data);
 
       if (response.data.success) {
-        toast.success("บันทึกน้ำหนักคะแนนสำเร็จ");
-        console.log('✅ Save successful, reloading data...');
-        // Reload ข้อมูลใหม่หลังบันทึกสำเร็จ
-        await fetchScoreItems();
+        toast.success("บันทึกข้อมูลคะแนนสำเร็จ");
+        await fetchScoreStructure();
       } else {
-        console.error('❌ Save failed:', response.data);
-        toast.error(response.data.message || "ไม่สามารถบันทึกน้ำหนักคะแนนได้");
+        console.error("❌ Backend error:", response.data);
+        toast.error(response.data.message || "ไม่สามารถบันทึกข้อมูลคะแนนได้");
       }
     } catch (err: any) {
-      console.error("Error saving weights:", err);
-      toast.error(err.response?.data?.message || "เกิดข้อผิดพลาดในการบันทึกน้ำหนักคะแนน");
+      console.error('❌ Error saving hierarchical scores:', err);
+      console.error('❌ Error response:', err.response?.data);
+      console.error('❌ Error status:', err.response?.status);
+      console.error('❌ Error message:', err.message);
+      
+      if (err.response?.status === 400) {
+        toast.error(`ข้อมูลไม่ถูกต้อง: ${err.response.data?.message || 'กรุณาตรวจสอบข้อมูลที่กรอก'}`);
+      } else if (err.response?.status === 403) {
+        toast.error('ไม่มีสิทธิ์แก้ไขข้อมูลคะแนนของวิชานี้');
+      } else if (err.response?.status === 404) {
+        toast.error('ไม่พบวิชาที่ระบุ');
+      } else {
+        toast.error(err.response?.data?.message || "เกิดข้อผิดพลาดในการบันทึกข้อมูลคะแนน");
+      }
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleAutoDistribute = async () => {
+    if (!scoreStructure) {
+      toast.error("ไม่พบข้อมูลโครงสร้างคะแนน");
+      return;
+    }
+
+    const confirmReset = window.confirm(
+      "การแบ่งน้ำหนักอัตโนมัติจะปรับเปอร์เซ็นต์ให้เท่ากันทุกหน่วย\nคุณต้องการดำเนินการต่อหรือไม่?"
+    );
+
+    if (!confirmReset) return;
+
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        toast.error("กรุณาเข้าสู่ระบบก่อนใช้งาน");
+        return;
+      }
+
+      console.log("เริ่มแบ่งน้ำหนักอัตโนมัติสำหรับวิชา:", subject.subject_name);
+      toast.info("กำลังแบ่งน้ำหนักอัตโนมัติ...");
+
+      const response = await axios.post(
+        `${apiURL}/api/subjects/${subject.subject_id}/auto-distribute`,
+        { 
+          resetBeforeDistribute: true,
+          subject_id: subject.subject_id
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      console.log("ผลลัพธ์ auto-distribute:", response.data);
+
+      if (response.data.success) {
+        toast.success("แบ่งน้ำหนักอัตโนมัติสำเร็จ - กระจายเปอร์เซ็นต์เท่าๆ กันให้ทุกหน่วย");
+        await fetchScoreStructure();
+      } else {
+        toast.error(response.data.message || "ไม่สามารถแบ่งน้ำหนักอัตโนมัติได้");
+      }
+    } catch (error: any) {
+      console.error('Error auto-distributing:', error);
+      toast.error(error.response?.data?.message || "เกิดข้อผิดพลาดในการแบ่งน้ำหนักอัตโนมัติ");
     }
   };
 
@@ -686,9 +500,14 @@ const ScoreManagementTab: React.FC<ScoreManagementTabProps> = ({ subject }) => {
         return;
       }
 
+      console.log("อัปเดตเกณฑ์ผ่าน:", newPercentage, "% สำหรับวิชา:", subject.subject_name);
+
       const response = await axios.put(
         `${apiURL}/api/subjects/${subject.subject_id}/passing-criteria`,
-        { passing_percentage: newPercentage },
+        { 
+          passing_percentage: newPercentage,
+          auto_distribute_score: subject.auto_distribute_score || false 
+        },
         {
           headers: { Authorization: `Bearer ${token}` }
         }
@@ -696,9 +515,8 @@ const ScoreManagementTab: React.FC<ScoreManagementTabProps> = ({ subject }) => {
 
       if (response.data.success) {
         setPassingPercentage(newPercentage);
-        toast.success("อัปเดตเกณฑ์ผ่านสำเร็จ");
-        // Reload ข้อมูลเพื่อยืนยัน
-        await fetchScoreItems();
+        toast.success(`อัปเดตเกณฑ์ผ่านเป็น ${newPercentage}% สำเร็จ - จะใช้กับแบบทดสอบทั้งหมดในวิชานี้`);
+        await fetchScoreStructure();
       } else {
         toast.error(response.data.message || "ไม่สามารถอัปเดตเกณฑ์ผ่านได้");
       }
@@ -708,195 +526,425 @@ const ScoreManagementTab: React.FC<ScoreManagementTabProps> = ({ subject }) => {
     }
   };
 
+  // useEffect hooks
+  useEffect(() => {
+    fetchScoreStructure();
+  }, [subject.subject_id]);
+
+  useEffect(() => {
+    if (scoreStructure) {
+      const validation = calculateTotalValidation();
+      setScoreStructure(prev => prev ? {
+        ...prev,
+        total_used: validation.totalUsed,
+        total_remaining: 100 - validation.totalUsed,
+        is_valid: validation.isValid,
+        errors: validation.errors
+      } : null);
+    }
+  }, [scoreStructure?.big_lessons, scoreStructure?.post_test]);
+
+  // Loading state
   if (isLoading) {
     return (
-      <div className="score-management-loading">
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">กำลังโหลด...</span>
+      <div className="score-table">
+        <div className="score-table-loading">
+          <div className="score-table-loading-spinner"></div>
+          <p>กำลังโหลดข้อมูล...</p>
         </div>
-        <p>กำลังโหลดข้อมูลการจัดการคะแนน...</p>
       </div>
     );
   }
 
+  // Error state
   if (error) {
     return (
-      <div className="score-management-error">
-        <div className="alert alert-danger">
-          <i className="fas fa-exclamation-triangle me-2"></i>
-          {error}
-        </div>
-        <button className="btn btn-primary" onClick={fetchScoreItems}>
-          <i className="fas fa-refresh me-2"></i>
+      <div className="score-table">
+        <div className="score-table-error">
+          <div className="score-table-error-icon">⚠️</div>
+          <h3>เกิดข้อผิดพลาด</h3>
+          <p>{error}</p>
+          <button 
+            className="score-table-error-btn"
+            onClick={() => fetchScoreStructure()}
+          >
           ลองใหม่
         </button>
+        </div>
       </div>
     );
   }
 
+  const validation = calculateTotalValidation();
+
   return (
-    <div className="score-management-tab">
-      <div className="score-management-header">
-        <h3>
-          <i className="fas fa-percentage me-2"></i>
-          จัดการคะแนนรายวิชา
-        </h3>
-        <p>จัดการน้ำหนักคะแนนและเกณฑ์ผ่านสำหรับ {subject.subject_name}</p>
+    <div className="score-table">
+      {/* Header */}
+      <div className="score-table-header">
+        <div className="score-table-header-icon">
+          📊
+        </div>
+        <div className="score-table-header-content">
+          <h1>จัดการคะแนนรายวิชา</h1>
+          <p>จัดการน้ำหนักคะแนนและเกณฑ์ผ่านสำหรับ <strong>{subject.subject_name}</strong></p>
+        </div>
       </div>
 
       {/* Passing Criteria Section */}
-      <div className="card mb-4">
-        <div className="card-header">
-          <h5 className="mb-0">
-            <i className="fas fa-bullseye me-2"></i>
-            เกณฑ์ผ่าน
-          </h5>
-        </div>
-        <div className="card-body">
-          <div className="row align-items-center">
-            <div className="col-md-6">
-              <label htmlFor="passingPercentage" className="form-label">
-                เปอร์เซ็นต์ขั้นต่ำที่นักเรียนต้องได้เพื่อผ่าน
-              </label>
-              <div className="input-group">
+      <div className="score-table-criteria-section">
+        <h2>🎯 เกณฑ์การผ่าน</h2>
+        <div className="score-table-criteria-form">
+          <label>เปอร์เซ็นต์ขั้นต่ำที่นักเรียนต้องได้เพื่อผ่าน</label>
+          <div className="score-table-criteria-input-group">
                 <input
                   type="number"
-                  id="passingPercentage"
-                  className="form-control"
+              className="score-table-criteria-input"
                   value={passingPercentage}
                   onChange={(e) => setPassingPercentage(Number(e.target.value))}
                   min="0"
                   max="100"
                   step="0.01"
                 />
-                <span className="input-group-text">%</span>
+            <span>%</span>
               </div>
-            </div>
-            <div className="col-md-6 text-md-end">
               <button
-                className="btn btn-primary"
+            className="score-table-criteria-btn"
                 onClick={() => handlePassingPercentageChange(passingPercentage)}
               >
-                <i className="fas fa-save me-2"></i>
-                บันทึกเกณฑ์ผ่าน
+            💾 บันทึกเกณฑ์ผ่าน
               </button>
-            </div>
-          </div>
         </div>
       </div>
 
-      {/* Score Items Management */}
-      <div className="card">
-        <div className="card-header">
-          <div className="d-flex justify-content-between align-items-center mb-3">
-            <h5 className="mb-0">
-              <i className="fas fa-weight-hanging me-2"></i>
-              จัดการน้ำหนักคะแนน
-            </h5>
-            <div className="d-flex gap-2">
+      {/* Score Management Section */}
+      <div className="score-table-management-section">
+        <div className="score-table-management-header">
+          <h2>⚖️ จัดการน้ำหนักคะแนน</h2>
+          <div className="score-table-management-actions">
               <button
-                className="btn btn-outline-primary btn-sm"
+              className="score-table-action-btn"
                 onClick={handleAutoDistribute}
-                disabled={scoreItems.length === 0}
+              disabled={!scoreStructure}
               >
-                <i className="fas fa-undo me-2"></i>
-                รีเซ็ตคะแนน
+              ✨ แบ่งอัตโนมัติ
               </button>
               <button
-                className="btn btn-success btn-sm"
-                onClick={handleSaveWeights}
-                disabled={totalScore === 0}
-              >
-                <i className="fas fa-save me-2"></i>
-                บันทึกน้ำหนัก
+              className="score-table-action-btn score-table-action-btn-primary"
+              onClick={handleSaveHierarchicalScores}
+              disabled={!scoreStructure || isSaving}
+            >
+              {isSaving ? '🔄 กำลังบันทึก...' : '💾 บันทึกน้ำหนัก'}
+            </button>
+            <button
+              className="score-table-action-btn"
+              onClick={() => {
+                if (scoreStructure) {
+                  const allBigLessonIds = new Set(scoreStructure.big_lessons.map(bl => bl.id));
+                  setExpandedBigLessons(allBigLessonIds);
+                  const allLessonIds = new Set(
+                    scoreStructure.big_lessons.flatMap(bl => bl.lessons.map(l => l.id))
+                  );
+                  setExpandedLessons(allLessonIds);
+                }
+              }}
+            >
+              📖 ขยายทั้งหมด
+            </button>
+            <button
+              className="score-table-action-btn"
+              onClick={() => {
+                setExpandedBigLessons(new Set());
+                setExpandedLessons(new Set());
+              }}
+            >
+              📕 ยุบทั้งหมด
               </button>
             </div>
           </div>
           
-          {/* Enhanced Score Summary */}
-          <div className="score-summary-modern mb-4">
-            <div className="row g-3">
-              {/* Total Score Card */}
-              <div className="col-lg-4">
-                <div className="score-card total-score">
-                  <div className="score-icon">
-                    <i className="fas fa-calculator"></i>
+        {/* Summary */}
+        <div className="score-table-summary">
+          <div className="score-table-summary-content">
+            <div className="score-table-summary-text">
+              📈 สรุปน้ำหนักคะแนนรวม: {validation.totalUsed}%
                   </div>
-                  <div className="score-content">
-                    <div className="score-label">คะแนนรวม</div>
-                    <div className="score-value">{totalScore}</div>
-                    <div className="score-unit">คะแนน</div>
-                    <div className="score-subtitle">= 100% ของวิชานี้</div>
+            <div className={`score-table-summary-badge ${validation.isValid ? 'score-table-summary-badge-valid' : 'score-table-summary-badge-invalid'}`}>
+              {validation.isValid ? '✅ ถูกต้อง' : '❌ ผิดพลาด'}
+                  </div>
+                </div>
+          <div className="score-table-summary-progress">
+            <div 
+              className={`score-table-summary-progress-bar ${validation.isValid ? 'score-table-summary-progress-bar-valid' : 'score-table-summary-progress-bar-invalid'}`}
+              style={{ width: `${Math.min(validation.totalUsed, 100)}%` }}
+            ></div>
+          </div>
+          {!validation.isValid && (
+            <div className="score-table-summary-error">
+              ⚠️ {validation.errors.join(', ')}
+            </div>
+          )}
+              </div>
+              
+        {/* Score Items */}
+        <div className="score-table-score-items">
+          {/* Pre-test */}
+          {scoreStructure?.pre_test && (
+            <div className="score-table-score-item score-table-score-item-pretest">
+              <div className="score-table-score-item-header">
+                <div className="score-table-score-item-icon">🔍</div>
+                <div className="score-table-score-item-info">
+                  <h3 className="score-table-score-item-title">{scoreStructure.pre_test.title}</h3>
+                  <p className="score-table-score-item-subtitle">แบบทดสอบก่อนเรียน</p>
+                  </div>
+                <div className="score-table-score-item-badge">ไม่นับคะแนน</div>
+              </div>
+            </div>
+          )}
+
+          {/* Big Lessons */}
+          {scoreStructure?.big_lessons.map((bigLesson, index) => {
+            const progress = calculateBigLessonProgress(bigLesson);
+            const isExpanded = expandedBigLessons.has(bigLesson.id);
+            const hasContent = bigLesson.quiz || bigLesson.lessons.length > 0;
+
+            return (
+              <div key={bigLesson.id} className="score-table-score-item score-table-score-item-big-lesson">
+                <div 
+                  className="score-table-score-item-header score-table-score-item-header-clickable"
+                  onClick={(e) => {
+                    // ไม่ให้คลิกที่ header ถ้าคลิกที่ input หรือ controls
+                    const target = e.target as HTMLElement;
+                    if (!target.closest('.score-table-percentage-control') && !target.closest('.score-table-percentage-input-wrapper')) {
+                      hasContent && toggleBigLesson(bigLesson.id);
+                    }
+                  }}
+                >
+                  <div 
+                    className="score-table-score-item-icon"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    📚
+                  </div>
+                  <div 
+                    className="score-table-score-item-info"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <h3 className="score-table-score-item-title">หน่วยที่ {index + 1}: {bigLesson.title}</h3>
+                    <p className="score-table-score-item-subtitle">{progress.progressText}</p>
+                  </div>
+                  <div 
+                    className="score-table-score-item-controls"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {hasContent && (
+                      <div 
+                        className="score-table-collapse-indicator"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleBigLesson(bigLesson.id);
+                        }}
+                      >
+                        {isExpanded ? '▼' : '▶'}
+                      </div>
+                    )}
+                    <div 
+                      className="score-table-percentage-control"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div 
+                        className="score-table-percentage-label"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        น้ำหนักหน่วย
+                      </div>
+                      <PercentageInput 
+                        value={bigLesson.weight_percentage}
+                        onChange={(newValue) => handleBigLessonUpdate(bigLesson.id, newValue)}
+                      />
+                    </div>
+                    <div 
+                      className={`score-table-status-indicator score-table-status-indicator-${progress.status}`}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {progress.status === 'complete' ? '✅ สมบูรณ์' : 
+                       progress.status === 'exceeded' ? '❌ เกิน' : '⏳ ไม่ครบ'}
                   </div>
                 </div>
               </div>
               
-              {/* Passing Criteria Card */}
-              <div className="col-lg-4">
-                <div className="score-card passing-criteria">
-                  <div className="score-icon">
-                    <i className="fas fa-bullseye"></i>
+                {/* Sub Items */}
+                {hasContent && isExpanded && (
+                  <div className="score-table-score-sub-items">
+                    {/* BigLesson Quiz */}
+                    {bigLesson.quiz && (
+                      <div className="score-table-score-sub-item score-table-score-sub-item-quiz">
+                        <div className="score-table-score-sub-item-header">
+                          <div 
+                            className="score-table-score-sub-item-icon"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            📝
                   </div>
-                  <div className="score-content">
-                    <div className="score-label">เกณฑ์ผ่าน</div>
-                    <div className="score-value">{passingPercentage}%</div>
-                    <div className="score-unit">= {requiredScore} คะแนน</div>
-                    <div className="score-subtitle">คะแนนขั้นต่ำเพื่อผ่าน</div>
+                          <div 
+                            className="score-table-score-item-info"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <h4 className="score-table-score-item-title">แบบทดสอบหน่วย: {bigLesson.title}</h4>
+                            <p className="score-table-score-item-subtitle">Quiz ประจำหน่วยการเรียนรู้</p>
                   </div>
+                          <div 
+                            className="score-table-percentage-control"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <div 
+                              className="score-table-percentage-label"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              น้ำหนักแบบทดสอบ
                 </div>
-              </div>
-              
-              {/* Status Card */}
-              <div className="col-lg-4">
-                <div className="score-card status-ready">
-                  <div className="score-icon">
-                    <i className={`fas ${totalScore > 0 ? 'fa-check-circle' : 'fa-exclamation-triangle'}`}></i>
-                  </div>
-                  <div className="score-content">
-                    <div className="score-label">สถานะระบบ</div>
-                    <div className="score-value">{totalScore > 0 ? 'พร้อมใช้' : 'ยังไม่พร้อม'}</div>
-                    <div className="score-unit">{totalScore > 0 ? '✅ ใช้งานได้' : '⚠️ ตั้งคะแนน'}</div>
-                    <div className="score-subtitle">{totalScore > 0 ? 'ระบบคำนวณคะแนนปกติ' : 'ต้องกำหนดคะแนนก่อน'}</div>
-                  </div>
-                </div>
+                            <PercentageInput 
+                              value={bigLesson.quiz.percentage}
+                              onChange={(newValue) => handleQuizUpdate(bigLesson.id, 'big_lesson', newValue)}
+                            />
               </div>
             </div>
           </div>
+                    )}
+
+                    {/* Lessons */}
+                    {bigLesson.lessons.map((lesson, lessonIndex) => {
+                      const isLessonExpanded = expandedLessons.has(lesson.id);
+                      const hasQuiz = !!lesson.quiz;
+
+                      return (
+                        <div key={lesson.id}>
+                          <div className="score-table-score-sub-item score-table-score-sub-item-lesson">
+                            <div 
+                              className="score-table-score-sub-item-header score-table-score-sub-item-header-clickable"
+                              onClick={(e) => {
+                                // ไม่ให้คลิกที่ header ถ้าคลิกที่ input หรือ controls
+                                const target = e.target as HTMLElement;
+                                if (!target.closest('.score-table-percentage-control') && !target.closest('.score-table-percentage-input-wrapper')) {
+                                  hasQuiz && toggleLesson(lesson.id);
+                                }
+                              }}
+                            >
+                              <div className="score-table-score-sub-item-icon">
+                                {lesson.has_video ? '🎥' : '📄'}
         </div>
-        <div className="card-body">
-          {/* Total Score Progress */}
-          <div className="mb-4">
-            <div className="d-flex justify-content-between align-items-center mb-2">
-              <span>คะแนนรวม:</span>
-              <span className={`fw-bold ${totalScore > 0 ? 'text-success' : 'text-warning'}`}>
-                {totalScore} คะแนน
-              </span>
+                              <div 
+                                className="score-table-score-item-info"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <h4 className="score-table-score-item-title">
+                                  บทเรียนที่ {lessonIndex + 1}: {lesson.title}
+                                </h4>
+                                <p className="score-table-score-item-subtitle">
+                                  {lesson.has_video ? 'บทเรียนวิดีโอ' : 'บทเรียนเอกสาร'}
+                                  {hasQuiz && ' + แบบทดสอบ'}
+                                </p>
             </div>
-            <div className="progress">
-              <div
-                className={`progress-bar ${totalScore > 0 ? 'bg-success' : 'bg-warning'}`}
-                role="progressbar"
-                style={{ width: totalScore > 0 ? '100%' : '0%' }}
-              ></div>
+                              <div 
+                                className="score-table-score-item-controls"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                {hasQuiz && (
+                                  <div 
+                                    className="score-table-collapse-indicator"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      toggleLesson(lesson.id);
+                                    }}
+                                  >
+                                    {isLessonExpanded ? '▼' : '▶'}
             </div>
-            {totalScore === 0 && (
-              <small className="text-warning">
-                <i className="fas fa-info-circle me-1"></i>
-                กรุณาตั้งคะแนนสำหรับ Quiz ต่างๆ
-              </small>
-            )}
+                                )}
+                                <div 
+                                  className="score-table-percentage-control"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <div 
+                                    className="score-table-percentage-label"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    น้ำหนักบทเรียน
+                                  </div>
+                                  <PercentageInput 
+                                    value={lesson.percentage}
+                                    onChange={(newValue) => handleLessonUpdate(lesson.id, newValue)}
+                                  />
+                                </div>
+                              </div>
+                            </div>
           </div>
 
-          {/* Score Items List */}
-          {scoreItems.length === 0 ? (
-            <div className="text-center py-5">
-              <i className="fas fa-inbox fa-3x text-muted mb-3"></i>
-              <p className="text-muted">ยังไม่มีรายการคะแนนในวิชานี้</p>
-              <p className="text-muted">กรุณาเพิ่มบทเรียนหรือแบบทดสอบก่อน</p>
+                          {/* Lesson Quiz */}
+                          {hasQuiz && isLessonExpanded && (
+                            <div className="score-table-score-sub-item score-table-score-sub-item-quiz score-table-score-sub-item-nested">
+                              <div className="score-table-score-sub-item-header">
+                                <div className="score-table-score-sub-item-icon">📋</div>
+                                <div 
+                                  className="score-table-score-item-info"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <h4 className="score-table-score-item-title">แบบทดสอบบทเรียน: {lesson.title}</h4>
+                                  <p className="score-table-score-item-subtitle">Quiz ประจำบทเรียน</p>
             </div>
-          ) : (
-            <div className="score-cards-container">
-              {renderScoreItemsCards()}
+                                <div 
+                                  className="score-table-percentage-control"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <div 
+                                    className="score-table-percentage-label"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    น้ำหนักแบบทดสอบ
+                                  </div>
+                                  <PercentageInput 
+                                    value={lesson.quiz?.percentage || 0}
+                                    onChange={(newValue) => handleQuizUpdate(lesson.id, 'lesson', newValue)}
+                                  />
+                                </div>
+                              </div>
+            </div>
+          )}
+        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+
+          {/* Post-test */}
+          {scoreStructure?.post_test && (
+            <div className="score-table-score-item score-table-score-item-posttest">
+              <div className="score-table-score-item-header">
+                <div className="score-table-score-item-icon">🏁</div>
+                <div 
+                  className="score-table-score-item-info"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <h3 className="score-table-score-item-title">{scoreStructure.post_test.title}</h3>
+                  <p className="score-table-score-item-subtitle">แบบทดสอบหลังเรียน</p>
+                </div>
+                <div 
+                  className="score-table-percentage-control"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div 
+                    className="score-table-percentage-label"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    น้ำหนักแบบทดสอบ
+                  </div>
+                  <PercentageInput 
+                    value={scoreStructure.post_test.percentage}
+                    onChange={(newValue) => handlePostTestUpdate(newValue)}
+                  />
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -905,5 +953,4 @@ const ScoreManagementTab: React.FC<ScoreManagementTabProps> = ({ subject }) => {
   );
 };
 
-export { ScoreManagementTab };
 export default ScoreManagementTab;

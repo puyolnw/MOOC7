@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ผู้สอน | สร้างหน่วยการเรียนรู้ & แบบฝึกหัด</title>
+  <style>
+    :root{
+      --bg: #0b1220;
+      --card: #121a2b;
+      --muted: #93a0b8;
+      --text: #eaf0ff;
+      --accent: #5b9dff;
+      --ok: #20c997;
+      --warn: #ffb020;
+      --err: #ff6b6b;
+      --ring: #2a3a5a;
+    }
+    *{ box-sizing: border-box; }
+    body{
+      margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", "Apple Color Emoji", "Segoe UI Emoji";
+      background: linear-gradient(180deg, #0b1220 0%, #0f1628 100%);
+      color: var(--text);
+    }
+    header{
+      position: sticky; top:0; z-index: 50;
+      backdrop-filter: blur(10px);
+      background: rgba(10,16,28,.7);
+      border-bottom: 1px solid #1c2740;
+    }
+    .container{ max-width: 1100px; margin: 0 auto; padding: 20px; }
+    .titlebar{ display:flex; gap:16px; align-items:center; justify-content: space-between; }
+    .titlebar h1{ font-size: clamp(20px, 3vw, 28px); margin:0; letter-spacing:.2px; }
+    .sub{ color: var(--muted); font-size: 14px; }
+
+    .grid{ display:grid; grid-template-columns: 1fr; gap: 16px; }
+    @media (min-width: 960px){ .grid{ grid-template-columns: 1fr 340px; } }
+
+    .card{ background: var(--card); border: 1px solid #1e2a45; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,.25); }
+    .card > .hd{ padding: 16px 18px; border-bottom: 1px solid #1e2a45; display:flex; align-items:center; justify-content: space-between; }
+    .card > .bd{ padding: 16px 18px; }
+
+    .row{ display:flex; gap:12px; flex-wrap: wrap; }
+    .row > *{ flex: 1 1 180px; }
+
+    label{ font-size: 13px; color: var(--muted); display:block; margin-bottom:6px; }
+    input[type="text"], input[type="number"], select{
+      width: 100%; padding: 10px 12px; border-radius: 10px; border:1px solid #223150; background:#0e1525; color:var(--text);
+      outline: none; transition: border .2s, box-shadow .2s;
+    }
+    input:focus{ border-color: var(--accent); box-shadow: 0 0 0 3px rgba(91,157,255,.2); }
+
+    .btn{ appearance:none; border:1px solid #26406d; background:#0e1a32; color:#cfe0ff; padding:10px 14px; border-radius: 12px; cursor:pointer; font-weight:600; }
+    .btn:hover{ background:#112041; }
+    .btn.primary{ background: linear-gradient(90deg, #3a7bff, #6aa8ff); color:#061028; border-color: transparent; }
+    .btn.primary:hover{ filter: brightness(1.05); }
+    .btn.ghost{ background: transparent; border-color:#2a3f6d; }
+    .btn.danger{ background:#2b1216; border-color:#6d2a36; color:#ffd7db; }
+
+    .tag{ font-size: 12px; padding:4px 8px; border-radius: 999px; background:#0e1b33; border:1px solid #25385f; color:#c8d8ff; }
+
+    .progress{ height: 10px; border-radius: 999px; background:#0f1a2f; border:1px solid #223150; overflow: hidden; }
+    .progress > i{ display:block; height:100%; width: 0%; background: linear-gradient(90deg, #5b9dff, #7cc9ff); transition: width .25s ease; }
+
+    .muted{ color:var(--muted); font-size: 13px; }
+    .stat{ display:flex; align-items:center; gap:8px; }
+    .stat b{ font-size: 18px; }
+    .ok{ color: var(--ok); }
+    .warn{ color: var(--warn); }
+    .err{ color: var(--err); }
+
+    .unit{ border:1px solid #25385f; border-radius: 14px; padding: 14px; background:#0f1a2f; margin-bottom:12px; }
+    .unit-hd{ display:flex; gap:10px; align-items:center; justify-content: space-between; margin-bottom:10px; }
+    .unit-actions{ display:flex; gap:8px; }
+    .exercise{ padding: 12px; border:1px dashed #2a3f6d; border-radius: 12px; background:#0e1527; margin: 8px 0; }
+    .exercise-hd{ display:flex; gap:10px; align-items:center; justify-content: space-between; margin-bottom: 8px; }
+
+    .right{ text-align: right; }
+    .sep{ height:1px; background:#1e2a45; margin: 12px 0; }
+
+    .note{ font-size: 12px; color: var(--muted); }
+    .pill{ padding: 6px 10px; border-radius: 999px; background:#0d172b; border:1px solid #223150; font-size:12px; color:#cfe0ff; }
+
+    .footer{ display:flex; justify-content: flex-end; gap:10px; margin-top:14px; }
+
+    .errorline{ font-size: 12px; padding:8px 10px; border-radius: 10px; background:#2a1416; border: 1px solid #6d2a36; color:#ffd7db; }
+    .successline{ font-size: 12px; padding:8px 10px; border-radius: 10px; background:#142a1f; border: 1px solid #2f6d4c; color:#d9ffe9; }
+
+    .small{ font-size: 12px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container titlebar">
+      <div>
+        <h1>หน้าผู้สอน — สร้างหน่วยการเรียนรู้ & แบบฝึกหัด</h1>
+        <div class="sub">กำหนดสัดส่วนคะแนนเป็น %, กำหนดเกณฑ์ผ่านขั้นต่ำ และติดตาม % ที่ใช้ไป/คงเหลือแบบเรียลไทม์</div>
+      </div>
+      <div class="row" style="max-width:420px;">
+        <button class="btn ghost" id="btnLoadDemo">โหลดตัวอย่างโครงสร้าง</button>
+        <button class="btn" id="btnReset">เริ่มใหม่</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container grid">
+    <!-- ซ้าย: ฟอร์มหลัก -->
+    <section class="card">
+      <div class="hd">
+        <div class="stat"><span class="tag">รายละเอียดรายวิชา</span></div>
+        <div class="muted small">ข้อมูลนี้ถูกบันทึกอัตโนมัติในเบราว์เซอร์ (localStorage)</div>
+      </div>
+      <div class="bd">
+        <div class="row">
+          <div>
+            <label>ชื่อรายวิชา</label>
+            <input type="text" id="courseName" placeholder="เช่น วิชา A"/>
+          </div>
+          <div>
+            <label>รหัสวิชา (ถ้ามี)</label>
+            <input type="text" id="courseCode" placeholder="เช่น IT-101"/>
+          </div>
+        </div>
+
+        <div class="sep"></div>
+
+        <div class="row">
+          <div class="card" style="flex: 1 1 280px;">
+            <div class="hd">
+              <div class="stat"><span class="tag">แบบทดสอบก่อนเรียน</span></div>
+            </div>
+            <div class="bd">
+              <div class="row">
+                <div>
+                  <label>เปิดใช้?</label>
+                  <select id="preEnabled">
+                    <option value="yes">ใช้</option>
+                    <option value="no">ไม่ใช้</option>
+                  </select>
+                </div>
+                <div>
+                  <label>เกณฑ์ผ่านขั้นต่ำ (%)</label>
+                  <input type="number" id="preMin" min="0" max="100" step="1" placeholder="เช่น 40" />
+                </div>
+              </div>
+              <div class="note">* แบบทดสอบก่อนเรียนไม่มีสัดส่วนคะแนนต่อเกรดรวม (เพื่อวัดก่อนเรียน)</div>
+            </div>
+          </div>
+
+          <div class="card" style="flex: 1 1 280px;">
+            <div class="hd">
+              <div class="stat"><span class="tag">แบบทดสอบหลังเรียน</span></div>
+            </div>
+            <div class="bd">
+              <div class="row">
+                <div>
+                  <label>เปิดใช้?</label>
+                  <select id="postEnabled">
+                    <option value="yes">ใช้</option>
+                    <option value="no">ไม่ใช้</option>
+                  </select>
+                </div>
+                <div>
+                  <label>เกณฑ์ผ่านขั้นต่ำ (%)</label>
+                  <input type="number" id="postMin" min="0" max="100" step="1" placeholder="เช่น 50" />
+                </div>
+              </div>
+              <div class="note">* ผู้สอนสามารถตั้งเกณฑ์ผ่านขั้นต่ำของแบบทดสอบหลังเรียนได้</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="sep"></div>
+
+        <div class="row" style="align-items: center;">
+          <div style="flex:1 1 auto;">
+            <div class="stat" style="gap:12px; flex-wrap: wrap;">
+              <span class="tag">หน่วยการเรียนรู้</span>
+              <span class="muted">สัดส่วนคะแนนรวมทุกหน่วยต้องเท่ากับ <b>100%</b></span>
+            </div>
+          </div>
+          <div class="unit-actions">
+            <button class="btn primary" id="btnAddUnit">+ เพิ่มหน่วยการเรียนรู้</button>
+          </div>
+        </div>
+
+        <div class="progress" style="margin-top:10px;">
+          <i id="overallBar"></i>
+        </div>
+        <div class="row" style="margin-top:6px;">
+          <div class="pill">ใช้ไป: <b id="overallUsed">0</b>%</div>
+          <div class="pill">คงเหลือ: <b id="overallRemain">100</b>%</div>
+        </div>
+
+        <div id="units"></div>
+
+        <div id="overallIssue" class="errorline" style="display:none; margin-top:10px;"></div>
+        <div id="overallOk" class="successline" style="display:none; margin-top:10px;">สัดส่วนคะแนนหน่วยการเรียนรู้รวมกันเท่ากับ 100% ✅</div>
+
+        <div class="footer">
+          <button class="btn" id="btnExport">ส่งออก JSON</button>
+          <button class="btn" id="btnPrint">พิมพ์ / PDF</button>
+          <button class="btn primary" id="btnSave">บันทึกการตั้งค่า</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ขวา: สรุปผล -->
+    <aside class="card">
+      <div class="hd">
+        <div class="stat"><span class="tag">สรุปแบบเรียลไทม์</span></div>
+      </div>
+      <div class="bd">
+        <div class="row">
+          <div class="stat" style="flex:1 1 100%"><span class="muted">หน่วยทั้งหมด</span><b id="statUnits">0</b></div>
+          <div class="stat" style="flex:1 1 100%"><span class="muted">แบบฝึกหัดทั้งหมด</span><b id="statExercises">0</b></div>
+        </div>
+        <div class="sep"></div>
+        <div class="small muted">ข้อกำหนด:</div>
+        <ul class="small">
+          <li>สัดส่วนคะแนนหน่วยรวม = 100%</li>
+          <li>สัดส่วนแบบฝึกหัดรวมในแต่ละหน่วย = สัดส่วนของหน่วยนั้น</li>
+          <li>ทุกฟิลด์เปอร์เซ็นต์ต้องอยู่ในช่วง 0–100</li>
+        </ul>
+        <div id="sideIssues" class="errorline" style="display:none; margin-top:8px;"></div>
+      </div>
+    </aside>
+  </main>
+
+  <template id="tpl-unit">
+    <div class="unit" data-unit>
+      <div class="unit-hd">
+        <div class="row" style="flex:1; align-items: flex-end;">
+          <div style="flex: 2 1 220px;">
+            <label>ชื่อหน่วยการเรียนรู้</label>
+            <input type="text" data-unit-name placeholder="เช่น หน่วยที่ 1: พื้นฐาน" />
+          </div>
+          <div>
+            <label>สัดส่วนของหน่วย (%)</label>
+            <input type="number" min="0" max="100" step="1" value="0" data-unit-weight />
+          </div>
+          <div>
+            <label>เกณฑ์ผ่านขั้นต่ำของหน่วย (%)</label>
+            <input type="number" min="0" max="100" step="1" value="0" data-unit-min />
+          </div>
+        </div>
+        <div class="unit-actions">
+          <button class="btn" data-add-ex>+ เพิ่มแบบฝึกหัด</button>
+          <button class="btn danger" data-del-unit>ลบหน่วย</button>
+        </div>
+      </div>
+      <div class="bd">
+        <div class="small muted" style="margin-bottom:8px;">สรุปสัดส่วนแบบฝึกหัดในหน่วยนี้ ต้องรวม = สัดส่วนของหน่วย</div>
+        <div class="progress"><i data-unit-bar></i></div>
+        <div class="row" style="margin-top:6px;">
+          <div class="pill">ใช้ไป: <b data-unit-used>0</b>%</div>
+          <div class="pill">คงเหลือ: <b data-unit-remain>0</b>%</div>
+        </div>
+        <div data-exercises></div>
+        <div data-unit-issue class="errorline" style="display:none; margin-top:8px;"></div>
+        <div data-unit-ok class="successline" style="display:none; margin-top:8px;">สัดส่วนแบบฝึกหัดรวมเท่ากับสัดส่วนของหน่วย ✅</div>
+      </div>
+    </div>
+  </template>
+
+  <template id="tpl-ex">
+    <div class="exercise" data-ex>
+      <div class="exercise-hd">
+        <div class="row" style="flex:1; align-items: flex-end;">
+          <div style="flex:3 1 220px;">
+            <label>ชื่อแบบฝึกหัด</label>
+            <input type="text" data-ex-name placeholder="เช่น แบบฝึกหัด 1.1" />
+          </div>
+          <div>
+            <label>สัดส่วนของแบบฝึกหัด (%)</label>
+            <input type="number" min="0" max="100" step="1" value="0" data-ex-weight />
+          </div>
+          <div>
+            <label>เกณฑ์ผ่านขั้นต่ำ (%)</label>
+            <input type="number" min="0" max="100" step="1" value="0" data-ex-min />
+          </div>
+        </div>
+        <div class="unit-actions">
+          <button class="btn danger" data-del-ex>ลบแบบฝึกหัด</button>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <script>
+    const $ = (s, d=document) => d.querySelector(s);
+    const $$ = (s, d=document) => Array.from(d.querySelectorAll(s));
+
+    const els = {
+      courseName: $('#courseName'),
+      courseCode: $('#courseCode'),
+      preEnabled: $('#preEnabled'),
+      preMin: $('#preMin'),
+      postEnabled: $('#postEnabled'),
+      postMin: $('#postMin'),
+      unitsWrap: $('#units'),
+      btnAddUnit: $('#btnAddUnit'),
+      btnExport: $('#btnExport'),
+      btnSave: $('#btnSave'),
+      btnPrint: $('#btnPrint'),
+      btnReset: $('#btnReset'),
+      btnLoadDemo: $('#btnLoadDemo'),
+      overallBar: $('#overallBar'),
+      overallUsed: $('#overallUsed'),
+      overallRemain: $('#overallRemain'),
+      overallIssue: $('#overallIssue'),
+      overallOk: $('#overallOk'),
+      statUnits: $('#statUnits'),
+      statExercises: $('#statExercises'),
+      sideIssues: $('#sideIssues'),
+    };
+
+    const tplUnit = $('#tpl-unit');
+    const tplEx = $('#tpl-ex');
+
+    const stateKey = 'courseDesigner:v1';
+
+    function round2(x){ return Math.round((x + Number.EPSILON) * 100) / 100; }
+
+    function serialize(){
+      const data = {
+        name: els.courseName.value || '',
+        code: els.courseCode.value || '',
+        pre: { enabled: els.preEnabled.value === 'yes', min: num(els.preMin.value) },
+        post: { enabled: els.postEnabled.value === 'yes', min: num(els.postMin.value) },
+        units: $$('#units [data-unit]').map(unit => ({
+          name: $('[data-unit-name]', unit).value || '',
+          weight: num($('[data-unit-weight]', unit).value),
+          min: num($('[data-unit-min]', unit).value),
+          exercises: $$('[data-ex]', unit).map(ex => ({
+            name: $('[data-ex-name]', ex).value || '',
+            weight: num($('[data-ex-weight]', ex).value),
+            min: num($('[data-ex-min]', ex).value),
+          }))
+        }))
+      };
+      return data;
+    }
+
+    function num(v){
+      const n = parseFloat(v);
+      return Number.isFinite(n) ? n : 0;
+    }
+
+    function save(){
+      const data = serialize();
+      localStorage.setItem(stateKey, JSON.stringify(data));
+    }
+
+    function load(){
+      const raw = localStorage.getItem(stateKey);
+      if(!raw) return;
+      try { apply(JSON.parse(raw)); } catch(e){ console.warn(e); }
+    }
+
+    function apply(data){
+      els.courseName.value = data.name || '';
+      els.courseCode.value = data.code || '';
+      els.preEnabled.value = data?.pre?.enabled ? 'yes' : 'no';
+      els.preMin.value = data?.pre?.min ?? '';
+      els.postEnabled.value = data?.post?.enabled ? 'yes' : 'no';
+      els.postMin.value = data?.post?.min ?? '';
+      els.unitsWrap.innerHTML = '';
+      (data.units || []).forEach(u => {
+        const unitEl = addUnit();
+        $('[data-unit-name]', unitEl).value = u.name || '';
+        $('[data-unit-weight]', unitEl).value = u.weight ?? 0;
+        $('[data-unit-min]', unitEl).value = u.min ?? 0;
+        (u.exercises || []).forEach(ex => {
+          const exEl = addExercise(unitEl);
+          $('[data-ex-name]', exEl).value = ex.name || '';
+          $('[data-ex-weight]', exEl).value = ex.weight ?? 0;
+          $('[data-ex-min]', exEl).value = ex.min ?? 0;
+        });
+      });
+      compute();
+    }
+
+    function addUnit(){
+      const node = tplUnit.content.cloneNode(true);
+      const unit = node.querySelector('[data-unit]');
+
+      $('[data-add-ex]', unit).addEventListener('click', () => {
+        addExercise(unit);
+        compute();
+        save();
+      });
+      $('[data-del-unit]', unit).addEventListener('click', () => {
+        unit.remove();
+        compute();
+        save();
+      });
+
+      ['input','change'].forEach(evt => unit.addEventListener(evt, e=>{
+        if(e.target.matches('input[type="number"], input[type="text"]')){
+          compute();
+          save();
+        }
+      }));
+
+      els.unitsWrap.appendChild(unit);
+      return unit;
+    }
+
+    function addExercise(unit){
+      const node = tplEx.content.cloneNode(true);
+      const ex = node.querySelector('[data-ex]');
+      $('[data-del-ex]', ex).addEventListener('click', () => { ex.remove(); compute(); save(); });
+      ['input','change'].forEach(evt => ex.addEventListener(evt, e=>{
+        if(e.target.matches('input[type="number"], input[type="text"]')){
+          compute();
+          save();
+        }
+      }));
+      $('[data-exercises]', unit).appendChild(ex);
+      return ex;
+    }
+
+    function compute(){
+      const data = serialize();
+
+      // Validate ranges 0..100 for % fields
+      const allPercents = [];
+      data.units.forEach(u=>{
+        allPercents.push(u.weight, u.min);
+        u.exercises.forEach(ex=> allPercents.push(ex.weight, ex.min));
+      });
+      if(data.pre?.min != null) allPercents.push(data.pre.min);
+      if(data.post?.min != null) allPercents.push(data.post.min);
+      const outOfRange = allPercents.filter(v => v<0 || v>100);
+
+      // Overall unit weight
+      const used = round2(data.units.reduce((s,u)=> s + (u.weight||0), 0));
+      const remain = round2(100 - used);
+      els.overallBar.style.width = Math.min(100, Math.max(0, used)) + '%';
+      els.overallUsed.textContent = used;
+      els.overallRemain.textContent = remain < 0 ? 0 : remain;
+      if(used === 100){
+        els.overallOk.style.display = 'block';
+        els.overallIssue.style.display = 'none';
+      } else {
+        els.overallOk.style.display = 'none';
+        els.overallIssue.style.display = 'block';
+        els.overallIssue.textContent = used > 100
+          ? `สัดส่วนหน่วยเกินไป ${used}% (ต้องเท่ากับ 100%)`
+          : `สัดส่วนหน่วยรวมยังไม่ครบ ${used}% (ต้องเท่ากับ 100%)`;
+      }
+
+      // Per unit: sum of exercises equals unit weight
+      const unitEls = $$('#units [data-unit]');
+      unitEls.forEach((unitEl, idx)=>{
+        const u = data.units[idx];
+        const usedEx = round2(u.exercises.reduce((s,ex)=> s + (ex.weight||0), 0));
+        const remainEx = round2((u.weight||0) - usedEx);
+        const bar = $('[data-unit-bar]', unitEl);
+        const usedEl = $('[data-unit-used]', unitEl);
+        const remEl = $('[data-unit-remain]', unitEl);
+        const issue = $('[data-unit-issue]', unitEl);
+        const ok = $('[data-unit-ok]', unitEl);
+        bar.style.width = Math.min(100, Math.max(0, u.weight? (usedEx / u.weight) * 100 : 0)) + '%';
+        usedEl.textContent = usedEx;
+        remEl.textContent = u.weight ? remainEx : 0;
+        if(u.weight === usedEx && u.weight !== 0){
+          ok.style.display = 'block';
+          issue.style.display = 'none';
+        } else {
+          ok.style.display = 'none';
+          issue.style.display = 'block';
+          issue.textContent = u.weight === 0
+            ? 'ยังไม่กำหนดสัดส่วนของหน่วย'
+            : (usedEx > u.weight
+                ? `สัดส่วนแบบฝึกหัดเกินไป ${usedEx}% (ต้องรวม = ${u.weight}%)`
+                : `สัดส่วนแบบฝึกหัดยังไม่ครบ ${usedEx}% (ต้องรวม = ${u.weight}%)`);
+        }
+      });
+
+      // Side stats
+      els.statUnits.textContent = data.units.length;
+      els.statExercises.textContent = data.units.reduce((s,u)=> s + u.exercises.length, 0);
+      if(outOfRange.length){
+        els.sideIssues.style.display = 'block';
+        els.sideIssues.textContent = 'พบเปอร์เซ็นต์นอกช่วง 0–100: กรุณาตรวจสอบค่า';
+      }else{
+        els.sideIssues.style.display = 'none';
+      }
+    }
+
+    // Export & Print
+    els.btnExport.addEventListener('click', ()=>{
+      const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(serialize(), null, 2));
+      const a = document.createElement('a');
+      a.href = dataStr; a.download = (els.courseCode.value||'course') + '_structure.json';
+      a.click();
+    });
+    els.btnPrint.addEventListener('click', ()=> window.print());
+
+    // Save now
+    els.btnSave.addEventListener('click', ()=>{ save();
+      els.overallOk.style.display = 'block';
+      setTimeout(()=> els.overallOk.style.display = 'none', 1200);
+    });
+
+    // Reset
+    els.btnReset.addEventListener('click', ()=>{
+      if(!confirm('ล้างข้อมูลทั้งหมดและเริ่มใหม่?')) return;
+      localStorage.removeItem(stateKey);
+      location.reload();
+    });
+
+    // Add unit
+    els.btnAddUnit.addEventListener('click', ()=>{ addUnit(); compute(); save(); });
+
+    // Load demo structure matching the example
+    els.btnLoadDemo.addEventListener('click', ()=>{
+      const demo = {
+        name: 'วิชา A', code: 'COURSE-A',
+        pre: { enabled: true, min: 0 },
+        post: { enabled: true, min: 60 },
+        units: [
+          { name: 'หน่วยการเรียนรู้ที่ 1', weight: 25, min: 40, exercises: [
+            { name: 'แบบฝึกหัด 1.1', weight: 12.5, min: 40},
+            { name: 'แบบฝึกหัด 1.2', weight: 12.5, min: 40},
+          ]},
+          { name: 'หน่วยการเรียนรู้ที่ 2', weight: 25, min: 40, exercises: [
+            { name: 'แบบฝึกหัด 2.1', weight: 8.3, min: 40},
+            { name: 'แบบฝึกหัด 2.2', weight: 8.3, min: 40},
+            { name: 'แบบฝึกหัด 2.3', weight: 8.4, min: 40},
+          ]},
+          { name: 'หน่วยการเรียนรู้ที่ 3', weight: 25, min: 40, exercises: [
+            { name: 'แบบฝึกหัด 3.1', weight: 12.5, min: 40},
+            { name: 'แบบฝึกหัด 3.2', weight: 12.5, min: 40},
+          ]},
+          { name: 'หน่วยการเรียนรู้ที่ 4', weight: 25, min: 40, exercises: [
+            { name: 'แบบฝึกหัด 4.1', weight: 25, min: 40},
+          ]},
+        ]
+      };
+      apply(demo);
+      save();
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth'});
+    });
+
+    // Global listeners for top fields
+    ['input','change'].forEach(evt => {
+      [els.courseName, els.courseCode, els.preEnabled, els.preMin, els.postEnabled, els.postMin].forEach(el => {
+        el.addEventListener(evt, ()=>{ compute(); save(); });
+      });
+    });
+
+    // Init
+    load();
+    if($$('#units [data-unit]').length === 0){ addUnit(); }
+    compute();
+  </script>
+</body>
+</html>

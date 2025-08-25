@@ -4,6 +4,7 @@ import styles from "./Instructors.module.css";
 interface Instructor {
   instructor_id: number;
   name: string;
+  instructor_name?: string;
   position: string;
   avatar_path?: string | null;
   avatar_file_id?: string | null;
@@ -17,12 +18,18 @@ interface InstructorsProps {
 const apiURL = import.meta.env.VITE_API_URL;
 
 const Instructors = ({ instructors }: InstructorsProps) => {
-  console.log("🎓 Instructors component received:", instructors);
+      // console.log("🎓 Instructors component received:", instructors);
   
   const getAvatarUrl = (instructor: Instructor) => {
+    // ใช้ avatar_file_id ก่อน
     if (instructor.avatar_file_id) {
       return `${apiURL}/api/accounts/instructors/avatar/${instructor.avatar_file_id}`;
     }
+    // หากไม่มี avatar_file_id ให้ลองใช้ avatar_path
+    if (instructor.avatar_path) {
+      return instructor.avatar_path;
+    }
+    // Fallback image
     return "/assets/img/courses/default-instructor.jpg";
   };
 
@@ -64,7 +71,7 @@ const Instructors = ({ instructors }: InstructorsProps) => {
                   <div className={styles["avatar-container"]}>
                     <img
                       src={getAvatarUrl(instructor)}
-                      alt={instructor.name}
+                      alt={instructor.instructor_name || instructor.name}
                       className={styles["instructor-avatar"]}
                       onError={handleImageError}
                     />
@@ -77,7 +84,7 @@ const Instructors = ({ instructors }: InstructorsProps) => {
                 {/* Info Section */}
                 <div className={styles["info-section"]}>
                   <div className={styles["instructor-header"]}>
-                    <h3 className={styles["instructor-name"]}>{instructor.name}</h3>
+                    <h3 className={styles["instructor-name"]}>{instructor.instructor_name || instructor.name}</h3>
                     <p className={styles["instructor-position"]}>{instructor.position}</p>
                   </div>
 

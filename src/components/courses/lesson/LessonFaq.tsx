@@ -90,16 +90,16 @@ const LessonFaq = ({
   
   // ✅ เพิ่ม debug log เพื่อดูการเปลี่ยนแปลงของ activeAccordion
   useEffect(() => {
-    console.log("🎯 LessonFaq currentActiveAccordion changed:", currentActiveAccordion);
-    console.log("🎯 LessonFaq externalActiveAccordion:", externalActiveAccordion);
-    console.log("🎯 LessonFaq local activeAccordion:", activeAccordion);
-    console.log("🎯 LessonFaq onAccordionChange exists:", !!onAccordionChange);
+            // console.log("🎯 LessonFaq currentActiveAccordion changed:", currentActiveAccordion);
+        // console.log("🎯 LessonFaq externalActiveAccordion:", externalActiveAccordion);
+        // console.log("🎯 LessonFaq local activeAccordion:", activeAccordion);
+        // console.log("🎯 LessonFaq onAccordionChange exists:", !!onAccordionChange);
   }, [currentActiveAccordion, externalActiveAccordion, activeAccordion, onAccordionChange]);
   
   // ✅ เพิ่ม useEffect เพื่อ sync local state กับ external state เมื่อมีการเปลี่ยนแปลงจากภายนอก
   useEffect(() => {
     if (externalActiveAccordion !== undefined && externalActiveAccordion !== activeAccordion) {
-      console.log("🎯 LessonFaq syncing local state with external state:", externalActiveAccordion);
+                  // console.log("🎯 LessonFaq syncing local state with external state:", externalActiveAccordion);
       setActiveAccordion(externalActiveAccordion);
     }
   }, [externalActiveAccordion, activeAccordion]);
@@ -108,11 +108,11 @@ const LessonFaq = ({
   useEffect(() => {
     // ถ้ามี externalActiveAccordion และไม่ใช่ null ให้รักษาไว้
     if (externalActiveAccordion !== undefined && externalActiveAccordion !== null) {
-      console.log("🎯 LessonFaq preserving accordion state:", externalActiveAccordion);
+                  // console.log("🎯 LessonFaq preserving accordion state:", externalActiveAccordion);
       
       // ✅ เพิ่มการป้องกัน accordion ปิดโดยไม่ได้ตั้งใจ
       if (activeAccordion !== externalActiveAccordion) {
-        console.log("🎯 LessonFaq syncing local accordion state with external:", externalActiveAccordion);
+                    // console.log("🎯 LessonFaq syncing local accordion state with external:", externalActiveAccordion);
         setActiveAccordion(externalActiveAccordion);
       }
     }
@@ -122,11 +122,11 @@ const LessonFaq = ({
   useEffect(() => {
     // ถ้ามี externalActiveAccordion และไม่ใช่ null ให้รักษาไว้เสมอ
     if (externalActiveAccordion !== undefined && externalActiveAccordion !== null) {
-      console.log("🎯 LessonFaq continuously protecting accordion state:", externalActiveAccordion);
+                  // console.log("🎯 LessonFaq continuously protecting accordion state:", externalActiveAccordion);
       
       // ตรวจสอบว่า accordion state ตรงกับที่ต้องการหรือไม่
       if (activeAccordion !== externalActiveAccordion) {
-        console.log("🎯 LessonFaq accordion state mismatch detected, restoring...");
+                    // console.log("🎯 LessonFaq accordion state mismatch detected, restoring...");
         // ✅ ใช้ setTimeout เพื่อป้องกัน infinite loop
         setTimeout(() => {
           setActiveAccordion(externalActiveAccordion);
@@ -349,9 +349,15 @@ const LessonFaq = ({
 
   // ฟังก์ชันสำหรับ render แบบทดสอบในรูปแบบ accordion เหมือนบทเรียน
   const renderQuizSection = (quiz: SubjectQuiz, sectionId: number) => {
-    const statusText = quiz.status === 'passed' ? 'ผ่าน' : 
-                      quiz.status === 'awaiting_review' ? 'รอตรวจ' : 
-                      quiz.status === 'failed' ? 'ไม่ผ่าน' : 'ยังไม่ทำ';
+    // ใช้ข้อมูลจาก hierarchical structure แทน
+    let statusText = 'ยังไม่ทำ';
+    if (quiz.status === 'passed') {
+      statusText = 'ผ่าน';
+    } else if (quiz.status === 'awaiting_review') {
+      statusText = 'รอตรวจ';
+    } else if (quiz.status === 'failed') {
+      statusText = 'ไม่ผ่าน';
+    }
     
     return (
       <div key={`${quiz.type}-${quiz.quiz_id}`} className="accordion-item">
