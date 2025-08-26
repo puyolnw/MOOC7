@@ -22,7 +22,7 @@ const AdminReviewTable = () => {
         const token = localStorage.getItem('token');
         if (!token) return;
 
-        const response = await axios.get(`${apiURL}/api/courses/c/stats`, {
+        const response = await axios.get(`${apiURL}/api/courses/c/stats/v2`, {
           headers: { Authorization: `Bearer ${token}` }
         });
 

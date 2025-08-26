@@ -251,82 +251,88 @@ const StudentCertificateArea = () => {
                   <div className="card-body p-0">
                         <div className="table-responsive">
                            <table className="table table-hover mb-0 align-middle">
-                                                           <thead className="table-light">
-                                    <tr>
-                                       <th>ชื่อคอร์ส</th>
-                                       <th style={{width: '35%'}}>ความคืบหน้า</th>
-                                       <th className="text-center">สถานะ</th>
-                                       <th className="text-center">ใบรับรอง</th>
-                                    </tr>
+                              <thead className="table-light">
+                                 <tr>
+                                    <th>วิชา</th>
+                                    <th>หลักสูตร</th>
+                                    <th>วันที่ยื่นขอ</th>
+                                    <th className="text-center">สถานะ</th>
+                                    <th className="text-center">ใบรับรอง</th>
+                                 </tr>
                               </thead>
                               <tbody>
-                                    {enrolledCourses.map((course) => (
-                                       <tr key={course.courseId}>
-                                          <td>
-   <strong>{course.title}</strong>
-   <p className="text-muted small mb-0">{course.departmentName || 'ไม่ระบุภาควิชา'}</p>
-</td>
-                                          <td>
-                                                <div className="progress" style={{height: '20px', fontSize: '0.8rem'}}>
-                                                   <div 
-                                                      className="progress-bar bg-success"
-                                                      role="progressbar" 
-                                                      style={{ width: '100%' }}
-                                                   >
-                                                      100%
-                                                   </div>
-                                                </div>
-                                                <small className="text-success">
-                                                   <i className="fas fa-check-circle me-1"></i>
-                                                   เรียนจบครบ {course.completedLessons || course.totalLessons || course.completedSubjects} หน่วย
-                                                </small>
-                                          </td>
-                                          <td className="text-center">
-                                                <div className="d-flex flex-column align-items-center gap-1">
+                                 {enrolledCourses.map((course) => (
+                                    <tr key={course.courseId}>
+                                       <td>
+                                          <strong>{course.title}</strong>
+                                          <p className="text-muted small mb-0">{course.departmentName || 'ไม่ระบุภาควิชา'}</p>
+                                       </td>
+                                       <td>
+                                          <span className="badge bg-info text-dark">
+                                             {course.departmentName?.includes('CS') ? 'วิทยาการคอมพิวเตอร์' : 
+                                              course.departmentName?.includes('IT') ? 'เทคโนโลยีสารสนเทศ' : 
+                                              course.departmentName || 'หลักสูตรทั่วไป'}
+                                          </span>
+                                       </td>
+                                       <td>
+                                          {/* วันที่ยื่นขอ = วันที่ส่งสลิป */}
+                                          <span className="text-muted">
+                                             {course.lastPaymentDate ? 
+                                                new Date(course.lastPaymentDate).toLocaleDateString('th-TH', {
+                                                   day: '2-digit',
+                                                   month: '2-digit',
+                                                   year: 'numeric'
+                                                }) : 
+                                                'ไม่ระบุ'
+                                             }
+                                          </span>
+                                       </td>
+                                       <td className="text-center">
+                                          <div className="d-flex flex-column align-items-center gap-1">
+                                             <span className="badge bg-success">
+                                                <i className="fas fa-graduation-cap me-1"></i>เรียนจบแล้ว
+                                             </span>
+                                             {course.certificateStatus === 'ready_to_download' && (
                                                 <span className="badge bg-success">
-                                                      <i className="fas fa-graduation-cap me-1"></i>เรียนจบแล้ว
-                                     </span>
-                                     {course.certificateStatus === 'ready_to_download' && (
-                                        <span className="badge bg-success">
-                                           <i className="fas fa-check-circle me-1"></i>พร้อมดาวน์โหลด
-                                        </span>
-                                     )}
-                                     {course.certificateStatus === 'pending_approval' && (
-                                        <span className="badge bg-warning">
-                                           <i className="fas fa-clock me-1"></i>กำลังตรวจสอบ
-                                        </span>
-                                     )}
-                                     {course.certificateStatus === 'waiting_payment' && (
-                                        <span className="badge bg-info">
-                                           <i className="fas fa-credit-card me-1"></i>รอการชำระเงิน
-                                        </span>
-                                     )}
-                                  </div>
-                                          </td>
-                                          <td className="text-center">
-                                                {course.certificateStatus === 'ready_to_download' ? (
-                                                   <button 
-                                                      className="btn btn-success btn-sm" 
-                                                      onClick={() => handleDownloadCertificate(course.courseId, course.title)}
-                                                      disabled={downloadingId === `course-${course.courseId}`}
-                                                   >
-                                                      {downloadingId === `course-${course.courseId}` 
-                                                        ? <><i className="fas fa-spinner fa-spin me-1"></i>กำลังสร้าง...</>
-                                                        : <><i className="fas fa-download me-1"></i>ดาวน์โหลด</>
-                                                      }
-                                                   </button>
-                                                ) : course.certificateStatus === 'pending_approval' ? (
-                                                   <button className="btn btn-warning btn-sm" disabled>
-                                                      <i className="fas fa-clock me-1"></i>รอการอนุมัติ
-                                                   </button>
-                                                ) : (
-                                                   <button className="btn btn-info btn-sm" disabled>
-                                                      <i className="fas fa-credit-card me-1"></i>รอการชำระเงิน
-                                                   </button>
-                                                )}
-                                          </td>
-                                       </tr>
-                                    ))}
+                                                   <i className="fas fa-check-circle me-1"></i>พร้อมดาวน์โหลด
+                                                </span>
+                                             )}
+                                             {course.certificateStatus === 'pending_approval' && (
+                                                <span className="badge bg-warning">
+                                                   <i className="fas fa-clock me-1"></i>กำลังตรวจสอบ
+                                                </span>
+                                             )}
+                                             {course.certificateStatus === 'waiting_payment' && (
+                                                <span className="badge bg-info">
+                                                   <i className="fas fa-credit-card me-1"></i>รอการชำระเงิน
+                                                </span>
+                                             )}
+                                          </div>
+                                       </td>
+                                       <td className="text-center">
+                                          {course.certificateStatus === 'ready_to_download' ? (
+                                             <button 
+                                                className="btn btn-success btn-sm" 
+                                                onClick={() => handleDownloadCertificate(course.courseId, course.title)}
+                                                disabled={downloadingId === `course-${course.courseId}`}
+                                             >
+                                                {downloadingId === `course-${course.courseId}` 
+                                                  ? <><i className="fas fa-spinner fa-spin me-1"></i>กำลังสร้าง...</>
+                                                  : <><i className="fas fa-download me-1"></i>ดาวน์โหลด</>
+                                                }
+                                             </button>
+                                          ) : course.certificateStatus === 'pending_approval' ? (
+                                             <button className="btn btn-warning btn-sm" disabled>
+                                                <i className="fas fa-clock me-1"></i>รอการอนุมัติ
+                                             </button>
+                                          ) : (
+                                             <button className="btn btn-info btn-sm" disabled>
+                                                <i className="fas fa-credit-card me-1"></i>รอการชำระเงิน
+                                             </button>
+                                          )}
+                                       </td>
+                                    </tr>
+                                 ))}
                               </tbody>
                            </table>
                         </div>

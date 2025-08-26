@@ -1033,8 +1033,8 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
         const selectedSubject = subjectSummaries.find(s => s.subject_id === selectedSubjectId);
 
         return (
-            <div className="grading-container">
-                <div className="grading-content">
+            <div>
+                <div>
                     <div className="d-flex align-items-center justify-content-between mb-4">
                         <div className="d-flex align-items-center">
                             <button
@@ -1059,7 +1059,7 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
                                 onClick={() => setViewMode('card')}
                             >
                                 <i className="fas fa-th-large me-2"></i>
-                                แบบการ์ด
+                                แบบตาราง
                             </button>
                             <button
                                 type="button"
@@ -1078,60 +1078,94 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
                             ไม่พบงานที่รอตรวจในรายวิชานี้
                         </div>
                     ) : viewMode === 'card' ? (
-                        <div className="row">
-                            {selectedSubject?.attempts.map((attempt) => (
-                                <div key={attempt.attempt_id} className="col-md-6 col-lg-4 mb-4">
-                                    <div className="card h-100 shadow-sm">
-                                        <div className="card-body">
-                                            <div className="d-flex align-items-center mb-3">
-                                                <div className="avatar-circle me-3">
-                                                    <i className="fas fa-user"></i>
-                                                </div>
-                                                <div>
-                                                    <h6 className="card-title mb-1">
-                                                        {attempt.first_name} {attempt.last_name}
-                                                    </h6>
-                                                    <small className="text-muted">{attempt.email}</small>
-                                                </div>
-                                            </div>
+                        <div className="table-responsive">
+                            <table className="table table-hover table-striped">
+                                <thead className="table-dark">
+                                    <tr>
+                                        <th scope="col" className="text-center" style={{width: '8%'}}>รหัสนักศึกษา</th>
+                                        <th scope="col" style={{width: '15%'}}>ชื่อผู้เรียน</th>
+                                        <th scope="col" style={{width: '12%'}}>บทเรียน</th>
+                                        <th scope="col" style={{width: '15%'}}>วันที่ส่ง</th>
+                                        <th scope="col" style={{width: '10%'}}>สถานะ</th>
+                                        <th scope="col" style={{width: '10%'}}>คะแนน</th>
+                                        <th scope="col" style={{width: '15%'}}>หมายเหตุ</th>
+                                        <th scope="col" style={{width: '15%'}}>ปุ่มตรวจ</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {selectedSubject?.attempts.map((attempt, index) => {
+                                        // ตรวจสอบสถานะการตรวจ
+                                        const isReviewed = attempt.score !== undefined && attempt.score !== null && attempt.score >= 0;
+                                        const statusText = isReviewed ? 'ตรวจแล้ว' : 'รอตรวจ';
+                                        const statusBadge = isReviewed ? 'bg-success' : 'bg-warning';
+                                        const scoreText = isReviewed ? attempt.score.toString() : '-';
+                                        const remarksText = isReviewed ? (attempt.score >= 80 ? 'ดีมาก' : attempt.score >= 70 ? 'ดี' : 'พอใช้') : '-';
+                                        const buttonText = isReviewed ? 'แก้ไข' : 'ตรวจ';
+                                        const buttonClass = isReviewed ? 'btn-outline-primary' : 'btn-primary';
+                                        const buttonIcon = isReviewed ? 'fa-edit' : 'fa-eye';
 
-                                            <div className="mb-3">
-                                                <p className="card-text mb-2">
-                                                    <strong>แบบทดสอบ:</strong> {attempt.quiz_title}
-                                                </p>
-                                                <p className="card-text mb-2">
-                                                    <strong>วันที่ส่ง:</strong><br />
-                                                    <small>{new Date(attempt.end_time).toLocaleString('th-TH')}</small>
-                                                </p>
-                                                <div className="d-flex align-items-center">
-                                                    <span className="badge bg-warning me-2">
-                                                        <i className="fas fa-clock me-1"></i>
-                                                        รอการตรวจ
+                                        return (
+                                            <tr key={attempt.attempt_id} className={isReviewed ? 'table-success' : ''}>
+                                                <td className="text-center fw-bold">
+                                                    {attempt.user_id || `653170010${String(index + 1).padStart(3, '0')}`}
+                                                </td>
+                                                <td>
+                                                    <div className="d-flex align-items-center">
+                                                        <div className="avatar-circle me-2">
+                                                            <i className="fas fa-user text-primary"></i>
+                                                        </div>
+                                                        <div>
+                                                            <div className="fw-bold">{attempt.first_name} {attempt.last_name}</div>
+                                                            <small className="text-muted">{attempt.email}</small>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="text-center">
+                                                    <span className="badge bg-info text-dark">
+                                                        -
                                                     </span>
-                                                    <small className="text-muted">
-                                                        {attempt.answers?.length || 0} คำตอบ
-                                                    </small>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="card-footer bg-transparent">
-                                            <button
-                                                className="btn btn-primary w-100"
-                                                onClick={() => {
-                                                    if (onOpenGrading) {
-                                                        onOpenGrading(attempt.attempt_id);
-                                                    } else {
-                                                        handleSelectAttempt(attempt.attempt_id);
-                                                    }
-                                                }}
-                                            >
-                                                <i className="fas fa-edit me-2"></i>
-                                                ตรวจแบบทดสอบ
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
+                                                </td>
+                                                <td className="text-center">
+                                                    {new Date(attempt.end_time).toLocaleDateString('th-TH', {
+                                                        day: 'numeric',
+                                                        month: 'short',
+                                                        year: 'numeric'
+                                                    })}
+                                                </td>
+                                                <td className="text-center">
+                                                    <span className={`badge ${statusBadge} text-white`}>
+                                                        {statusText}
+                                                    </span>
+                                                </td>
+                                                <td className="text-center fw-bold">
+                                                    {scoreText}
+                                                </td>
+                                                <td className="text-center">
+                                                    <span className="text-muted">
+                                                        {remarksText}
+                                                    </span>
+                                                </td>
+                                                <td className="text-center">
+                                                    <button
+                                                        className={`btn btn-sm ${buttonClass}`}
+                                                        onClick={() => {
+                                                            if (onOpenGrading) {
+                                                                onOpenGrading(attempt.attempt_id);
+                                                            } else {
+                                                                handleSelectAttempt(attempt.attempt_id);
+                                                            }
+                                                        }}
+                                                        title={isReviewed ? 'คลิกเพื่อแก้ไขคะแนน' : 'คลิกเพื่อตรวจงาน'}
+                                                    >
+                                                        <i className={`fas ${buttonIcon} me-1`}></i>
+                                                        {buttonText}
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
                         </div>
                     ) : (
                         <div className="table-responsive">
@@ -1280,8 +1314,8 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
 
     // แสดงรายการรายวิชาที่มีงานรอตรวจ (หน้าหลัก)
     return (
-        <div className="grading-container">
-            <div className="grading-content">
+        <div>
+            <div>
                 <div className="d-flex justify-content-between align-items-center mb-4 p-4 bg-primary rounded">
                     <div>
                         <h4 className="text-white mb-1">การตรวจแบบทดสอบ</h4>
@@ -1309,57 +1343,93 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
                         <p className="text-muted">ยังไม่มีรายวิชาที่ท่านสอนในระบบ</p>
                     </div>
                 ) : (
-                    <div className="row">
-                        {subjectSummaries.map((subject) => (
-                            <div key={subject.subject_id} className="col-md-6 col-lg-4 mb-4">
-                                <div className="card h-100 shadow-sm">
-                                    <div className="card-body">
-                                        <div className="d-flex justify-content-between align-items-start mb-3">
-                                            <div className="subject-icon">
-                                                <i className="fas fa-book fa-2x text-primary"></i>
-                                            </div>
-                                            <span className={`badge ${subject.pending_count > 0 ? 'bg-warning text-dark' : 'bg-success text-white'}`}>
-                                                {subject.pending_count > 0 ? `${subject.pending_count} งาน` : 'ไม่มีงาน'}
-                                            </span>
-                                        </div>
-
-                                        <h5 className="card-title mb-2 text-dark">{subject.subject_title}</h5>
-                                        <p className="card-text text-muted mb-2">
-                                            <small>รหัสวิชา: {subject.subject_code}</small>
-                                        </p>
-                                        {subject.faculty && (
-                                            <p className="card-text mb-3">
-                                                <small className={`${subject.is_home_faculty ? 'text-primary fw-bold' : 'text-secondary'}`}>
-                                                    <i className={`fas ${subject.is_home_faculty ? 'fa-home' : 'fa-building'} me-1`}></i>
-                                                    {subject.faculty}
-                                                </small>
-                                            </p>
-                                        )}
-
-                                        <div className="mb-3">
-                                            <div className="d-flex align-items-center">
-                                                <i className={`fas ${subject.pending_count > 0 ? 'fa-exclamation-triangle text-warning' : 'fa-check-circle text-success'} me-2`}></i>
-                                                <small className="text-muted">
-                                                    {subject.pending_count > 0
-                                                        ? `มีงานรอตรวจ ${subject.pending_count} งาน`
-                                                        : 'ไม่มีงานรอตรวจ'}
-                                                </small>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="card-footer bg-transparent">
-                                        <button
-                                            className={`btn w-100 ${subject.pending_count > 0 ? 'btn-primary' : 'btn-outline-secondary'}`}
-                                            onClick={() => handleSelectSubject(subject.subject_id)}
-                                            disabled={subject.pending_count === 0}
-                                        >
-                                            <i className={`fas ${subject.pending_count > 0 ? 'fa-eye' : 'fa-check'} me-2`}></i>
-                                            {subject.pending_count > 0 ? 'ดูงานที่รอตรวจ' : 'ไม่มีงานรอตรวจ'}
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
+                    <div className="table-responsive">
+                        <table className="table table-hover table-striped">
+                            <thead className="table-dark">
+                                <tr>
+                                    <th scope="col" className="text-center" style={{width: '5%'}}>#</th>
+                                    <th scope="col" style={{width: '20%'}}>วิชา</th>
+                                    <th scope="col" style={{width: '15%'}}>หลักสูตร</th>
+                                    <th scope="col" style={{width: '15%'}}>สาขา/คณะ</th>
+                                    <th scope="col" style={{width: '10%'}}>จำนวนผู้เรียน</th>
+                                    <th scope="col" style={{width: '12%'}}>งานรอตรวจ</th>
+                                    <th scope="col" style={{width: '12%'}}>งานตรวจแล้ว</th>
+                                    <th scope="col" style={{width: '11%'}}>ปุ่มตรวจงาน</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {subjectSummaries.map((subject, index) => {
+                                    // หางานที่ตรวจแล้ว (มีคะแนนแล้ว) จาก attempts
+                                    const reviewedAttempts = subject.attempts.filter(attempt => 
+                                        attempt.score !== undefined && attempt.score !== null && attempt.score >= 0
+                                    );
+                                    const reviewedCount = reviewedAttempts.length;
+                                    
+                                    return (
+                                        <tr key={subject.subject_id} className={subject.is_home_faculty ? 'table-primary' : ''}>
+                                            <td className="text-center fw-bold">{index + 1}</td>
+                                            <td>
+                                                <div className="d-flex align-items-center">
+                                                    <div className="subject-icon me-2">
+                                                        <i className="fas fa-book text-primary"></i>
+                                                    </div>
+                                                    <div>
+                                                        <div className="fw-bold">{subject.subject_title}</div>
+                                                        <small className="text-muted">รหัส: {subject.subject_code}</small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span className="badge bg-info text-dark">
+                                                    {subject.subject_code.includes('CS') ? 'วิทยาการคอมพิวเตอร์' : 
+                                                     subject.subject_code.includes('IT') ? 'เทคโนโลยีสารสนเทศ' : 'หลักสูตรทั่วไป'}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <div className="d-flex align-items-center">
+                                                    <i className={`fas ${subject.is_home_faculty ? 'fa-home text-primary' : 'fa-building text-secondary'} me-2`}></i>
+                                                    <span className={subject.is_home_faculty ? 'fw-bold text-primary' : ''}>
+                                                        {subject.faculty || 'ไม่ระบุ'}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td className="text-center">
+                                                <span className="badge bg-secondary">
+                                                    {subject.attempts.length} คน
+                                                </span>
+                                            </td>
+                                            <td className="text-center">
+                                                {subject.pending_count > 0 ? (
+                                                    <span className="badge bg-warning text-dark fs-6 px-3 py-2">
+                                                        {subject.pending_count} งาน
+                                                    </span>
+                                                ) : (
+                                                    <span className="badge bg-success text-white">
+                                                        ไม่มีงาน
+                                                    </span>
+                                                )}
+                                            </td>
+                                            <td className="text-center">
+                                                <span className="badge bg-success text-white">
+                                                    {reviewedCount} งาน
+                                                </span>
+                                            </td>
+                                            <td className="text-center">
+                                                <button
+                                                    className={`btn btn-sm ${subject.pending_count > 0 ? 'btn-primary' : 'btn-outline-secondary'}`}
+                                                    onClick={() => handleSelectSubject(subject.subject_id)}
+                                                    disabled={subject.pending_count === 0}
+                                                    title={subject.pending_count > 0 ? 'คลิกเพื่อตรวจงาน' : 'ไม่มีงานรอตรวจ'}
+                                                >
+                                                    <i className={`fas ${subject.pending_count > 0 ? 'fa-eye' : 'fa-check'} me-1`}></i>
+                                                    {subject.pending_count > 0 ? 'ตรวจงาน' : 'ไม่มีงาน'}
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
                     </div>
                 )}
             </div>

@@ -333,6 +333,11 @@ const AccountStudentArea: React.FC = () => {
                     // แปลงระดับชั้นเป็นตัวเลขสำหรับ sort
                     aValue = convertGradeLevelToNumber(a.grade_level || '');
                     bValue = convertGradeLevelToNumber(b.grade_level || '');
+                    
+                    // Debug log สำหรับตรวจสอบการแปลงค่า
+                    if (a.grade_level || b.grade_level) {
+                        console.log(`Sorting grade_level: "${a.grade_level}" (${aValue}) vs "${b.grade_level}" (${bValue})`);
+                    }
                     break;
                 case 'academic_year':
                     aValue = a.academic_year || 0;
@@ -357,36 +362,68 @@ const AccountStudentArea: React.FC = () => {
 
     // ฟังก์ชันแปลงระดับชั้นเป็นตัวเลขสำหรับ sort
     const convertGradeLevelToNumber = (gradeLevel: string): number => {
-        const gradeMap: { [key: string]: number } = {
-            'ม1': 1, 'ม.1': 1, 'มัธยมศึกษาปีที่ 1': 1,
-            'ม2': 2, 'ม.2': 2, 'มัธยมศึกษาปีที่ 2': 2,
-            'ม3': 3, 'ม.3': 3, 'มัธยมศึกษาปีที่ 3': 3,
-            'ม4': 4, 'ม.4': 4, 'มัธยมศึกษาปีที่ 4': 4,
-            'ม5': 5, 'ม.5': 5, 'มัธยมศึกษาปีที่ 5': 5,
-            'ม6': 6, 'ม.6': 6, 'มัธยมศึกษาปีที่ 6': 6,
-            'มัธยมต้น': 1.5,
-            'มัธยมปลาย': 4.5
-        };
-        return gradeMap[gradeLevel] || 0;
+        if (!gradeLevel) return 0;
+        
+        // แปลงเป็นตัวพิมพ์เล็กและลบช่องว่าง
+        const cleanGrade = gradeLevel.toLowerCase().trim();
+        
+        // ตรวจสอบรูปแบบ "ม.1", "ม1", "มัธยมศึกษาปีที่ 1"
+        const match = cleanGrade.match(/ม\.?(\d+)/);
+        if (match) {
+            const num = parseInt(match[1]);
+            if (num >= 1 && num <= 6) {
+                return num;
+            }
+        }
+        
+        // ตรวจสอบรูปแบบ "มัธยมศึกษาปีที่ X"
+        const match2 = cleanGrade.match(/มัธยมศึกษาปีที่\s*(\d+)/);
+        if (match2) {
+            const num = parseInt(match2[1]);
+            if (num >= 1 && num <= 6) {
+                return num;
+            }
+        }
+        
+        // ตรวจสอบรูปแบบ "มัธยมต้น/ปลาย"
+        if (cleanGrade.includes('มัธยมต้น')) return 1.5;
+        if (cleanGrade.includes('มัธยมปลาย')) return 4.5;
+        
+        // ถ้าไม่ตรงกับรูปแบบใดๆ ให้ return 0
+        return 0;
     };
 
     // ฟังก์ชันแปลงระดับชั้นเป็นข้อความที่อ่านง่าย
     const formatGradeLevel = (gradeLevel: string): string => {
-        const gradeMap: { [key: string]: string } = {
-            'ม1': 'มัธยมศึกษาปีที่ 1',
-            'ม2': 'มัธยมศึกษาปีที่ 2',
-            'ม3': 'มัธยมศึกษาปีที่ 3',
-            'ม4': 'มัธยมศึกษาปีที่ 4',
-            'ม5': 'มัธยมศึกษาปีที่ 5',
-            'ม6': 'มัธยมศึกษาปีที่ 6',
-            'ม.1': 'มัธยมศึกษาปีที่ 1',
-            'ม.2': 'มัธยมศึกษาปีที่ 2',
-            'ม.3': 'มัธยมศึกษาปีที่ 3',
-            'ม.4': 'มัธยมศึกษาปีที่ 4',
-            'ม.5': 'มัธยมศึกษาปีที่ 5',
-            'ม.6': 'มัธยมศึกษาปีที่ 6'
-        };
-        return gradeMap[gradeLevel] || gradeLevel;
+        if (!gradeLevel) return 'ไม่ระบุ';
+        
+        // แปลงเป็นตัวพิมพ์เล็กและลบช่องว่าง
+        const cleanGrade = gradeLevel.toLowerCase().trim();
+        
+        // ตรวจสอบรูปแบบ "ม.1", "ม1", "มัธยมศึกษาปีที่ 1"
+        const match = cleanGrade.match(/ม\.?(\d+)/);
+        if (match) {
+            const num = parseInt(match[1]);
+            if (num >= 1 && num <= 6) {
+                return `มัธยมศึกษาปีที่ ${num}`;
+            }
+        }
+        
+        // ตรวจสอบรูปแบบ "มัธยมศึกษาปีที่ X"
+        const match2 = cleanGrade.match(/มัธยมศึกษาปีที่\s*(\d+)/);
+        if (match2) {
+            const num = parseInt(match2[1]);
+            if (num >= 1 && num <= 6) {
+                return `มัธยมศึกษาปีที่ ${num}`;
+            }
+        }
+        
+        // ตรวจสอบรูปแบบ "มัธยมต้น/ปลาย"
+        if (cleanGrade.includes('มัธยมต้น')) return 'มัธยมต้น';
+        if (cleanGrade.includes('มัธยมปลาย')) return 'มัธยมปลาย';
+        
+        // ถ้าไม่ตรงกับรูปแบบใดๆ ให้ return ค่าเดิม
+        return gradeLevel;
     };
 
     const handlePageChange = (pageNumber: number) => {

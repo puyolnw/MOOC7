@@ -24,7 +24,7 @@ interface DataType {
   sidebar_details: SidebarDetailType[];
 }
 
-// ปรับปรุง sidebar_data โดยตัดหัวข้อ "ระบบ" ออก
+// Manager sidebar data - only course management, no user management
 const sidebar_data: DataType[] = [
    {
       id: 1,
@@ -32,7 +32,7 @@ const sidebar_data: DataType[] = [
       sidebar_details: [
          {
             id: 1,
-            link: "/admin-dashboard",
+            link: "/manager-creditbank",
             icon: "fas fa-chart-pie",
             title: "แดชบอร์ด",
          },
@@ -45,165 +45,50 @@ const sidebar_data: DataType[] = [
       sidebar_details: [
          {
             id: 3,
-            link: "/admin-creditbank",
+            link: "/manager-creditbank",
             icon: "fas fa-graduation-cap",
             title: "คลังหลักสูตร",
             hasSubmenu: true,
             submenu: [
                {
                   id: 4,
-                  link: "/admin-creditbank",
+                  link: "/manager-creditbank",
                   title: "เรียกดูหลักสูตร",
                },
                {
                   id: 5,
-                  link: "/admin-creditbank/create-new",
+                  link: "/manager-creditbank/create-new",
                   title: "สร้างหลักสูตรใหม่",
                },
             ],
          },
-      
-       
-      ],
-   },
-  
-   {
-      id: 3,
-      title: "จัดการผู้ใช้",
-      class_name: "mt-40",
-      sidebar_details: [
-         {
-            id: 18,
-            link: "/admin-account/instructors",
-            icon: "fas fa-chalkboard-teacher",
-            title: "อาจารย์",
-            hasSubmenu: true,
-            submenu: [
-               {
-                  id: 19,
-                  link: "/admin-account/instructors",
-                  title: "รายชื่ออาจารย์",
-               },
-               {
-                  id: 20,
-                  link: "/admin-account/instructors/create-new",
-                  title: "เพิ่มอาจารย์ใหม่",
-               },
-            ],
-         },
-         {
-            id: 21,
-            link: "/admin-account/students",
-            icon: "fas fa-user-graduate",
-            title: "นักเรียน",
-            hasSubmenu: true,
-            submenu: [
-               {
-                  id: 22,
-                  link: "/admin-account/students",
-                  title: "รายชื่อนักเรียน",
-               },
-               {
-                  id: 23,
-                  link: "/admin-account/students/create-new",
-                  title: "การลงทะเบียน",
-               },
-            ],
-         },
-         {
-            id: 24,
-            link: "/admin-account/managers",
-            icon: "fas fa-user-tie",
-            title: "ประธานหลักสูตร",
-            hasSubmenu: true,
-            submenu: [
-               {
-                  id: 25,
-                  link: "/admin-account/managers",
-                  title: "รายชื่อประธานหลักสูตร",
-               },
-               {
-                  id: 26,
-                  link: "/admin-account/managers/create-new",
-                  title: "เพิ่มประธานหลักสูตร",
-               },
-            ],
-         },
-      ],
-   },
-   {
-      id: 4,
-      title: "รายงาน",
-      class_name: "mt-40",
-      sidebar_details: [
-         {
-            id: 27,
-            link: "/admin-reports/students",
-            icon: "fas fa-chart-bar",
-            title: "รายงานนักศึกษาและนักเรียน",
-         },
-         {
-            id: 28,
-            link: "/admin-reports/students-progress",
-            icon: "fas fa-chart-bar",
-            title: "รายงานสรุปผู้เรียนที่ลงทะเบียนและความคืบหน้า",
-         },
-         {
-            id: 29,
-            link: "/admin-reports/students-complete",
-            icon: "fas fa-chart-bar",
-            title: "รายงานสรุปผู้เรียนที่สำเร็จการเรียนรู้",
-         },
-      ],
-   },
-   {
-      id: 5,
-      title: "การเงิน",
-      class_name: "mt-40",
-      sidebar_details: [
-         {
-         id: 30,
-         link: "/admin-approve",
-         icon: "fas fa-check-circle",
-         title: "อนุมัติการชำระเงิน",
-         },
-          {
-             id: 31,
-             link: "/admin-bank-accounts",
-             icon: "fas fa-university",
-             title: "จัดการบัญชีธนาคาร",
-          },
       ],
    },
    {
       id: 6,
-      title: "ตั้งค่า",
+      title: "รายงาน",
       class_name: "mt-40",
       sidebar_details: [
          {
-            id: 30,
-            link: "/admin-display",
-            icon: "fas fa-display",
-            title: "การแสดงผล",
+            id: 7,
+            link: "/manager-reports/students",
+            icon: "fas fa-chart-bar",
+            title: "รายงานนักศึกษาและนักเรียน",
          },
       ],
    },
 ];
 
-const AdminSidebar = () => {
+const ManagerSidebar = () => {
    const [openSubmenu, setOpenSubmenu] = useState<number | null>(null);
    const location = useLocation();
    const currentPath = location.pathname;
 
    const toggleSubmenu = (id: number) => {
-      if (openSubmenu === id) {
-         setOpenSubmenu(null);
-      } else {
-         setOpenSubmenu(id);
-      }
+      setOpenSubmenu(openSubmenu === id ? null : id);
    };
 
-   // ปรับปรุงฟังก์ชัน isActive ให้ตรวจสอบ exact match สำหรับ submenu items
+   // Check if a menu item is active
    const isActive = (path: string) => {
       return currentPath === path;
    };
@@ -303,4 +188,4 @@ const AdminSidebar = () => {
    );
 };
 
-export default AdminSidebar;
+export default ManagerSidebar;

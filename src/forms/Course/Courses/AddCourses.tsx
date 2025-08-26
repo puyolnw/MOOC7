@@ -70,7 +70,47 @@ const CourseInfoSection: React.FC<{
   const [isLoadingDepartments, setIsLoadingDepartments] = useState(false);
   const [departmentError, setDepartmentError] = useState<string | null>(null);
   const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
+  const [userRole, setUserRole] = useState<number | null>(null);
+  const [userFaculty, setUserFaculty] = useState<string | null>(null);
   const apiURL = import.meta.env.VITE_API_URL;
+
+  useEffect(() => {
+    const fetchUserInfo = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) {
+          setDepartmentError("ไม่พบข้อมูลการเข้าสู่ระบบ กรุณาเข้าสู่ระบบใหม่");
+          return;
+        }
+
+        // ดึงข้อมูล user จาก token
+        const tokenPayload = JSON.parse(atob(token.split('.')[1]));
+        const role = tokenPayload.role_id;
+        setUserRole(role);
+
+        // ถ้าเป็น manager ให้ดึงข้อมูลคณะที่สังกัดอยู่
+        if (role === 3) { // manager role
+          try {
+            const managerResponse = await axios.get(`${apiURL}/api/manager/departments/faculties`, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            if (managerResponse.data.success && managerResponse.data.faculties.length > 0) {
+              // ใช้คณะแรกที่ manager สังกัดอยู่
+              const faculty = managerResponse.data.faculties[0];
+              setUserFaculty(faculty);
+            }
+          } catch (error) {
+            console.error("Error fetching manager faculty:", error);
+          }
+        }
+      } catch (error) {
+        console.error("Error parsing token:", error);
+      }
+    };
+
+    fetchUserInfo();
+  }, []);
 
   useEffect(() => {
     const fetchDepartments = async () => {
@@ -84,19 +124,39 @@ const CourseInfoSection: React.FC<{
           return;
         }
 
-        const response = await axios.get(`${apiURL}/api/auth/departments`, {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        let response;
+        
+        // ถ้าเป็น manager ให้ดึงเฉพาะสาขาในคณะที่สังกัดอยู่
+        if (userRole === 3 && userFaculty) {
+          response = await axios.get(`${apiURL}/api/manager/departments?faculty=${encodeURIComponent(userFaculty)}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+        } else {
+          // ถ้าเป็น admin หรือ role อื่น ให้ดึงทั้งหมด
+          response = await axios.get(`${apiURL}/api/auth/departments`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+        }
 
         if (response.data.success) {
-          const deptList = response.data.departments.map((d: Department) => ({
-            department_id: d.department_id.toString(),
-            department_name: d.department_name,
-            faculty: d.faculty
-          }));
+          let deptList;
+          
+          if (userRole === 3 && userFaculty) {
+            // สำหรับ manager
+            deptList = response.data.departments.map((d: Department) => ({
+              department_id: d.department_id.toString(),
+              department_name: d.department_name,
+              faculty: d.faculty
+            }));
+          } else {
+            // สำหรับ admin และ role อื่น
+            deptList = response.data.departments.map((d: Department) => ({
+              department_id: d.department_id.toString(),
+              department_name: d.department_name,
+              faculty: d.faculty
+            }));
+          }
+          
           setDepartments(deptList);
           
           // หาและตั้งค่า department ที่เลือกจาก URL
@@ -115,8 +175,10 @@ const CourseInfoSection: React.FC<{
       }
     };
 
-    fetchDepartments();
-  }, []);
+    if (userRole !== null) {
+      fetchDepartments();
+    }
+  }, [userRole, userFaculty]);
 
   // อัปเดต selectedDepartment เมื่อ courseData.department_id เปลี่ยน
   useEffect(() => {
@@ -129,7 +191,7 @@ const CourseInfoSection: React.FC<{
   return (
     <div className="card shadow-sm border-0 mb-4">
       <div className="card-body">
-        <h5 className="card-title mb-3">
+        <h5 className="card-title mb-3 text-dark">
           <i className="fas fa-info-circle text-primary me-2"></i>
           ข้อมูลหลักสูตร (จำเป็น)
         </h5>
@@ -185,7 +247,6 @@ const CourseInfoSection: React.FC<{
               ))}
             </select>
           )}
-          {errors.department_id && <div className="invalid-feedback">{errors.department_id}</div>}
         </div>
 
         {selectedDepartment && (
@@ -234,7 +295,7 @@ const AdditionalInfoSection: React.FC<{
   return (
     <div className="card shadow-sm border-0 mb-4">
       <div className="card-body">
-        <h5 className="card-title mb-3">
+        <h5 className="card-title mb-3 text-dark">
           <i className="fas fa-plus-circle text-success me-2"></i>
           ข้อมูลเพิ่มเติม (ไม่บังคับ)
         </h5>
@@ -293,7 +354,7 @@ const MediaSection: React.FC<{
   return (
     <div className="card shadow-sm border-0 mb-4">
       <div className="card-body">
-        <h5 className="card-title mb-3">
+        <h5 className="card-title mb-3 text-dark">
           <i className="fas fa-image text-info me-2"></i>
           สื่อและเอกสารประกอบ (ไม่บังคับ)
         </h5>
@@ -424,7 +485,7 @@ const ContentManagementSection: React.FC<{
   return (
     <div className="card shadow-sm border-0 mb-4">
       <div className="card-body">
-        <h5 className="card-title mb-3">
+        <h5 className="card-title mb-3 text-dark">
           <i className="fas fa-book text-warning me-2"></i>
           จัดการเนื้อหาหลักสูตร (ไม่บังคับ)
         </h5>
@@ -479,6 +540,11 @@ const AddCourses: React.FC<AddCoursesProps> = ({ onSubmit, onCancel }) => {
     attachments: [],
   });
 
+  // เพิ่ม state สำหรับ user role และ faculty
+  const [userRole, setUserRole] = useState<number | null>(null);
+  const [userFaculty, setUserFaculty] = useState<string | null>(null);
+  const [departments, setDepartments] = useState<Department[]>([]);
+
   const [errors, setErrors] = useState<Errors>({
     title: "",
     department_id: "",
@@ -508,6 +574,94 @@ const AddCourses: React.FC<AddCoursesProps> = ({ onSubmit, onCancel }) => {
       }));
     }
   }, [departmentIdFromUrl]);
+
+  // ดึงข้อมูล user role และ faculty
+  useEffect(() => {
+    const fetchUserInfo = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+
+        // ดึงข้อมูล user จาก token
+        const tokenPayload = JSON.parse(atob(token.split('.')[1]));
+        const role = tokenPayload.role_id;
+        setUserRole(role);
+
+        // ถ้าเป็น manager ให้ดึงข้อมูลคณะที่สังกัดอยู่
+        if (role === 3) { // manager role
+          try {
+            const managerResponse = await axios.get(`${apiURL}/api/manager/departments/faculties`, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            if (managerResponse.data.success && managerResponse.data.faculties.length > 0) {
+              // ใช้คณะแรกที่ manager สังกัดอยู่
+              const faculty = managerResponse.data.faculties[0];
+              setUserFaculty(faculty);
+            }
+          } catch (error) {
+            console.error("Error fetching manager faculty:", error);
+          }
+        }
+      } catch (error) {
+        console.error("Error parsing token:", error);
+      }
+    };
+
+    fetchUserInfo();
+  }, []);
+
+  // ดึงข้อมูล departments
+  useEffect(() => {
+    const fetchDepartments = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+
+        let response;
+        
+        // ถ้าเป็น manager ให้ดึงเฉพาะสาขาในคณะที่สังกัดอยู่
+        if (userRole === 3 && userFaculty) {
+          response = await axios.get(`${apiURL}/api/manager/departments?faculty=${encodeURIComponent(userFaculty)}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+        } else {
+          // ถ้าเป็น admin หรือ role อื่น ให้ดึงทั้งหมด
+          response = await axios.get(`${apiURL}/api/auth/departments`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+        }
+
+        if (response.data.success) {
+          let deptList;
+          
+          if (userRole === 3 && userFaculty) {
+            // สำหรับ manager
+            deptList = response.data.departments.map((d: Department) => ({
+              department_id: d.department_id.toString(),
+              department_name: d.department_name,
+              faculty: d.faculty
+            }));
+          } else {
+            // สำหรับ admin และ role อื่น
+            deptList = response.data.departments.map((d: Department) => ({
+              department_id: d.department_id.toString(),
+              department_name: d.department_name,
+              faculty: d.faculty
+            }));
+          }
+          
+          setDepartments(deptList);
+        }
+      } catch (error) {
+        console.error("Error fetching departments:", error);
+      }
+    };
+
+    if (userRole !== null) {
+      fetchDepartments();
+    }
+  }, [userRole, userFaculty]);
 
   // Load available subjects on component mount
   useEffect(() => {
@@ -694,6 +848,14 @@ const AddCourses: React.FC<AddCoursesProps> = ({ onSubmit, onCancel }) => {
       newErrors.department_id = "กรุณาเลือกสาขาวิชา";
     }
 
+    // เพิ่มการตรวจสอบสำหรับ manager
+    if (userRole === 3 && userFaculty) {
+      const selectedDept = departments.find(d => d.department_id === courseData.department_id);
+      if (selectedDept && selectedDept.faculty !== userFaculty) {
+        newErrors.department_id = `คุณสามารถเลือกได้เฉพาะสาขาในคณะ ${userFaculty} เท่านั้น`;
+      }
+    }
+
     if (!courseData.description.trim()) {
       newErrors.description = "กรุณากรอกคำอธิบายหลักสูตร";
     }
@@ -722,6 +884,15 @@ const AddCourses: React.FC<AddCoursesProps> = ({ onSubmit, onCancel }) => {
     if (!validateForm()) {
       toast.error("กรุณาตรวจสอบข้อมูลให้ครบถ้วน");
       return;
+    }
+
+    // เพิ่มการตรวจสอบสำหรับ manager
+    if (userRole === 3 && userFaculty) {
+      const selectedDept = departments.find(d => d.department_id === courseData.department_id);
+      if (selectedDept && selectedDept.faculty !== userFaculty) {
+        toast.error(`คุณสามารถสร้างหลักสูตรได้เฉพาะในคณะ ${userFaculty} เท่านั้น`);
+        return;
+      }
     }
 
     setIsSubmitting(true);
@@ -783,8 +954,15 @@ const AddCourses: React.FC<AddCoursesProps> = ({ onSubmit, onCancel }) => {
           onSubmit(response.data.course);
         } else {
           // สร้าง URL สำหรับไปหน้ารายละเอียดหลักสูตร
-          // ต้องไปที่หน้า admin-creditbank และเลือกหลักสูตรที่สร้าง
-          navigate(`/admin-creditbank?course_id=${response.data.courseId}`);
+          // ตรวจสอบ role เพื่อไปหน้าที่ถูกต้อง
+          if (userRole === 3) { // manager role
+            const selectedDept = departments.find(d => d.department_id === courseData.department_id);
+            navigate(`/manager-creditbank?view=subjects&faculty=${encodeURIComponent(selectedDept?.faculty || '')}&department=${courseData.department_id}&course=${response.data.courseId}`);
+          } else {
+            // admin หรือ role อื่น
+            const selectedDept = departments.find(d => d.department_id === courseData.department_id);
+            navigate(`/admin-creditbank?view=subjects&faculty=${encodeURIComponent(selectedDept?.faculty || '')}&department=${courseData.department_id}&course=${response.data.courseId}`);
+          }
         }
       } else {
         toast.error(response.data.message || "เกิดข้อผิดพลาดในการสร้างหลักสูตร");
@@ -815,10 +993,52 @@ const AddCourses: React.FC<AddCoursesProps> = ({ onSubmit, onCancel }) => {
 
   return (
     <Wrapper>
+      <style>
+        {`
+          .card-title {
+            color: #212529 !important;
+          }
+          .card-body {
+            color: #212529 !important;
+          }
+          .form-label {
+            color: #212529 !important;
+          }
+          .form-control {
+            color: #212529 !important;
+          }
+          .form-control::placeholder {
+            color: #6c757d !important;
+          }
+        `}
+      </style>
       <div className="container-fluid py-4">
         <div className="row justify-content-center">
           <div className="col-12 col-xl-10">
             {/* Header */}
+            <div className="card shadow-sm border-0 mb-4">
+              <div className="card-body">
+                <div className="d-flex justify-content-between align-items-center">
+                  <div>
+                    <h4 className="mb-2">
+                      <i className="fas fa-plus-circle text-success me-2"></i>
+                      สร้างหลักสูตรใหม่
+                    </h4>
+                    <p className="text-muted mb-0">
+                      กรอกข้อมูลหลักสูตรเพื่อสร้างหลักสูตรใหม่ในระบบ
+                    </p>
+                  </div>
+                  {userRole === 3 && userFaculty && (
+                    <div className="text-end">
+                      <div className="badge bg-info fs-6">
+                        <i className="fas fa-user-tie me-1"></i>
+                        ประธานหลักสูตร - {userFaculty}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
           
             {/* Toggle Button สำหรับแสดง/ซ่อนส่วนเพิ่มเติม */}
             <div className="card shadow-sm border-0 mb-4">
