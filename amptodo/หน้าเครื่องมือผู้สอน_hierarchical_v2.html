@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>เครื่องมือผู้สอน | โครงสร้างการเรียนรู้แบบ Hierarchical</title>
+  <style>
+    :root {
+      --primary: #6366f1;
+      --primary-dark: #4f46e5;
+      --secondary: #8b5cf6;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --info: #06b6d4;
+      
+      --bg-primary: #0f172a;
+      --bg-secondary: #1e293b;
+      --bg-tertiary: #334155;
+      --bg-card: #1e293b;
+      --bg-input: #0f172a;
+      
+      --text-primary: #f8fafc;
+      --text-secondary: #cbd5e1;
+      --text-muted: #64748b;
+      --text-accent: #e2e8f0;
+      
+      --border: #334155;
+      --border-light: #475569;
+      --border-focus: #6366f1;
+      
+      --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+      --shadow-lg: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      --shadow-inner: inset 0 2px 4px 0 rgba(0, 0, 0, 0.2);
+      
+      --radius: 12px;
+      --radius-lg: 16px;
+      --radius-xl: 20px;
+      
+      --gradient-primary: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      --gradient-success: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      --gradient-warning: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      --gradient-danger: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, var(--bg-primary) 0%, #1e1b4b 100%);
+      color: var(--text-primary);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* Header */
+    .header {
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      padding: 1.5rem 0;
+    }
+
+    .header-content {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .header-title {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .header-title h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      background: var(--gradient-primary);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .header-subtitle {
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 1rem;
+    }
+
+    /* Main Container */
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 2rem;
+      display: grid;
+      grid-template-columns: 1fr 400px;
+      gap: 2rem;
+    }
+
+    @media (max-width: 1200px) {
+      .container {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Cards */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .card:hover {
+      box-shadow: var(--shadow-lg);
+      transform: translateY(-2px);
+    }
+
+    .card-header {
+      padding: 1.5rem;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+    }
+
+    .card-body {
+      padding: 1.5rem;
+    }
+
+    /* Form Elements */
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 0.5rem;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      background: var(--bg-input);
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text-primary);
+      font-size: 0.95rem;
+      transition: all 0.3s ease;
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    }
+
+    .form-select {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      background: var(--bg-input);
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text-primary);
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .form-select:focus {
+      outline: none;
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background: var(--gradient-primary);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(99, 102, 241, 0.3);
+    }
+
+    .btn-secondary {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      background: var(--bg-secondary);
+      border-color: var(--border-light);
+    }
+
+    .btn-success {
+      background: var(--gradient-success);
+      color: white;
+    }
+
+    .btn-danger {
+      background: var(--gradient-danger);
+      color: white;
+    }
+
+    .btn-warning {
+      background: var(--gradient-warning);
+      color: white;
+    }
+
+    /* Grid Layout */
+    .grid {
+      display: grid;
+      gap: 1rem;
+    }
+
+    .grid-2 {
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    }
+
+    .grid-3 {
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    }
+
+    /* Progress Bars */
+    .progress-container {
+      margin: 1rem 0;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 12px;
+      background: var(--bg-tertiary);
+      border-radius: 999px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--gradient-primary);
+      border-radius: 999px;
+      transition: width 0.5s ease;
+      position: relative;
+    }
+
+    .progress-fill::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      animation: shimmer 2s infinite;
+    }
+
+    @keyframes shimmer {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+
+    .progress-stats {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 0.5rem;
+      font-size: 0.875rem;
+    }
+
+    .progress-stat {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: var(--bg-tertiary);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+    }
+
+    /* Units and Exercises */
+    .unit {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      margin-bottom: 1.5rem;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .unit:hover {
+      border-color: var(--border-light);
+      box-shadow: var(--shadow);
+    }
+
+    .unit-header {
+      padding: 1.25rem;
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(99, 102, 241, 0.1) 100%);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .unit-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .unit-actions {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .unit-body {
+      padding: 1.25rem;
+    }
+
+    .exercise {
+      background: var(--bg-tertiary);
+      border: 1px dashed var(--border-light);
+      border-radius: var(--radius);
+      padding: 1rem;
+      margin: 0.75rem 0;
+      transition: all 0.3s ease;
+    }
+
+    .exercise:hover {
+      border-color: var(--border-focus);
+      background: var(--bg-secondary);
+    }
+
+    .exercise-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.75rem;
+    }
+
+    .exercise-title {
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    /* Status Indicators */
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      font-weight: 600;
+    }
+
+    .status-success {
+      background: rgba(16, 185, 129, 0.1);
+      color: #10b981;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .status-warning {
+      background: rgba(245, 158, 11, 0.1);
+      color: #f59e0b;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .status-error {
+      background: rgba(239, 68, 68, 0.1);
+      color: #ef4444;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    /* Tags */
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    .tag-primary {
+      background: rgba(99, 102, 241, 0.1);
+      color: #6366f1;
+      border-color: rgba(99, 102, 241, 0.3);
+    }
+
+    /* Sidebar */
+    .sidebar {
+      position: sticky;
+      top: 2rem;
+      height: fit-content;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .stat-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+      text-align: center;
+    }
+
+    .stat-number {
+      font-size: 2rem;
+      font-weight: 700;
+      background: var(--gradient-primary);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .stat-label {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      margin-top: 0.25rem;
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .fade-in {
+      animation: fadeIn 0.5s ease;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .header-content {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+      }
+
+      .header-title h1 {
+        font-size: 1.5rem;
+      }
+
+      .container {
+        padding: 1rem;
+      }
+
+      .grid-2, .grid-3 {
+        grid-template-columns: 1fr;
+      }
+
+      .unit-header {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: stretch;
+      }
+
+      .unit-actions {
+        justify-content: center;
+      }
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--bg-secondary);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--border-light);
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="header-content">
+      <div class="header-title">
+        <h1>🎓 เครื่องมือผู้สอน</h1>
+        <p class="header-subtitle">สร้างโครงสร้างการเรียนรู้แบบ Hierarchical พร้อมระบบจัดการคะแนนอัจฉริยะ</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-secondary" id="btnLoadDemo">
+          📋 โหลดตัวอย่าง
+        </button>
+        <button class="btn btn-warning" id="btnReset">
+          🔄 เริ่มใหม่
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="container">
+    <!-- Main Form -->
+    <section class="card fade-in">
+      <div class="card-header">
+        <div class="tag tag-primary">📚 รายละเอียดรายวิชา</div>
+        <p style="margin-top: 0.5rem; color: var(--text-muted); font-size: 0.875rem;">
+          โครงสร้าง Hierarchical: วิชา(100%) = ก่อนเรียน(0%) + บทเรียนหลัก(80%) + หลังเรียน(20%)<br/>
+          แต่ละบทเรียนหลัก = 100% ของบทเรียนย่อย, แต่ละบทเรียนย่อย = 100% ของแบบทดสอบ
+        </p>
+      </div>
+      <div class="card-body">
+        <!-- Course Info -->
+        <div class="grid grid-2">
+          <div class="form-group">
+            <label class="form-label">📖 ชื่อรายวิชา</label>
+            <input type="text" class="form-input" id="courseName" placeholder="เช่น วิชา A" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">🏷️ รหัสวิชา</label>
+            <input type="text" class="form-input" id="courseCode" placeholder="เช่น IT-101" />
+          </div>
+        </div>
+
+        <!-- Pre/Post Test Settings -->
+        <div class="grid grid-2" style="margin-top: 2rem;">
+          <div class="card">
+            <div class="card-header">
+              <div class="tag">📝 แบบทดสอบก่อนเรียน</div>
+            </div>
+            <div class="card-body">
+              <div class="grid grid-2">
+                <div class="form-group">
+                  <label class="form-label">เปิดใช้งาน</label>
+                  <select class="form-select" id="preEnabled">
+                    <option value="yes">✅ ใช้</option>
+                    <option value="no">❌ ไม่ใช้</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">เกณฑ์ผ่านขั้นต่ำ (%)</label>
+                  <input type="number" class="form-input" id="preMin" min="0" max="100" placeholder="เช่น 40" />
+                </div>
+              </div>
+              <div style="margin-top: 1rem; padding: 0.75rem; background: rgba(99, 102, 241, 0.1); border-radius: var(--radius); border: 1px solid rgba(99, 102, 241, 0.3);">
+                <p style="font-size: 0.875rem; color: var(--text-secondary); margin: 0;">
+                  💡 แบบทดสอบก่อนเรียนไม่มีสัดส่วนคะแนนต่อเกรดรวม (0%) เพื่อวัดความรู้ก่อนเรียน
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div class="tag">🎯 แบบทดสอบหลังเรียน</div>
+            </div>
+            <div class="card-body">
+              <div class="grid grid-2">
+                <div class="form-group">
+                  <label class="form-label">เปิดใช้งาน</label>
+                  <select class="form-select" id="postEnabled">
+                    <option value="yes">✅ ใช้</option>
+                    <option value="no">❌ ไม่ใช้</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">เกณฑ์ผ่านขั้นต่ำ (%)</label>
+                  <input type="number" class="form-input" id="postMin" min="0" max="100" placeholder="เช่น 60" />
+                </div>
+              </div>
+              <div style="margin-top: 1rem; padding: 0.75rem; background: rgba(16, 185, 129, 0.1); border-radius: var(--radius); border: 1px solid rgba(16, 185, 129, 0.3);">
+                <p style="font-size: 0.875rem; color: var(--text-secondary); margin: 0;">
+                  🎯 แบบทดสอบหลังเรียนมีสัดส่วน 20% ของเกรดรวม และผู้สอนสามารถตั้งเกณฑ์ผ่านขั้นต่ำได้
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Units Section -->
+        <div style="margin-top: 2rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <div>
+              <div class="tag tag-primary">📚 หน่วยการเรียนรู้</div>
+              <p style="margin-top: 0.5rem; color: var(--text-muted); font-size: 0.875rem;">
+                สัดส่วนคะแนนรวมทุกบทเรียนหลักต้องเท่ากับ <strong>80%</strong> (ไม่รวมหลังเรียน 20%)
+              </p>
+            </div>
+            <button class="btn btn-primary" id="btnAddUnit">
+              ➕ เพิ่มหน่วยการเรียนรู้
+            </button>
+          </div>
+
+          <!-- Overall Progress -->
+          <div class="progress-container">
+            <div class="progress-bar">
+              <div class="progress-fill" id="overallBar"></div>
+            </div>
+            <div class="progress-stats">
+              <div class="progress-stat">
+                <span>📊 ใช้ไป:</span>
+                <strong id="overallUsed">0</strong>%
+              </div>
+                        <div class="progress-stat">
+            <span>📈 คงเหลือ:</span>
+            <strong id="overallRemain">80</strong>%
+          </div>
+            </div>
+          </div>
+
+          <!-- Units Container -->
+          <div id="units"></div>
+
+          <!-- Overall Status -->
+          <div id="overallIssue" class="status status-error" style="display: none; margin-top: 1rem;"></div>
+          <div id="overallOk" class="status status-success" style="display: none; margin-top: 1rem;">
+            ✅ สัดส่วนคะแนนบทเรียนหลักรวมกันเท่ากับ 80%
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border);">
+          <button class="btn btn-secondary" id="btnExport">
+            📤 ส่งออก JSON
+          </button>
+          <button class="btn btn-secondary" id="btnPrint">
+            🖨️ พิมพ์ / PDF
+          </button>
+          <button class="btn btn-success" id="btnSave">
+            💾 บันทึกการตั้งค่า
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="card fade-in">
+        <div class="card-header">
+          <div class="tag tag-primary">📊 สรุปแบบเรียลไทม์</div>
+        </div>
+        <div class="card-body">
+          <!-- Stats -->
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-number" id="statUnits">0</div>
+              <div class="stat-label">หน่วยทั้งหมด</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number" id="statExercises">0</div>
+              <div class="stat-label">แบบฝึกหัดทั้งหมด</div>
+            </div>
+          </div>
+
+          <!-- Requirements -->
+          <div style="margin-top: 1.5rem;">
+            <h4 style="margin-bottom: 1rem; color: var(--text-primary);">📋 ข้อกำหนด:</h4>
+            <ul style="list-style: none; padding: 0; margin: 0;">
+              <li style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; padding: 0.5rem; background: var(--bg-tertiary); border-radius: var(--radius);">
+                <span style="color: var(--success);">✅</span>
+                <span style="font-size: 0.875rem;">สัดส่วนบทเรียนหลักรวม = 80% (ไม่รวมหลังเรียน 20%)</span>
+              </li>
+              <li style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; padding: 0.5rem; background: var(--bg-tertiary); border-radius: var(--radius);">
+                <span style="color: var(--success);">✅</span>
+                <span style="font-size: 0.875rem;">แต่ละบทเรียนหลัก = 100% ของบทเรียนย่อย</span>
+              </li>
+              <li style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; padding: 0.5rem; background: var(--bg-tertiary); border-radius: var(--radius);">
+                <span style="color: var(--success);">✅</span>
+                <span style="font-size: 0.875rem;">แต่ละบทเรียนย่อย = 100% ของแบบทดสอบ</span>
+              </li>
+              <li style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; background: var(--bg-tertiary); border-radius: var(--radius);">
+                <span style="color: var(--success);">✅</span>
+                <span style="font-size: 0.875rem;">ทุกฟิลด์เปอร์เซ็นต์ต้องอยู่ในช่วง 0–100</span>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Issues -->
+          <div id="sideIssues" class="status status-error" style="display: none; margin-top: 1rem;"></div>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- Templates -->
+  <template id="tpl-unit">
+    <div class="unit" data-unit>
+      <div class="unit-header">
+        <div class="unit-title">
+          <div class="grid grid-3" style="align-items: end;">
+            <div>
+              <label class="form-label">📚 ชื่อหน่วยการเรียนรู้</label>
+              <input type="text" class="form-input" data-unit-name placeholder="เช่น บทเรียนหลักที่ 1" />
+            </div>
+            <div>
+              <label class="form-label">📊 สัดส่วนของหน่วย (%)</label>
+              <input type="number" class="form-input" min="0" max="100" step="1" value="0" data-unit-weight />
+            </div>
+            <div>
+              <label class="form-label">🎯 เกณฑ์ผ่านขั้นต่ำ (%)</label>
+              <input type="number" class="form-input" min="0" max="100" step="1" value="0" data-unit-min />
+            </div>
+          </div>
+        </div>
+        <div class="unit-actions">
+          <button class="btn btn-primary" data-add-ex>
+            ➕ เพิ่มแบบฝึกหัด
+          </button>
+          <button class="btn btn-danger" data-del-unit>
+            🗑️ ลบหน่วย
+          </button>
+        </div>
+      </div>
+      <div class="unit-body">
+        <div style="margin-bottom: 1rem; padding: 0.75rem; background: rgba(139, 92, 246, 0.1); border-radius: var(--radius); border: 1px solid rgba(139, 92, 246, 0.3);">
+          <p style="font-size: 0.875rem; color: var(--text-secondary); margin: 0;">
+            📋 สัดส่วนบทเรียนย่อยในบทเรียนหลักนี้ ต้องรวม = 100% ของบทเรียนหลัก
+          </p>
+        </div>
+        
+        <div class="progress-container">
+          <div class="progress-bar">
+            <div class="progress-fill" data-unit-bar></div>
+          </div>
+          <div class="progress-stats">
+            <div class="progress-stat">
+              <span>📊 ใช้ไป:</span>
+              <strong data-unit-used>0</strong>%
+            </div>
+            <div class="progress-stat">
+              <span>📈 คงเหลือ:</span>
+              <strong data-unit-remain>0</strong>%
+            </div>
+          </div>
+        </div>
+
+        <div data-exercises></div>
+        
+        <div data-unit-issue class="status status-error" style="display: none; margin-top: 1rem;"></div>
+        <div data-unit-ok class="status status-success" style="display: none; margin-top: 1rem;">
+          ✅ สัดส่วนบทเรียนย่อยรวมเท่ากับ 100% ของบทเรียนหลัก
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <template id="tpl-ex">
+    <div class="exercise" data-ex>
+      <div class="exercise-header">
+        <div class="grid grid-3" style="align-items: end;">
+          <div>
+            <label class="form-label">📝 ชื่อแบบฝึกหัด</label>
+            <input type="text" class="form-input" data-ex-name placeholder="เช่น แบบทดสอบบทเรียนหลัก" />
+          </div>
+          <div>
+            <label class="form-label">📊 สัดส่วนของแบบฝึกหัด (%)</label>
+            <input type="number" class="form-input" min="0" max="100" step="1" value="0" data-ex-weight />
+          </div>
+          <div>
+            <label class="form-label">🎯 เกณฑ์ผ่านขั้นต่ำ (%)</label>
+            <input type="number" class="form-input" min="0" max="100" step="1" value="0" data-ex-min />
+          </div>
+        </div>
+        <div class="unit-actions">
+          <button class="btn btn-danger" data-del-ex>
+            🗑️ ลบแบบฝึกหัด
+          </button>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <script>
+    const $ = (s, d=document) => d.querySelector(s);
+    const $$ = (s, d=document) => Array.from(d.querySelectorAll(s));
+
+    const els = {
+      courseName: $('#courseName'),
+      courseCode: $('#courseCode'),
+      preEnabled: $('#preEnabled'),
+      preMin: $('#preMin'),
+      postEnabled: $('#postEnabled'),
+      postMin: $('#postMin'),
+      unitsWrap: $('#units'),
+      btnAddUnit: $('#btnAddUnit'),
+      btnExport: $('#btnExport'),
+      btnSave: $('#btnSave'),
+      btnPrint: $('#btnPrint'),
+      btnReset: $('#btnReset'),
+      btnLoadDemo: $('#btnLoadDemo'),
+      overallBar: $('#overallBar'),
+      overallUsed: $('#overallUsed'),
+      overallRemain: $('#overallRemain'),
+      overallIssue: $('#overallIssue'),
+      overallOk: $('#overallOk'),
+      statUnits: $('#statUnits'),
+      statExercises: $('#statExercises'),
+      sideIssues: $('#sideIssues'),
+    };
+
+    const tplUnit = $('#tpl-unit');
+    const tplEx = $('#tpl-ex');
+
+    const stateKey = 'hierarchicalCourseDesigner:v2';
+
+    function round2(x){ return Math.round((x + Number.EPSILON) * 100) / 100; }
+
+    function serialize(){
+      const data = {
+        name: els.courseName.value || '',
+        code: els.courseCode.value || '',
+        pre: { enabled: els.preEnabled.value === 'yes', min: num(els.preMin.value) },
+        post: { enabled: els.postEnabled.value === 'yes', min: num(els.postMin.value) },
+        units: $$('#units [data-unit]').map(unit => ({
+          name: $('[data-unit-name]', unit).value || '',
+          weight: num($('[data-unit-weight]', unit).value),
+          min: num($('[data-unit-min]', unit).value),
+          exercises: $$('[data-ex]', unit).map(ex => ({
+            name: $('[data-ex-name]', ex).value || '',
+            weight: num($('[data-ex-weight]', ex).value),
+            min: num($('[data-ex-min]', ex).value),
+          }))
+        }))
+      };
+      return data;
+    }
+
+    function num(v){
+      const n = parseFloat(v);
+      return Number.isFinite(n) ? n : 0;
+    }
+
+    function save(){
+      const data = serialize();
+      localStorage.setItem(stateKey, JSON.stringify(data));
+    }
+
+    function load(){
+      const raw = localStorage.getItem(stateKey);
+      if(!raw) return;
+      try { apply(JSON.parse(raw)); } catch(e){ console.warn(e); }
+    }
+
+    function apply(data){
+      els.courseName.value = data.name || '';
+      els.courseCode.value = data.code || '';
+      els.preEnabled.value = data?.pre?.enabled ? 'yes' : 'no';
+      els.preMin.value = data?.pre?.min ?? '';
+      els.postEnabled.value = data?.post?.enabled ? 'yes' : 'no';
+      els.postMin.value = data?.post?.min ?? '';
+      els.unitsWrap.innerHTML = '';
+      (data.units || []).forEach(u => {
+        const unitEl = addUnit();
+        $('[data-unit-name]', unitEl).value = u.name || '';
+        $('[data-unit-weight]', unitEl).value = u.weight ?? 0;
+        $('[data-unit-min]', unitEl).value = u.min ?? 0;
+        (u.exercises || []).forEach(ex => {
+          const exEl = addExercise(unitEl);
+          $('[data-ex-name]', exEl).value = ex.name || '';
+          $('[data-ex-weight]', exEl).value = ex.weight ?? 0;
+          $('[data-ex-min]', exEl).value = ex.min ?? 0;
+        });
+      });
+      compute();
+    }
+
+    function addUnit(){
+      const node = tplUnit.content.cloneNode(true);
+      const unit = node.querySelector('[data-unit]');
+
+      $('[data-add-ex]', unit).addEventListener('click', () => {
+        addExercise(unit);
+        compute();
+        save();
+      });
+      $('[data-del-unit]', unit).addEventListener('click', () => {
+        unit.remove();
+        compute();
+        save();
+      });
+
+      ['input','change'].forEach(evt => unit.addEventListener(evt, e=>{
+        if(e.target.matches('input[type="number"], input[type="text"]')){
+          compute();
+          save();
+        }
+      }));
+
+      els.unitsWrap.appendChild(unit);
+      return unit;
+    }
+
+    function addExercise(unit){
+      const node = tplEx.content.cloneNode(true);
+      const ex = node.querySelector('[data-ex]');
+      $('[data-del-ex]', ex).addEventListener('click', () => { ex.remove(); compute(); save(); });
+      ['input','change'].forEach(evt => ex.addEventListener(evt, e=>{
+        if(e.target.matches('input[type="number"], input[type="text"]')){
+          compute();
+          save();
+        }
+      }));
+      $('[data-exercises]', unit).appendChild(ex);
+      return ex;
+    }
+
+    function compute(){
+      const data = serialize();
+
+      // Validate ranges 0..100 for % fields
+      const allPercents = [];
+      data.units.forEach(u=>{
+        allPercents.push(u.weight, u.min);
+        u.exercises.forEach(ex=> allPercents.push(ex.weight, ex.min));
+      });
+      if(data.pre?.min != null) allPercents.push(data.pre.min);
+      if(data.post?.min != null) allPercents.push(data.post.min);
+      const outOfRange = allPercents.filter(v => v<0 || v>100);
+
+      // Overall main units weight (should be 80%)
+      const used = round2(data.units.reduce((s,u)=> s + (u.weight||0), 0));
+      const remain = round2(80 - used);
+      els.overallBar.style.width = Math.min(100, Math.max(0, (used/80)*100)) + '%';
+      els.overallUsed.textContent = used;
+      els.overallRemain.textContent = remain < 0 ? 0 : remain;
+      if(used === 80){
+        els.overallOk.style.display = 'block';
+        els.overallIssue.style.display = 'none';
+      } else {
+        els.overallOk.style.display = 'none';
+        els.overallIssue.style.display = 'block';
+        els.overallIssue.textContent = used > 80
+          ? `❌ สัดส่วนบทเรียนหลักเกินไป ${used}% (ต้องเท่ากับ 80%)`
+          : `⚠️ สัดส่วนบทเรียนหลักรวมยังไม่ครบ ${used}% (ต้องเท่ากับ 80%)`;
+      }
+
+      // Per main unit: sum of sub units equals 100% of main unit
+      const unitEls = $$('#units [data-unit]');
+      unitEls.forEach((unitEl, idx)=>{
+        const u = data.units[idx];
+        const usedSub = round2(u.exercises.reduce((s,ex)=> s + (ex.weight||0), 0));
+        const remainSub = round2(100 - usedSub); // Each main unit should be 100% of its sub units
+        const bar = $('[data-unit-bar]', unitEl);
+        const usedEl = $('[data-unit-used]', unitEl);
+        const remEl = $('[data-unit-remain]', unitEl);
+        const issue = $('[data-unit-issue]', unitEl);
+        const ok = $('[data-unit-ok]', unitEl);
+        bar.style.width = Math.min(100, Math.max(0, usedSub)) + '%';
+        usedEl.textContent = usedSub;
+        remEl.textContent = remainSub < 0 ? 0 : remainSub;
+        if(usedSub === 100){
+          ok.style.display = 'block';
+          issue.style.display = 'none';
+        } else {
+          ok.style.display = 'none';
+          issue.style.display = 'block';
+          issue.textContent = usedSub === 0
+            ? '⚠️ ยังไม่กำหนดสัดส่วนของบทเรียนย่อย'
+            : (usedSub > 100
+                ? `❌ สัดส่วนบทเรียนย่อยเกินไป ${usedSub}% (ต้องรวม = 100%)`
+                : `⚠️ สัดส่วนบทเรียนย่อยยังไม่ครบ ${usedSub}% (ต้องรวม = 100%)`);
+        }
+      });
+
+      // Side stats
+      els.statUnits.textContent = data.units.length;
+      els.statExercises.textContent = data.units.reduce((s,u)=> s + u.exercises.length, 0);
+      if(outOfRange.length){
+        els.sideIssues.style.display = 'block';
+        els.sideIssues.textContent = '❌ พบเปอร์เซ็นต์นอกช่วง 0–100: กรุณาตรวจสอบค่า';
+      }else{
+        els.sideIssues.style.display = 'none';
+      }
+    }
+
+    // Export & Print
+    els.btnExport.addEventListener('click', ()=>{
+      const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(serialize(), null, 2));
+      const a = document.createElement('a');
+      a.href = dataStr; a.download = (els.courseCode.value||'course') + '_hierarchical_structure.json';
+      a.click();
+    });
+    els.btnPrint.addEventListener('click', ()=> window.print());
+
+    // Save now
+    els.btnSave.addEventListener('click', ()=>{ 
+      save();
+      els.overallOk.style.display = 'block';
+      setTimeout(()=> els.overallOk.style.display = 'none', 2000);
+    });
+
+    // Reset
+    els.btnReset.addEventListener('click', ()=>{
+      if(!confirm('⚠️ ล้างข้อมูลทั้งหมดและเริ่มใหม่?')) return;
+      localStorage.removeItem(stateKey);
+      location.reload();
+    });
+
+    // Add unit
+    els.btnAddUnit.addEventListener('click', ()=>{ addUnit(); compute(); save(); });
+
+    // Load demo structure matching the hierarchical example
+    els.btnLoadDemo.addEventListener('click', ()=>{
+      const demo = {
+        name: 'วิชา A', code: 'COURSE-A',
+        pre: { enabled: true, min: 0 },
+        post: { enabled: true, min: 60 },
+        units: [
+          { name: 'บทเรียนหลักที่ 1', weight: 50, min: 40, exercises: [
+            { name: 'แบบทดสอบบทเรียนหลัก', weight: 20, min: 40},
+            { name: 'บทเรียนย่อย 1', weight: 40, min: 40},
+            { name: 'บทเรียนย่อย 2', weight: 40, min: 40},
+          ]},
+          { name: 'บทเรียนหลักที่ 2', weight: 30, min: 40, exercises: [
+            { name: 'แบบทดสอบบทเรียนหลัก', weight: 20, min: 40},
+            { name: 'บทเรียนย่อย 1', weight: 40, min: 40},
+            { name: 'บทเรียนย่อย 2', weight: 40, min: 40},
+          ]},
+          { name: 'แบบทดสอบหลังเรียน', weight: 20, min: 60, exercises: [
+            { name: 'แบบทดสอบหลังเรียน (รวม)', weight: 100, min: 60},
+          ]},
+        ]
+      };
+      apply(demo);
+      save();
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth'});
+    });
+
+    // Global listeners for top fields
+    ['input','change'].forEach(evt => {
+      [els.courseName, els.courseCode, els.preEnabled, els.preMin, els.postEnabled, els.postMin].forEach(el => {
+        el.addEventListener(evt, ()=>{ compute(); save(); });
+      });
+    });
+
+    // Init
+    load();
+    if($$('#units [data-unit]').length === 0){ addUnit(); }
+    compute();
+  </script>
+</body>
+</html>

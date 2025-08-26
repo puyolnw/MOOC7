@@ -1,5 +1,47 @@
 /* Score Management CSS - Completely rewritten with specific class names to avoid mega.css conflicts */
 
+/* Progress Bar Styles */
+.score-progress-container {
+  margin: 10px 0 !important;
+  background: rgba(0, 0, 0, 0.05) !important;
+  border-radius: 8px !important;
+  padding: 10px !important;
+}
+
+.score-progress-bar {
+  background: #e9ecef !important;
+  height: 8px !important;
+  border-radius: 4px !important;
+  overflow: hidden !important;
+  margin: 8px 0 !important;
+  position: relative !important;
+}
+
+.score-progress-bar-fill {
+  height: 100% !important;
+  transition: all 0.3s ease !important;
+  border-radius: 4px !important;
+}
+
+.score-progress-bar-complete {
+  background: linear-gradient(90deg, #28a745, #20c997) !important;
+}
+
+.score-progress-bar-incomplete {
+  background: linear-gradient(90deg, #ffc107, #fd7e14) !important;
+}
+
+.score-progress-bar-exceeded {
+  background: linear-gradient(90deg, #dc3545, #e74c3c) !important;
+}
+
+.score-progress-text {
+  font-size: 12px !important;
+  color: #6c757d !important;
+  margin-top: 4px !important;
+  text-align: center !important;
+}
+
 .score-table {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
   color: #212529 !important;
