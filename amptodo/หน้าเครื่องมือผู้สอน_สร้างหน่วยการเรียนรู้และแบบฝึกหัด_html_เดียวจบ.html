@@ -93,8 +93,8 @@
   <header>
     <div class="container titlebar">
       <div>
-        <h1>หน้าผู้สอน — สร้างหน่วยการเรียนรู้ & แบบฝึกหัด</h1>
-        <div class="sub">กำหนดสัดส่วนคะแนนเป็น %, กำหนดเกณฑ์ผ่านขั้นต่ำ และติดตาม % ที่ใช้ไป/คงเหลือแบบเรียลไทม์</div>
+        <h1>หน้าผู้สอน — สร้างโครงสร้างการเรียนรู้แบบ Hierarchical</h1>
+        <div class="sub">กำหนดสัดส่วนคะแนนแบบ hierarchical: บทเรียนหลัก → บทเรียนย่อย → แบบทดสอบ และติดตาม % ที่ใช้ไป/คงเหลือแบบเรียลไทม์</div>
       </div>
       <div class="row" style="max-width:420px;">
         <button class="btn ghost" id="btnLoadDemo">โหลดตัวอย่างโครงสร้าง</button>
@@ -108,7 +108,7 @@
     <section class="card">
       <div class="hd">
         <div class="stat"><span class="tag">รายละเอียดรายวิชา</span></div>
-        <div class="muted small">ข้อมูลนี้ถูกบันทึกอัตโนมัติในเบราว์เซอร์ (localStorage)</div>
+        <div class="muted small">โครงสร้าง Hierarchical: ก่อนเรียน(0%) → บทเรียนหลัก → บทเรียนย่อย → แบบทดสอบ → หลังเรียน(20%)</div>
       </div>
       <div class="bd">
         <div class="row">
@@ -143,7 +143,7 @@
                   <input type="number" id="preMin" min="0" max="100" step="1" placeholder="เช่น 40" />
                 </div>
               </div>
-              <div class="note">* แบบทดสอบก่อนเรียนไม่มีสัดส่วนคะแนนต่อเกรดรวม (เพื่อวัดก่อนเรียน)</div>
+              <div class="note">* แบบทดสอบก่อนเรียนไม่มีสัดส่วนคะแนนต่อเกรดรวม (0%) เพื่อวัดความรู้ก่อนเรียน</div>
             </div>
           </div>
 
@@ -165,7 +165,7 @@
                   <input type="number" id="postMin" min="0" max="100" step="1" placeholder="เช่น 50" />
                 </div>
               </div>
-              <div class="note">* ผู้สอนสามารถตั้งเกณฑ์ผ่านขั้นต่ำของแบบทดสอบหลังเรียนได้</div>
+              <div class="note">* แบบทดสอบหลังเรียนมีสัดส่วน 20% ของเกรดรวม และผู้สอนสามารถตั้งเกณฑ์ผ่านขั้นต่ำได้</div>
             </div>
           </div>
         </div>
@@ -175,8 +175,8 @@
         <div class="row" style="align-items: center;">
           <div style="flex:1 1 auto;">
             <div class="stat" style="gap:12px; flex-wrap: wrap;">
-              <span class="tag">หน่วยการเรียนรู้</span>
-              <span class="muted">สัดส่วนคะแนนรวมทุกหน่วยต้องเท่ากับ <b>100%</b></span>
+              <span class="tag">บทเรียนหลัก (BigLessons)</span>
+              <span class="muted">สัดส่วนคะแนนรวมบทเรียนหลัก + แบบทดสอบหลังเรียน = <b>100%</b></span>
             </div>
           </div>
           <div class="unit-actions">
@@ -515,28 +515,25 @@
     // Add unit
     els.btnAddUnit.addEventListener('click', ()=>{ addUnit(); compute(); save(); });
 
-    // Load demo structure matching the example
+    // Load demo structure matching the hierarchical example
     els.btnLoadDemo.addEventListener('click', ()=>{
       const demo = {
         name: 'วิชา A', code: 'COURSE-A',
         pre: { enabled: true, min: 0 },
         post: { enabled: true, min: 60 },
         units: [
-          { name: 'หน่วยการเรียนรู้ที่ 1', weight: 25, min: 40, exercises: [
-            { name: 'แบบฝึกหัด 1.1', weight: 12.5, min: 40},
-            { name: 'แบบฝึกหัด 1.2', weight: 12.5, min: 40},
+          { name: 'บทเรียนหลักที่ 1', weight: 50, min: 40, exercises: [
+            { name: 'แบบทดสอบบทเรียนหลัก', weight: 20, min: 40},
+            { name: 'บทเรียนย่อย 1', weight: 40, min: 40},
+            { name: 'บทเรียนย่อย 2', weight: 40, min: 40},
           ]},
-          { name: 'หน่วยการเรียนรู้ที่ 2', weight: 25, min: 40, exercises: [
-            { name: 'แบบฝึกหัด 2.1', weight: 8.3, min: 40},
-            { name: 'แบบฝึกหัด 2.2', weight: 8.3, min: 40},
-            { name: 'แบบฝึกหัด 2.3', weight: 8.4, min: 40},
+          { name: 'บทเรียนหลักที่ 2', weight: 30, min: 40, exercises: [
+            { name: 'แบบทดสอบบทเรียนหลัก', weight: 20, min: 40},
+            { name: 'บทเรียนย่อย 1', weight: 40, min: 40},
+            { name: 'บทเรียนย่อย 2', weight: 40, min: 40},
           ]},
-          { name: 'หน่วยการเรียนรู้ที่ 3', weight: 25, min: 40, exercises: [
-            { name: 'แบบฝึกหัด 3.1', weight: 12.5, min: 40},
-            { name: 'แบบฝึกหัด 3.2', weight: 12.5, min: 40},
-          ]},
-          { name: 'หน่วยการเรียนรู้ที่ 4', weight: 25, min: 40, exercises: [
-            { name: 'แบบฝึกหัด 4.1', weight: 25, min: 40},
+          { name: 'แบบทดสอบหลังเรียน', weight: 20, min: 60, exercises: [
+            { name: 'แบบทดสอบหลังเรียน (รวม)', weight: 100, min: 60},
           ]},
         ]
       };

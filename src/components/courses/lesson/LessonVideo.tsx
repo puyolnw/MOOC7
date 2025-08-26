@@ -31,8 +31,6 @@ const LessonVideo = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<Plyr | null>(null);
   const hasCompletedRef = useRef(false);
-  const saveIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const syncIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const [progress, setProgress] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
@@ -41,6 +39,7 @@ const LessonVideo = ({
   const [savedPosition, setSavedPosition] = useState<number | null>(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [currentUserId, setCurrentUserId] = useState<string>('');
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
 
   // สร้าง key สำหรับ localStorage
   const getStorageKey = () => {
@@ -143,7 +142,7 @@ const LessonVideo = ({
   };
 
   // บันทึกความก้าวหน้าไปที่ Server
-  const saveToServer = async (currentTime: number, duration: number, completed?: boolean) => {
+  const saveToServer = async (completed?: boolean) => {
     if (!isOnline) {
       console.log("ไม่สามารถเชื่อมต่ออินเทอร์เน็ต");
       return null;
@@ -157,22 +156,40 @@ const LessonVideo = ({
   
     try {
       const apiURL = import.meta.env.VITE_API_URL;
-      const response = await axios.post(
-        `${apiURL}/api/learn/lesson/${lessonId}/video-progress`,
-        {
-          position: currentTime,
-          duration: duration,
-          completed: completed
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
       
-      if (response.data.success) {
-        console.log(`บันทึก Server: ${currentTime.toFixed(1)}/${duration.toFixed(1)}, completed: ${completed}`);
-        return true;
+      // ส่งเฉพาะเมื่อ video เสร็จแล้วเท่านั้น
+      if (completed) {
+        // แสดง loading state
+        setSaveStatus('saving');
+        
+        const response = await axios.post(
+          `${apiURL}/api/learn/lesson/${lessonId}/video-progress`,
+          {
+            completed: true
+          },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        
+        if (response.data.success) {
+          console.log(`✅ บันทึก Server: Video เสร็จแล้ว`);
+          setSaveStatus('success');
+          // ซ่อน success message หลังจาก 3 วินาที
+          setTimeout(() => setSaveStatus('idle'), 3000);
+          return true;
+        } else {
+          console.error("❌ Server response not successful:", response.data);
+          setSaveStatus('error');
+          // ซ่อน error message หลังจาก 5 วินาที
+          setTimeout(() => setSaveStatus('idle'), 5000);
+          return false;
+        }
       }
     } catch (error) {
-      console.error("Error saving to server:", error);
+      console.error("❌ Error saving to server:", error);
+      setSaveStatus('error');
+      // ซ่อน error message หลังจาก 5 วินาที
+      setTimeout(() => setSaveStatus('idle'), 5000);
+      return false;
     }
     return null;
   };
@@ -225,60 +242,7 @@ const LessonVideo = ({
     return null;
   };
 
-  // เริ่มต้นการบันทึกอัตโนมัติทุก 10 วินาที
-  const startAutoSave = () => {
-    if (saveIntervalRef.current) {
-      clearInterval(saveIntervalRef.current);
-    }
 
-    saveIntervalRef.current = setInterval(async () => {
-      if (playerRef.current && playerRef.current.duration > 0) {
-        const currentTime = playerRef.current.currentTime;
-        const duration = playerRef.current.duration;
-        
-        if (currentTime > 0) {
-          // ตรวจสอบว่าดูจบแล้วหรือยัง
-          if (currentTime >= duration * 0.9 && !hasCompletedRef.current) {
-            console.log("วิดีโอดูจบแล้ว (90%) - AutoSave");
-            setIsCompleted(true);
-            setShowCompletionModal(true);
-            hasCompletedRef.current = true;
-            // ✅ ป้องกันการเรียก onComplete ซ้ำ
-            if (typeof onComplete === 'function') {
-              onComplete();
-            }
-          }
-        }
-      }
-    }, 10000); // บันทึกทุก 10 วินาที
-  };
-
-  // เริ่มต้นการ sync ไปยัง server ทุก 30 วินาที
-  const startServerSync = () => {
-    if (syncIntervalRef.current) {
-      clearInterval(syncIntervalRef.current);
-    }
-
-    syncIntervalRef.current = setInterval(async () => {
-      if (playerRef.current && playerRef.current.duration > 0) {
-        const currentTime = playerRef.current.currentTime;
-        const duration = playerRef.current.duration;
-        await saveToServer(currentTime, duration, hasCompletedRef.current);
-      }
-    }, 30000); // sync ทุก 30 วินาที
-  };
-
-  // หยุดการบันทึกอัตโนมัติ
-  const stopAutoSave = () => {
-    if (saveIntervalRef.current) {
-      clearInterval(saveIntervalRef.current);
-      saveIntervalRef.current = null;
-    }
-    if (syncIntervalRef.current) {
-      clearInterval(syncIntervalRef.current);
-      syncIntervalRef.current = null;
-    }
-  };
 
   // ฟังก์ชันสำหรับดูวิดีโอซ้ำ
   const handleRewatch = () => {
@@ -448,7 +412,7 @@ const LessonVideo = ({
     loadServerProgress();
     
     return () => {
-      stopAutoSave();
+      // stopAutoSave(); // ลบออก
     };
   }, [lessonId, youtubeId]); // ✅ ลบ onComplete ออกจาก dependency array
 
@@ -505,25 +469,18 @@ const LessonVideo = ({
 
       // เมื่อเริ่มเล่น
       playerRef.current.on('play', () => {
-        console.log("เริ่มเล่นวิดีโอ - เริ่มบันทึกอัตโนมัติ");
-        startAutoSave();
-        startServerSync();
+        console.log("เริ่มเล่นวิดีโอ");
+        // ไม่ต้องบันทึกอัตโนมัติแล้ว
       });
 
       // เมื่อหยุดเล่น
       playerRef.current.on('pause', () => {
-        console.log("หยุดเล่นวิดีโอ - หยุดบันทึกอัตโนมัติ");
-        stopAutoSave();
-        
-        // บันทึกทันทีเมื่อ pause
-        if (playerRef.current && playerRef.current.duration > 0) {
-          saveToLocalStorage(playerRef.current.currentTime, playerRef.current.duration);
-          saveToServer(playerRef.current.currentTime, playerRef.current.duration, hasCompletedRef.current);
-        }
+        console.log("หยุดเล่นวิดีโอ");
+        // ไม่ต้องบันทึกเมื่อ pause
       });
 
       // เมื่อเวลาเปลี่ยน (สำหรับอัปเดต progress bar)
-      playerRef.current.on('timeupdate', () => {
+      playerRef.current.on('timeupdate', async () => {
         if (playerRef.current && playerRef.current.duration > 0) {
           const currentTime = playerRef.current.currentTime;
           const duration = playerRef.current.duration;
@@ -533,17 +490,24 @@ const LessonVideo = ({
           
           // ตรวจสอบว่าดูจบแล้วหรือยัง (90%)
           if (currentProgress >= 90 && !hasCompletedRef.current) {
-            console.log("วิดีโอดูถึง 90% - ถือว่าจบ - TimeUpdate");
-            setIsCompleted(true);
-            setShowCompletionModal(true);
-            hasCompletedRef.current = true;
+            console.log("วิดีโอดูถึง 90% - ถือว่าจบ");
             
-                    // บันทึกทันที
-        saveToLocalStorage(currentTime, duration);
-        saveToServer(currentTime, duration, true);
-            // ✅ ป้องกันการเรียก onComplete ซ้ำ
-            if (typeof onComplete === 'function') {
-              onComplete();
+            // บันทึกเฉพาะเมื่อจบแล้ว
+            saveToLocalStorage(currentTime, duration);
+            
+            // ตรวจสอบผลลัพธ์จาก server ก่อนอัปเดตสถานะ
+            const serverResult = await saveToServer(true);
+            if (serverResult === true) {
+              setIsCompleted(true);
+              setShowCompletionModal(true);
+              hasCompletedRef.current = true;
+              
+              // ✅ ป้องกันการเรียก onComplete ซ้ำ
+              if (typeof onComplete === 'function') {
+                onComplete();
+              }
+            } else {
+              console.warn("⚠️ ไม่สามารถบันทึกไปยัง server ได้ - ไม่อัปเดตสถานะ");
             }
           }
         }
@@ -552,66 +516,67 @@ const LessonVideo = ({
       // เมื่อเลื่อนตำแหน่ง
       playerRef.current.on('seeked', () => {
         if (playerRef.current && playerRef.current.duration > 0) {
-          console.log("เลื่อนตำแหน่งวิดีโอ - บันทึกทันที");
+          console.log("เลื่อนตำแหน่งวิดีโอ - บันทึกเฉพาะใน localStorage");
           saveToLocalStorage(playerRef.current.currentTime, playerRef.current.duration);
-          saveToServer(playerRef.current.currentTime, playerRef.current.duration, hasCompletedRef.current);
+          // ไม่ส่งไป server เมื่อ seek
         }
       });
 
       // เมื่อวิดีโอจบ
-      playerRef.current.on('ended', () => {
+      playerRef.current.on('ended', async () => {
         console.log("วิดีโอจบแล้ว - Ended Event");
-        stopAutoSave();
         
         if (playerRef.current) {
           // บันทึกว่าดูจบแล้ว
           saveToLocalStorage(playerRef.current.duration, playerRef.current.duration);
-          saveToServer(playerRef.current.duration, playerRef.current.duration, true);
           
-          if (!hasCompletedRef.current) {
-            setIsCompleted(true);
-            hasCompletedRef.current = true;
-            // ✅ ป้องกันการเรียก onComplete ซ้ำ
-            if (typeof onComplete === 'function') {
-              onComplete();
+          // ตรวจสอบผลลัพธ์จาก server ก่อนอัปเดตสถานะ
+          const serverResult = await saveToServer(true);
+          if (serverResult === true) {
+            if (!hasCompletedRef.current) {
+              setIsCompleted(true);
+              hasCompletedRef.current = true;
+              // ✅ ป้องกันการเรียก onComplete ซ้ำ
+              if (typeof onComplete === 'function') {
+                onComplete();
+              }
             }
+            setShowCompletionModal(true);
+          } else {
+            console.warn("⚠️ ไม่สามารถบันทึกไปยัง server ได้ - ไม่อัปเดตสถานะ");
           }
-          
-          setShowCompletionModal(true);
         }
       });
 
       // เมื่อเกิดข้อผิดพลาด
       playerRef.current.on('error', (e) => {
         console.error('Player error:', e);
-        stopAutoSave();
       });
     }
 
-      // Cleanup
-  return () => {
-    stopAutoSave();
-    if (playerRef.current) {
-      // บันทึกครั้งสุดท้ายก่อน destroy
-      if (playerRef.current.currentTime && playerRef.current.duration) {
-        saveToLocalStorage(playerRef.current.currentTime, playerRef.current.duration);
-        saveToServer(playerRef.current.currentTime, playerRef.current.duration, hasCompletedRef.current);
+    // Cleanup
+    return () => {
+      if (playerRef.current) {
+        // บันทึกครั้งสุดท้ายก่อน destroy
+        if (playerRef.current.currentTime && playerRef.current.duration) {
+          saveToLocalStorage(playerRef.current.currentTime, playerRef.current.duration);
+          saveToServer(hasCompletedRef.current);
+        }
+        playerRef.current.destroy();
       }
-      playerRef.current.destroy();
-    }
-  };
+    };
   }, [youtubeId]); // Changed dependency to only youtubeId
 
   // Cleanup เมื่อ component unmount
   useEffect(() => {
     return () => {
-      stopAutoSave();
+      // stopAutoSave(); // ลบออก
       // ล้างข้อมูลเมื่อ component unmount
       if (playerRef.current) {
         // บันทึกครั้งสุดท้ายก่อน destroy
         if (playerRef.current.currentTime && playerRef.current.duration) {
           saveToLocalStorage(playerRef.current.currentTime, playerRef.current.duration);
-          saveToServer(playerRef.current.currentTime, playerRef.current.duration, hasCompletedRef.current);
+          saveToServer(hasCompletedRef.current);
         }
         playerRef.current.destroy();
       }
@@ -662,7 +627,7 @@ const LessonVideo = ({
         <div className="video-progress-info">
           <span>
             <i className="fas fa-chart-line me-1"></i> 
-            {progress.toFixed(0)}% ของวิดีโอ
+            {(progress || 0).toFixed(0)}% ของวิดีโอ
           </span>
           {lastSavedTime && (
             <span className="ms-3 text-muted small">
@@ -680,6 +645,25 @@ const LessonVideo = ({
             <span className="ms-3 text-warning small">
               <i className="fas fa-wifi-slash me-1"></i>
               ทำงานแบบออฟไลน์
+            </span>
+          )}
+          {/* แสดงสถานะการบันทึก */}
+          {saveStatus === 'saving' && (
+            <span className="ms-3 text-primary small">
+              <i className="fas fa-spinner fa-spin me-1"></i>
+              กำลังบันทึก...
+            </span>
+          )}
+          {saveStatus === 'success' && (
+            <span className="ms-3 text-success small">
+              <i className="fas fa-check-circle me-1"></i>
+              บันทึกสำเร็จ
+            </span>
+          )}
+          {saveStatus === 'error' && (
+            <span className="ms-3 text-danger small">
+              <i className="fas fa-exclamation-circle me-1"></i>
+              บันทึกไม่สำเร็จ
             </span>
           )}
         </div>

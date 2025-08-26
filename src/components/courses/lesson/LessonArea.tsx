@@ -570,7 +570,7 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
                     
                     console.log("🔒 Post-test unlock check:", {
                         bigPreTestCompleted: bigPreTestCompleted,
-                        overallProgress: `${overallProgress.toFixed(1)}% (${completedItems}/${totalItems})`,
+                        overallProgress: `${(overallProgress || 0).toFixed(1)}% (${completedItems}/${totalItems})`,
                         allLessonsPassed,
                         totalSections: lessonData.length,
                         debug: {
@@ -1080,19 +1080,19 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
         
         // คำนวณ progress จาก hierarchical structure
         scoreStructure.big_lessons.forEach((bigLesson: any) => {
-            const bigLessonWeight = bigLesson.weight_percentage || 0;
+            const bigLessonWeight = Number(bigLesson.weight_percentage || 0);
             let bigLessonProgress = 0;
             
             // คำนวณ progress จาก Quiz ใน BigLesson
             if (bigLesson.quiz && bigLesson.quiz.progress?.passed) {
-                bigLessonProgress += bigLesson.quiz.weight_percentage || 0;
+                bigLessonProgress += Number(bigLesson.quiz.weight_percentage || 0);
             }
             
             // คำนวณ progress จาก Lessons ใน BigLesson
             if (bigLesson.lessons) {
                 bigLesson.lessons.forEach((lesson: any) => {
                     if (lesson.quiz && lesson.quiz.progress?.passed) {
-                        bigLessonProgress += lesson.quiz.weight_percentage || 0;
+                        bigLessonProgress += Number(lesson.quiz.weight_percentage || 0);
                     }
                 });
             }
@@ -1104,17 +1104,20 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
         
         // คำนวณ progress จาก Post-test
         if (scoreStructure.post_test) {
-            const postTestWeight = scoreStructure.post_test.weight_percentage || 0;
+            const postTestWeight = Number(scoreStructure.post_test.weight_percentage || 0);
             if (scoreStructure.post_test.progress?.passed) {
                 calculatedProgress += postTestWeight;
             }
         }
         
+        // ✅ ตรวจสอบว่า calculatedProgress เป็นตัวเลขที่ถูกต้อง
+        calculatedProgress = Number(calculatedProgress || 0);
+        
         // ✅ ป้องกันการ update progress ที่ไม่จำเป็น และป้องกันการกระพริบ
         if (Math.abs(calculatedProgress - progress) > 0.1) {
             console.log("📊 Hierarchical Progress calculation:", {
                 calculatedProgress: calculatedProgress.toFixed(1) + "%",
-                previousProgress: progress.toFixed(1) + "%",
+                previousProgress: (progress || 0).toFixed(1) + "%",
                 scoreStructure: scoreStructure
             });
             
@@ -2899,6 +2902,7 @@ const handleNextLesson = useCallback(() => {
                                 currentLessonId={currentLessonId}
                                 activeAccordion={sidebarActiveAccordion}
                                 onAccordionChange={setSidebarActiveAccordion}
+                                hierarchicalData={scoreStructure}
                             />
                             <ScoreProgressBar
                                 currentScore={calculateCurrentScore()}
