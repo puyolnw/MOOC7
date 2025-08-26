@@ -2,10 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 
-import DashboardSidebar from "../dashboard-common/AdminSidebar";
-import DashboardBanner from "../dashboard-common/AdminBanner";
-import AdminSubjectArea from "./AdminSubjectArea";
-import "./mega.css";
+import DashboardSidebar from "../dashboard-common/ManagerSidebar";
+import DashboardBanner from "../dashboard-common/ManagerBanner";
+import ManagerSubjectArea from "./ManagerSubjectArea";
+import "./manager.css";
 
 // เพิ่ม interface สำหรับ Faculty ใหม่
 interface FacultyWithStats {
@@ -106,54 +106,13 @@ interface PaginationProps {
   onPageChange: (page: number) => void;
 }
 
-// เพิ่ม Add Faculty Card Component
-const AddFacultyCard: React.FC<{
-  onClick: () => void;
-}> = ({ onClick }) => {
-  return (
-    <div className="selection-card faculty-card add-faculty-card" onClick={onClick}>
-      <div className="card-content">
-        <div className="card-icon faculty-icon">
-          <i className="fas fa-plus"></i>
-        </div>
-        <div className="card-body">
-          <h3 className="card-title">เพิ่มคณะใหม่</h3>
-          <p className="card-description">
-            สร้างคณะใหม่ในระบบ
-          </p>
-        </div>
-        <div className="card-arrow">
-          <i className="fas fa-arrow-right"></i>
-        </div>
-      </div>
-    </div>
-  );
-};
 
-// เพิ่ม Add Department Card Component
-const AddDepartmentCard: React.FC<{
-  selectedFaculty: string;
-  onClick: () => void;
-}> = ({ selectedFaculty, onClick }) => {
-  return (
-    <div className="selection-card department-card add-department-card" onClick={onClick}>
-      <div className="card-content">
-        <div className="card-icon department-icon">
-          <i className="fas fa-plus"></i>
-        </div>
-        <div className="card-body">
-          <h3 className="card-title">เพิ่มสาขาใหม่</h3>
-          <p className="card-description">
-            สร้างสาขาใหม่สำหรับคณะ {selectedFaculty}
-          </p>
-        </div>
-        <div className="card-arrow">
-          <i className="fas fa-arrow-right"></i>
-        </div>
-      </div>
-    </div>
-  );
-};
+
+
+
+
+
+
 
 // Enhanced Navigation breadcrumb component
 const NavigationBreadcrumb: React.FC<{
@@ -267,17 +226,12 @@ const FacultySelection: React.FC<{
   faculties: FacultyWithStats[];
   isLoading: boolean;
   onSelectFaculty: (faculty: string) => void;
-  onEditFaculty: (faculty: FacultyWithStats) => void;
-  onDeleteFaculty: (faculty: FacultyWithStats) => void;
-  onAddFaculty: () => void;
-  viewMode: 'cards' | 'table';
-  onViewModeChange: (mode: 'cards' | 'table') => void;
   sortBy: 'name' | 'created_at' | 'department_count' | 'total_courses';
   sortOrder: 'asc' | 'desc';
   onSortChange: (sortBy: 'name' | 'created_at' | 'department_count' | 'total_courses', sortOrder: 'asc' | 'desc') => void;
   searchTerm: string;
   onSearchChange: (term: string) => void;
-}> = ({ faculties, isLoading, onSelectFaculty, onEditFaculty, onDeleteFaculty, onAddFaculty, viewMode, onViewModeChange, sortBy, sortOrder, onSortChange, searchTerm, onSearchChange }) => {
+}> = ({ faculties, isLoading, onSelectFaculty, sortBy, sortOrder, onSortChange, searchTerm, onSearchChange }) => {
   if (isLoading) {
     return (
       <div className="loading-container">
@@ -291,19 +245,6 @@ const FacultySelection: React.FC<{
     );
   }
 
-  const handleDeleteFaculty = async (faculty: FacultyWithStats, e: React.MouseEvent) => {
-    e.stopPropagation();
-    
-    if (faculty.department_count > 0) {
-      alert('ไม่สามารถลบคณะที่มีสาขาอยู่ได้ กรุณาลบสาขาทั้งหมดก่อน');
-      return;
-    }
-
-    if (window.confirm(`คุณต้องการลบคณะ "${faculty.name}" ใช่หรือไม่?`)) {
-      onDeleteFaculty(faculty);
-    }
-  };
-
   return (
     <div className="selection-container">
       <div className="section-header">
@@ -316,9 +257,9 @@ const FacultySelection: React.FC<{
         </div>
       </div>
 
-      {/* Search Controls */}
-      <div className="search-controls mb-3">
-        <div className="row">
+      {/* Search and Sort Controls */}
+      <div className="controls-container mb-4">
+        <div className="row align-items-center">
           <div className="col-md-6">
             <div className="input-group">
               <span className="input-group-text">
@@ -333,36 +274,8 @@ const FacultySelection: React.FC<{
               />
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* View Toggle and Sorting Controls */}
-      <div className="view-controls mb-4">
-        <div className="row align-items-center">
           <div className="col-md-6">
-            <div className="view-toggle">
-              <div className="btn-group" role="group" aria-label="View Mode">
-                <button
-                  type="button"
-                  className={`btn ${viewMode === 'cards' ? 'btn-primary' : 'btn-outline-primary'}`}
-                  onClick={() => onViewModeChange('cards')}
-                >
-                  <i className="fas fa-th-large me-2"></i>
-                  แสดงแบบการ์ด
-                </button>
-                <button
-                  type="button"
-                  className={`btn ${viewMode === 'table' ? 'btn-primary' : 'btn-outline-primary'}`}
-                  onClick={() => onViewModeChange('table')}
-                >
-                  <i className="fas fa-table me-2"></i>
-                  แสดงแบบตาราง
-                </button>
-              </div>
-            </div>
-          </div>
-          <div className="col-md-6">
-            <div className="sort-controls d-flex justify-content-end gap-2">
+            <div className="d-flex gap-2 justify-content-end">
               <select
                 className="form-select form-select-sm"
                 value={sortBy}
@@ -386,165 +299,70 @@ const FacultySelection: React.FC<{
         </div>
       </div>
       
-      {viewMode === 'cards' ? (
-        <div className="cards-grid">
-          {/* Add Faculty Card เป็นอันแรก */}
-          <AddFacultyCard onClick={onAddFaculty} />
-          
-          {faculties.map((faculty, index) => (
-            <div key={`faculty-${index}`} className="selection-card faculty-card">
-              <div 
-                className="card-content"
-                onClick={() => onSelectFaculty(faculty.name)}
-              >
-                <div className="card-icon faculty-icon">
-                  <i className="fas fa-graduation-cap"></i>
-                </div>
-                <div className="card-body">
-                  <h3 className="card-title">{faculty.name}</h3>
-                  <div className="card-stats">
-                    <span className="stat-item">
-                      <i className="fas fa-building me-1"></i>
-                      {faculty.department_count} สาขา
-                    </span>
-                    <span className="stat-item">
-                      <i className="fas fa-graduation-cap me-1"></i>
-                      {faculty.total_courses} หลักสูตร
-                    </span>
-                    <span className="stat-item">
-                      <i className="fas fa-users me-1"></i>
-                      {faculty.student_count || 'ไม่มี'} ผู้เรียน
-                    </span>
-                  </div>
-                </div>
-                <div className="card-arrow">
-                  <i className="fas fa-arrow-right"></i>
-                </div>
-              </div>
-              
-              {/* Action buttons */}
-              <div className="card-actions">
-                <button
-                  className="btn btn-sm btn-outline-primary"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onEditFaculty(faculty);
-                  }}
-                  title="แก้ไข"
+      <div className="table-view">
+        <div className="table-responsive">
+          <table className="table table-hover">
+            <thead className="table-primary">
+              <tr>
+                <th>ชื่อคณะ</th>
+                <th className="text-center">จำนวนสาขา</th>
+                <th className="text-center">จำนวนหลักสูตร</th>
+                <th className="text-center">จำนวนผู้เรียน</th>
+                <th className="text-center">วันที่สร้าง</th>
+                <th className="text-center">จัดการ</th>
+              </tr>
+            </thead>
+            <tbody>
+              {faculties.map((faculty, index) => (
+                <tr 
+                  key={`faculty-${index}`} 
+                  className="faculty-row"
+                  onClick={() => onSelectFaculty(faculty.name)}
+                  style={{ cursor: 'pointer' }}
                 >
-                  <i className="fas fa-edit"></i>
-                </button>
-                <button
-                  className="btn btn-sm btn-outline-danger"
-                  onClick={(e) => handleDeleteFaculty(faculty, e)}
-                  title="ลบ"
-                >
-                  <i className="fas fa-trash"></i>
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="table-view">
-          <div className="table-responsive">
-            <table className="table table-hover">
-              <thead className="table-primary">
-                <tr>
-                  <th>ชื่อคณะ</th>
-                  <th className="text-center">จำนวนสาขา</th>
-                  <th className="text-center">จำนวนหลักสูตร</th>
-                  <th className="text-center">จำนวนผู้เรียน</th>
-                  <th className="text-center">วันที่สร้าง</th>
-                  <th className="text-center">จัดการ</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr className="table-success">
-                  <td colSpan={6}>
-                    <div className="d-flex align-items-center p-2" onClick={onAddFaculty} style={{ cursor: 'pointer' }}>
-                      <div className="bg-success text-white rounded-circle d-flex align-items-center justify-content-center me-3"
+                  <td>
+                    <div className="d-flex align-items-center">
+                      <div className="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3"
                            style={{ width: '40px', height: '40px' }}>
-                        <i className="fas fa-plus"></i>
+                        <i className="fas fa-university"></i>
                       </div>
                       <div>
-                        <h6 className="mb-0 text-success">เพิ่มคณะใหม่</h6>
-                        <small className="text-muted">สร้างคณะใหม่ในระบบ</small>
+                        <h6 className="mb-0">{faculty.name}</h6>
+                        <small className="text-muted">คณะ</small>
                       </div>
                     </div>
                   </td>
+                  <td className="text-center">
+                    <span className="badge bg-info">{faculty.department_count}</span>
+                  </td>
+                  <td className="text-center">
+                    <span className="badge bg-success">{faculty.total_courses}</span>
+                  </td>
+                  <td className="text-center">
+                    <span className="badge bg-info">{faculty.student_count || 'ไม่มีผู้เรียน'}</span>
+                  </td>
+                  <td className="text-center">
+                    <small className="text-muted">
+                      {faculty.created_at ? new Date(faculty.created_at).toLocaleDateString('th-TH') : 'ไม่ระบุ'}
+                    </small>
+                  </td>
+                  <td>
+                    <div className="d-flex justify-content-center gap-2">
+                      <button
+                        className="btn btn-sm btn-outline-primary"
+                        onClick={() => onSelectFaculty(faculty.name)}
+                        title="เข้าสู่คณะ"
+                      >
+                        <i className="fas fa-arrow-right"></i>
+                      </button>
+                    </div>
+                  </td>
                 </tr>
-                {faculties.map((faculty, index) => (
-                  <tr 
-                    key={`faculty-${index}`} 
-                    className="faculty-row"
-                    onClick={() => onSelectFaculty(faculty.name)}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <td>
-                      <div className="d-flex align-items-center">
-                        <div className="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3"
-                             style={{ width: '40px', height: '40px' }}>
-                          <i className="fas fa-university"></i>
-                        </div>
-                        <div>
-                          <h6 className="mb-0">{faculty.name}</h6>
-                          <small className="text-muted">คณะ</small>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="text-center">
-                      <span className="badge bg-info">{faculty.department_count}</span>
-                    </td>
-                    <td className="text-center">
-                      <span className="badge bg-success">{faculty.total_courses}</span>
-                    </td>
-                    <td className="text-center">
-                      <span className="badge bg-info">{faculty.student_count || 'ไม่มีผู้เรียน'}</span>
-                    </td>
-                    <td className="text-center">
-                      <small className="text-muted">
-                        {faculty.created_at ? new Date(faculty.created_at).toLocaleDateString('th-TH') : 'ไม่ระบุ'}
-                      </small>
-                    </td>
-                    <td>
-                      <div className="d-flex justify-content-center gap-2">
-                        <button
-                          className="btn btn-sm btn-outline-primary"
-                          onClick={() => onSelectFaculty(faculty.name)}
-                          title="เข้าสู่คณะ"
-                        >
-                          <i className="fas fa-arrow-right"></i>
-                        </button>
-                        <button
-                          className="btn btn-sm btn-outline-warning"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onEditFaculty(faculty);
-                          }}
-                          title="แก้ไข"
-                        >
-                          <i className="fas fa-edit"></i>
-                        </button>
-                        <button
-                          className="btn btn-sm btn-outline-danger"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteFaculty(faculty, e);
-                          }}
-                          title="ลบ"
-                        >
-                          <i className="fas fa-trash"></i>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+              ))}
+            </tbody>
+          </table>
         </div>
-      )}
+      </div>
     </div>
   );
 };
@@ -558,14 +376,12 @@ const DepartmentSelection: React.FC<{
   onEditDepartment: (department: Department) => void;
   onDeleteDepartment: (department: Department) => void;
   onAddDepartment: () => void;
-  viewMode: 'cards' | 'table';
-  onViewModeChange: (mode: 'cards' | 'table') => void;
   sortBy: 'name' | 'created_at' | 'department_count' | 'total_courses';
   sortOrder: 'asc' | 'desc';
   onSortChange: (sortBy: 'name' | 'created_at' | 'department_count' | 'total_courses', sortOrder: 'asc' | 'desc') => void;
   searchTerm: string;
   onSearchChange: (term: string) => void;
-}> = ({ departments, isLoading, selectedFaculty, onSelectDepartment, onEditDepartment, onDeleteDepartment, onAddDepartment, viewMode, onViewModeChange, sortBy, sortOrder, onSortChange, searchTerm, onSearchChange }) => {
+}> = ({ departments, isLoading, selectedFaculty, onSelectDepartment, onEditDepartment, onDeleteDepartment, onAddDepartment, sortBy, sortOrder, onSortChange, searchTerm, onSearchChange }) => {
   if (isLoading) {
     return (
       <div className="loading-container">
@@ -604,9 +420,9 @@ const DepartmentSelection: React.FC<{
         </div>
       </div>
 
-      {/* Search Controls */}
-      <div className="search-controls mb-3">
-        <div className="row">
+      {/* Search and Sort Controls */}
+      <div className="controls-container mb-4">
+        <div className="row align-items-center">
           <div className="col-md-6">
             <div className="input-group">
               <span className="input-group-text">
@@ -621,36 +437,8 @@ const DepartmentSelection: React.FC<{
               />
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* View Toggle and Sorting Controls */}
-      <div className="view-controls mb-4">
-        <div className="row align-items-center">
           <div className="col-md-6">
-            <div className="view-toggle">
-              <div className="btn-group" role="group" aria-label="View Mode">
-                <button
-                  type="button"
-                  className={`btn ${viewMode === 'cards' ? 'btn-primary' : 'btn-outline-primary'}`}
-                  onClick={() => onViewModeChange('cards')}
-                >
-                  <i className="fas fa-th-large me-2"></i>
-                  แสดงแบบการ์ด
-                </button>
-                <button
-                  type="button"
-                  className={`btn ${viewMode === 'table' ? 'btn-primary' : 'btn-outline-primary'}`}
-                  onClick={() => onViewModeChange('table')}
-                >
-                  <i className="fas fa-table me-2"></i>
-                  แสดงแบบตาราง
-                </button>
-              </div>
-            </div>
-          </div>
-          <div className="col-md-6">
-            <div className="sort-controls d-flex justify-content-end gap-2">
+            <div className="d-flex gap-2 justify-content-end">
               <select
                 className="form-select form-select-sm"
                 value={sortBy}
@@ -673,204 +461,118 @@ const DepartmentSelection: React.FC<{
         </div>
       </div>
       
-      {viewMode === 'cards' ? (
-        <div className="cards-grid">
-          {/* Add Department Card เป็นอันแรก */}
-          <AddDepartmentCard 
-            selectedFaculty={selectedFaculty}
-            onClick={onAddDepartment}
-          />
-          
-          {departments.map((department) => (
-            <div key={`department-${department.department_id}`} className="selection-card department-card">
-              <div 
-                className="card-content"
-                onClick={() => onSelectDepartment(department)}
-              >
-                <div className="card-icon department-icon">
-                  <i className="fas fa-book-open"></i>
-                </div>
-                <div className="card-body">
-                  <h3 className="card-title">{department.department_name}</h3>
-                  {department.description && (
-                    <p className="card-description">
-                      {department.description.length > 80 
-                        ? `${department.description.substring(0, 80)}...`
-                        : department.description
-                      }
-                    </p>
-                  )}
-                  <div className="card-stats">
-                    <span className="stat-item">
-                      <i className="fas fa-graduation-cap me-1"></i>
-                      {department.course_count || 0} หลักสูตร
-                    </span>
-                    <span className="stat-item">
-                      <i className="fas fa-users me-1"></i>
-                      {department.student_count || 'ไม่ระบุ'} ผู้เรียน
-                    </span>
+      <div className="table-view">
+        <div className="table-responsive">
+          <table className="table table-hover">
+            <thead className="table-info">
+              <tr>
+                <th>ชื่อสาขา</th>
+                <th>รายละเอียด</th>
+                <th className="text-center">จำนวนหลักสูตร</th>
+                <th className="text-center">จำนวนผู้เรียน</th>
+                <th className="text-center">วันที่สร้าง</th>
+                <th className="text-center">จัดการ</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="table-success">
+                <td colSpan={6}>
+                  <div className="d-flex align-items-center p-2" onClick={onAddDepartment} style={{ cursor: 'pointer' }}>
+                    <div className="bg-success text-white rounded-circle d-flex align-items-center justify-content-center me-3"
+                         style={{ width: '40px', height: '40px' }}>
+                      <i className="fas fa-plus"></i>
+                    </div>
+                    <div>
+                      <h6 className="mb-0 text-success">เพิ่มสาขาใหม่</h6>
+                      <small className="text-muted">สร้างสาขาใหม่สำหรับคณะ {selectedFaculty}</small>
+                    </div>
                   </div>
-                </div>
-                <div className="card-arrow">
-                  <i className="fas fa-arrow-right"></i>
-                </div>
-              </div>
-              
-              {/* Action buttons */}
-              <div className="card-actions">
-                <button
-                  className="btn btn-sm btn-outline-primary"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onEditDepartment(department);
-                  }}
-                  title="แก้ไข"
+                </td>
+              </tr>
+              {departments.map((department) => (
+                <tr 
+                  key={`department-${department.department_id}`} 
+                  className="department-row"
+                  onClick={() => onSelectDepartment(department)}
+                  style={{ cursor: 'pointer' }}
                 >
-                  <i className="fas fa-edit"></i>
-                </button>
-                <button
-                  className="btn btn-sm btn-outline-danger"
-                  onClick={(e) => handleDeleteDepartment(department, e)}
-                  title="ลบ"
-                >
-                  <i className="fas fa-trash"></i>
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="table-view">
-          <div className="table-responsive">
-            <table className="table table-hover">
-              <thead className="table-info">
-                <tr>
-                  <th>ชื่อสาขา</th>
-                  <th>รายละเอียด</th>
-                  <th className="text-center">จำนวนหลักสูตร</th>
-                  <th className="text-center">จำนวนผู้เรียน</th>
-                  <th className="text-center">วันที่สร้าง</th>
-                  <th className="text-center">จัดการ</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr className="table-success">
-                  <td colSpan={6}>
-                    <div className="d-flex align-items-center p-2" onClick={onAddDepartment} style={{ cursor: 'pointer' }}>
-                      <div className="bg-success text-white rounded-circle d-flex align-items-center justify-content-center me-3"
+                  <td>
+                    <div className="d-flex align-items-center">
+                      <div className="bg-info text-white rounded-circle d-flex align-items-center justify-content-center me-3"
                            style={{ width: '40px', height: '40px' }}>
-                        <i className="fas fa-plus"></i>
+                        <i className="fas fa-building"></i>
                       </div>
                       <div>
-                        <h6 className="mb-0 text-success">เพิ่มสาขาใหม่</h6>
-                        <small className="text-muted">สร้างสาขาใหม่สำหรับคณะ {selectedFaculty}</small>
+                        <h6 className="mb-0">{department.department_name}</h6>
+                        <small className="text-muted">สาขา</small>
                       </div>
                     </div>
                   </td>
+                  <td>
+                    {department.description ? (
+                      <span title={department.description}>
+                        {department.description.length > 50 
+                          ? `${department.description.substring(0, 50)}...`
+                          : department.description
+                        }
+                      </span>
+                    ) : (
+                      <span className="text-muted">ไม่มีรายละเอียด</span>
+                    )}
+                  </td>
+                  <td className="text-center">
+                    <span className="badge bg-primary">{department.course_count || 0}</span>
+                  </td>
+                  <td className="text-center">
+                    <span className="badge bg-info">{department.student_count || 'ไม่ระบุ'}</span>
+                  </td>
+                  <td className="text-center">
+                    <small className="text-muted">
+                      {department.created_at ? new Date(department.created_at).toLocaleDateString('th-TH') : 'ไม่ระบุ'}
+                    </small>
+                  </td>
+                  <td>
+                    <div className="d-flex justify-content-center gap-2">
+                      <button
+                        className="btn btn-sm btn-outline-primary"
+                        onClick={() => onSelectDepartment(department)}
+                        title="เข้าสู่สาขา"
+                      >
+                        <i className="fas fa-arrow-right"></i>
+                      </button>
+                      <button
+                        className="btn btn-sm btn-outline-warning"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEditDepartment(department);
+                        }}
+                        title="แก้ไข"
+                      >
+                        <i className="fas fa-edit"></i>
+                      </button>
+                      <button
+                        className="btn btn-sm btn-outline-danger"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteDepartment(department, e);
+                        }}
+                        title="ลบ"
+                      >
+                        <i className="fas fa-trash"></i>
+                      </button>
+                    </div>
+                  </td>
                 </tr>
-                {departments.map((department) => (
-                  <tr 
-                    key={`department-${department.department_id}`} 
-                    className="department-row"
-                    onClick={() => onSelectDepartment(department)}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <td>
-                      <div className="d-flex align-items-center">
-                        <div className="bg-info text-white rounded-circle d-flex align-items-center justify-content-center me-3"
-                             style={{ width: '40px', height: '40px' }}>
-                          <i className="fas fa-building"></i>
-                        </div>
-                        <div>
-                          <h6 className="mb-0">{department.department_name}</h6>
-                          <small className="text-muted">สาขา</small>
-                        </div>
-                      </div>
-                    </td>
-                    <td>
-                      {department.description ? (
-                        <span title={department.description}>
-                          {department.description.length > 50 
-                            ? `${department.description.substring(0, 50)}...`
-                            : department.description
-                          }
-                        </span>
-                      ) : (
-                        <span className="text-muted">ไม่มีรายละเอียด</span>
-                      )}
-                    </td>
-                    <td className="text-center">
-                      <span className="badge bg-primary">{department.course_count || 0}</span>
-                    </td>
-                    <td className="text-center">
-                      <span className="badge bg-info">{department.student_count || 'ไม่ระบุ'}</span>
-                    </td>
-                    <td className="text-center">
-                      <small className="text-muted">
-                        {department.created_at ? new Date(department.created_at).toLocaleDateString('th-TH') : 'ไม่ระบุ'}
-                      </small>
-                    </td>
-                    <td>
-                      <div className="d-flex justify-content-center gap-2">
-                        <button
-                          className="btn btn-sm btn-outline-primary"
-                          onClick={() => onSelectDepartment(department)}
-                          title="เข้าสู่สาขา"
-                        >
-                          <i className="fas fa-arrow-right"></i>
-                        </button>
-                        <button
-                          className="btn btn-sm btn-outline-warning"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onEditDepartment(department);
-                          }}
-                          title="แก้ไข"
-                        >
-                          <i className="fas fa-edit"></i>
-                        </button>
-                        <button
-                          className="btn btn-sm btn-outline-danger"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteDepartment(department, e);
-                          }}
-                          title="ลบ"
-                        >
-                          <i className="fas fa-trash"></i>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+              ))}
+            </tbody>
+          </table>
         </div>
-      )}
-    </div>
-  );
-};
-
-// Add Course Card Component
-const AddCourseCard: React.FC<{
-  selectedDepartment: Department;
-  onClick: () => void;
-}> = ({ selectedDepartment, onClick }) => {
-  return (
-    <div className="add-course-card" onClick={onClick}>
-      <div className="add-course-content">
-        <div className="add-course-icon">
-          <i className="fas fa-plus"></i>
-        </div>
-    
-        <p className="add-course-description">
-          สร้างหลักสูตรใหม่สำหรับสาขา {selectedDepartment.department_name}
-        </p>
       </div>
     </div>
   );
 };
+
+
 
 // Course List component
 const CourseList: React.FC<{
@@ -880,7 +582,6 @@ const CourseList: React.FC<{
   onSearchChange: (term: string) => void;
   onCourseSelect: (course: Course) => void;
   onDeleteCourse: (course: Course) => void;
-  onAddCourse: () => void;
   selectedDepartment: Department;
   currentPage: number;
   totalPages: number;
@@ -893,12 +594,13 @@ const CourseList: React.FC<{
   onSearchChange, 
   onCourseSelect, 
   onDeleteCourse,
-  onAddCourse,
   selectedDepartment,
   currentPage,
   totalPages,
   onPageChange,
 }) => {
+  const navigate = useNavigate();
+
   if (isLoading) {
     return (
       <div className="loading-container">
@@ -913,185 +615,156 @@ const CourseList: React.FC<{
   }
 
   return (
-    <div className="course-list-container">
+    <div className="selection-container">
       <div className="section-header">
         <div className="section-icon">
           <i className="fas fa-graduation-cap"></i>
         </div>
         <div className="section-title">
           <h2>หลักสูตร</h2>
-          <p>สาขา {selectedDepartment.department_name} - จำนวน {courses.length} หลักสูตร</p>
+          <p>สาขา {selectedDepartment.department_name} - เลือกหลักสูตรที่ต้องการจัดการ</p>
         </div>
       </div>
 
-      <div className="course-controls">
-        <div className="search-container">
-          <div className="search-input-group">
-            <i className="fas fa-search search-icon"></i>
-            <input
-              type="text"
-              className="search-input"
-              placeholder="ค้นหาหลักสูตร..."
-              value={searchTerm}
-              onChange={(e) => onSearchChange(e.target.value)}
-            />
-            {searchTerm && (
-              <button 
-                className="clear-search-btn"
-                onClick={() => onSearchChange('')}
-              >
-                <i className="fas fa-times"></i>
-              </button>
-            )}
+      {/* Search Controls */}
+      <div className="search-controls mb-3">
+        <div className="row">
+          <div className="col-md-6">
+            <div className="input-group">
+              <span className="input-group-text">
+                <i className="fas fa-search"></i>
+              </span>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="ค้นหาหลักสูตร..."
+                value={searchTerm}
+                onChange={(e) => onSearchChange(e.target.value)}
+              />
+            </div>
           </div>
         </div>
       </div>
-
-      <div className="courses-grid">
-        {/* Add Course Card เป็นอันแรก */}
-        <AddCourseCard 
-          selectedDepartment={selectedDepartment}
-          onClick={onAddCourse}
-        />
-        
-        {courses.map((course, index) => (
-          <div 
-            key={`course-${course.course_id}-${index}`} 
-            className="course-card modern-card"
-          >
-            {/* Card Header with Actions */}
-            <div className="modern-card-header">
-              <div className="card-header-left">
-                {course.course_code && (
-                  <div className="course-code-tag">
-                    <i className="fas fa-bookmark me-1"></i>
-                    {course.course_code}
-                  </div>
-                )}
-              </div>
-              <div className="card-header-right">
-                <button
-                  className="delete-action-btn"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (course.subject_count > 0) {
-                      alert('ไม่สามารถลบหลักสูตรที่มีรายวิชาอยู่ได้ กรุณาลบรายวิชาทั้งหมดก่อน');
-                      return;
-                    }
-                    if (window.confirm(`คุณต้องการลบหลักสูตร "${course.title}" ใช่หรือไม่?`)) {
-                      onDeleteCourse(course);
-                    }
-                  }}
-                  title="ลบหลักสูตร"
-                >
-                  <i className="fas fa-trash"></i>
-                </button>
-                <div className="status-indicator">
-                  <div className={`status-dot status-${course.status}`}></div>
-                </div>
-              </div>
-            </div>
-
-            {/* Image Section */}
-            <div 
-              className="modern-card-image"
-              onClick={() => onCourseSelect(course)}
-            >
-              <div className="image-container">
-                <img
-                  src={course.cover_image_file_id 
-                    ? `${import.meta.env.VITE_API_URL}/api/courses/image/${course.cover_image_file_id}`
-                    : 'https://via.placeholder.com/400x240.png?text=ไม่มีรูปภาพหลักสูตร'
-                  }
-                  alt={course.title}
-                  className="card-image"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400x240.png?text=ไม่มีรูปภาพหลักสูตร';
-                  }}
-                />
-                <div className="image-overlay">
-                  <div className="overlay-content">
-                    <div className="status-badge">
-                      <i className="fas fa-circle me-1"></i>
-                      {course.status === 'active' ? 'เปิดใช้งาน' : 
-                       course.status === 'inactive' ? 'ปิดใช้งาน' : 'ร่าง'}
+      
+      <div className="table-view">
+        <div className="table-responsive">
+          <table className="table table-hover">
+            <thead className="table-success">
+              <tr>
+                <th style={{ width: '40px' }}></th>
+                <th>ชื่อหลักสูตร</th>
+                <th>รหัสหลักสูตร</th>
+                <th>รายละเอียด</th>
+                <th className="text-center">จำนวนรายวิชา</th>
+                <th className="text-center">จำนวนผู้เรียน</th>
+                <th className="text-center">สถานะ</th>
+                <th className="text-center">วันที่สร้าง</th>
+                <th className="text-center">จัดการ</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="table-success">
+                <td></td>
+                <td colSpan={8}>
+                  <div className="d-flex align-items-center p-2" onClick={() => navigate('/manager-creditbank/create-new')} style={{ cursor: 'pointer' }}>
+                    <div className="bg-success text-white rounded-circle d-flex align-items-center justify-content-center me-3"
+                         style={{ width: '40px', height: '40px' }}>
+                      <i className="fas fa-plus"></i>
+                    </div>
+                    <div>
+                      <h6 className="mb-0 text-success">เพิ่มหลักสูตรใหม่</h6>
+                      <small className="text-muted">สร้างหลักสูตรใหม่สำหรับสาขา {selectedDepartment.department_name}</small>
                     </div>
                   </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Content Section */}
-            <div className="modern-card-content">
-              <div className="content-header">
-                <h3 
-                  className="card-title"
+                </td>
+              </tr>
+              {courses.map((course) => (
+                <tr 
+                  key={`course-${course.course_id}`} 
+                  className="course-row"
                   onClick={() => onCourseSelect(course)}
-                  title="คลิกเพื่อเข้าสู่หลักสูตร"
+                  style={{ cursor: 'pointer' }}
                 >
-                  {course.title}
-                </h3>
-              </div>
-              
-              {course.description && (
-                <p className="card-description">
-                  {course.description.length > 120 
-                    ? `${course.description.substring(0, 120)}...`
-                    : course.description
-                  }
-                </p>
-              )}
-
-              <div className="card-stats">
-                <div className="stat-item">
-                  <div className="stat-icon">
-                    <i className="fas fa-list-alt"></i>
-                  </div>
-                  <div className="stat-content">
-                    <span className="stat-number">{course.subject_count}</span>
-                    <span className="stat-label">รายวิชา</span>
-                  </div>
-                </div>
-                <div className="stat-divider"></div>
-                <div className="stat-item">
-                  <div className="stat-icon">
-                    <i className="fas fa-calendar-alt"></i>
-                  </div>
-                  <div className="stat-content">
-                    <span className="stat-date">
-                      {new Date(course.created_at).toLocaleDateString('th-TH', {
-                        day: 'numeric',
-                        month: 'short'
-                      })}
+                  <td>
+                    <div className="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center"
+                         style={{ width: '40px', height: '40px' }}>
+                      <i className="fas fa-graduation-cap"></i>
+                    </div>
+                  </td>
+                  <td>
+                    <div>
+                      <h6 className="mb-0">{course.title}</h6>
+                      <small className="text-muted">หลักสูตร</small>
+                    </div>
+                  </td>
+                  <td>
+                    {course.course_code ? (
+                      <span className="badge bg-info">{course.course_code}</span>
+                    ) : (
+                      <span className="text-muted">ไม่มีรหัส</span>
+                    )}
+                  </td>
+                  <td>
+                    {course.description ? (
+                      <span title={course.description}>
+                        {course.description.length > 50 
+                          ? `${course.description.substring(0, 50)}...`
+                          : course.description
+                        }
+                      </span>
+                    ) : (
+                      <span className="text-muted">ไม่มีรายละเอียด</span>
+                    )}
+                  </td>
+                  <td className="text-center">
+                    <span className="badge bg-primary">{course.subject_count}</span>
+                  </td>
+                  <td className="text-center">
+                    <span className="badge bg-info">{course.student_count || 0}</span>
+                  </td>
+                  <td className="text-center">
+                    <span className={`badge ${course.status === 'active' ? 'bg-success' : course.status === 'inactive' ? 'bg-warning' : 'bg-secondary'}`}>
+                      {course.status === 'active' ? 'เปิดใช้งาน' : 
+                       course.status === 'inactive' ? 'ปิดใช้งาน' : 'ร่าง'}
                     </span>
-                    <span className="stat-label">สร้างเมื่อ</span>
-                  </div>
-                </div>
-                <div className="stat-divider"></div>
-                <div className="stat-item">
-                  <div className="stat-icon">
-                    <i className="fas fa-users"></i>
-                  </div>
-                  <div className="stat-content">
-                    <span className="stat-number">{course.student_count || 0}</span>
-                    <span className="stat-label">ผู้เรียน</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Footer Section */}
-            <div className="modern-card-footer">
-              <button
-                className="enter-course-btn"
-                onClick={() => onCourseSelect(course)}
-              >
-                <span>เข้าสู่หลักสูตร</span>
-                <i className="fas fa-arrow-right"></i>
-              </button>
-            </div>
-          </div>
-        ))}
+                  </td>
+                  <td className="text-center">
+                    <small className="text-muted">
+                      {course.created_at ? new Date(course.created_at).toLocaleDateString('th-TH') : 'ไม่ระบุ'}
+                    </small>
+                  </td>
+                  <td>
+                    <div className="d-flex justify-content-center gap-2">
+                      <button
+                        className="btn btn-sm btn-outline-primary"
+                        onClick={() => onCourseSelect(course)}
+                        title="เข้าสู่หลักสูตร"
+                      >
+                        <i className="fas fa-arrow-right"></i>
+                      </button>
+                      <button
+                        className="btn btn-sm btn-outline-danger"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (course.subject_count > 0) {
+                            alert('ไม่สามารถลบหลักสูตรที่มีรายวิชาอยู่ได้ กรุณาลบรายวิชาทั้งหมดก่อน');
+                            return;
+                          }
+                          if (window.confirm(`คุณต้องการลบหลักสูตร "${course.title}" ใช่หรือไม่?`)) {
+                            onDeleteCourse(course);
+                          }
+                        }}
+                        title="ลบหลักสูตร"
+                      >
+                        <i className="fas fa-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
       
       {totalPages > 1 && (
@@ -1107,25 +780,7 @@ const CourseList: React.FC<{
   );
 };
 
-// Add Subject Card Component
-const AddSubjectCard: React.FC<{
-  courseId: number;
-  onClick: () => void;
-}> = ({ onClick }) => {
-  return (
-    <div className="add-subject-card" onClick={onClick}>
-      <div className="add-subject-content">
-        <div className="add-subject-icon">
-          <i className="fas fa-plus"></i>
-        </div>
-        <h3 className="add-subject-title">เพิ่มรายวิชาใหม่</h3>
-        <p className="add-subject-description">
-          สร้างรายวิชาใหม่สำหรับหลักสูตรนี้
-        </p>
-      </div>
-    </div>
-  );
-};
+
 
 // Editable Course Detail component
 const EditableCourseDetail: React.FC<{
@@ -1286,10 +941,6 @@ const EditableCourseDetail: React.FC<{
       }
     }
     return videoUrl;
-  };
-
-  const handleAddSubject = () => {
-    window.location.href = `/admin-subjects/create-new?course_id=${course.course_id}`;
   };
 
   const handleDeleteSubject = async (subject: Subject) => {
@@ -1546,12 +1197,6 @@ const EditableCourseDetail: React.FC<{
           </div>
         ) : (
           <div className="subjects-grid">
-            {/* Add Subject Card เป็นอันแรก */}
-            <AddSubjectCard 
-              courseId={course.course_id}
-              onClick={handleAddSubject}
-            />
-            
             {filteredSubjects.map((subject, index) => (
               <div 
                 key={`subject-${subject.subject_id}-${index}`} 
@@ -1758,7 +1403,7 @@ const SimplePagination: React.FC<PaginationProps> = ({ currentPage, totalPages, 
 };
 
 // Main AdminCreditbankArea component
-const AdminCreditbankArea: React.FC = () => {
+const ManagerCreditbankArea: React.FC = () => {
   const apiURL = import.meta.env.VITE_API_URL;
   const navigate = useNavigate();
   const location = useLocation();
@@ -1794,29 +1439,20 @@ const AdminCreditbankArea: React.FC = () => {
   const [itemsPerPage] = useState(12);
   const [totalPages, setTotalPages] = useState(1);
 
+
   // Add state for initialization
   const [isInitialized, setIsInitialized] = useState(false);
 
   // Modal states
-  const [showEditFacultyModal, setShowEditFacultyModal] = useState(false);
-  const [showAddFacultyModal, setShowAddFacultyModal] = useState(false);
   const [showEditDepartmentModal, setShowEditDepartmentModal] = useState(false);
   const [showAddDepartmentModal, setShowAddDepartmentModal] = useState(false);
-  const [selectedFacultyForEdit, setSelectedFacultyForEdit] = useState<FacultyWithStats | null>(null);
   const [selectedDepartmentForEdit, setSelectedDepartmentForEdit] = useState<Department | null>(null);
 
-  // Add view toggle and sorting states
-  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+  // Add sorting states
   const [sortBy, setSortBy] = useState<'name' | 'created_at' | 'department_count' | 'total_courses'>('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
-  const handleAddCourse = () => {
-    if (selectedDepartment) {
-      navigate(`/admin-creditbank/create-new?department_id=${selectedDepartment.department_id}`);
-    } else {
-      alert('เกิดข้อผิดพลาด: ไม่พบข้อมูลสาขาวิชา');
-    }
-  };
+
 
   // Initialize from URL parameters on component mount
   useEffect(() => {
@@ -2087,19 +1723,6 @@ const AdminCreditbankArea: React.FC = () => {
     setFilteredDepartments(results);
   }, [departmentSearchTerm, departments]);
 
-  // Helper function to get course stats with student counts
-  const getCourseStats = async (token: string): Promise<any[]> => {
-    try {
-      const response = await axios.get(`${apiURL}/api/courses/c/stats/v2`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      return response.data.stats || [];
-    } catch (error) {
-      console.error('Error fetching course stats v2:', error);
-      return [];
-    }
-  };
-
   // API calls - แก้ไข fetchFaculties ให้ดึงข้อมูลพร้อมสถิติ
   const fetchFaculties = async () => {
     // Only show loading if we're in faculties view
@@ -2114,7 +1737,8 @@ const AdminCreditbankArea: React.FC = () => {
         return;
       }
 
-      const response = await axios.get(`${apiURL}/api/departments/faculties`, {
+      // ใช้ API ใหม่สำหรับ manager
+      const response = await axios.get(`${apiURL}/api/manager/departments/faculties`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -2124,14 +1748,14 @@ const AdminCreditbankArea: React.FC = () => {
           response.data.faculties.map(async (faculty: string) => {
             try {
               const deptResponse = await axios.get(
-                `${apiURL}/api/departments/by-faculty/${encodeURIComponent(faculty)}`,
+                `${apiURL}/api/manager/departments?faculty=${encodeURIComponent(faculty)}`,
                 { headers: { Authorization: `Bearer ${token}` } }
               );
               
               let totalCourses = 0;
               let totalStudents = 0;
               if (deptResponse.data.success && deptResponse.data.departments) {
-                // Count courses for each department
+                // Count courses and students for each department
                 const coursePromises = deptResponse.data.departments.map(async (dept: Department) => {
                   try {
                     const coursesResponse = await axios.get(
@@ -2139,34 +1763,49 @@ const AdminCreditbankArea: React.FC = () => {
                       { headers: { Authorization: `Bearer ${token}` } }
                     );
                     const courseCount = parseInt(coursesResponse.data.courses?.length?.toString()) || 0;
-                    totalCourses += courseCount;
                     
                     // ดึงจำนวนผู้เรียนจาก API courses โดยตรง
+                    let departmentStudents = 0;
                     try {
                       // ใช้ข้อมูลจาก coursesResponse ที่มี student_count อยู่แล้ว
                       const departmentCourses = coursesResponse.data.courses || [];
-                      const departmentStudents = departmentCourses.reduce((sum: number, course: any) => {
+                      
+                      // Debug: ตรวจสอบข้อมูลที่ได้จาก API
+                      console.log(`Department ${dept.department_name} courses:`, departmentCourses.map((c: any) => ({
+                        course_id: c.course_id,
+                        title: c.title,
+                        student_count: c.student_count,
+                        student_count_type: typeof c.student_count
+                      })));
+                      
+                      departmentStudents = departmentCourses.reduce((sum: number, course: any) => {
                         // ใช้ parseInt เพื่อให้แน่ใจว่าเป็นตัวเลข
                         const studentCount = parseInt(course.student_count?.toString()) || 0;
+                        console.log(`Course ${course.title}: student_count=${course.student_count}, parsed=${studentCount}`);
                         return sum + studentCount;
                       }, 0);
-                      totalStudents += departmentStudents;
+                      
+                      console.log(`Department ${dept.department_name} total students: ${departmentStudents}`);
                     } catch (error) {
                       console.log(`Error calculating student count for department ${dept.department_id}, using fallback`);
-                      totalStudents += courseCount * 25; // fallback
+                      departmentStudents = courseCount * 25; // fallback
                     }
                     
-                    return courseCount;
+                    // ส่งกลับทั้ง courseCount และ departmentStudents
+                    return { courseCount, departmentStudents };
                   } catch (error) {
                     console.error(`Error fetching courses for department ${dept.department_id}:`, error);
-                    return 0;
+                    return { courseCount: 0, departmentStudents: 0 };
                   }
                 });
                 
-                await Promise.all(coursePromises);
+                const courseResults = await Promise.all(coursePromises);
+                totalCourses = courseResults.reduce((sum: number, result: any) => sum + (parseInt(result.courseCount) || 0), 0);
+                totalStudents = courseResults.reduce((sum: number, result: any) => sum + (parseInt(result.departmentStudents) || 0), 0);
                 
                 // Debug logging
                 console.log(`Faculty: ${faculty} - Total Courses: ${totalCourses}, Total Students: ${totalStudents}`);
+                console.log('Course Results:', courseResults);
               }
               
               return {
@@ -2196,9 +1835,16 @@ const AdminCreditbankArea: React.FC = () => {
       } else {
         setError('ไม่สามารถดึงข้อมูลคณะได้');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching faculties:', error);
-      setError('เกิดข้อผิดพลาดในการดึงข้อมูลคณะ');
+      
+      // แสดง debug information ถ้ามี
+      if (error.response?.data?.debug) {
+        console.log('Debug info:', error.response.data.debug);
+        setError(`เกิดข้อผิดพลาดในการดึงข้อมูลคณะ: ${error.response.data.message}\n\nDebug: ${JSON.stringify(error.response.data.debug, null, 2)}`);
+      } else {
+        setError('เกิดข้อผิดพลาดในการดึงข้อมูลคณะ');
+      }
     } finally {
       if (currentView === 'faculties') {
         setIsLoading(false);
@@ -2288,8 +1934,9 @@ const AdminCreditbankArea: React.FC = () => {
         return;
       }
 
+      // ใช้ API ใหม่สำหรับ manager
       const response = await axios.get(
-        `${apiURL}/api/departments/by-faculty/${encodeURIComponent(faculty)}`,
+        `${apiURL}/api/manager/departments?faculty=${encodeURIComponent(faculty)}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -2302,29 +1949,27 @@ const AdminCreditbankArea: React.FC = () => {
                 `${apiURL}/api/courses?department_id=${department.department_id}`,
                 { headers: { Authorization: `Bearer ${token}` } }
               );
-              const courseCount = coursesResponse.data.courses?.length || 0;
+              const courseCount = parseInt(coursesResponse.data.courses?.length?.toString()) || 0;
               
-              // ดึงจำนวนผู้เรียนจาก course stats API
+              // ดึงจำนวนผู้เรียนจาก API courses โดยตรง
               let studentCount = 0;
               try {
-                const courseStats = await getCourseStats(token);
-                if (courseStats.length > 0) {
-                  // คำนวณจำนวนผู้เรียนในสาขานี้โดยรวมจากหลักสูตรทั้งหมด
-                  const departmentCourses = coursesResponse.data.courses || [];
-                  studentCount = departmentCourses.reduce((sum: number, course: any) => {
-                    const courseStat = courseStats.find(stat => stat.course_id === course.course_id);
-                    return sum + (courseStat?.enrollment_count || 0);
-                  }, 0);
-                }
+                // ใช้ข้อมูลจาก coursesResponse ที่มี student_count อยู่แล้ว
+                const departmentCourses = coursesResponse.data.courses || [];
+                studentCount = departmentCourses.reduce((sum: number, course: any) => {
+                  // ใช้ parseInt เพื่อให้แน่ใจว่าเป็นตัวเลข
+                  const courseStudentCount = parseInt(course.student_count?.toString()) || 0;
+                  return sum + courseStudentCount;
+                }, 0);
               } catch (error) {
-                console.log(`No course stats API available, using fallback`);
+                console.log(`Error calculating student count, using fallback`);
                 studentCount = courseCount * 25; // fallback
               }
               
               return {
                 ...department,
-                course_count: courseCount,
-                student_count: studentCount
+                course_count: parseInt(courseCount.toString()),
+                student_count: parseInt(studentCount.toString())
               };
             } catch (error) {
               console.error(`Error fetching courses for department ${department.department_id}:`, error);
@@ -2380,32 +2025,20 @@ const AdminCreditbankArea: React.FC = () => {
           department_name: course.department_name || null,
           faculty: course.faculty || null,
           subject_count: course.subject_count || 0,
-          student_count: course.student_count || (course.subject_count || 0) * 25, // ใช้การคำนวณแบบง่ายก่อน
+          student_count: course.student_count || 0, // ใช้ข้อมูลจาก API โดยตรง
           status: course.status || 'draft',
           created_at: course.created_at || new Date().toISOString(),
           updated_at: course.updated_at || new Date().toISOString(),
         }));
         
-        // ดึงจำนวนผู้เรียนจาก course stats API สำหรับแต่ละหลักสูตร
-        const coursesWithStudents = await Promise.all(
-          formattedCourses.map(async (course: Course) => {
-            try {
-              const courseStats = await getCourseStats(token);
-              if (courseStats.length > 0) {
-                const courseStat = courseStats.find(stat => stat.course_id === course.course_id);
-                if (courseStat) {
-                  return {
-                    ...course,
-                    student_count: courseStat.enrollment_count || 0
-                  };
-                }
-              }
-            } catch (error) {
-              console.log(`No course stats API available, using fallback`);
-            }
-            return course;
-          })
-        );
+        // ใช้ข้อมูลจำนวนผู้เรียนจาก API courses โดยตรง
+        const coursesWithStudents = formattedCourses.map((course: Course) => {
+          // ข้อมูลจำนวนผู้เรียนมีอยู่แล้วใน course.student_count
+          return {
+            ...course,
+            student_count: typeof course.student_count === 'string' ? parseInt(course.student_count) : (course.student_count || 0)
+          };
+        });
         
         setCourses(coursesWithStudents);
         setFilteredCourses(coursesWithStudents);
@@ -2420,70 +2053,45 @@ const AdminCreditbankArea: React.FC = () => {
     }
   };
 
-  // Faculty CRUD operations
-  const handleAddFaculty = (newFaculty: FacultyWithStats) => {
-    setFaculties(prev => [...prev, newFaculty]);
-  };
-
-  const handleEditFaculty = (faculty: FacultyWithStats) => {
-    setSelectedFacultyForEdit(faculty);
-    setShowEditFacultyModal(true);
-  };
-
-  const handleUpdateFaculty = (updatedFaculty: FacultyWithStats) => {
-    setFaculties(prev => 
-      prev.map(faculty => 
-        faculty.name === selectedFacultyForEdit?.name ? updatedFaculty : faculty
-      )
-    );
-    
-    // Update selected faculty if it's the one being edited
-    if (selectedFaculty === selectedFacultyForEdit?.name) {
-      setSelectedFaculty(updatedFaculty.name);
-    }
-  };
-
-  const handleDeleteFaculty = async (faculty: FacultyWithStats) => {
+  // Department CRUD operations - ใช้ API ใหม่สำหรับ manager
+  const handleAddDepartment = async (newDepartment: Department) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.delete(
-        `${apiURL}/api/departments/faculties/${encodeURIComponent(faculty.name)}`,
+      const response = await axios.post(
+        `${apiURL}/api/manager/departments`,
+        {
+          department_name: newDepartment.department_name,
+          faculty: selectedFaculty,
+          description: newDepartment.description
+        },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
       if (response.data.success) {
-        setFaculties(prev => prev.filter(f => f.name !== faculty.name));
-        
-        // Reset selection if deleted faculty was selected
-        if (selectedFaculty === faculty.name) {
-          setSelectedFaculty(null);
-          setSelectedDepartment(null);
-          setSelectedCourse(null);
-          setSelectedSubject(null);
-          setCurrentView('faculties');
-          updateBrowserHistory('faculties', null, null, null, null);
+        // Refresh departments list
+        if (selectedFaculty) {
+          fetchDepartmentsByFaculty(selectedFaculty);
         }
         
-        alert('ลบคณะสำเร็จ');
+        // Update faculty stats
+        setFaculties(prev => 
+          prev.map(faculty => 
+            faculty.name === selectedFaculty 
+              ? { ...faculty, department_count: faculty.department_count + 1 }
+              : faculty
+          )
+        );
+        
+        alert('เพิ่มสาขาสำเร็จ');
       }
-    } catch (error) {
-      console.error('Error deleting faculty:', error);
-      alert('เกิดข้อผิดพลาดในการลบคณะ');
+    } catch (error: any) {
+      console.error('Error adding department:', error);
+      if (error.response?.status === 409) {
+        alert('สาขานี้มีอยู่แล้วในคณะนี้');
+      } else {
+        alert('เกิดข้อผิดพลาดในการเพิ่มสาขา: ' + (error.response?.data?.message || error.message));
+      }
     }
-  };
-
-  // Department CRUD operations
-  const handleAddDepartment = (newDepartment: Department) => {
-    setDepartments(prev => [...prev, newDepartment]);
-    
-    // Update faculty stats
-    setFaculties(prev => 
-      prev.map(faculty => 
-        faculty.name === selectedFaculty 
-          ? { ...faculty, department_count: faculty.department_count + 1 }
-          : faculty
-      )
-    );
   };
 
   const handleEditDepartment = (department: Department) => {
@@ -2491,16 +2099,39 @@ const AdminCreditbankArea: React.FC = () => {
     setShowEditDepartmentModal(true);
   };
 
-  const handleUpdateDepartment = (updatedDepartment: Department) => {
-    setDepartments(prev => 
-      prev.map(dept => 
-        dept.department_id === updatedDepartment.department_id ? updatedDepartment : dept
-      )
-    );
-    
-    // Update selected department if it's the one being edited
-    if (selectedDepartment?.department_id === updatedDepartment.department_id) {
-      setSelectedDepartment(updatedDepartment);
+  const handleUpdateDepartment = async (updatedDepartment: Department) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.put(
+        `${apiURL}/api/manager/departments/${updatedDepartment.department_id}`,
+        {
+          department_name: updatedDepartment.department_name,
+          description: updatedDepartment.description
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (response.data.success) {
+        setDepartments(prev => 
+          prev.map(dept => 
+            dept.department_id === updatedDepartment.department_id ? updatedDepartment : dept
+          )
+        );
+        
+        // Update selected department if it's the one being edited
+        if (selectedDepartment?.department_id === updatedDepartment.department_id) {
+          setSelectedDepartment(updatedDepartment);
+        }
+        
+        alert('แก้ไขสาขาสำเร็จ');
+      }
+    } catch (error: any) {
+      console.error('Error updating department:', error);
+      if (error.response?.status === 409) {
+        alert('สาขานี้มีอยู่แล้วในคณะนี้');
+      } else {
+        alert('เกิดข้อผิดพลาดในการแก้ไขสาขา: ' + (error.response?.data?.message || error.message));
+      }
     }
   };
 
@@ -2508,7 +2139,7 @@ const AdminCreditbankArea: React.FC = () => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.delete(
-        `${apiURL}/api/departments/${department.department_id}`,
+        `${apiURL}/api/manager/departments/${department.department_id}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -2535,9 +2166,13 @@ const AdminCreditbankArea: React.FC = () => {
         
         alert('ลบสาขาสำเร็จ');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting department:', error);
-      alert('เกิดข้อผิดพลาดในการลบสาขา');
+      if (error.response?.status === 400) {
+        alert('ไม่สามารถลบสาขาได้: มีหลักสูตรอยู่ กรุณาลบหลักสูตรทั้งหมดก่อน');
+      } else {
+        alert('เกิดข้อผิดพลาดในการลบสาขา: ' + (error.response?.data?.message || error.message));
+      }
     }
   };
 
@@ -2831,7 +2466,7 @@ const AdminCreditbankArea: React.FC = () => {
 
                 {/* Content based on current view */}
                 {currentView === 'subject-detail' && selectedSubject && selectedCourse ? (
-                  <AdminSubjectArea 
+                  <ManagerSubjectArea 
                     subjectId={selectedSubject.subject_id}
                     courseData={selectedCourse}
                     onSubjectUpdate={handleSubjectUpdate}
@@ -2852,7 +2487,7 @@ const AdminCreditbankArea: React.FC = () => {
                     onSearchChange={setSearchTerm}
                     onCourseSelect={handleCourseSelect}
                     onDeleteCourse={handleDeleteCourse}
-                    onAddCourse={handleAddCourse}
+
                     selectedDepartment={selectedDepartment}
                     currentPage={currentPage}
                     totalPages={totalPages}
@@ -2868,8 +2503,6 @@ const AdminCreditbankArea: React.FC = () => {
                     onAddDepartment={() => setShowAddDepartmentModal(true)}
                     onEditDepartment={handleEditDepartment}
                     onDeleteDepartment={handleDeleteDepartment}
-                    viewMode={viewMode}
-                    onViewModeChange={setViewMode}
                     sortBy={sortBy}
                     sortOrder={sortOrder}
                     onSortChange={(sortBy, sortOrder) => {
@@ -2884,11 +2517,6 @@ const AdminCreditbankArea: React.FC = () => {
                     faculties={filteredFaculties}
                     isLoading={isLoading}
                     onSelectFaculty={handleFacultySelect}
-                    onAddFaculty={() => setShowAddFacultyModal(true)}
-                    onEditFaculty={handleEditFaculty}
-                    onDeleteFaculty={handleDeleteFaculty}
-                    viewMode={viewMode}
-                    onViewModeChange={setViewMode}
                     sortBy={sortBy}
                     sortOrder={sortOrder}
                     onSortChange={(sortBy, sortOrder) => {
@@ -2931,27 +2559,6 @@ const AdminCreditbankArea: React.FC = () => {
         </div>
       </div>
 
-      {/* Modals */}
-      {showAddFacultyModal && (
-        <AddFacultyModal
-          show={showAddFacultyModal}
-          onClose={() => setShowAddFacultyModal(false)}
-          onAdd={handleAddFaculty}
-        />
-      )}
-
-      {showEditFacultyModal && selectedFacultyForEdit && (
-        <EditFacultyModal
-          show={showEditFacultyModal}
-          onClose={() => {
-            setShowEditFacultyModal(false);
-            setSelectedFacultyForEdit(null);
-          }}
-          faculty={selectedFacultyForEdit}
-          onUpdate={handleUpdateFaculty}
-        />
-      )}
-
       {showAddDepartmentModal && selectedFaculty && (
         <AddDepartmentModal
           show={showAddDepartmentModal}
@@ -2983,212 +2590,6 @@ interface FacultyWithStats {
   total_courses: number;
 }
 
-// Modal Components
-const AddFacultyModal: React.FC<{
-  show: boolean;
-  onClose: () => void;
-  onAdd: (faculty: FacultyWithStats) => void;
-}> = ({ show, onClose, onAdd }) => {
-  const [facultyName, setFacultyName] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState('');
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!facultyName.trim()) {
-      setError('กรุณากรอกชื่อคณะ');
-      return;
-    }
-
-    setIsSubmitting(true);
-    setError('');
-
-    try {
-      const apiURL = import.meta.env.VITE_API_URL;
-      const token = localStorage.getItem('token');
-      
-      const response = await axios.post(
-        `${apiURL}/api/departments/faculties`,
-        { name: facultyName.trim() },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      if (response.data.success) {
-        const newFaculty: FacultyWithStats = {
-          name: facultyName.trim(),
-          department_count: 0,
-          total_courses: 0
-        };
-        
-        onAdd(newFaculty);
-        setFacultyName('');
-        onClose();
-        alert('เพิ่มคณะสำเร็จ');
-      }
-    } catch (error: any) {
-      console.error('Error adding faculty:', error);
-      if (error.response?.status === 409) {
-        setError('คณะนี้มีอยู่แล้ว');
-      } else {
-        setError('เกิดข้อผิดพลาดในการเพิ่มคณะ');
-      }
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  if (!show) return null;
-
-  return (
-    <div className="modal fade show" style={{ display: 'block' }} tabIndex={-1}>
-      <div className="modal-dialog">
-        <div className="modal-content">
-          <div className="modal-header">
-            <h5 className="modal-title">เพิ่มคณะใหม่</h5>
-            <button type="button" className="btn-close" onClick={onClose}></button>
-          </div>
-          <form onSubmit={handleSubmit}>
-            <div className="modal-body">
-              {error && (
-                <div className="alert alert-danger" role="alert">
-                  {error}
-                </div>
-              )}
-              <div className="mb-3">
-                <label htmlFor="facultyName" className="form-label">ชื่อคณะ</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  id="facultyName"
-                  value={facultyName}
-                  onChange={(e) => setFacultyName(e.target.value)}
-                  placeholder="กรอกชื่อคณะ"
-                  required
-                />
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button type="button" className="btn btn-secondary" onClick={onClose}>
-                ยกเลิก
-              </button>
-              <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
-                {isSubmitting ? 'กำลังเพิ่ม...' : 'เพิ่มคณะ'}
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const EditFacultyModal: React.FC<{
-  show: boolean;
-  onClose: () => void;
-  faculty: FacultyWithStats;
-  onUpdate: (faculty: FacultyWithStats) => void;
-}> = ({ show, onClose, faculty, onUpdate }) => {
-  const [facultyName, setFacultyName] = useState(faculty.name);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    setFacultyName(faculty.name);
-  }, [faculty]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!facultyName.trim()) {
-      setError('กรุณากรอกชื่อคณะ');
-      return;
-    }
-
-    if (facultyName.trim() === faculty.name) {
-      onClose();
-      return;
-    }
-
-    setIsSubmitting(true);
-    setError('');
-
-    try {
-      const apiURL = import.meta.env.VITE_API_URL;
-      const token = localStorage.getItem('token');
-      
-      const response = await axios.put(
-        `${apiURL}/api/departments/faculties/${encodeURIComponent(faculty.name)}`,
-        { name: facultyName.trim() },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      if (response.data.success) {
-        const updatedFaculty: FacultyWithStats = {
-          ...faculty,
-          name: facultyName.trim()
-        };
-        
-        onUpdate(updatedFaculty);
-        onClose();
-        alert('แก้ไขคณะสำเร็จ');
-      }
-    } catch (error: any) {
-      console.error('Error updating faculty:', error);
-      if (error.response?.status === 409) {
-                setError('คณะนี้มีอยู่แล้ว');
-      } else {
-        setError('เกิดข้อผิดพลาดในการแก้ไขคณะ');
-      }
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  if (!show) return null;
-
-  return (
-    <div className="modal fade show" style={{ display: 'block' }} tabIndex={-1}>
-      <div className="modal-dialog">
-        <div className="modal-content">
-          <div className="modal-header">
-            <h5 className="modal-title">แก้ไขคณะ</h5>
-            <button type="button" className="btn-close" onClick={onClose}></button>
-          </div>
-          <form onSubmit={handleSubmit}>
-            <div className="modal-body">
-              {error && (
-                <div className="alert alert-danger" role="alert">
-                  {error}
-                </div>
-              )}
-              <div className="mb-3">
-                <label htmlFor="facultyName" className="form-label">ชื่อคณะ</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  id="facultyName"
-                  value={facultyName}
-                  onChange={(e) => setFacultyName(e.target.value)}
-                  placeholder="กรอกชื่อคณะ"
-                  required
-                />
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button type="button" className="btn btn-secondary" onClick={onClose}>
-                ยกเลิก
-              </button>
-              <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
-                {isSubmitting ? 'กำลังบันทึก...' : 'บันทึก'}
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 const AddDepartmentModal: React.FC<{
   show: boolean;
@@ -3216,8 +2617,9 @@ const AddDepartmentModal: React.FC<{
       const apiURL = import.meta.env.VITE_API_URL;
       const token = localStorage.getItem('token');
       
+      // ใช้ API ใหม่สำหรับ manager
       const response = await axios.post(
-        `${apiURL}/api/departments`,
+        `${apiURL}/api/manager/departments`,
         { 
           department_name: departmentName.trim(),
           faculty: faculty,
@@ -3247,7 +2649,7 @@ const AddDepartmentModal: React.FC<{
       if (error.response?.status === 409) {
         setError('สาขานี้มีอยู่แล้วในคณะนี้');
       } else {
-        setError('เกิดข้อผิดพลาดในการเพิ่มสาขา');
+        setError('เกิดข้อผิดพลาดในการเพิ่มสาขา: ' + (error.response?.data?.message || error.message));
       }
     } finally {
       setIsSubmitting(false);
@@ -3357,8 +2759,9 @@ const EditDepartmentModal: React.FC<{
       const apiURL = import.meta.env.VITE_API_URL;
       const token = localStorage.getItem('token');
       
+      // ใช้ API ใหม่สำหรับ manager
       const response = await axios.put(
-        `${apiURL}/api/departments/${department.department_id}`,
+        `${apiURL}/api/manager/departments/${department.department_id}`,
         { 
           department_name: departmentName.trim(),
           description: description.trim() || null
@@ -3382,7 +2785,7 @@ const EditDepartmentModal: React.FC<{
       if (error.response?.status === 409) {
         setError('สาขานี้มีอยู่แล้วในคณะนี้');
       } else {
-        setError('เกิดข้อผิดพลาดในการแก้ไขสาขา');
+        setError('เกิดข้อผิดพลาดในการแก้ไขสาขา: ' + (error.response?.data?.message || error.message));
       }
     } finally {
       setIsSubmitting(false);
@@ -3455,4 +2858,4 @@ const EditDepartmentModal: React.FC<{
   );
 };
 
-export default AdminCreditbankArea;
+export default ManagerCreditbankArea;

@@ -1,0 +1,283 @@
+/* Hover effect สำหรับแถวในตาราง */
+.hover-row:hover {
+    background-color: rgba(0, 123, 255, 0.1) !important;
+    transition: background-color 0.2s ease;
+}
+
+/* Modal popup styling */
+.student-detail-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1050;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    /* ป้องกันการเลื่อนของ background */
+    overflow: hidden;
+}
+
+/* ซ่อน scrollbar ของ body เมื่อ modal เปิด */
+body.modal-open {
+    overflow: hidden;
+}
+
+.student-detail-content {
+    background: white;
+    border-radius: 12px;
+    max-width: 900px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    /* ซ่อน scrollbar */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+}
+
+/* ซ่อน scrollbar สำหรับ Webkit browsers (Chrome, Safari) */
+.student-detail-content::-webkit-scrollbar {
+    display: none;
+}
+
+.student-detail-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px;
+    border-radius: 12px 12px 0 0;
+    position: relative;
+}
+
+.student-detail-close {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.student-detail-close:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.student-detail-body {
+    padding: 30px;
+}
+
+.info-section {
+    margin-bottom: 30px;
+}
+
+.info-section h6 {
+    color: #495057;
+    border-bottom: 2px solid #e9ecef;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.info-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.info-label {
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin-bottom: 5px;
+    font-weight: 500;
+}
+
+.info-value {
+    font-size: 1rem;
+    color: #212529;
+    font-weight: 600;
+}
+
+/* แก้ไขปัญหา badge ไม่อยู่ใน td */
+.subjects-table {
+    margin-top: 20px;
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: auto;
+}
+
+.subjects-table th,
+.subjects-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border: none;
+    vertical-align: middle;
+    word-wrap: break-word;
+    overflow: hidden;
+}
+
+.subjects-table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    color: #495057;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.subjects-table td {
+    vertical-align: middle;
+    line-height: 1.4;
+    position: relative;
+}
+
+/* แก้ไขปัญหา badge ในตาราง */
+.subjects-table .badge {
+    display: inline-block;
+    white-space: nowrap;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: middle;
+    position: static;
+    top: auto;
+    left: auto;
+    right: auto;
+    bottom: auto;
+    transform: none;
+    margin: 0;
+    float: none;
+    clear: both;
+}
+
+.subjects-table td .badge {
+    margin: 0;
+    padding: 6px 10px;
+    font-size: 0.75rem;
+    line-height: 1.2;
+    float: none;
+    clear: both;
+}
+
+.completion-badge {
+    font-size: 0.75rem;
+    padding: 4px 8px;
+    display: inline-block;
+    white-space: nowrap;
+    position: static;
+    top: auto;
+    left: auto;
+    transform: none;
+}
+
+/* ปรับแต่งการแสดงผลของข้อมูลในตาราง */
+.subjects-table .fw-medium {
+    font-weight: 500 !important;
+}
+
+.subjects-table .text-primary {
+    color: #0d6efd !important;
+}
+
+.subjects-table .text-muted {
+    color: #6c757d !important;
+}
+
+.subjects-table .small {
+    font-size: 0.875rem;
+}
+
+/* ปรับแต่ง badge ให้อยู่ใน td อย่างถูกต้อง */
+.subjects-table td .badge.bg-info-subtle {
+    background-color: #cff4fc !important;
+    color: #055160 !important;
+    border: 1px solid #b6effb;
+}
+
+.subjects-table td .badge.bg-success {
+    background-color: #198754 !important;
+    color: white !important;
+}
+
+.subjects-table td .badge.bg-warning {
+    background-color: #ffc107 !important;
+    color: #000 !important;
+}
+
+/* แก้ไขปัญหา badge ลอย */
+.subjects-table td {
+    position: relative;
+    overflow: visible;
+}
+
+.subjects-table td .badge {
+    position: static !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    transform: none !important;
+    margin: 0 !important;
+    float: none !important;
+    clear: both !important;
+    display: inline-block !important;
+    vertical-align: middle !important;
+}
+
+/* แก้ไขปัญหา table layout */
+.subjects-table {
+    table-layout: auto;
+}
+
+.subjects-table th:nth-child(1) { width: 25%; }
+.subjects-table th:nth-child(2) { width: 30%; }
+.subjects-table th:nth-child(3) { width: 20%; }
+.subjects-table th:nth-child(4) { width: 25%; }
+
+.loading-spinner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+}
+
+@media (max-width: 768px) {
+    .student-detail-content {
+        margin: 10px;
+        max-height: 95vh;
+    }
+
+    .student-detail-body {
+        padding: 20px;
+    }
+
+    .info-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .subjects-table th,
+    .subjects-table td {
+        padding: 8px 10px;
+        font-size: 0.875rem;
+    }
+    
+    .subjects-table .badge {
+        font-size: 0.7rem;
+        padding: 4px 8px;
+    }
+}

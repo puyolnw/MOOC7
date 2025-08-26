@@ -23,9 +23,15 @@ import BankAccountspage from '../pages/BankAccountspage';
 import AdminAccountInstructorspage from '../pages/Admin/account/AccountInstructors';
 import CreateAccountInstructorspage from '../pages/Admin/account/create/AddInstructors';
 import EditAccountInstructorspage from '../pages/Admin/account/edit/EditInstructors';
+import AdminAccountManagerspage from '../dashboard/admin-account/manager';
+import CreateAccountManagerspage from '../dashboard/admin-account/manager/create';
+import EditAccountManagerspage from '../dashboard/admin-account/manager/edit';
 import AdminEditaccountStudentpage from '../pages/Admin/account/edit/EditStudent';
 import AdminStudentpage from '../pages/Admin/account/AccountStudent';
 import CreateAccountStudentspage from '../pages/Admin/account/create/AddStudents';
+import StudentReportPage from '../pages/Admin/report/Studentsreport';
+import AdminStudentsReportProgresspage from '../pages/Admin/report/StudentsProgressReport';
+import AdminStudentsReportCompletepage from '../pages/Admin/report/StudentsComplete';
 import Inscrepage from '../pages/Instructor/ins';
 import SubjectDetailsPage from '../pages/SubjectDetails';
 import Home from '../pages/Home';
@@ -98,6 +104,9 @@ import Personelpage from '../pages/Personel';
 import ManagePics from '../pages/ManagePics';
 // import AddQuestions from '../forms/Course/AddQuestions';
 
+import Managercreditbank from '../pages/Manager/ManagerCreditbank';
+import ManagerAddCoursepage from '../pages/Manager/create/AddCoruses';
+import ManagerStudentsReportpage from '../pages/Manager/ManagerReport';
 
 
 const AppNavigation = () => {
@@ -161,12 +170,18 @@ const AppNavigation = () => {
         <Route path="/admin-subjects/edit-subject/:subjectId" element={<AdminEditSubjectspage />} />
 
         <Route path="/admin-account/instructors" element={<AdminAccountInstructorspage/>} />
+        <Route path="/admin-account/managers" element={<AdminAccountManagerspage/>} />
         <Route path="/admin-account/students" element={<AdminStudentpage/>} />
 
         <Route path="/admin-account/instructors/create-new" element={< CreateAccountInstructorspage />} />
+        <Route path="/admin-account/managers/create-new" element={<CreateAccountManagerspage />} />
+        <Route path="/admin-account/managers/edit-manager/:managerId" element={<EditAccountManagerspage />} />
         <Route path="/admin-account/instructors/edit-instructor/:id" element={< EditAccountInstructorspage />} />
         <Route path="/admin-account/students/edit/:id" element={< AdminEditaccountStudentpage />} />
         <Route path="/admin-account/students/create-new" element={< CreateAccountStudentspage />} />
+        <Route path="/admin-reports/students" element={<StudentReportPage />} />
+        <Route path="/admin-reports/students-progress" element={<AdminStudentsReportProgresspage />} />
+        <Route path="/admin-reports/students-complete" element={<AdminStudentsReportCompletepage />} />
         <Route path="/admin/manage-pics" element={<ManagePics />} />
         <Route path="/admin-display" element={<Admindisplaypage />} />
         <Route path="/admin-approve" element={<AdminApprovepage />} />
@@ -174,7 +189,13 @@ const AppNavigation = () => {
 
 
         </Route>
+        <Route element={<PrivateRoute allowedRoles={["manager"]} />}>
+        <Route path="/manager-creditbank" element={<Managercreditbank />} />
+        <Route path="/manager-creditbank/create-new" element={<ManagerAddCoursepage />} />
+        <Route path="/manager-reports/students" element={<ManagerStudentsReportpage />} />
+        </Route>
 
+        
         <Route element={<PrivateRoute allowedRoles={["instructor"]} />}>
         <Route path="/instructor-dashboard" element={<InstructorDashboard />} />
         <Route path="/instructor-profile" element={<InstructorProfile />} />

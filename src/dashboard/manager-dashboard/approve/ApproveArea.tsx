@@ -244,24 +244,17 @@ const ApproveArea: React.FC = () => {
         });
 
         if (response.data.success) {
-          // อัปเดตสถานะใน state - ใช้ slip.id และล้างข้อมูลการปฏิเสธ
-          const updatedSlip = {
-            ...slipToApprove,
-            approved: true,
-            approved_at: new Date().toISOString(),
-            rejected_at: null,
-            rejected_by: null,
-            rejection_reason: null
-          };
-
+          // อัปเดตสถานะใน state - ใช้ slip.id แทน subject_id
           setPaymentSlips(prev => prev.map(slip => 
-            slip.id === slipId ? updatedSlip : slip
+            slip.id === slipId  // ใช้ slip.id แทน subject_id
+              ? { ...slip, approved: true, approved_at: new Date().toISOString() }
+              : slip
           ));
-          
           setFilteredSlips(prev => prev.map(slip => 
-            slip.id === slipId ? updatedSlip : slip
+            slip.id === slipId  // ใช้ slip.id แทน subject_id
+              ? { ...slip, approved: true, approved_at: new Date().toISOString() }
+              : slip
           ));
-          
           toast.success("อนุมัติการชำระเงินสำเร็จ");
         } else {
           toast.error(response.data.message || "เกิดข้อผิดพลาดในการอนุมัติ");
@@ -315,24 +308,17 @@ const ApproveArea: React.FC = () => {
         );
 
         if (response.data.success) {
-          // อัปเดตสถานะใน state - ล้างข้อมูลการอนุมัติและเพิ่มข้อมูลการปฏิเสธ
-          const updatedSlip = {
-            ...slipToReject,
-            approved: false,
-            approved_at: null,
-            rejected_at: new Date().toISOString(),
-            rejected_by: null,
-            rejection_reason: reason || 'ไม่ระบุเหตุผล'
-          };
-
+          // อัปเดตสถานะใน state
           setPaymentSlips(prev => prev.map(slip => 
-            slip.id === slipId ? updatedSlip : slip
+            slip.id === slipId
+              ? { ...slip, approved: false, approved_at: null, rejected_at: new Date().toISOString(), rejected_by: null, rejection_reason: reason || 'ไม่ระบุเหตุผล' }
+              : slip
           ));
-          
           setFilteredSlips(prev => prev.map(slip => 
-            slip.id === slipId ? updatedSlip : slip
+            slip.id === slipId
+              ? { ...slip, approved: false, approved_at: null, rejected_at: new Date().toISOString(), rejected_by: null, rejection_reason: reason || 'ไม่ระบุเหตุผล' }
+              : slip
           ));
-          
           toast.success("ปฏิเสธการชำระเงินสำเร็จ");
         } else {
           toast.error(response.data.message || "เกิดข้อผิดพลาดในการปฏิเสธ");
@@ -360,17 +346,13 @@ const ApproveArea: React.FC = () => {
   };
 
   const StatusBadge = ({ approved, rejected_at, rejection_reason }: { approved: boolean; rejected_at?: string | null; rejection_reason?: string | null }) => {
-    // ตรวจสอบสถานะให้ชัดเจน
-    const isApproved = approved === true;
-    const isRejected = rejected_at !== null && rejected_at !== undefined;
-    
-    if (isApproved && !isRejected) {
+    if (approved) {
       return (
         <span className="badge bg-success-subtle text-success rounded-pill px-3 py-1 small">
           อนุมัติแล้ว
         </span>
       );
-    } else if (isRejected && !isApproved) {
+    } else if (rejected_at) {
       return (
         <div>
           <span className="badge bg-danger-subtle text-danger rounded-pill px-3 py-1 small">
@@ -674,9 +656,7 @@ const ApproveArea: React.FC = () => {
                                     >
                                       <i className={`fas ${showDetails === slip.id ? 'fa-eye-slash' : 'fa-eye'}`}></i>
                                     </button>
-                                    
-                                    {/* ตรวจสอบสถานะให้ชัดเจน */}
-                                    {slip.approved === false && slip.rejected_at === null && (
+                                    {!slip.approved && !slip.rejected_at && (
                                       <>
                                         <button
                                           className="btn btn-outline-success btn-sm"
@@ -694,9 +674,7 @@ const ApproveArea: React.FC = () => {
                                         </button>
                                       </>
                                     )}
-                                    
-                                    {/* แสดงปุ่มแก้ไขเหตุผลการปฏิเสธเฉพาะเมื่อถูกปฏิเสธ */}
-                                    {slip.rejected_at !== null && slip.approved === false && (
+                                    {slip.rejected_at && (
                                       <button
                                         className="btn btn-outline-warning btn-sm"
                                         onClick={() => handleRejectPayment(slip.id)}

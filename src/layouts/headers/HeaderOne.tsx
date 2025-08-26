@@ -145,7 +145,14 @@ const HeaderOne = () => {
                                       </Link>
                                     </li>
                                     )}
-
+                                    {role === "manager" && (
+                                      <li className="logout-menu">
+                                        <Link to="/manager-creditbank" className="logout-link">
+                                          <i className="fa-solid fa-user-tie"></i>
+                                          <span className="logout-text">แดชบอร์ดประธานหลักสูตร</span>
+                                        </Link>
+                                      </li>
+                                    )}
                                     <li className="logout-menu">
                                       <span onClick={handleLogout} className="logout-link">
                                         <i className="fa-solid fa-right-from-bracket"></i>
