@@ -1,0 +1,68 @@
+/* ===== GLOBAL BREADCRUMB FIX ===== */
+/* แก้ไขปัญหา breadcrumb ซ้อนกันในหน้า dashboard ทุกหน้า */
+
+/* ซ่อน DashboardBreadcrumb ที่ซ้ำซ้อน */
+.dashboard__area .breadcrumb__area,
+.dashboard__area .breadcrumb__bg,
+.dashboard__area .breadcrumb__bg-three,
+.dashboard__area .breadcrumb__bg-two,
+.main-area .breadcrumb__area,
+.main-area .breadcrumb__bg,
+.main-area .breadcrumb__bg-three,
+.main-area .breadcrumb__bg-two {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+/* ซ่อน breadcrumb shape decorations ที่ไม่จำเป็น */
+.dashboard__area .breadcrumb__shape-wrap,
+.main-area .breadcrumb__shape-wrap {
+  display: none !important;
+}
+
+/* เก็บเฉพาะ breadcrumb navigation ภายใน dashboard content */
+.dashboard__area .breadcrumb-container,
+.dashboard__area .breadcrumb-modern,
+.dashboard__area .nav-breadcrumb,
+.dashboard__content-main .breadcrumb-container {
+  display: block !important;
+  visibility: visible !important;
+}
+
+/* แก้ไข margin/padding ที่อาจจะเหลือจาก breadcrumb ที่ซ่อน */
+.dashboard__area {
+  padding-top: 0 !important;
+}
+
+.dashboard__inner-wrap {
+  margin-top: 0 !important;
+  padding-top: 2rem !important;
+}
+
+/* สำหรับหน้าที่มี main-area fix class */
+.main-area.fix {
+  padding-top: 0 !important;
+}
+
+.main-area.fix .dashboard__area {
+  padding-top: 2rem !important;
+}
+
+/* Override any background images from hidden breadcrumbs */
+.dashboard__area,
+.main-area.fix {
+  background-image: none !important;
+  background: transparent !important;
+}
+
+/* ถ้ามี section ที่ใช้ background จาก breadcrumb */
+.dashboard__area section[style*="background-image"],
+.main-area section[style*="background-image"] {
+  background-image: none !important;
+  background: transparent !important;
+  padding: 2rem 0 !important;
+}
