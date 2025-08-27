@@ -1,0 +1,875 @@
+/* ===== ADMIN CREDITBANK COLOR FIXES ONLY ===== */
+/* แก้ไขปัญหาสีขาวบนพื้นหลังขาว และสีที่ขัดแย้งกันเท่านั้น */
+
+/* ===== HIDE DUPLICATE BREADCRUMBS ===== */
+/* ซ่อน breadcrumb ที่ซ้ำซ้อนในหน้า dashboard */
+.dashboard__area .breadcrumb__area,
+.dashboard__area .breadcrumb__bg,
+.dashboard__area .breadcrumb__bg-three,
+.main-area .breadcrumb__area,
+.main-area .breadcrumb__bg,
+.main-area .breadcrumb__bg-three {
+  display: none !important;
+}
+
+/* เก็บเฉพาะ breadcrumb ของ dashboard ที่เราสร้างเอง */
+.dashboard__area .breadcrumb-container,
+.dashboard__area .breadcrumb-modern,
+.admin-creditbank-area .breadcrumb-container {
+  display: block !important;
+}
+
+/* แก้ไขสีและพื้นหลังของ Faculty Cards */
+.selection-card.faculty-card {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%) !important;
+  border: 2px solid #4f46e5 !important;
+  color: #ffffff !important;
+}
+
+.selection-card.faculty-card .card-title {
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+}
+
+.selection-card.faculty-card .card-description {
+  color: rgba(255, 255, 255, 0.9) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* แก้ไขสีและพื้นหลังของ Department Cards */
+.selection-card.department-card {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+  border: 2px solid #059669 !important;
+  color: #ffffff !important;
+}
+
+.selection-card.department-card .card-title {
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+}
+
+.selection-card.department-card .card-description {
+  color: rgba(255, 255, 255, 0.9) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* แก้ไขสีและพื้นหลังของ Course Cards (Modern Cards) */
+.modern-card, .selection-card.modern-card {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%) !important;
+  border: 2px solid #e2e8f0 !important;
+  color: #1e293b !important;
+}
+
+.modern-card .card-title, .selection-card.modern-card .card-title {
+  color: #1e293b !important;
+}
+
+.modern-card .card-description, .selection-card.modern-card .card-description {
+  color: #64748b !important;
+}
+
+/* แก้ไขสีของข้อความทั่วไป */
+.dashboard__content-main h1,
+.dashboard__content-main h2,
+.dashboard__content-main h3,
+.dashboard__content-main h4,
+.dashboard__content-main h5,
+.dashboard__content-main h6 {
+  color: #1e293b !important;
+}
+
+.dashboard__content-main p {
+  color: #64748b !important;
+}
+
+/* แก้ไขสีของ Section Headers */
+.section-header h2 {
+  color: #1e293b !important;
+}
+
+.section-header p {
+  color: #64748b !important;
+}
+
+/* แก้ไขสีของ Course Detail Headers */
+.course-detail-header h1,
+.course-detail-header h2 {
+  color: #1e293b !important;
+}
+
+.course-detail-header p,
+.course-detail-header .course-description {
+  color: #64748b !important;
+}
+
+/* แก้ไขสีของ Loading Text */
+.loading-text {
+  color: #64748b !important;
+}
+
+/* แก้ไขสีของ Card Stats Container */
+.card-stats {
+  background: rgba(255, 255, 255, 0.15) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  backdrop-filter: blur(10px) !important;
+  border-radius: 12px !important;
+  padding: 1rem !important;
+  box-shadow: none !important;
+}
+
+/* แก้ไขสีของ Stat Items */
+.stat-item {
+  color: inherit !important;
+}
+
+.stat-item .stat-value,
+.stat-item .stat-number {
+  color: inherit !important;
+  font-weight: 600 !important;
+}
+
+.stat-item .stat-label {
+  color: inherit !important;
+  opacity: 0.8 !important;
+}
+
+.stat-item .stat-content {
+  color: inherit !important;
+}
+
+.stat-item .stat-date {
+  color: inherit !important;
+  font-weight: 500 !important;
+}
+
+/* Faculty Cards - สีขาวสำหรับ stats */
+.selection-card.faculty-card .card-stats {
+  background: rgba(255, 255, 255, 0.15) !important;
+  color: white !important;
+}
+
+.selection-card.faculty-card .stat-item {
+  color: white !important;
+}
+
+/* Department Cards - สีขาวสำหรับ stats */
+.selection-card.department-card .card-stats {
+  background: rgba(255, 255, 255, 0.15) !important;
+  color: white !important;
+}
+
+.selection-card.department-card .stat-item {
+  color: white !important;
+}
+
+/* Course Cards - สีเข้มสำหรับ stats */
+.modern-card .card-stats,
+.selection-card.modern-card .card-stats {
+  background: rgba(248, 250, 252, 0.8) !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #1e293b !important;
+}
+
+.modern-card .stat-item,
+.selection-card.modern-card .stat-item {
+  color: #1e293b !important;
+}
+
+/* แก้ไขสีของ Stat Icons */
+.stat-icon {
+  background: rgba(79, 70, 229, 0.1) !important;
+  color: #4f46e5 !important;
+  border-radius: 8px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 32px !important;
+  height: 32px !important;
+}
+
+.selection-card.faculty-card .stat-icon {
+  background: rgba(255, 255, 255, 0.2) !important;
+  color: white !important;
+}
+
+.selection-card.department-card .stat-icon {
+  background: rgba(255, 255, 255, 0.2) !important;
+  color: white !important;
+}
+
+.modern-card .stat-icon,
+.selection-card.modern-card .stat-icon {
+  background: rgba(79, 70, 229, 0.1) !important;
+  color: #4f46e5 !important;
+}
+
+/* แก้ไขสีของ Alert Messages */
+.alert {
+  color: #1e293b !important;
+}
+
+/* แก้ไขสีของ Buttons */
+.btn-primary {
+  color: #ffffff !important;
+}
+
+.btn-secondary {
+  color: #ffffff !important;
+}
+
+.btn-outline-primary {
+  color: #4f46e5 !important;
+}
+
+.btn-outline-secondary {
+  color: #6b7280 !important;
+}
+
+/* แก้ไขสีของ Form Elements */
+input, textarea, select {
+  color: #1e293b !important;
+  background-color: #ffffff !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #9ca3af !important;
+}
+
+/* แก้ไขสีของ Modal Content */
+.modal-content h5,
+.modal-content label {
+  color: #1e293b !important;
+}
+
+.modal-content p {
+  color: #64748b !important;
+}
+
+/* แก้ไขสีของ Table Content */
+table th {
+  color: #1e293b !important;
+  background-color: #f8fafc !important;
+}
+
+table td {
+  color: #374151 !important;
+}
+
+/* แก้ไขสีของ Pagination */
+.page-link {
+  color: #4f46e5 !important;
+}
+
+.page-item.active .page-link {
+  background-color: #4f46e5 !important;
+  border-color: #4f46e5 !important;
+  color: #ffffff !important;
+}
+
+/* แก้ไขสีของ Badge และ Tags */
+.badge {
+  color: #ffffff !important;
+}
+
+.badge-primary {
+  background-color: #4f46e5 !important;
+  color: #ffffff !important;
+}
+
+.badge-success {
+  background-color: #10b981 !important;
+  color: #ffffff !important;
+}
+
+.badge-warning {
+  background-color: #f59e0b !important;
+  color: #ffffff !important;
+}
+
+.badge-danger {
+  background-color: #ef4444 !important;
+  color: #ffffff !important;
+}
+
+/* แก้ไขสีของ Navigation Links */
+.nav-link {
+  color: #64748b !important;
+}
+
+.nav-link.active {
+  color: #4f46e5 !important;
+}
+
+/* แก้ไขสีของ Dropdown */
+.dropdown-item {
+  color: #374151 !important;
+}
+
+.dropdown-item:hover {
+  color: #1e293b !important;
+  background-color: #f3f4f6 !important;
+}
+
+/* Force text color inheritance for nested elements */
+.selection-card.faculty-card *,
+.selection-card.department-card * {
+  color: inherit !important;
+}
+
+.modern-card *,
+.selection-card.modern-card * {
+  color: inherit !important;
+}
+
+/* ===== COURSE DETAIL PAGE STYLING ===== */
+.course-detail-container {
+  background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%) !important;
+  border-radius: 16px !important;
+  padding: 2rem !important;
+  margin: 1rem 0 !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* ===== FORCE TEXT COLOR ON ALL ELEMENTS ===== */
+.course-detail-container *,
+.course-detail-header *,
+.course-header-content *,
+.course-info-section *,
+.course-meta-info *,
+.subjects-section * {
+  color: inherit !important;
+}
+
+/* ===== COURSE TITLE AND META INFO ===== */
+.course-title,
+.course-detail-container h1 {
+  color: #1e293b !important;
+  font-weight: 800 !important;
+  font-size: 2rem !important;
+  margin-bottom: 1rem !important;
+}
+
+.course-code,
+.course-id {
+  color: #4f46e5 !important;
+  font-weight: 600 !important;
+  font-size: 1.1rem !important;
+  background: rgba(79, 70, 229, 0.1) !important;
+  padding: 0.25rem 0.75rem !important;
+  border-radius: 6px !important;
+  display: inline-block !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.course-status,
+.status-active {
+  color: #059669 !important;
+  font-weight: 600 !important;
+  background: rgba(5, 150, 105, 0.1) !important;
+  padding: 0.25rem 0.75rem !important;
+  border-radius: 6px !important;
+  display: inline-block !important;
+}
+
+.course-created-date,
+.created-date,
+.date-info {
+  color: #64748b !important;
+  font-size: 0.9rem !important;
+  margin: 0.5rem 0 !important;
+}
+
+/* ===== EDIT BUTTONS AND ACTIONS ===== */
+.edit-action,
+.edit-button,
+.action-button {
+  color: #4f46e5 !important;
+  background: rgba(79, 70, 229, 0.1) !important;
+  border: 1px solid #4f46e5 !important;
+  padding: 0.5rem 1rem !important;
+  border-radius: 6px !important;
+  font-weight: 500 !important;
+  text-decoration: none !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+}
+
+.edit-action:hover,
+.edit-button:hover,
+.action-button:hover {
+  background: #4f46e5 !important;
+  color: white !important;
+}
+
+.course-detail-header {
+  color: #1e293b !important;
+  margin-bottom: 2rem !important;
+}
+
+.course-header-content {
+  color: #1e293b !important;
+}
+
+.course-header-content h1,
+.course-header-content h2,
+.course-header-content h3 {
+  color: #1e293b !important;
+  font-weight: 700 !important;
+}
+
+.course-header-content p,
+.course-header-content .course-description {
+  color: #64748b !important;
+  line-height: 1.6 !important;
+}
+
+/* ===== COURSE INFO SECTIONS ===== */
+.course-info,
+.course-meta,
+.course-stats,
+.course-code,
+.course-title,
+.course-credits {
+  color: #1e293b !important;
+}
+
+.course-status {
+  color: #059669 !important;
+  font-weight: 600 !important;
+}
+
+.course-created-date {
+  color: #64748b !important;
+  font-size: 0.9rem !important;
+}
+
+/* ===== COURSE DETAIL SECTIONS ===== */
+.course-detail-section {
+  background: #ffffff !important;
+  color: #1e293b !important;
+  padding: 1.5rem !important;
+  margin: 1rem 0 !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 12px !important;
+}
+
+.course-detail-section h3,
+.course-detail-section h4 {
+  color: #1e293b !important;
+  font-weight: 600 !important;
+  margin-bottom: 1rem !important;
+}
+
+.course-detail-section p {
+  color: #64748b !important;
+  line-height: 1.6 !important;
+}
+
+/* ===== COURSE LEARNING OUTCOMES ===== */
+.learning-outcomes {
+  background: #ffffff !important;
+  color: #1e293b !important;
+  padding: 1.5rem !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 12px !important;
+  margin: 1rem 0 !important;
+}
+
+.learning-outcomes h4 {
+  color: #1e293b !important;
+  font-weight: 600 !important;
+}
+
+.learning-outcomes p {
+  color: #64748b !important;
+}
+
+.no-learning-outcomes {
+  color: #9ca3af !important;
+  font-style: italic !important;
+}
+
+/* ===== VIDEO SECTION ===== */
+.video-section {
+  background: #ffffff !important;
+  color: #1e293b !important;
+  padding: 1.5rem !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 12px !important;
+  margin: 1rem 0 !important;
+}
+
+.video-section h4 {
+  color: #1e293b !important;
+  font-weight: 600 !important;
+}
+
+.no-video {
+  color: #9ca3af !important;
+  font-style: italic !important;
+}
+
+/* ===== SUBJECTS SECTION HEADER ===== */
+.subjects-section {
+  background: #ffffff !important;
+  color: #1e293b !important;
+  padding: 2rem !important;
+  margin: 1rem 0 !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 12px !important;
+}
+
+.subjects-section h3,
+.subjects-section h4 {
+  color: #1e293b !important;
+  font-weight: 700 !important;
+  margin-bottom: 1rem !important;
+}
+
+.subjects-count {
+  color: #64748b !important;
+  font-size: 0.9rem !important;
+  margin-bottom: 1.5rem !important;
+}
+
+/* ===== SEARCH INPUT ===== */
+.search-container {
+  margin: 1.5rem 0 !important;
+}
+
+.search-input,
+input[placeholder*="ค้นหา"] {
+  background: #ffffff !important;
+  border: 2px solid #e2e8f0 !important;
+  color: #1e293b !important;
+  padding: 0.75rem 1rem !important;
+  border-radius: 8px !important;
+  font-size: 0.9rem !important;
+  width: 100% !important;
+  transition: border-color 0.3s ease !important;
+}
+
+.search-input:focus,
+input[placeholder*="ค้นหา"]:focus {
+  border-color: #4f46e5 !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1) !important;
+}
+
+.search-input::placeholder,
+input[placeholder*="ค้นหา"]::placeholder {
+  color: #9ca3af !important;
+}
+
+/* ===== NO SUBJECTS MESSAGE ===== */
+.no-subjects,
+.empty-state,
+.empty-message {
+  background: #ffffff !important;
+  color: #64748b !important;
+  text-align: center !important;
+  padding: 3rem 2rem !important;
+  border: 2px dashed #e2e8f0 !important;
+  border-radius: 12px !important;
+  margin: 2rem 0 !important;
+}
+
+.no-subjects h4,
+.empty-state h4,
+.empty-message h4 {
+  color: #9ca3af !important;
+  font-weight: 600 !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.no-subjects p,
+.empty-state p,
+.empty-message p {
+  color: #9ca3af !important;
+  font-size: 0.9rem !important;
+  margin: 0 !important;
+}
+
+/* ===== SUBJECTS GRID STYLING ===== */
+.subjects-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)) !important;
+  gap: 1.5rem !important;
+  margin: 2rem 0 !important;
+}
+
+/* ===== SUBJECT CARDS STYLING ===== */
+.subject-card {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%) !important;
+  border: 2px solid #e2e8f0 !important;
+  border-radius: 16px !important;
+  overflow: hidden !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05) !important;
+}
+
+.subject-card:hover {
+  transform: translateY(-4px) !important;
+  box-shadow: 0 12px 25px rgba(0, 0, 0, 0.1) !important;
+  border-color: #4f46e5 !important;
+}
+
+.subject-card-header {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%) !important;
+  color: white !important;
+  padding: 1rem !important;
+}
+
+.subject-card-content {
+  padding: 1.5rem !important;
+  color: #1e293b !important;
+}
+
+.subject-card-content h3,
+.subject-card-content h4 {
+  color: #1e293b !important;
+  font-weight: 600 !important;
+  margin-bottom: 0.75rem !important;
+}
+
+.subject-card-content p {
+  color: #64748b !important;
+  line-height: 1.6 !important;
+  margin-bottom: 1rem !important;
+}
+
+.subject-card-footer {
+  background: #f8fafc !important;
+  border-top: 1px solid #e2e8f0 !important;
+  padding: 1rem !important;
+}
+
+/* ===== ADD SUBJECT CARD ===== */
+.add-subject-card {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+  border: 2px dashed #10b981 !important;
+  border-radius: 16px !important;
+  padding: 2rem !important;
+  text-align: center !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  color: white !important;
+  min-height: 200px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.add-subject-card:hover {
+  transform: translateY(-4px) !important;
+  box-shadow: 0 12px 25px rgba(5, 150, 105, 0.3) !important;
+  border-color: #34d399 !important;
+}
+
+.add-subject-content {
+  color: white !important;
+}
+
+.add-subject-content h3 {
+  color: white !important;
+  font-weight: 600 !important;
+  margin: 1rem 0 0.5rem 0 !important;
+}
+
+.add-subject-content p {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.add-subject-icon {
+  background: rgba(255, 255, 255, 0.2) !important;
+  color: white !important;
+  width: 60px !important;
+  height: 60px !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 auto 1rem auto !important;
+  font-size: 1.5rem !important;
+}
+
+/* ===== ADMIN SUBJECT AREA ===== */
+.admin-subject-area {
+  background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%) !important;
+  border-radius: 16px !important;
+  padding: 2rem !important;
+  margin: 1rem 0 !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
+}
+
+.admin-subject-area h1,
+.admin-subject-area h2,
+.admin-subject-area h3,
+.admin-subject-area h4 {
+  color: #1e293b !important;
+  font-weight: 700 !important;
+}
+
+.admin-subject-area p {
+  color: #64748b !important;
+  line-height: 1.6 !important;
+}
+
+/* ===== BACK NAVIGATION ===== */
+.back-navigation {
+  margin-bottom: 2rem !important;
+}
+
+.back-btn {
+  background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%) !important;
+  border: none !important;
+  color: white !important;
+  padding: 0.75rem 1.5rem !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  transition: all 0.3s ease !important;
+  text-decoration: none !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+}
+
+.back-btn:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 20px rgba(107, 114, 128, 0.3) !important;
+  color: white !important;
+}
+
+/* Override any conflicting white text */
+.dashboard__content-main .text-white {
+  color: #1e293b !important;
+}
+
+/* Ensure proper contrast for all text elements */
+.dashboard__content-main {
+  color: #1e293b !important;
+}
+
+.dashboard__content-main * {
+  color: inherit !important;
+}
+
+/* Fix specific conflicting selectors from mega.css */
+.card-title:hover {
+  color: #4f46e5 !important;
+}
+
+.selection-card.faculty-card .card-title:hover {
+  color: #ffffff !important;
+}
+
+.selection-card.department-card .card-title:hover {
+  color: #ffffff !important;
+}
+
+/* ===== LESSONS AREA OVERRIDE ===== */
+.admin-lessons-area {
+  background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%) !important;
+  color: #1e293b !important;
+  padding: 2rem !important;
+  border-radius: 16px !important;
+  margin: 1rem 0 !important;
+}
+
+.admin-lessons-area h1,
+.admin-lessons-area h2,
+.admin-lessons-area h3,
+.admin-lessons-area h4,
+.admin-lessons-area h5,
+.admin-lessons-area h6 {
+  color: #1e293b !important;
+  font-weight: 700 !important;
+}
+
+.admin-lessons-area p {
+  color: #64748b !important;
+  line-height: 1.6 !important;
+}
+
+.admin-lessons-area .lesson-item,
+.admin-lessons-area .content-item {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%) !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #1e293b !important;
+}
+
+.admin-lessons-area .lesson-title {
+  color: #1e293b !important;
+  font-weight: 600 !important;
+}
+
+.admin-lessons-area .lesson-description {
+  color: #64748b !important;
+}
+
+/* Tab styling override */
+.admin-lessons-area .tabs-header {
+  background: rgba(79, 70, 229, 0.1) !important;
+  border: 1px solid rgba(79, 70, 229, 0.2) !important;
+}
+
+.admin-lessons-area .tab-btn {
+  color: #64748b !important;
+  background: transparent !important;
+}
+
+.admin-lessons-area .tab-btn.active {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%) !important;
+  color: white !important;
+}
+
+.admin-lessons-area .tabs-content {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+.admin-lessons-area .tab-panel {
+  background: #ffffff !important;
+  color: #1e293b !important;
+}
+
+/* Fix any specific text elements */
+.admin-lessons-area .instructor-name {
+  color: #1e293b !important;
+  font-weight: 600 !important;
+}
+
+.admin-lessons-area .instructor-description {
+  color: #64748b !important;
+}
+
+/* Loading states */
+.admin-lessons-area .loading-container {
+  color: #64748b !important;
+}
+
+.admin-lessons-area .loading-text {
+  color: #64748b !important;
+}
+
+/* Error states */
+.admin-lessons-area .error-container {
+  background: #ffffff !important;
+  color: #dc3545 !important;
+  border: 1px solid #f5c6cb !important;
+  border-radius: 8px !important;
+  padding: 2rem !important;
+  text-align: center !important;
+}
+
+.admin-lessons-area .error-content h3 {
+  color: #dc3545 !important;
+}
+
+.admin-lessons-area .error-content p {
+  color: #721c24 !important;
+}

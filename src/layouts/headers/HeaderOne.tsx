@@ -1,41 +1,21 @@
 import NavMenu from "./menu/NavMenu";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import MobileSidebar from "./menu/MobileSidebar";
 import { Link, useNavigate } from "react-router-dom";
 import InjectableSvg from "../../hooks/InjectableSvg";
+import useAuthHeader from "../../hooks/useAuthHeader";
 
 import "../../../public/assets/css/header.css";
 import axios from "axios";
 
 const HeaderOne = () => {
-
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isActive, setIsActive] = useState(false);
-  const [role, setRole] = useState<string | null>(null);
-  const [userName, setUserName] = useState<string>("");
-
+  
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const userJson = localStorage.getItem("user");
-    if (userJson) {
-      const user = JSON.parse(userJson);
-      setRole(user.role);
-      
-      // Set user name based on available fields
-      if (user.first_name && user.last_name) {
-        setUserName(`${user.first_name} ${user.last_name}`);
-      } else if (user.name) {
-        setUserName(user.name);
-      } else if (user.username) {
-        setUserName(user.username);
-      } else if (user.email) {
-        // Use email before @ symbol as name
-        const emailName = user.email.split("@")[0];
-        setUserName(emailName);
-      }
-    }
-  }, []);
+  
+  // ✅ ใช้ Custom Hook สำหรับ Authentication
+  const { role, userName, refreshAuthStatus } = useAuthHeader();
 
 
   const handleLogout = async () => {
@@ -54,8 +34,7 @@ const HeaderOne = () => {
 
       localStorage.removeItem("token");
       localStorage.removeItem("user");
-      setRole(null); // ✅ reset role
-      setUserName(""); // ✅ reset user name
+      refreshAuthStatus(); // ✅ refresh auth status
       navigate("/login");
     } catch (err) {
       console.error("Logout failed:", err);

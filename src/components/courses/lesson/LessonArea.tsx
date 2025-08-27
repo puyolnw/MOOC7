@@ -5,6 +5,7 @@ import LessonNavTav from "./LessonNavTav";
 import LessonVideo from "./LessonVideo";
 import LessonQuiz from "./LessonQuiz";
 import ScoreProgressBar from "./ScoreProgressBar";
+import LessonLoading from "./LessonLoading";
 import "./LessonArea.css";
 
 // เพิ่มการใช้ API URL จาก .env
@@ -2829,36 +2830,10 @@ const handleNextLesson = useCallback(() => {
         }
     }, [fetchCourseData, fetchSubjectProgress, fetchSubjectQuizzes, fetchInstructors]);
 
-    // Loading skeleton component
-    const LoadingSkeleton = () => (
-        <section className="lesson__area section-pb-120">
-            <div className="container-fluid">
-                <div className="row gx-4">
-                    {/* Sidebar Skeleton */}
-                    <div className="col-xl-3 col-lg-4 lesson__sidebar">
-                        <div className="lesson__content">
-                            <div className="skeleton-title" style={{height: '24px', backgroundColor: '#e0e0e0', borderRadius: '4px', marginBottom: '20px'}}></div>
-                            <div className="skeleton-list">
-                                {[...Array(5)].map((_, i) => (
-                                    <div key={i} style={{height: '40px', backgroundColor: '#f0f0f0', borderRadius: '4px', marginBottom: '10px'}}></div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                    {/* Main Content Skeleton */}
-                    <div className="col-xl-9 col-lg-8 lesson__main">
-                        <div className="lesson__video-wrap">
-                            <div style={{height: '400px', backgroundColor: '#e0e0e0', borderRadius: '8px', marginBottom: '20px'}}></div>
-                            <div style={{height: '200px', backgroundColor: '#f0f0f0', borderRadius: '8px'}}></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-    );
+
 
     if (loading) {
-        return <LoadingSkeleton />;
+        return <LessonLoading />;
     }
 
     return (

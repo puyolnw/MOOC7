@@ -6,6 +6,8 @@ import DashboardSidebar from "../dashboard-common/AdminSidebar";
 import DashboardBanner from "../dashboard-common/AdminBanner";
 import AdminSubjectArea from "./AdminSubjectArea";
 import "./mega.css";
+import "./color-fix.css";
+import "../dashboard-common/breadcrumb-fix.css";
 
 // เพิ่ม interface สำหรับ Faculty ใหม่
 interface FacultyWithStats {
