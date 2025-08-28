@@ -237,7 +237,7 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
             }
 
             const response = await axios.get(
-                `${API_URL}/api/learn/subject/${currentSubjectId}/scores-hierarchical`,
+                `${API_URL}/api/subjects/${currentSubjectId}/scores-hierarchical`,
                 {
                     headers: { Authorization: `Bearer ${token}` }
                 }
@@ -246,9 +246,12 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
             if (response.data.success && response.data.scoreStructure) {
                 setScoreStructure(response.data.scoreStructure);
                 setSubjectPassingPercentage(Number(response.data.subject?.passing_percentage) || 80);
+                
+                console.log('📊 Hierarchical Score Structure loaded:', response.data.scoreStructure);
             }
         } catch (error: any) {
-            console.error('❌ Error fetching hierarchical score items:', error);
+            console.error('Error fetching hierarchical scores:', error);
+            // ไม่แสดง error toast เพราะอาจเป็น API ที่ยังไม่ได้ implement
         }
     }, [currentSubjectId]);
     // ✅ Task 5: ลบ paymentStatus state
@@ -2471,7 +2474,12 @@ const handleSelectLesson = useCallback((
 
     // ✅ เพิ่มฟังก์ชันที่ขาดหายไป
     const handlePreviousLesson = useCallback(() => {
-        if (!currentLessonId) return;
+        console.log("🔄 handlePreviousLesson called with currentLessonId:", currentLessonId);
+        console.log("🔄 lessonData:", lessonData);
+        if (!currentLessonId) {
+            console.error("❌ Missing currentLessonId");
+            return;
+        }
 
         const [currentSectionId, currentItemId] = currentLessonId.split("-").map(Number);
         let foundPrevious = false;
@@ -2809,11 +2817,12 @@ const handleNextLesson = useCallback(() => {
             setLoading(true);
             
             // ใช้ Promise.allSettled เพื่อให้ทุก API call ทำงานพร้อมกัน
-            const results = await Promise.allSettled([
+            const results =             await Promise.allSettled([
                 fetchCourseData(),
-                fetchSubjectProgress(), 
+                fetchSubjectProgress(),
                 fetchSubjectQuizzes(),
-                fetchInstructors()
+                fetchInstructors(),
+                fetchScoreItems()
             ]);
             
             // ตรวจสอบ error และ log ออกมา
@@ -2828,7 +2837,7 @@ const handleNextLesson = useCallback(() => {
         } finally {
             setLoading(false);
         }
-    }, [fetchCourseData, fetchSubjectProgress, fetchSubjectQuizzes, fetchInstructors]);
+    }, [fetchCourseData, fetchSubjectProgress, fetchSubjectQuizzes, fetchInstructors, fetchScoreItems]);
 
 
 

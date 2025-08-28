@@ -198,7 +198,7 @@ const EditableSubjectDetail: React.FC<{
     setImagePreview(null);
   };
 
-const getSubjectImageUrl = (subject: Subject): string => {
+  const getSubjectImageUrl = (subject: Subject): string => {
   console.log('Subject data:', subject); // ✅ Debug
   console.log('Cover image file ID:', subject.cover_image_file_id); // ✅ Debug
   
@@ -208,7 +208,7 @@ const getSubjectImageUrl = (subject: Subject): string => {
     console.log('Generated image URL:', imageUrl); // ✅ Debug
     return imageUrl;
   }
-  return 'https://via.placeholder.com/400x250.png?text=ไม่มีรูปภาพ';
+  return ''; // ✅ คืนค่าว่างเพื่อให้แสดง placeholder
 };
 
   const getVideoEmbedUrl = (videoUrl: string | null): string => {
@@ -252,25 +252,38 @@ const getSubjectImageUrl = (subject: Subject): string => {
         <div className="subject-header-content">
           <div className="subject-image-section">
             <div className="subject-image-container" onClick={() => isEditing && fileInputRef.current?.click()}>
-              <img
-  src={getSubjectImageUrl(subject)}
-  alt={editSubjectName}
-  className="subject-detail-image"
-  onError={(e) => {
-    const target = e.target as HTMLImageElement;
-    // ✅ ลองหลาย fallback URLs
-    if (target.src.includes('/api/courses/image/')) {
-      // ลอง endpoint อื่น
-      target.src = `${apiURL}/api/courses/subjects/image/${subject.cover_image_file_id}`;
-    } else if (target.src.includes('/api/courses/subjects/image/')) {
-      // ลอง endpoint อื่นอีก
-      target.src = `${apiURL}/api/files/${subject.cover_image_file_id}`;
-    } else {
-      // ใช้ placeholder สุดท้าย
-      target.src = 'https://via.placeholder.com/400x250.png?text=ไม่มีรูปภาพ';
-    }
-  }}
-/>
+              {getSubjectImageUrl(subject) ? (
+                <img
+                  src={getSubjectImageUrl(subject)}
+                  alt={editSubjectName}
+                  className="subject-detail-image"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    // ✅ ลองหลาย fallback URLs
+                    if (target.src.includes('/api/courses/image/')) {
+                      // ลอง endpoint อื่น
+                      target.src = `${apiURL}/api/courses/subjects/image/${subject.cover_image_file_id}`;
+                    } else if (target.src.includes('/api/courses/subjects/image/')) {
+                      // ลอง endpoint อื่นอีก
+                      target.src = `${apiURL}/api/files/${subject.cover_image_file_id}`;
+                    } else {
+                      // ซ่อนรูปและแสดง placeholder
+                      target.style.display = 'none';
+                      const container = target.parentElement;
+                      if (container) {
+                        const placeholder = document.createElement('div');
+                        placeholder.className = 'subject-placeholder';
+                        placeholder.innerHTML = 'ไม่มีรูป<br>กดเพื่อเพิ่มรูป';
+                        container.appendChild(placeholder);
+                      }
+                    }
+                  }}
+                />
+              ) : (
+                <div className="subject-placeholder">
+                  ไม่มีรูป<br/>กดเพื่อเพิ่มรูป
+                </div>
+              )}
               {isEditing && (
                 <div className="image-edit-overlay">
                   <i className="fas fa-camera"></i>

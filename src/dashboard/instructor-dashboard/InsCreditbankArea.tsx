@@ -704,7 +704,7 @@ const EditableCourseDetail: React.FC<{
         return `${apiURL}/api/courses/image/${fileIdMatch[1]}`;
       }
     }
-    return 'data:image/svg+xml;base64,' + btoa('<svg xmlns="http://www.w3.org/2000/svg" width="400" height="250" viewBox="0 0 400 250" style="background:#f8f9fa"><text x="50%" y="50%" text-anchor="middle" dy=".3em" font-family="sans-serif" font-size="16" fill="#6c757d">ไม่มีรูปภาพ</text></svg>');
+    return 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="400" height="250" viewBox="0 0 400 250" style="background:#f8f9fa"><text x="50%" y="50%" text-anchor="middle" dy=".3em" font-family="sans-serif" font-size="16" fill="#6c757d">ไม่มีรูปภาพ</text></svg>');
   };
 
   const getVideoEmbedUrl = (videoUrl: string | null): string => {
@@ -974,7 +974,7 @@ const EditableCourseDetail: React.FC<{
                   <img
                     src={subject.cover_image_file_id 
                       ? `${apiURL}/api/courses/image/${subject.cover_image_file_id}`
-                      : 'data:image/svg+xml;base64,' + btoa('<svg xmlns="http://www.w3.org/2000/svg" width="300" height="200" viewBox="0 0 300 200" style="background:#f8f9fa"><text x="50%" y="50%" text-anchor="middle" dy=".3em" font-family="sans-serif" font-size="14" fill="#6c757d">ไม่มีรูปภาพ</text></svg>')
+                      : 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="300" height="200" viewBox="0 0 300 200" style="background:#f8f9fa"><text x="50%" y="50%" text-anchor="middle" dy=".3em" font-family="sans-serif" font-size="14" fill="#6c757d">ไม่มีรูปภาพ</text></svg>')
                     }
                     alt={subject.subject_name}
                     className="subject-image"

@@ -197,6 +197,10 @@ const LessonQuiz = ({
     const [files, setFiles] = useState<{ questionIndex: number; question_id: number; file: File }[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    // ✅ เพิ่ม state สำหรับ Special Quiz
+    const [currentAttemptId, setCurrentAttemptId] = useState<number | null>(null);
+    const [submittedAnswers, setSubmittedAnswers] = useState<Set<number>>(new Set());
+
     // ✅ ใช้เกณฑ์การผ่านจาก prop (default 65%)
     const PASSING_PERCENTAGE = passingPercentage;
 
@@ -227,12 +231,147 @@ const LessonQuiz = ({
         return hasFillInBlank;
     };
 
+    // ✅ เพิ่มฟังก์ชันสำหรับ Special Quiz
+    const startSpecialQuizAttempt = async () => {
+        try {
+            const token = localStorage.getItem("token");
+            if (!token) {
+                console.error("No token found");
+                return;
+            }
+
+            const response = await axios.post(
+                `${API_URL}/api/special-quiz/${quizId}/attempt`,
+                {},
+                {
+                    headers: { Authorization: `Bearer ${token}` }
+                }
+            );
+
+            if (response.data.success) {
+                setCurrentAttemptId(response.data.attempt.attempt_id);
+                console.log("🎯 Special quiz attempt started:", response.data.attempt.attempt_id);
+            }
+        } catch (error: any) {
+            console.error("Error starting special quiz attempt:", error);
+        }
+    };
+
+    const submitSingleAnswer = async (questionId: number, textAnswer: string, file?: File) => {
+        if (!currentAttemptId) {
+            console.error("No active attempt");
+            return;
+        }
+
+        try {
+            const token = localStorage.getItem("token");
+            if (!token) {
+                console.error("No token found");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('question_id', questionId.toString());
+            formData.append('text_answer', textAnswer);
+            if (file) {
+                formData.append('file', file);
+            }
+
+            const response = await axios.post(
+                `${API_URL}/api/special-quiz/attempt/${currentAttemptId}/answer`,
+                formData,
+                {
+                    headers: { 
+                        Authorization: `Bearer ${token}`,
+                        'Content-Type': 'multipart/form-data'
+                    }
+                }
+            );
+
+            if (response.data.success) {
+                setSubmittedAnswers(prev => new Set([...prev, questionId]));
+                console.log("✅ Answer submitted for question:", questionId);
+            }
+        } catch (error: any) {
+            console.error("Error submitting answer:", error);
+        }
+    };
+
+    const submitSpecialQuiz = async () => {
+        if (!currentAttemptId) {
+            console.error("No active attempt");
+            return;
+        }
+
+        try {
+            const token = localStorage.getItem("token");
+            if (!token) {
+                console.error("No token found");
+                return;
+            }
+
+            const response = await axios.post(
+                `${API_URL}/api/special-quiz/attempt/${currentAttemptId}/submit`,
+                {},
+                {
+                    headers: { Authorization: `Bearer ${token}` }
+                }
+            );
+
+            if (response.data.success) {
+                setIsAwaitingReview(true);
+                setHasCompleted(true);
+                console.log("✅ Special quiz submitted successfully");
+            }
+        } catch (error: any) {
+            console.error("Error submitting special quiz:", error);
+        }
+    };
+
+    // เพิ่ม state สำหรับการส่งแบบรายข้อ (ลบออกเพราะไม่ได้ใช้)
+
     // ป้องกัน onComplete ถูกเรียกซ้ำ
     const safeOnComplete = () => {
         if (!hasCompleted) {
             setHasCompleted(true);
             onComplete();
         }
+    };
+
+    // ✅ เพิ่มฟังก์ชัน renderSpecialQuizUI สำหรับ Special Quiz
+    const renderSpecialQuizUI = () => {
+        if (!isSpecialQuiz) return null;
+
+        return (
+            <div className="special-quiz-ui">
+                <div className="alert alert-warning">
+                    <i className="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Special Quiz:</strong> แบบทดสอบนี้มีคำถามประเภท Fill in Blank ที่ต้องรอตรวจจากอาจารย์
+                </div>
+                
+                <div className="special-quiz-progress mb-3">
+                    <h5>ความคืบหน้า:</h5>
+                    <div className="progress">
+                        <div 
+                            className="progress-bar bg-success" 
+                            style={{ width: `${(submittedAnswers.size / questions.length) * 100}%` }}
+                        >
+                            {submittedAnswers.size} / {questions.length} คำถาม
+                        </div>
+                    </div>
+                </div>
+
+                <div className="special-quiz-instructions">
+                    <h6>วิธีการทำ:</h6>
+                    <ul>
+                        <li>ตอบคำถามทีละข้อ</li>
+                        <li>สามารถแนบไฟล์ได้ (ถ้าจำเป็น)</li>
+                        <li>กดปุ่ม "ส่งคำตอบ" เมื่อเสร็จทุกข้อ</li>
+                        <li>ผลลัพธ์จะแสดงหลังจากอาจารย์ตรวจเสร็จ</li>
+                    </ul>
+                </div>
+            </div>
+        );
     };
 
     // เพิ่มฟังก์ชันสำหรับดึงข้อมูลสถานะแบบทดสอบ
@@ -484,11 +623,19 @@ const LessonQuiz = ({
             setTextAnswers([]);
             setFiles([]);
             setHasCompleted(false);
+            setCurrentAttemptId(null);
+            setSubmittedAnswers(new Set());
             
             // โหลดคำถามใหม่
             const formattedQuestions = mapBackendQuestions(quizData);
             setQuestions(formattedQuestions);
-            checkIfSpecialQuiz(formattedQuestions);
+            const isSpecial = checkIfSpecialQuiz(formattedQuestions);
+            
+            // ✅ เริ่ม Special Quiz attempt ถ้าเป็น Special Quiz
+            if (isSpecial && !currentAttemptId) {
+                startSpecialQuizAttempt();
+            }
+            
             setLoading(false);
         }
     }, [quizData]);
@@ -769,24 +916,48 @@ const LessonQuiz = ({
         if (currentQuestion < questions.length - 1) {
             setCurrentQuestion(currentQuestion + 1);
         } else {
-            // ส่งคำตอบและแสดงผล
-            const result = await submitQuizAnswers();
-
-            if (result) {
-                setScore(result.totalScore || 0);
-                setIsPassed(result.passed);
-                setShowResult(true); // แสดงผลลัพธ์เสมอ
-
-                // ถ้าเป็น Special Quiz (มี FB) ให้รอตรวจเสมอ
-                if (isSpecialQuiz || result.isSpecialQuiz) {
-                    setIsAwaitingReview(true);
+            // ✅ แก้ไข: รองรับ Special Quiz
+            if (isSpecialQuiz) {
+                // สำหรับ Special Quiz ให้ส่งคำตอบทีละข้อ
+                const currentQuestionData = questions[currentQuestion];
+                if (currentQuestionData.type === "FB") {
+                    const textAnswer = textAnswers[currentQuestion] || "";
+                    const file = files.find(f => f.questionIndex === currentQuestion)?.file;
+                    
+                    await submitSingleAnswer(currentQuestionData.question_id, textAnswer, file);
                 }
+                
+                // ส่ง Special Quiz เมื่อเสร็จทุกข้อ
+                await submitSpecialQuiz();
+                setShowResult(true);
+                setIsAwaitingReview(true);
+                safeOnComplete();
             } else {
-                // Fallback scoring - แต่ถ้าเป็น Special Quiz ก็ยังต้องรอตรวจ
-                if (isSpecialQuiz) {
-                    setIsAwaitingReview(true);
+                // แบบทดสอบปกติ
+                const result = await submitQuizAnswers();
+
+                if (result) {
+                    setScore(result.totalScore || 0);
+                    setIsPassed(result.passed);
+                    setShowResult(true);
+
+                    if (result.passed) {
+                        safeOnComplete();
+                        
+                        setTimeout(() => {
+                            if (onGoToNextLesson) {
+                                console.log("🎯 ใช้ onGoToNextLesson - ไปบทเรียนถัดไป");
+                                resetAllStates();
+                                onGoToNextLesson();
+                            } else if (onNextLesson) {
+                                console.log("🎯 ใช้ onNextLesson - ไปเนื้อหาถัดไป");
+                                resetAllStates();
+                                onNextLesson();
+                            }
+                        }, 2000);
+                    }
                 } else {
-                    // คำนวณคะแนนสำหรับแบบทดสอบปกติเท่านั้น
+                    // Fallback scoring
                     let newScore = 0;
 
                     for (let i = 0; i < questions.length; i++) {
@@ -829,20 +1000,18 @@ const LessonQuiz = ({
                     setMaxScore(maxScore);
                     setScore(newScore);
                     setIsPassed(percentage >= PASSING_PERCENTAGE);
-                    setShowResult(true); // แสดงผลลัพธ์เสมอ
+                    setShowResult(true);
 
                     if (percentage >= PASSING_PERCENTAGE) {
                         safeOnComplete();
                         
-                        // ✅ แก้ไข: ใช้ onGoToNextLesson เป็นหลัก สำหรับแบบทดสอบของแต่ละบท
                         setTimeout(() => {
                             if (onGoToNextLesson) {
-                                console.log("🎯 ใช้ onGoToNextLesson - ไปบทเรียนถัดไป (lesson ถัดไป)");
+                                console.log("🎯 ใช้ onGoToNextLesson - ไปบทเรียนถัดไป");
                                 resetAllStates();
                                 onGoToNextLesson();
                             } else if (onNextLesson) {
-                                // ✅ ใช้ onNextLesson เป็น fallback สำหรับแบบทดสอบพิเศษ
-                                console.log("🎯 ใช้ onNextLesson - ไปเนื้อหาถัดไป (fallback)");
+                                console.log("🎯 ใช้ onNextLesson - ไปเนื้อหาถัดไป");
                                 resetAllStates();
                                 onNextLesson();
                             }
@@ -1496,6 +1665,9 @@ const LessonQuiz = ({
                     รีเฟรชผลตรวจ
                 </button>
             )}
+
+            {/* ✅ แสดง Special Quiz UI */}
+            {renderSpecialQuizUI()}
         </div>
     );
 };

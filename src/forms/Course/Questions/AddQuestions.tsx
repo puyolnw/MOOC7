@@ -60,10 +60,11 @@ interface ValidationErrors {
 interface AddQuestionsProps {
   onSubmit?: (questionData: any) => void;
   onCancel?: () => void;
+  initialQuizzes?: string[];
 }
 
 // ===== MAIN COMPONENT =====
-const AddQuestions: React.FC<AddQuestionsProps> = ({ onSubmit, onCancel }) => {
+const AddQuestions: React.FC<AddQuestionsProps> = ({ onSubmit, onCancel, initialQuizzes = [] }) => {
   const generateId = () => `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   
   // ===== STATE MANAGEMENT =====
@@ -87,7 +88,7 @@ const AddQuestions: React.FC<AddQuestionsProps> = ({ onSubmit, onCancel }) => {
     type: "MC",
     choices: [],
     score: 1,
-    quizzes: []
+    quizzes: initialQuizzes
   } as ObjectiveQuestionData);
   
   // Form helpers
@@ -147,7 +148,7 @@ const AddQuestions: React.FC<AddQuestionsProps> = ({ onSubmit, onCancel }) => {
             { id: generateId(), text: "ตัวเลือกที่ 3", isCorrect: false }
           ],
           score: 1,
-          quizzes: []
+          quizzes: initialQuizzes
         } as ObjectiveQuestionData);
       } else {
         setQuestionData({
@@ -156,12 +157,12 @@ const AddQuestions: React.FC<AddQuestionsProps> = ({ onSubmit, onCancel }) => {
           description: "",
           type: "FB",
           score: 1,
-          quizzes: []
+          quizzes: initialQuizzes
         } as SubjectiveQuestionData);
       }
       setCurrentStep('form');
     }
-  }, [selectedCategory]);
+  }, [selectedCategory, initialQuizzes]);
 
   // Update choices when objective question type changes
   useEffect(() => {
@@ -400,6 +401,9 @@ const AddQuestions: React.FC<AddQuestionsProps> = ({ onSubmit, onCancel }) => {
       formData.append('type', questionData.type);
       formData.append('score', questionData.score.toString());
       formData.append('quizzes', JSON.stringify(questionData.quizzes));
+      
+      // เพิ่ม debug log
+      console.log('FormData quizzes:', questionData.quizzes);
 
       if (questionData.category === "objective") {
         const objData = questionData as ObjectiveQuestionData;
@@ -411,9 +415,13 @@ const AddQuestions: React.FC<AddQuestionsProps> = ({ onSubmit, onCancel }) => {
 
       // Add file attachments
       if (selectedFiles.length > 0) {
+        console.log('Adding file attachments to form data:', selectedFiles.length, 'files');
         selectedFiles.forEach((attachment) => {
+          console.log('Appending file:', attachment.name, 'size:', attachment.size);
           formData.append(`attachments`, attachment.file);
         });
+      } else {
+        console.log('No file attachments to add');
       }
 
       const response = await axios.post(`${apiUrl}/api/courses/questions`, formData, {
@@ -421,6 +429,11 @@ const AddQuestions: React.FC<AddQuestionsProps> = ({ onSubmit, onCancel }) => {
           'Content-Type': 'multipart/form-data',
         },
       });
+      
+      console.log('Question creation response:', response.data);
+      console.log('Question data with attachments:', response.data.question);
+      console.log('Initial quizzes:', initialQuizzes);
+      console.log('QuestionData quizzes:', questionData.quizzes);
       
       setApiSuccess("สร้างคำถามสำเร็จ");
       
@@ -581,9 +594,12 @@ const AddQuestions: React.FC<AddQuestionsProps> = ({ onSubmit, onCancel }) => {
           </small>
 
           {/* Display selected files */}
-          {selectedFiles.length > 0 && (
+          {selectedFiles.length > 0 ? (
             <div className="mt-3">
-              <h6 className="text-primary">ไฟล์ที่แนบ ({selectedFiles.length} ไฟล์)</h6>
+              <h6 className="text-primary">
+                <i className="fas fa-paperclip me-2"></i>
+                ไฟล์ที่แนบ ({selectedFiles.length} ไฟล์)
+              </h6>
               <div className="list-group">
                 {selectedFiles.map((file) => (
                   <div key={file.id} className="list-group-item d-flex justify-content-between align-items-center">
@@ -604,6 +620,13 @@ const AddQuestions: React.FC<AddQuestionsProps> = ({ onSubmit, onCancel }) => {
                     </button>
                   </div>
                 ))}
+              </div>
+            </div>
+          ) : (
+            <div className="mt-3">
+              <div className="alert alert-info">
+                <i className="fas fa-info-circle me-2"></i>
+                <strong>ไม่มีไฟล์แนบ:</strong> คุณสามารถอัปโหลดไฟล์เพื่อใช้เป็นโจทย์หรือเอกสารประกอบคำถามได้
               </div>
             </div>
           )}
@@ -746,6 +769,42 @@ const AddQuestions: React.FC<AddQuestionsProps> = ({ onSubmit, onCancel }) => {
             <i className="fas fa-info-circle me-2"></i>
             ข้อสอบประเภทเติมคำจะต้องให้อาจารย์ตรวจให้คะแนนเอง
           </div>
+
+          {/* เพิ่มการอัปโหลดไฟล์แนบสำหรับคำถาม FB */}
+          <div className="mb-3">
+            <label className="form-label">ไฟล์แนบ (ถ้ามี)</label>
+            <input
+              type="file"
+              className="form-control"
+              multiple
+              accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+              onChange={handleFileUpload}
+            />
+            <small className="text-muted">
+              รองรับไฟล์ PDF, Word, Excel, รูปภาพ ขนาดไม่เกิน 50MB
+            </small>
+          </div>
+
+          {/* แสดงไฟล์ที่อัปโหลดแล้ว */}
+          {selectedFiles.length > 0 && (
+            <div className="mb-3">
+              <label className="form-label">ไฟล์ที่อัปโหลดแล้ว:</label>
+              <ul className="list-group">
+                {selectedFiles.map((file, index) => (
+                  <li key={index} className="list-group-item d-flex justify-content-between align-items-center">
+                    {file.name}
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-danger"
+                      onClick={() => handleRemoveFile(selectedFiles[index].id)}
+                    >
+                      <i className="fas fa-times"></i>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       </div>
     );

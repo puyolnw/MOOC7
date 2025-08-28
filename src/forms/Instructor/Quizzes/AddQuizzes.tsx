@@ -208,6 +208,10 @@ const AddQuizzes: React.FC<AddQuizzesProps> = ({ onSubmit, onCancel }) => {
     });
   };
 
+  const handleRemoveQuestion = (questionId: string) => {
+    setSelectedExistingQuestions(prev => prev.filter(q => q !== questionId));
+  };
+
   const handleTimeLimitChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
@@ -664,14 +668,79 @@ const AddQuizzes: React.FC<AddQuizzesProps> = ({ onSubmit, onCancel }) => {
               />
             </>
           ) : (
-            <SpecialQuizSection
-              quizData={quizData}
-              fbQuestions={fbQuestions}
-              selectedExistingQuestions={selectedExistingQuestions}
-              setSelectedExistingQuestions={setSelectedExistingQuestions}
-              handleCheckboxChange={handleCheckboxChange}
-              errors={errors}
-            />
+            <>
+              <SpecialQuizSection
+                quizData={quizData}
+                fbQuestions={fbQuestions}
+                selectedExistingQuestions={selectedExistingQuestions}
+                setSelectedExistingQuestions={setSelectedExistingQuestions}
+                handleCheckboxChange={handleCheckboxChange}
+                errors={errors}
+              />
+              
+              {/* เพิ่มการตั้งค่าแบบทดสอบอัตนัย */}
+              <div className="card shadow-sm border-0 mb-4">
+                <div className="card-header bg-warning text-dark">
+                  <h5 className="mb-0">
+                    <i className="fas fa-cog me-2"></i>
+                    ตั้งค่าแบบทดสอบอัตนัย
+                  </h5>
+                </div>
+                <div className="card-body">
+                  <div className="mb-3">
+                    <label className="form-label">
+                      <input
+                        type="checkbox"
+                        checked={quizData.allowFileUpload || false}
+                        onChange={(e) => setQuizData(prev => ({
+                          ...prev,
+                          allowFileUpload: e.target.checked
+                        }))}
+                        className="me-2"
+                      />
+                      อนุญาตให้อัปโหลดไฟล์ได้
+                    </label>
+                    <small className="text-muted d-block">
+                      นักเรียนจะสามารถอัปโหลดไฟล์แนบสำหรับแต่ละคำถามได้
+                    </small>
+                  </div>
+
+                  <div className="alert alert-warning">
+                    <i className="fas fa-exclamation-triangle me-2"></i>
+                    แบบทดสอบอัตนัยจะต้องให้อาจารย์ตรวจให้คะแนนเอง
+                  </div>
+
+                  {/* แสดงคำถาม FB ที่เลือก */}
+                  {selectedExistingQuestions.length > 0 && (
+                    <div className="mb-3">
+                      <label className="form-label">คำถามที่เลือก:</label>
+                      <ul className="list-group">
+                        {selectedExistingQuestions.map((questionId, index) => {
+                          const question = fbQuestions.find(q => q.id === questionId);
+                          if (!question) return null;
+                          return (
+                            <li key={index} className="list-group-item d-flex justify-content-between align-items-center">
+                              <div>
+                                <strong>{question.title}</strong>
+                                <br />
+                                <small className="text-muted">ประเภท: {question.type}</small>
+                              </div>
+                              <button
+                                type="button"
+                                className="btn btn-sm btn-outline-danger"
+                                onClick={() => handleRemoveQuestion(questionId)}
+                              >
+                                <i className="fas fa-times"></i>
+                              </button>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
           )}
 
           <div className="d-flex justify-content-end gap-2 mt-4">

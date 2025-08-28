@@ -445,15 +445,44 @@ const LessonFaq = ({
 
   // ฟังก์ชันสำหรับ render แบบทดสอบในรูปแบบ accordion เหมือนบทเรียน
   const renderQuizSection = (quiz: SubjectQuiz, sectionId: number) => {
-    // ใช้ข้อมูลจาก hierarchical structure แทน
-    let statusText = 'ยังไม่ทำ';
-    if (quiz.status === 'passed') {
-      statusText = 'ผ่าน';
-    } else if (quiz.status === 'awaiting_review') {
-      statusText = 'รอตรวจ';
-    } else if (quiz.status === 'failed') {
-      statusText = 'ไม่ผ่าน';
-    }
+    // เพิ่มการแสดงสถานะ "รอตรวจ"
+    const getQuizStatus = (quiz: SubjectQuiz) => {
+      if (quiz.status === 'awaiting_review') {
+        return {
+          status: 'awaiting_review',
+          text: 'รอตรวจ',
+          icon: 'fas fa-clock text-warning',
+          className: 'status-awaiting',
+          description: 'แบบทดสอบถูกส่งแล้ว รออาจารย์ตรวจให้คะแนน'
+        };
+      } else if (quiz.status === 'passed') {
+        return {
+          status: 'passed',
+          text: 'ผ่าน',
+          icon: 'fas fa-check-circle text-success',
+          className: 'status-passed',
+          description: 'ผ่านการตรวจจากอาจารย์แล้ว'
+        };
+      } else if (quiz.status === 'failed') {
+        return {
+          status: 'failed',
+          text: 'ไม่ผ่าน',
+          icon: 'fas fa-times-circle text-danger',
+          className: 'status-not-passed',
+          description: 'ไม่ผ่านการตรวจจากอาจารย์'
+        };
+      } else {
+        return {
+          status: 'not_started',
+          text: 'ยังไม่เริ่ม',
+          icon: 'fas fa-circle text-muted',
+          className: 'status-not-passed',
+          description: 'ยังไม่ได้เริ่มทำแบบทดสอบ'
+        };
+      }
+    };
+
+    const status = getQuizStatus(quiz);
     
     return (
       <div key={`${quiz.type}-${quiz.quiz_id}`} className="accordion-item">
@@ -466,11 +495,9 @@ const LessonFaq = ({
             <span className="section-title">
               {(quiz.type === 'pre_test' || quiz.type === 'big_pre_test') ? '🎯 ' : '🏁 '}{quiz.title}
             </span>
-            <span className={`section-status ${
-              quiz.status === 'passed' ? "status-passed" : 
-              quiz.status === 'awaiting_review' ? "status-awaiting" : "status-not-passed"
-            }`}>
-              {statusText}
+            <span className={`section-status ${status.className}`}>
+              <i className={status.icon}></i>
+              {status.text}
             </span>
           </button>
         </h2>
@@ -490,11 +517,9 @@ const LessonFaq = ({
                     {quiz.locked && <i className="fas fa-lock lock-icon me-2"></i>}
                     {quiz.title}
                   </span>
-                  <span className={`item-status ${
-                    quiz.status === 'passed' ? "status-passed" : 
-                    quiz.status === 'awaiting_review' ? "status-awaiting" : "status-not-passed"
-                  }`}>
-                    {statusText}
+                  <span className={`item-status ${status.className}`}>
+                    <i className={status.icon}></i>
+                    {status.text}
                   </span>
                 </div>
               </li>

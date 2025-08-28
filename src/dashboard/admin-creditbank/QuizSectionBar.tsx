@@ -614,9 +614,124 @@ const handleDeleteQuiz = async () => {
         return;
       }
 
-      // ✅ ปรับ format ข้อมูลให้ตรงกับ API
-      console.log('questionData.choices:', questionData.choices);
-      console.log('questionData.choices type:', typeof questionData.choices);
+      // ✅ ตรวจสอบว่าคำถามถูกสร้างแล้วหรือยัง
+      if (questionData.question_id) {
+        console.log('Question already created with ID:', questionData.question_id);
+        
+        // เพิ่มคำถามเข้า quiz ถ้ายังไม่ได้เพิ่ม
+        if (questionData.quizzes && !questionData.quizzes.includes(targetQuizId)) {
+          console.log('Adding question to quiz...');
+          const apiUrl = import.meta.env.VITE_API_URL;
+          const token = localStorage.getItem('token');
+          
+          await axios.post(
+            `${apiUrl}/api/courses/quiz-questions`,
+            {
+              quiz_id: targetQuizId,
+              question_id: questionData.question_id
+            },
+            {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
+            }
+          );
+        }
+        
+        // อัปเดต state
+        const newQuestion: QuizQuestion = {
+          question_id: questionData.question_id,
+          question_text: questionData.title,
+          question_type: questionData.type,
+          score: questionData.score,
+          choices: questionData.choices?.map((c: any) => ({
+            choice_id: c.choice_id,
+            choice_text: c.text,
+            is_correct: c.is_correct
+          })) || []
+        };
+        
+        setQuestions(prev => [...prev, newQuestion]);
+        
+        // อัปเดต quiz data
+        const updatedQuiz = {
+          ...(quizData || {}),
+          quiz_id: targetQuizId,
+          questions: [...questions, newQuestion]
+        };
+
+        if (onQuizUpdate) {
+          if (isSubLesson && lesson) {
+            const updatedLesson = {
+              ...lesson,
+              has_quiz: true,
+              quiz_id: targetQuizId,
+              quiz: updatedQuiz
+            };
+            onQuizUpdate(updatedLesson);
+          } else if (isBigLesson && bigLessonId) {
+            onQuizUpdate();
+          }
+        }
+        
+        setShowAddQuestionForm(false);
+        setError('');
+        console.log('Question added successfully!');
+        return;
+      }
+
+      // ✅ ถ้าคำถามยังไม่ถูกสร้าง ให้สร้างใหม่
+      console.log('Creating new question...');
+      
+      // ตรวจสอบว่าคำถามมี quiz_id อยู่แล้วหรือไม่
+      if (questionData.quizzes && questionData.quizzes.length > 0) {
+        console.log('Question already has quizzes, updating quiz association...');
+        
+        // อัปเดต state โดยตรง
+        const newQuestion: QuizQuestion = {
+          question_id: questionData.question_id || Date.now(), // ใช้ temporary ID
+          question_text: questionData.title,
+          question_type: questionData.type,
+          score: questionData.score,
+          choices: questionData.choices?.map((c: any) => ({
+            choice_id: c.choice_id,
+            choice_text: c.text,
+            is_correct: c.is_correct
+          })) || []
+        };
+        
+        setQuestions(prev => [...prev, newQuestion]);
+        
+        // อัปเดต quiz data
+        const updatedQuiz = {
+          ...(quizData || {}),
+          quiz_id: targetQuizId,
+          questions: [...questions, newQuestion]
+        };
+
+        if (onQuizUpdate) {
+          if (isSubLesson && lesson) {
+            const updatedLesson = {
+              ...lesson,
+              has_quiz: true,
+              quiz_id: targetQuizId,
+              quiz: updatedQuiz
+            };
+            onQuizUpdate(updatedLesson);
+          } else if (isBigLesson) {
+            onQuizUpdate();
+          }
+        }
+        
+        setShowAddQuestionForm(false);
+        setError('');
+        console.log('Question added successfully!');
+        return;
+      }
+      
+      // ถ้าไม่มี quiz_id ให้สร้างคำถามใหม่
+      console.log('No quiz association found, creating new question...');
       
       const formattedData = {
         title: questionData.title || questionData.question_text,
@@ -884,6 +999,7 @@ const handleDeleteQuiz = async () => {
                 <AddQuestions
                   onSubmit={handleAddQuestion}
                   onCancel={() => setShowAddQuestionForm(false)}
+                  initialQuizzes={getQuizId() ? [getQuizId()] : []}
                 />
               </div>
             </div>

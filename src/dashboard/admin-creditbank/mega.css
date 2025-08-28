@@ -61,18 +61,21 @@
 }
 
  .dashboard__area .breadcrumb-modern {
-  display: flex;
+  display: flex !important;
+  flex-direction: row !important;
   align-items: center;
   margin: 0;
   padding: 0;
   list-style: none;
-  flex-wrap: wrap;
+  flex-wrap: nowrap; /* ✅ เปลี่ยนจาก wrap เป็น nowrap เพื่อให้เป็นแนวนอน */
   gap: 0.5rem;
+  overflow-x: auto; /* ✅ เพิ่ม scroll แนวนอนถ้าจอแคบ */
 }
 
  .dashboard__area .breadcrumb-item-modern {
   display: flex;
   align-items: center;
+  flex-shrink: 0; /* ✅ ป้องกันการหดตัว */
 }
 
  .dashboard__area .breadcrumb-btn {
@@ -88,6 +91,7 @@
   cursor: pointer;
   display: flex;
   align-items: center;
+  white-space: nowrap; /* ✅ ป้องกันการขึ้นบรรทัดใหม่ */
 }
 
 .breadcrumb-btn:hover {
@@ -106,12 +110,77 @@
   font-weight: 600;
   display: flex;
   align-items: center;
+  white-space: nowrap; /* ✅ ป้องกันการขึ้นบรรทัดใหม่ */
 }
 
  .dashboard__area .breadcrumb-separator {
   color: rgba(255, 255, 255, 0.7);
   margin: 0 0.25rem;
   font-size: 0.75rem;
+  flex-shrink: 0; /* ✅ ป้องกันการหดตัว */
+}
+
+/* ✅ เพิ่ม CSS เพื่อแก้ไขปัญหา breadcrumb แนวตั้ง */
+.dashboard__area .breadcrumb-container ol,
+.dashboard__area .breadcrumb-container .breadcrumb-modern,
+.dashboard__area nav .breadcrumb-container ol,
+.dashboard__area nav .breadcrumb-container .breadcrumb-modern {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+}
+
+.dashboard__area .breadcrumb-container li,
+.dashboard__area .breadcrumb-container .breadcrumb-item-modern,
+.dashboard__area nav .breadcrumb-container li,
+.dashboard__area nav .breadcrumb-container .breadcrumb-item-modern {
+  display: flex !important;
+  align-items: center !important;
+  flex-shrink: 0 !important;
+}
+
+/* ✅ เพิ่ม CSS เพื่อแก้ไขปัญหา breadcrumb แนวตั้ง - รองรับทุกกรณี */
+.dashboard__area .breadcrumb-container,
+.dashboard__area nav .breadcrumb-container {
+  width: 100%;
+}
+
+.dashboard__area .breadcrumb-container ol,
+.dashboard__area nav .breadcrumb-container ol {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  width: 100%;
+  margin: 0 !important;
+  padding: 0 !important;
+  list-style: none !important;
+}
+
+.dashboard__area .breadcrumb-container ol li,
+.dashboard__area nav .breadcrumb-container ol li {
+  display: flex !important;
+  align-items: center !important;
+  flex-shrink: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* ✅ แก้ไขปัญหา responsive */
+@media (max-width: 768px) {
+  .dashboard__area .breadcrumb-container ol,
+  .dashboard__area nav .breadcrumb-container ol {
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+  }
+  
+  .dashboard__area .breadcrumb-container ol li,
+  .dashboard__area nav .breadcrumb-container ol li {
+    flex-shrink: 0 !important;
+  }
 }
 
 /* ===== LOADING STATES ===== */
@@ -231,6 +300,37 @@
   transform: translateY(-8px);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
   border-color: #667eea;
+}
+
+/* ✅ เพิ่ม CSS สำหรับ cards ที่มีสีแตกต่างกัน */
+ .dashboard__area .selection-card:nth-child(3n+1) {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+ .dashboard__area .selection-card:nth-child(3n+1) .card-title,
+ .dashboard__area .selection-card:nth-child(3n+1) .card-description {
+  color: white;
+}
+
+ .dashboard__area .selection-card:nth-child(3n+2) {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  color: white;
+}
+
+ .dashboard__area .selection-card:nth-child(3n+2) .card-title,
+ .dashboard__area .selection-card:nth-child(3n+2) .card-description {
+  color: white;
+}
+
+ .dashboard__area .selection-card:nth-child(3n+3) {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  color: white;
+}
+
+ .dashboard__area .selection-card:nth-child(3n+3) .card-title,
+ .dashboard__area .selection-card:nth-child(3n+3) .card-description {
+  color: white;
 }
 
  .dashboard__area .card-content {
@@ -1054,7 +1154,7 @@
   grid-template-columns: 1fr 2fr;
   gap: 2rem;
   padding: 2rem;
-  background: #1f2937;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); /* ✅ เปลี่ยนสีพื้นหลัง */
 }
 
  .dashboard__area .subject-image-section {
@@ -1093,7 +1193,18 @@
   align-items: center;
   justify-content: center;
   color: white;
-  font-size: 3rem;
+  font-size: 1.2rem; /* ✅ ลดขนาดฟอนต์ */
+  text-align: center;
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 2px dashed rgba(255, 255, 255, 0.3); /* ✅ เพิ่มขอบประ */
+}
+
+ .dashboard__area .subject-placeholder:hover {
+  background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: scale(1.02);
 }
 
  .dashboard__area .subject-info-section {
@@ -1112,10 +1223,11 @@
  .dashboard__area .subject-detail-title {
   font-size: 2rem;
   font-weight: 800;
-  color: #000000;
+  color: #ffffff; /* ✅ เปลี่ยนเป็นสีขาว */
   margin: 0;
   line-height: 1.3;
   flex: 1;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3); /* ✅ เพิ่มเงา */
 }
 
  .dashboard__area .subject-badges {
@@ -1125,12 +1237,14 @@
 }
 
  .dashboard__area .subject-code-badge {
-  background: #e0e7ff;
-  color: #3730a3;
+  background: rgba(255, 255, 255, 0.2); /* ✅ เปลี่ยนสีพื้นหลัง */
+  color: #ffffff; /* ✅ เปลี่ยนเป็นสีขาว */
   padding: 0.5rem 1rem;
   border-radius: 25px;
   font-size: 0.875rem;
   font-weight: 600;
+  backdrop-filter: blur(10px); /* ✅ เพิ่ม blur effect */
+  border: 1px solid rgba(255, 255, 255, 0.3); /* ✅ เพิ่มขอบ */
 }
 
  .dashboard__area .subject-meta {
@@ -1143,10 +1257,11 @@
 .subject-video-section h3 {
   font-size: 1.25rem;
   font-weight: 700;
-  color: #ffffff;
+  color: #ffffff; /* ✅ เปลี่ยนเป็นสีขาว */
   margin: 0 0 1rem 0;
   display: flex;
   align-items: center;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3); /* ✅ เพิ่มเงา */
 }
 
 .subject-description-section h3:before,
@@ -1154,18 +1269,19 @@
   content: '';
   width: 4px;
   height: 1.5rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #ffffff 0%, #e0e7ff 100%); /* ✅ เปลี่ยนสี */
   border-radius: 2px;
   margin-right: 0.75rem;
 }
 
  .dashboard__area .subject-description {
-  color: #6b7280;
+  color: #e0e7ff; /* ✅ เปลี่ยนเป็นสีฟ้าใส */
   line-height: 1.7;
   font-size: 1rem;
   max-height: 4.5rem;
   overflow: hidden;
   transition: max-height 0.3s ease;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2); /* ✅ เพิ่มเงา */
 }
 
 .subject-description.expanded {
