@@ -689,7 +689,7 @@ const EditVideoModal: React.FC<{
             ></button>
           </div>
           <form onSubmit={handleSubmit}>
-            <div className="modal-body">
+            <div className="modal-body" style={{ maxHeight: '70vh', overflowY: 'auto', paddingRight: '10px' }}>
               {error && (
                 <div className="alert alert-danger" role="alert">
                   {error}
@@ -926,7 +926,7 @@ const SubLessonItem: React.FC<{
             
             <div className={`section-bar-content ${videoExpanded ? 'expanded' : ''}`}>
               <div className="section-content-inner">
-                <div className="video-section">
+                <div className="video-section" style={{ maxHeight: '400px', overflowY: 'auto', paddingRight: '10px' }}>
                   {lesson.video_url ? (
                     <div className="video-player">
                       <iframe

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 
 // ===== TYPES & INTERFACES =====
-type QuestionCategory = "objective" | "subjective";
+type QuestionCategory = "objective" | "subjective" | "special_quiz";
 type ObjectiveType = "MC" | "SC" | "TF";
 type SubjectiveType = "FB";
 
@@ -770,41 +770,7 @@ const AddQuestions: React.FC<AddQuestionsProps> = ({ onSubmit, onCancel, initial
             ข้อสอบประเภทเติมคำจะต้องให้อาจารย์ตรวจให้คะแนนเอง
           </div>
 
-          {/* เพิ่มการอัปโหลดไฟล์แนบสำหรับคำถาม FB */}
-          <div className="mb-3">
-            <label className="form-label">ไฟล์แนบ (ถ้ามี)</label>
-            <input
-              type="file"
-              className="form-control"
-              multiple
-              accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
-              onChange={handleFileUpload}
-            />
-            <small className="text-muted">
-              รองรับไฟล์ PDF, Word, Excel, รูปภาพ ขนาดไม่เกิน 50MB
-            </small>
-          </div>
 
-          {/* แสดงไฟล์ที่อัปโหลดแล้ว */}
-          {selectedFiles.length > 0 && (
-            <div className="mb-3">
-              <label className="form-label">ไฟล์ที่อัปโหลดแล้ว:</label>
-              <ul className="list-group">
-                {selectedFiles.map((file, index) => (
-                  <li key={index} className="list-group-item d-flex justify-content-between align-items-center">
-                    {file.name}
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-outline-danger"
-                      onClick={() => handleRemoveFile(selectedFiles[index].id)}
-                    >
-                      <i className="fas fa-times"></i>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
         </div>
       </div>
     );

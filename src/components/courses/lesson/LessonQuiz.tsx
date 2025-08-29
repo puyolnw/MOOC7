@@ -828,9 +828,10 @@ const LessonQuiz = ({
                     );
                 }
 
-                // ถ้าเป็น Special Quiz (มี FB) ให้รอตรวจเสมอ
-                if (isSpecialQuiz || result.isSpecialQuiz) {
+                // ตรวจสอบว่าต้องรอตรวจหรือไม่
+                if (result.awaiting_review || isSpecialQuiz || result.isSpecialQuiz) {
                     setIsAwaitingReview(true);
+                    setShowResult(true);
                     
                     // ✅ อัปเดต subject progress แม้จะรอตรวจ (เฉพาะเมื่อมี lesson_id)
                     if (lessonId > 0) {

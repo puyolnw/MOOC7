@@ -279,6 +279,7 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
 
                     // ดึงข้อมูลงานที่รอตรวจทั้งหมด
                     console.log('Fetching attempts from:', `${apiURL}/api/special-quiz/attempts/all`);
+                    
                     const attemptsResponse = await axios.get(
                         `${apiURL}/api/special-quiz/attempts/all`,
                         config
@@ -317,12 +318,9 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
                     
                     const subjectSummaries: SubjectSummary[] = allSubjects.map((subject: Subject) => {
                         // หางานที่รอตรวจสำหรับรายวิชานี้
-                        // ชั่วคราว: แสดงงานทั้งหมดให้รายวิชาแรก เพื่อทดสอบ
-                        const subjectAttempts = subject.subject_id === allSubjects[0]?.subject_id ? 
-                            pendingAttempts : // รายวิชาแรกได้งานทั้งหมด
-                            pendingAttempts.filter((attempt: Attempt) =>
-                                attempt.subject_id === subject.subject_id
-                            );
+                        const subjectAttempts = pendingAttempts.filter((attempt: Attempt) =>
+                            attempt.subject_id === subject.subject_id
+                        );
                         
                         console.log(`Subject ${subject.subject_id} (${subject.subject_name}):`, 
                             'Total attempts found:', subjectAttempts.length,

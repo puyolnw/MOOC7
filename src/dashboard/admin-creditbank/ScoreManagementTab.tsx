@@ -85,6 +85,7 @@ const ScoreManagementTab: React.FC<ScoreManagementTabProps> = ({ subject }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isAutoDistributing, setIsAutoDistributing] = useState(false);
   const [passingPercentage, setPassingPercentage] = useState<number>(subject.passing_percentage || 80);
   const [expandedBigLessons, setExpandedBigLessons] = useState<Set<number>>(new Set());
   const [expandedLessons, setExpandedLessons] = useState<Set<number>>(new Set());
@@ -598,159 +599,231 @@ const ScoreManagementTab: React.FC<ScoreManagementTabProps> = ({ subject }) => {
     }
   };
 
-  const handleAutoDistribute = async () => {
+  // Frontend-only auto-distribute function
+  const calculateFrontendAutoDistribute = () => {
+    if (!scoreStructure) return null;
+
+    const newStructure = JSON.parse(JSON.stringify(scoreStructure)); // Deep clone
+    const messages: string[] = [];
+
+    // 1. นับ BigLessons ที่ไม่ได้ล็อค และ Post-test ที่ไม่ได้ล็อค
+    const autoBigLessons = newStructure.big_lessons.filter((bl: BigLesson) => !bl.is_fixed_weight);
+    const autoBigLessonsCount = autoBigLessons.length;
+    const hasPostTest = newStructure.post_test && !newStructure.post_test.is_fixed_weight;
+    const totalItems = autoBigLessonsCount + (hasPostTest ? 1 : 0);
+
+    if (totalItems === 0) {
+      return {
+        success: false,
+        message: "ไม่มีรายการที่สามารถปรับได้ (ทั้งหมดถูกล็อค)",
+        structure: null
+      };
+    }
+
+    // 2. แบ่งน้ำหนัก BigLessons และ Post-test (100% เท่าๆ กัน)
+    const weightPerItem = 100.0 / totalItems;
+    
+    // ปัดเศษให้รายการสุดท้ายรับส่วนที่เหลือ เพื่อให้รวมเป็น 100% พอดี
+    let remainingWeight = 100.0;
+    
+    autoBigLessons.forEach((bl: BigLesson, index: number) => {
+      if (index === autoBigLessons.length - 1 && !hasPostTest) {
+        // รายการสุดท้าย (ถ้าไม่มี Post-test)
+        bl.weight_percentage = Math.round(remainingWeight * 100) / 100;
+      } else {
+        bl.weight_percentage = Math.round(weightPerItem * 100) / 100;
+        remainingWeight -= bl.weight_percentage;
+      }
+    });
+
+    // อัปเดต Post-test ถ้ามีและไม่ได้ล็อค
+    if (hasPostTest && newStructure.post_test) {
+      newStructure.post_test.percentage = Math.round(remainingWeight * 100) / 100;
+    }
+
+    messages.push(`แบ่งน้ำหนัก: ${weightPerItem.toFixed(1)}% ต่อรายการ (${totalItems} รายการ)`);
+    if (autoBigLessonsCount > 0) {
+      messages.push(`- BigLessons: ${autoBigLessonsCount} หน่วย`);
+    }
+    if (hasPostTest) {
+      messages.push(`- Post-test: 1 รายการ`);
+    }
+
+    // 3. แบ่งน้ำหนักภายในแต่ละ BigLesson
+    newStructure.big_lessons.forEach((bl: BigLesson) => {
+      // นับจำนวน items ที่สามารถปรับได้ในแต่ละ BigLesson
+      const items: Array<{type: 'big_lesson_quiz' | 'lesson_quiz', item: any}> = [];
+      
+      // เพิ่ม BigLesson Quiz (แบบทดสอบหน่วย) ถ้ามีและไม่ได้ล็อค
+      if (bl.quiz && !bl.quiz.is_fixed_weight) {
+        items.push({ type: 'big_lesson_quiz', item: bl.quiz });
+      }
+      
+      // เพิ่ม Lesson Quizzes (แบบทดสอบบทเรียน) ที่ไม่ได้ล็อค
+      bl.lessons.forEach((lesson: Lesson) => {
+        if (lesson.quiz && !lesson.quiz.is_fixed_weight) {
+          items.push({ type: 'lesson_quiz', item: lesson.quiz });
+        }
+      });
+      
+      const totalItems = items.length;
+      
+      if (totalItems > 0) {
+        // แบ่งน้ำหนักเท่าๆ กันให้ทุก item
+        const weightPerItem = bl.weight_percentage / totalItems;
+        
+        items.forEach(({ item }) => {
+          item.percentage = weightPerItem;
+        });
+
+        const bigLessonQuizCount = items.filter(i => i.type === 'big_lesson_quiz').length;
+        const lessonQuizCount = items.filter(i => i.type === 'lesson_quiz').length;
+        
+        let detailText = `${totalItems} รายการ`;
+        if (bigLessonQuizCount > 0) {
+          detailText += `: ${bigLessonQuizCount} แบบทดสอบหน่วย`;
+        }
+        if (lessonQuizCount > 0) {
+          detailText += ` + ${lessonQuizCount} แบบทดสอบบทเรียน`;
+        }
+
+        messages.push(`BigLesson "${bl.title}": แบ่งน้ำหนักภายใน (${detailText})`);
+      }
+    });
+
+    // 4. คำนวณ total_used และ total_remaining
+    let totalUsed = 0;
+    newStructure.big_lessons.forEach((bl: BigLesson) => {
+      totalUsed += bl.weight_percentage;
+      if (bl.quiz) {
+        totalUsed += bl.quiz.percentage;
+      }
+      bl.lessons.forEach((lesson: Lesson) => {
+        totalUsed += lesson.percentage;
+        if (lesson.quiz) {
+          totalUsed += lesson.quiz.percentage;
+        }
+      });
+    });
+
+    // รวม Post-test ในการคำนวณ total_used
+    if (newStructure.post_test) {
+      totalUsed += newStructure.post_test.percentage;
+    }
+
+    newStructure.total_used = totalUsed;
+    newStructure.total_remaining = 100 - totalUsed;
+    newStructure.is_valid = Math.abs(newStructure.total_remaining) < 0.01;
+
+    return {
+      success: true,
+      message: "คำนวณการกระจายน้ำหนักอัตโนมัติสำเร็จ",
+      structure: newStructure,
+      details: messages
+    };
+  };
+
+  const handleFrontendAutoDistribute = () => {
     if (!scoreStructure) {
       toast.error("ไม่พบข้อมูลโครงสร้างคะแนน");
       return;
     }
 
     const confirmReset = window.confirm(
-      "การแบ่งน้ำหนักอัตโนมัติจะปรับเปอร์เซ็นต์ให้เท่ากันทุกหน่วย\nคุณต้องการดำเนินการต่อหรือไม่?"
+      "การแบ่งน้ำหนักอัตโนมัติจะปรับเปอร์เซ็นต์ให้เท่ากันทุกหน่วย\nคุณต้องการดูตัวอย่างก่อนหรือไม่?"
     );
 
     if (!confirmReset) return;
 
+    const result = calculateFrontendAutoDistribute();
+    
+    if (!result || !result.success) {
+      toast.error(result?.message || "ไม่สามารถคำนวณการกระจายน้ำหนักได้");
+      return;
+    }
+
+    // แสดงผลลัพธ์ใน modal หรือ alert
+    const details = result.details?.join('\n') || '';
+    const previewMessage = `🎯 ผลการคำนวณการกระจายน้ำหนักอัตโนมัติ:\n\n${details}\n\nน้ำหนักที่ใช้: ${result.structure.total_used.toFixed(1)}%\nน้ำหนักที่เหลือ: ${result.structure.total_remaining.toFixed(1)}%\n\nคุณต้องการบันทึกการเปลี่ยนแปลงนี้หรือไม่?`;
+
+    const shouldSave = window.confirm(previewMessage);
+    
+    if (shouldSave) {
+      // บันทึกโดยใช้ API
+      saveAutoDistributeResult(result.structure);
+    } else {
+      toast.info("ยกเลิกการบันทึก - การเปลี่ยนแปลงจะไม่ถูกบันทึก");
+    }
+  };
+
+  const saveAutoDistributeResult = async (newStructure: ScoreStructure) => {
     try {
+      setIsAutoDistributing(true);
+      
       const token = localStorage.getItem("token");
       if (!token) {
         toast.error("กรุณาเข้าสู่ระบบก่อนใช้งาน");
         return;
       }
 
-      console.log("เริ่มแบ่งน้ำหนักอัตโนมัติสำหรับวิชา:", subject.subject_name);
-      toast.info("กำลังแบ่งน้ำหนักอัตโนมัติ...");
+      // ส่งข้อมูลใหม่ไปบันทึก
+      const payload = {
+        updates: {
+          big_lessons: newStructure.big_lessons.map(bl => ({
+            id: bl.id,
+            weight_percentage: bl.weight_percentage,
+            is_fixed_weight: bl.is_fixed_weight,
+            quiz: bl.quiz ? {
+              id: bl.quiz.id,
+              percentage: bl.quiz.percentage,
+              is_fixed_weight: bl.quiz.is_fixed_weight
+            } : null,
+            lessons: bl.lessons.map(lesson => ({
+              id: lesson.id,
+              percentage: lesson.percentage,
+              is_fixed_weight: lesson.is_fixed_weight,
+              quiz: lesson.quiz ? {
+                id: lesson.quiz.id,
+                percentage: lesson.quiz.percentage,
+                is_fixed_weight: lesson.quiz.is_fixed_weight
+              } : null
+            }))
+          })),
+          post_test: newStructure.post_test ? {
+            id: newStructure.post_test.id,
+            percentage: newStructure.post_test.percentage,
+            is_fixed_weight: newStructure.post_test.is_fixed_weight
+          } : null
+        }
+      };
 
-      const response = await axios.post(
-        `${apiURL}/api/subjects/${subject.subject_id}/auto-distribute`,
-        { 
-          resetBeforeDistribute: true,
-          subject_id: subject.subject_id
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
+      const response = await axios.put(
+        `${apiURL}/api/subjects/${subject.subject_id}/scores-hierarchical`,
+        payload,
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
       );
 
-      console.log("ผลลัพธ์ auto-distribute:", response.data);
-
       if (response.data.success) {
-        toast.success("แบ่งน้ำหนักอัตโนมัติสำเร็จ - กระจายเปอร์เซ็นต์เท่าๆ กันให้ทุกหน่วย");
-        await fetchScoreStructure();
+        toast.success("🎉 บันทึกการกระจายน้ำหนักอัตโนมัติสำเร็จ");
+        await fetchScoreStructure(); // โหลดข้อมูลใหม่
       } else {
-        toast.error(response.data.message || "ไม่สามารถแบ่งน้ำหนักอัตโนมัติได้");
+        toast.error(response.data.message || "ไม่สามารถบันทึกการกระจายน้ำหนักได้");
       }
     } catch (error: any) {
-      console.error('Error auto-distributing:', error);
-      toast.error(error.response?.data?.message || "เกิดข้อผิดพลาดในการแบ่งน้ำหนักอัตโนมัติ");
+      console.error('❌ Error saving auto-distribute result:', error);
+      toast.error("❌ เกิดข้อผิดพลาดในการบันทึก กรุณาลองใหม่อีกครั้ง");
+    } finally {
+      setIsAutoDistributing(false);
     }
   };
 
-  // JSON export functions
-  const generateScoreDistribution = () => {
-    if (!scoreStructure) return null;
-    
-    const distribution: any = {
-      subject_id: subject.subject_id,
-      subject_name: subject.subject_name,
-      total_score: 100,
-      passing_percentage: passingPercentage,
-      items: []
-    };
 
-    // Pre-test
-    if (scoreStructure.pre_test) {
-      distribution.items.push({
-        type: 'pre_test',
-        title: scoreStructure.pre_test.title,
-        displayScore: 0,
-        actuallyStores: 0
-      });
-    }
 
-    // Big lessons
-    scoreStructure.big_lessons.forEach((bigLesson, index) => {
-      distribution.items.push({
-        type: 'big_lesson',
-        title: `หน่วยที่ ${index + 1}: ${bigLesson.title}`,
-        displayScore: bigLesson.weight_percentage,
-        actuallyStores: bigLesson.weight_percentage,
-        items: []
-      });
 
-      // Big lesson quiz
-      if (bigLesson.quiz) {
-        (distribution.items[distribution.items.length - 1] as any).items.push({
-          type: 'big_lesson_quiz',
-          title: `แบบทดสอบหน่วย: ${bigLesson.title}`,
-          displayScore: `${((bigLesson.quiz.relative_percentage || 0))}% ของหน่วย`,
-          actuallyStores: bigLesson.quiz.percentage
-        });
-      }
 
-      // Lessons
-      bigLesson.lessons.forEach((lesson, lessonIndex) => {
-        const lessonItem: any = {
-          type: 'lesson',
-          title: `บทเรียนที่ ${lessonIndex + 1}: ${lesson.title}`,
-          displayScore: `${lesson.relative_percentage || 0}% ของหน่วย`,
-          actuallyStores: 0,
-          items: []
-        };
 
-        if (lesson.quiz) {
-          lessonItem.items.push({
-            type: 'lesson_quiz',
-            title: `แบบทดสอบบทเรียน: ${lesson.title}`,
-            displayScore: '100% ของบทเรียน',
-            actuallyStores: lesson.quiz.percentage
-          });
-        }
-
-        (distribution.items[distribution.items.length - 1] as any).items.push(lessonItem);
-      });
-    });
-
-    // Post-test
-    if (scoreStructure.post_test) {
-      distribution.items.push({
-        type: 'post_test',
-        title: scoreStructure.post_test.title,
-        displayScore: scoreStructure.post_test.percentage,
-        actuallyStores: scoreStructure.post_test.percentage
-      });
-    }
-
-    return distribution;
-  };
-
-  const downloadJSON = () => {
-    if (!scoreStructure) return;
-    
-    const scoreDistribution = generateScoreDistribution();
-    const exportData = {
-      timestamp: new Date().toISOString(),
-      subject: {
-        id: subject.subject_id,
-        name: subject.subject_name,
-        passing_percentage: passingPercentage
-      },
-      scoreStructure: scoreStructure,
-      scoreDistribution: scoreDistribution
-    };
-
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], {
-      type: 'application/json'
-    });
-    
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `score-structure-${subject.subject_name}-${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    
-    toast.success('ดาวน์โหลดไฟล์ JSON สำเร็จ');
-  };
 
   const handlePassingPercentageChange = async (newPercentage: number) => {
     if (newPercentage < 0 || newPercentage > 100) {
@@ -922,13 +995,14 @@ const ScoreManagementTab: React.FC<ScoreManagementTabProps> = ({ subject }) => {
       <div className="score-table-management-section">
         <div className="score-table-management-header">
           <h2>⚖️ จัดการน้ำหนักคะแนน</h2>
-          <div className="score-table-management-actions">
+                      <div className="score-table-management-actions">
               <button
-              className="score-table-action-btn"
-                onClick={handleAutoDistribute}
-              disabled={!scoreStructure}
+                className="score-table-action-btn"
+                onClick={handleFrontendAutoDistribute}
+                disabled={!scoreStructure || isAutoDistributing}
+                title="คำนวณการกระจายน้ำหนักบน Frontend และแสดงตัวอย่างก่อนบันทึก"
               >
-              ✨ แบ่งอัตโนมัติ
+                🎯 แบ่งอัตโนมัติ (Frontend)
               </button>
               <button
               className="score-table-action-btn score-table-action-btn-primary"
@@ -937,37 +1011,6 @@ const ScoreManagementTab: React.FC<ScoreManagementTabProps> = ({ subject }) => {
             >
               {isSaving ? '🔄 กำลังบันทึก...' : '💾 บันทึกน้ำหนัก'}
             </button>
-            <button
-              className="score-table-action-btn"
-              onClick={() => {
-                if (scoreStructure) {
-                  const allBigLessonIds = new Set(scoreStructure.big_lessons.map(bl => bl.id));
-                  setExpandedBigLessons(allBigLessonIds);
-                  const allLessonIds = new Set(
-                    scoreStructure.big_lessons.flatMap(bl => bl.lessons.map(l => l.id))
-                  );
-                  setExpandedLessons(allLessonIds);
-                }
-              }}
-            >
-              📖 ขยายทั้งหมด
-            </button>
-            <button
-              className="score-table-action-btn"
-              onClick={() => {
-                setExpandedBigLessons(new Set());
-                setExpandedLessons(new Set());
-              }}
-            >
-              📕 ยุบทั้งหมด
-              </button>
-              <button
-                className="score-table-action-btn"
-                onClick={() => downloadJSON()}
-                disabled={!scoreStructure}
-              >
-                📥 ดาวน์โหลด JSON
-              </button>
             </div>
           </div>
           
