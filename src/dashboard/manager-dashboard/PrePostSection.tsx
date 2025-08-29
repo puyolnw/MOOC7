@@ -498,6 +498,7 @@ const PrePostSection: React.FC<PrePostSectionProps> = ({ subject, onSubjectUpdat
       }
 
       console.log('Quiz IDs to add question:', quizIds);
+      console.log('Quiz IDs type:', typeof quizIds, Array.isArray(quizIds));
 
       const formattedData = {
         title: questionData.title || questionData.question_text || '',
@@ -517,6 +518,8 @@ const PrePostSection: React.FC<PrePostSectionProps> = ({ subject, onSubjectUpdat
       };
 
       console.log('Formatted data for API:', formattedData);
+      console.log('Quizzes array in formatted data:', formattedData.quizzes);
+      console.log('Quizzes array type:', typeof formattedData.quizzes, Array.isArray(formattedData.quizzes));
 
       const apiUrl = import.meta.env.VITE_API_URL;
       const token = localStorage.getItem('token');

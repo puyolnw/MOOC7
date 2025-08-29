@@ -435,24 +435,49 @@ const AddQuestions: React.FC<AddQuestionsProps> = ({ onSubmit, onCancel, initial
       console.log('Initial quizzes:', initialQuizzes);
       console.log('QuestionData quizzes:', questionData.quizzes);
       
-      setApiSuccess("สร้างคำถามสำเร็จ");
-      
-      if (onSubmit) {
-        onSubmit(response.data.question);
-      }
+      // ตรวจสอบ response
+      if (response.data && response.data.success) {
+        setApiSuccess(response.data.message || "สร้างคำถามสำเร็จ");
+        
+        if (onSubmit) {
+          onSubmit(response.data.question);
+        }
 
-      // Reset form
-      setCurrentStep('category');
-      setSelectedCategory(null);
-      setErrors({});
-      setSelectedFiles([]);
+        // Reset form
+        setCurrentStep('category');
+        setSelectedCategory(null);
+        setErrors({});
+        setSelectedFiles([]);
+      } else {
+        // ถ้า response ไม่มี success หรือ success เป็น false
+        setApiError(response.data?.message || "เกิดข้อผิดพลาดในการสร้างคำถาม");
+      }
       
     } catch (error) {
       console.error("Error submitting question:", error);
-      if (axios.isAxiosError(error) && error.response) {
-        setApiError(error.response.data.message || "เกิดข้อผิดพลาดในการสร้างคำถาม");
+      
+      // ตรวจสอบว่าเป็น Axios error หรือไม่
+      if (axios.isAxiosError(error)) {
+        if (error.response) {
+          // Server responded with error status
+          const errorMessage = error.response.data?.message || 
+                              error.response.data?.error || 
+                              `เกิดข้อผิดพลาด (${error.response.status})`;
+          setApiError(errorMessage);
+          console.error("Server error response:", error.response.data);
+        } else if (error.request) {
+          // Request was made but no response received
+          setApiError("ไม่ได้รับคำตอบจากเซิร์ฟเวอร์ กรุณาลองใหม่อีกครั้ง");
+          console.error("No response received:", error.request);
+        } else {
+          // Something else happened
+          setApiError("เกิดข้อผิดพลาดในการส่งคำขอ");
+          console.error("Request setup error:", error.message);
+        }
       } else {
-        setApiError("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้");
+        // Non-Axios error
+        setApiError("เกิดข้อผิดพลาดที่ไม่คาดคิด");
+        console.error("Non-Axios error:", error);
       }
     } finally {
       setIsSubmitting(false);
