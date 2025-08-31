@@ -8192,3 +8192,100 @@
   background-color: #ffe0b2;
   border-color: #ffcc02;
 }
+/* ===== FORCE WHITE BACKGROUND FOR INSTRUCTOR DASHBOARD ===== */
+.dashboard__area {
+  background-color: #ffffff !important;
+  color: #333333 !important;
+}
+
+.dashboard__area .course-detail-container {
+  background-color: #ffffff !important;
+  color: #333333 !important;
+}
+
+.dashboard__area .course-detail-header {
+  background-color: #ffffff !important;
+  color: #333333 !important;
+}
+
+.dashboard__area .course-header-content {
+  background-color: #ffffff !important;
+  color: #333333 !important;
+}
+
+.dashboard__area .course-info-section {
+  background-color: #ffffff !important;
+  color: #333333 !important;
+}
+
+.dashboard__area .course-detail-title {
+  color: #333333 !important;
+}
+
+.dashboard__area .course-meta {
+  background-color: #ffffff !important;
+  color: #333333 !important;
+}
+
+.dashboard__area .meta-item {
+  background-color: #ffffff !important;
+  color: #333333 !important;
+}
+
+.dashboard__area .course-description-section {
+  background-color: #ffffff !important;
+  color: #333333 !important;
+}
+
+.dashboard__area .study-result-section {
+  background-color: #ffffff !important;
+  color: #333333 !important;
+}
+
+.dashboard__area .course-video-section {
+  background-color: #ffffff !important;
+  color: #333333 !important;
+}
+
+.dashboard__area .subjects-section {
+  background-color: #ffffff !important;
+  color: #333333 !important;
+}
+
+.dashboard__area .subjects-header {
+  background-color: #ffffff !important;
+  color: #333333 !important;
+}
+
+.dashboard__area .subjects-grid {
+  background-color: #ffffff !important;
+  color: #333333 !important;
+}
+
+.dashboard__area .subject-card {
+  background-color: #ffffff !important;
+  color: #333333 !important;
+}
+
+.dashboard__area .subject-card-content {
+  background-color: #ffffff !important;
+  color: #333333 !important;
+}
+
+.dashboard__area .subject-title {
+  color: #333333 !important;
+}
+
+.dashboard__area .subject-description {
+  color: #333333 !important;
+}
+
+.dashboard__area .subject-stats {
+  background-color: #ffffff !important;
+  color: #333333 !important;
+}
+
+.dashboard__area .stat-item {
+  background-color: #ffffff !important;
+  color: #333333 !important;
+}

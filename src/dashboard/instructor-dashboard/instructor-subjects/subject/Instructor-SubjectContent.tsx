@@ -269,8 +269,8 @@ const InstructorSubjectContent = () => {
 
   if (loading) {
     return (
-      <div className="col-lg-9">
-        <div className="dashboard__content-wrap dashboard__content-wrap-two">
+      <div className="col-12">
+        <div className="dashboard__content-wrap">
           <div className="text-center p-5" style={{ minHeight: '400px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
             <div className="spinner-border" role="status" style={{ width: '3rem', height: '3rem', color: '#5a67d8' }}>
               <span className="visually-hidden">กำลังโหลด...</span>
@@ -284,8 +284,8 @@ const InstructorSubjectContent = () => {
 
   if (error) {
     return (
-      <div className="col-lg-9">
-        <div className="dashboard__content-wrap dashboard__content-wrap-two">
+      <div className="col-12">
+        <div className="dashboard__content-wrap">
           <div className="alert" role="alert" style={{
             backgroundColor: '#f8d7da',
             borderColor: '#f5c6cb',
@@ -307,8 +307,8 @@ const InstructorSubjectContent = () => {
 
   if (!overviewData) {
     return (
-      <div className="col-lg-9">
-        <div className="dashboard__content-wrap dashboard__content-wrap-two">
+      <div className="col-12">
+        <div className="dashboard__content-wrap">
           <div className="alert" role="alert" style={{
             backgroundColor: '#fff3cd',
             borderColor: '#ffeaa7',
@@ -330,8 +330,8 @@ const InstructorSubjectContent = () => {
   const filteredEnrollments = getFilteredEnrollments();
 
   return (
-    <div className="col-lg-9">
-      <div className="dashboard__content-wrap dashboard__content-wrap-two">
+    <div className="col-12">
+      <div className="dashboard__content-wrap">
         {/* Subject Header */}
         <div className="dashboard__content-title mb-4" style={{
           background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',

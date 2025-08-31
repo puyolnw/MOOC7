@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import axios from 'axios';
-import AddQuestions from '../../forms/Course/Questions/AddQuestions';
+import AddQuestions from '../../forms/Course/AddQuestions';
 
 interface LessonFile {
   file_id: string;
@@ -24,6 +24,13 @@ interface QuizQuestion {
     choice_id: number;
     choice_text: string;
     is_correct: boolean;
+  }>;
+  attachments?: Array<{
+    file_id: string;
+    original_name: string;
+    file_size: number;
+    file_type: string;
+    file_path: string;
   }>;
 }
 
@@ -78,7 +85,55 @@ const QuizSectionBar: React.FC<QuizSectionBarProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [quizData, setQuizData] = useState<any>(null);
-const getCollapseKey = () => {
+
+  // ✅ ตรวจสอบประเภทของแบบทดสอบ
+  const getQuizType = (): 'objective' | 'subjective' | null => {
+    if (questions.length === 0) {
+      return null; // ยังไม่มีคำถาม
+    }
+    
+    // ตรวจสอบจากคำถามแรก
+    const firstQuestion = questions[0];
+    if (firstQuestion.question_type === 'MC' || firstQuestion.question_type === 'SC' || firstQuestion.question_type === 'TF') {
+      return 'objective';
+    } else if (firstQuestion.question_type === 'FB') {
+      return 'subjective';
+    }
+    
+    return null;
+  };
+
+  // ✅ ตรวจสอบว่าเป็นการเพิ่มคำถามครั้งแรกหรือไม่
+  const isFirstQuestion = () => {
+    return questions.length === 0;
+  };
+
+  // ✅ ได้ชื่อประเภทแบบทดสอบ
+  const getQuizTypeName = () => {
+    const quizType = getQuizType();
+    if (quizType === 'objective') {
+      return 'ข้อสอบปรนัย';
+    } else if (quizType === 'subjective') {
+      return 'ข้อสอบอัตนัย';
+    }
+    return null;
+  };
+
+  // ✅ ตรวจสอบว่ามีคำถามประเภทอื่นในแบบทดสอบหรือไม่
+
+
+  // ✅ ฟังก์ชันสำหรับ scroll ไปยัง error message
+  const scrollToError = () => {
+    const errorElement = document.querySelector('.error-alert');
+    if (errorElement) {
+      errorElement.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'center' 
+      });
+    }
+  };
+
+  const getCollapseKey = () => {
     if (lesson) {
       return `quiz-sub-lesson-${lesson.lesson_id}`;
     } else if (bigLessonId) {
@@ -565,7 +620,8 @@ const handleDeleteQuiz = async () => {
               choice_id: c.choice_id,
               choice_text: c.text,
               is_correct: c.is_correct
-            })) || []
+            })) || [],
+            attachments: q.attachments || []
           }));
           
           console.log('Formatted questions:', formattedQuestions);
@@ -681,7 +737,8 @@ const handleDeleteQuiz = async () => {
             choice_id: c.choice_id,
             choice_text: c.text,
             is_correct: c.is_correct
-          })) || []
+          })) || [],
+          attachments: response.data.question.attachments || []
         };
         
         // แสดงข้อความแจ้งเตือนถ้าคำถามถูกเพิ่มเข้า Special Quiz
@@ -718,6 +775,13 @@ const handleDeleteQuiz = async () => {
         
         // แสดงข้อความสำเร็จ
         console.log('Question added successfully!');
+        
+        // รีเฟรชข้อมูลคำถามหลังจากเพิ่มสำเร็จ
+        if (targetQuizId) {
+          setTimeout(() => {
+            fetchQuizQuestions(targetQuizId);
+          }, 500);
+        }
       }
     } catch (error: any) {
       console.error('Error adding question:', error);
@@ -725,6 +789,9 @@ const handleDeleteQuiz = async () => {
       
       const errorMessage = error.response?.data?.message || 'ไม่สามารถเพิ่มคำถามได้';
       setError(errorMessage);
+      scrollToError(); // เพิ่มฟังก์ชันนี้
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -748,6 +815,73 @@ const handleDeleteQuiz = async () => {
       }
     } catch (error) {
       console.error('Failed to create quiz:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ✅ ฟังก์ชันลบคำถามออกจาก quiz
+  const handleDeleteQuestion = async (questionId: number) => {
+    const confirmed = window.confirm('คุณต้องการลบคำถามนี้ออกจากแบบทดสอบหรือไม่?');
+    if (!confirmed) return;
+
+    try {
+      setLoading(true);
+      setError('');
+
+      const apiUrl = import.meta.env.VITE_API_URL;
+      const token = localStorage.getItem('token');
+      const targetQuizId = getQuizId();
+
+      if (!targetQuizId) {
+        setError('ไม่พบ Quiz ID');
+        return;
+      }
+
+      console.log('Deleting question:', questionId, 'from quiz:', targetQuizId);
+
+      // ใช้ endpoint ที่ถูกต้อง
+      const response = await axios.delete(
+        `${apiUrl}/api/courses/questions/${questionId}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (response.data && response.data.success) {
+        console.log('Question deleted successfully');
+        
+        // ลบคำถามออกจาก state
+        setQuestions(prev => prev.filter(q => q.question_id !== questionId));
+        
+        // อัปเดต quiz data
+        if (onQuizUpdate) {
+          if (isSubLesson && lesson) {
+            const updatedLesson = {
+              ...lesson,
+              quiz: {
+                ...lesson.quiz,
+                quiz_id: targetQuizId,
+                title: lesson.quiz?.title || currentQuizTitle,
+                description: lesson.quiz?.description || '',
+                questions: questions.filter(q => q.question_id !== questionId)
+              }
+            };
+            onQuizUpdate(updatedLesson);
+          } else if (isBigLesson) {
+            onQuizUpdate();
+          }
+        }
+      } else {
+        throw new Error(response.data?.message || 'ไม่สามารถลบคำถามได้');
+      }
+    } catch (error: any) {
+      console.error('Error deleting question:', error);
+      const errorMessage = error.response?.data?.message || 'ไม่สามารถลบคำถามได้';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -795,6 +929,21 @@ const handleDeleteQuiz = async () => {
     }
   };
 
+  const renderAttachments = (attachments: Array<{ file_id: string; original_name: string; file_size: number; file_type: string; file_path: string }>) => (
+    <div className="question-attachments mt-2">
+      <h6 className="mb-2">ไฟล์แนบ:</h6>
+      <ul className="list-unstyled">
+        {attachments.map((attachment) => (
+          <li key={attachment.file_id} className="attachment-item">
+            <a href={attachment.file_path} target="_blank" rel="noopener noreferrer" className="text-decoration-none">
+              <i className="fas fa-paperclip me-1"></i> {attachment.original_name} ({attachment.file_size} KB)
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+
   const renderQuestionItem = (question: QuizQuestion, index: number) => (
     <div key={question.question_id} className="question-item-card mb-3">
       <div className="question-header">
@@ -814,9 +963,31 @@ const handleDeleteQuiz = async () => {
                 {question.score} คะแนน
               </span>
             )}
+            {/* แสดงจำนวนไฟล์แนบ */}
+            {question.attachments && question.attachments.length > 0 && (
+              <span className="badge bg-info">
+                <i className="fas fa-paperclip me-1"></i>
+                {question.attachments.length} ไฟล์
+              </span>
+            )}
           </div>
         </div>
+        <div className="question-actions">
+          <button
+            className="btn btn-sm btn-outline-danger"
+            onClick={() => handleDeleteQuestion(question.question_id)}
+            disabled={loading}
+            title="ลบคำถาม"
+          >
+            <i className="fas fa-trash"></i>
+          </button>
+        </div>
       </div>
+      
+      {/* แสดงไฟล์แนบ */}
+      {question.attachments && question.attachments.length > 0 && (
+        renderAttachments(question.attachments)
+      )}
       
       {question.choices && question.choices.length > 0 && (
         <div className="question-choices mt-2">
@@ -908,7 +1079,8 @@ const handleDeleteQuiz = async () => {
                 <AddQuestions
                   onSubmit={handleAddQuestion}
                   onCancel={() => setShowAddQuestionForm(false)}
-                  initialQuizzes={getQuizId() ? [getQuizId()] : []}
+                  initialCategory={isFirstQuestion() ? null : getQuizType()}
+                  quizTypeName={getQuizTypeName()}
                 />
               </div>
             </div>
@@ -923,6 +1095,41 @@ const handleDeleteQuiz = async () => {
 
   return (
     <div className="content-section-bar">
+      {/* Error Message Container */}
+      <div className="error-message-container">
+        {error && (
+          <div className="alert alert-danger alert-dismissible fade show mb-3 error-alert" role="alert">
+            <i className="fas fa-exclamation-triangle me-2"></i>
+            <strong>ข้อผิดพลาด:</strong> {error}
+            <button 
+              type="button" 
+              className="btn-close" 
+              onClick={() => setError('')}
+              aria-label="Close"
+            ></button>
+          </div>
+        )}
+
+        {/* Mixed Question Types Warning */}
+        {questions.length > 0 && (() => {
+          const existingTypes = new Set(questions.map(q => q.question_type));
+          const hasMixedTypes = existingTypes.size > 1;
+          return hasMixedTypes ? (
+            <div className="alert alert-warning alert-dismissible fade show mb-3" role="alert">
+              <i className="fas fa-exclamation-triangle me-2"></i>
+              <strong>คำเตือน:</strong> แบบทดสอบนี้มีคำถามหลายประเภท ({Array.from(existingTypes).join(', ')}) 
+              การเพิ่มคำถามประเภทใหม่อาจทำให้เกิดข้อผิดพลาดได้
+              <button 
+                type="button" 
+                className="btn-close" 
+                onClick={() => {}}
+                aria-label="Close"
+              ></button>
+            </div>
+          ) : null;
+        })()}
+      </div>
+
       <div 
         className={`section-bar-header ${quizExpanded ? 'expanded' : ''}`}
         onClick={() => setQuizExpanded(!quizExpanded)}
@@ -1801,6 +2008,67 @@ const handleDeleteQuiz = async () => {
         /* Prevent body scroll when modal is open */
         body.modal-open {
           overflow: hidden;
+        }
+
+        /* Animation Styles */
+        .question-create-animation {
+          animation: questionCreate 2s ease-in-out;
+        }
+
+        .question-delete-animation {
+          animation: questionDelete 1s ease-in-out;
+        }
+
+        .question-blink-animation {
+          animation: questionBlink 0.5s ease-in-out 3;
+        }
+
+        @keyframes questionCreate {
+          0% {
+            opacity: 0;
+            transform: translateY(-20px);
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+          }
+          50% {
+            opacity: 1;
+            transform: translateY(0);
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0);
+            background-color: transparent;
+            border-color: #dee2e6;
+          }
+        }
+
+        @keyframes questionDelete {
+          0% {
+            opacity: 1;
+            transform: translateY(0);
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+          }
+          100% {
+            opacity: 0;
+            transform: translateY(-20px);
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+          }
+        }
+
+        @keyframes questionBlink {
+          0%, 100% {
+            opacity: 1;
+            background-color: transparent;
+          }
+          50% {
+            opacity: 0.7;
+            background-color: #fff3cd;
+            border-color: #ffeaa7;
+          }
         }
       `}</style>
       

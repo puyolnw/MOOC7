@@ -23,11 +23,10 @@ interface CourseDetail {
    completion_count?: number;
 }
 
-
-
 const InstructorEnrolledCourseContent = () => {
    const navigate = useNavigate();
    const [isLoop, setIsLoop] = useState(false);
+   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
    console.log(isLoop)
    const [loading, setLoading] = useState(true);
    const [error, setError] = useState<string | null>(null);
@@ -143,6 +142,92 @@ const InstructorEnrolledCourseContent = () => {
    return (
       <>
          <style>{`
+            .view-toggle {
+               display: flex;
+               gap: 10px;
+               margin-bottom: 20px;
+               justify-content: flex-end;
+            }
+
+            .view-toggle button {
+               padding: 8px 16px;
+               border: 2px solid #667eea;
+               background: white;
+               color: #667eea;
+               border-radius: 8px;
+               cursor: pointer;
+               transition: all 0.3s ease;
+               font-weight: 600;
+            }
+
+            .view-toggle button.active {
+               background: #667eea;
+               color: white;
+            }
+
+            .view-toggle button:hover {
+               background: #667eea;
+               color: white;
+               transform: translateY(-2px);
+            }
+
+            .courses-table {
+               width: 100%;
+               border-collapse: collapse;
+               background: white;
+               border-radius: 12px;
+               overflow: hidden;
+               box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            }
+
+            .courses-table th {
+               background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+               color: white;
+               padding: 15px;
+               text-align: left;
+               font-weight: 600;
+               font-size: 14px;
+               text-transform: uppercase;
+               letter-spacing: 0.5px;
+            }
+
+            .courses-table td {
+               padding: 15px;
+               border-bottom: 1px solid #f0f0f0;
+               vertical-align: middle;
+            }
+
+            .courses-table tr:hover {
+               background: #f8fafc;
+               cursor: pointer;
+            }
+
+            .courses-table tr:last-child td {
+               border-bottom: none;
+            }
+
+            .course-image {
+               width: 60px;
+               height: 60px;
+               border-radius: 8px;
+               object-fit: cover;
+            }
+
+            .course-title {
+               font-weight: 600;
+               color: #2d3748;
+               margin-bottom: 5px;
+            }
+
+            .course-code {
+               font-size: 12px;
+               color: #667eea;
+               background: rgba(102, 126, 234, 0.1);
+               padding: 4px 8px;
+               border-radius: 4px;
+               display: inline-block;
+            }
+
             .enrollment-stats {
                padding: 20px;
                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -328,44 +413,127 @@ const InstructorEnrolledCourseContent = () => {
                .courses__item-thumb-two img {
                   height: 160px;
                }
+
+               .courses-table {
+                  font-size: 12px;
+               }
+
+               .courses-table th,
+               .courses-table td {
+                  padding: 10px;
+               }
+
+               .course-image {
+                  width: 40px;
+                  height: 40px;
+               }
             }
          `}</style>
 
-         <div className="col-lg-9">
-            <div className="dashboard__content-wrap dashboard__content-wrap-two">
-               <div className="dashboard__content-title">
-                  <h4 className="title">รายวิชาทั้งหมด</h4>
-               </div>
-               <div className="row">
-                  <div className="col-12">
-                     {loading ? (
-                        <div className="loading-message">
-                           <div style={{ marginBottom: '20px' }}>
-                              <div style={{ 
-                                 width: '50px', 
-                                 height: '50px', 
-                                 border: '4px solid #f3f3f3',
-                                 borderTop: '4px solid #667eea',
-                                 borderRadius: '50%',
-                                 animation: 'spin 1s linear infinite',
-                                 margin: '0 auto 20px'
-                              }}></div>
-                           </div>
-                           กำลังโหลดข้อมูล...
+         <div className="dashboard__content-wrap">
+            <div className="dashboard__content-title">
+               <h4 className="title">รายวิชาทั้งหมด</h4>
+            </div>
+
+            {/* View Toggle */}
+            <div className="view-toggle">
+               <button 
+                  className={viewMode === 'cards' ? 'active' : ''}
+                  onClick={() => setViewMode('cards')}
+               >
+                  <i className="fas fa-th-large" style={{ marginRight: '8px' }}></i>
+                  การ์ด
+               </button>
+               <button 
+                  className={viewMode === 'table' ? 'active' : ''}
+                  onClick={() => setViewMode('table')}
+               >
+                  <i className="fas fa-table" style={{ marginRight: '8px' }}></i>
+                  ตาราง
+               </button>
+            </div>
+
+            <div className="row">
+               <div className="col-12">
+                  {loading ? (
+                     <div className="loading-message">
+                        <div style={{ marginBottom: '20px' }}>
+                           <div style={{ 
+                              width: '50px', 
+                              height: '50px', 
+                              border: '4px solid #f3f3f3',
+                              borderTop: '4px solid #667eea',
+                              borderRadius: '50%',
+                              animation: 'spin 1s linear infinite',
+                              margin: '0 auto 20px'
+                           }}></div>
                         </div>
-                     ) : error ? (
-                        <div className="error-message">
-                           <i className="fas fa-exclamation-triangle" style={{ fontSize: '24px', marginBottom: '15px' }}></i>
-                           <br />
-                           เกิดข้อผิดพลาด: {error}
-                        </div>
-                     ) : courseData.length === 0 ? (
-                        <div className="no-courses-message">
-                           <i className="fas fa-book-open" style={{ fontSize: '48px', marginBottom: '20px', color: '#cbd5e0' }}></i>
-                           <br />
-                           ไม่พบรายวิชา
-                        </div>
-                     ) : (
+                        กำลังโหลดข้อมูล...
+                     </div>
+                  ) : error ? (
+                     <div className="error-message">
+                        <i className="fas fa-exclamation-triangle" style={{ fontSize: '24px', marginBottom: '15px' }}></i>
+                        <br />
+                        เกิดข้อผิดพลาด: {error}
+                     </div>
+                  ) : courseData.length === 0 ? (
+                     <div className="no-courses-message">
+                        <i className="fas fa-book-open" style={{ fontSize: '48px', marginBottom: '20px', color: '#cbd5e0' }}></i>
+                        <br />
+                        ไม่พบรายวิชา
+                     </div>
+                  ) : viewMode === 'table' ? (
+                     // Table View
+                     <table className="courses-table">
+                        <thead>
+                           <tr>
+                              <th>รูปภาพ</th>
+                              <th>รายวิชา</th>
+                              <th>รหัสวิชา</th>
+                              <th>นักเรียนทั้งหมด</th>
+                              <th>สำเร็จการศึกษา</th>
+                              <th>อัตราสำเร็จ</th>
+                           </tr>
+                        </thead>
+                        <tbody>
+                           {courseData.map((item) => (
+                              <tr key={item.id} onClick={() => handleCourseClick(item.subject_id!)}>
+                                 <td>
+                                    <img 
+                                       src={item.thumb}
+                                       alt={item.title}
+                                       className="course-image"
+                                       onError={(e) => {
+                                          console.log("Image failed to load:", item.thumb);
+                                          (e.target as HTMLImageElement).src = "/assets/img/courses/course_thumb01.jpg";
+                                       }}
+                                    />
+                                 </td>
+                                 <td>
+                                    <div className="course-title">{item.title}</div>
+                                 </td>
+                                 <td>
+                                    <span className="course-code">{item.subject_code}</span>
+                                 </td>
+                                 <td>
+                                    <strong>{item.enrollment_count || 0}</strong> คน
+                                 </td>
+                                 <td>
+                                    <strong>{item.completion_count || 0}</strong> คน
+                                 </td>
+                                 <td>
+                                    <strong style={{ color: '#667eea' }}>
+                                       {item.enrollment_count && item.enrollment_count > 0 
+                                          ? Math.round((item.completion_count || 0) / item.enrollment_count * 100)
+                                          : 0}%
+                                    </strong>
+                                 </td>
+                              </tr>
+                           ))}
+                        </tbody>
+                     </table>
+                  ) : (
+                     // Card View
                      <div className="row">
                      {courseData.map((item) => (
                      <div key={item.id} className="col-lg-6 col-md-6 col-sm-12 mb-4">
@@ -438,7 +606,6 @@ const InstructorEnrolledCourseContent = () => {
                      ))}
                      </div>
                      )}
-                  </div>
                </div>
             </div>
          </div>
@@ -470,14 +637,6 @@ const InstructorEnrolledCourseContent = () => {
                font-size: 16px;
                font-weight: 700;
                color: white;
-            }
-            
-            .dashboard__content-wrap-two {
-               background: #ffffff;
-               border-radius: 20px;
-               padding: 40px;
-               box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
-               border: 1px solid #f0f0f0;
             }
             
             .shine__animate-item {
@@ -533,38 +692,6 @@ const InstructorEnrolledCourseContent = () => {
             
             .courses__item-content-two {
                flex: 1;
-            }
-            
-            @media (max-width: 992px) {
-               .dashboard__content-wrap-two {
-                  padding: 25px;
-               }
-               
-               .dashboard__content-title .title {
-                  font-size: 24px;
-               }
-            }
-            
-            @media (max-width: 576px) {
-               .dashboard__content-wrap-two {
-                  padding: 20px;
-               }
-               
-               .dashboard__content-title .title {
-                  font-size: 20px;
-               }
-               
-               .courses__item-content-two .title {
-                  font-size: 16px;
-               }
-               
-               .stat-label {
-                  font-size: 12px;
-               }
-               
-               .stat-value {
-                  font-size: 14px;
-               }
             }
          `}</style>
       </>

@@ -3,8 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 
-import DashboardBanner from "../dashboard-common/DashboardBanner";
-import DashboardSidebar from "../dashboard-common/DashboardSidebar";
+import IconPanelLayout from "../dashboard-common/IconPanelLayout";
 import AdminSubjectArea from "../admin-creditbank/AdminSubjectArea";
 import "../admin-creditbank/mega.css";
 
@@ -393,8 +392,8 @@ const AllInstructorCoursesList: React.FC<{
           <i className="fas fa-graduation-cap"></i>
         </div>
         <div className="section-title">
-          <h2>หลักสูตรทั้งหมด</h2>
-          <p>หลักสูตรที่ท่านเกี่ยวข้องในการสอน - จำนวน {courses.length} หลักสูตร</p>
+          <h2>หลักสูตรที่สอน</h2>
+          <p>หลักสูตรที่มีรายวิชาที่ท่านสอน - จำนวน {courses.filter(course => (course.subject_count || 0) > 0).length} หลักสูตร</p>
         </div>
       </div>
 
@@ -444,7 +443,16 @@ const AllInstructorCoursesList: React.FC<{
         <div className="courses-grid">
           {/* ลบ Add Course Card - อาจารย์ไม่มีสิทธิ์สร้างหลักสูตรใหม่ */}
           
-          {courses.map((course, index) => (
+          {courses.filter(course => (course.subject_count || 0) > 0).length === 0 ? (
+            <div className="no-courses-message">
+              <div className="no-courses-icon">
+                <i className="fas fa-graduation-cap"></i>
+              </div>
+              <h3>ไม่มีหลักสูตรที่สอน</h3>
+              <p>ไม่พบหลักสูตรที่มีรายวิชาที่ท่านสอน</p>
+            </div>
+          ) : (
+            courses.filter(course => (course.subject_count || 0) > 0).map((course, index) => (
           <div 
             key={`course-${course.course_id}-${index}`} 
             className="course-card"
@@ -524,7 +532,8 @@ const AllInstructorCoursesList: React.FC<{
               </div>
             </div>
           </div>
-          ))}
+          ))
+          )}
         </div>
       ) : (
         /* Table View */
@@ -540,7 +549,20 @@ const AllInstructorCoursesList: React.FC<{
               </tr>
             </thead>
             <tbody>
-              {courses.filter(course => (course.subject_count || 0) > 0).map((course, index) => (
+              {courses.filter(course => (course.subject_count || 0) > 0).length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="text-center py-5">
+                    <div className="no-courses-message">
+                      <div className="no-courses-icon">
+                        <i className="fas fa-graduation-cap"></i>
+                      </div>
+                      <h3>ไม่มีหลักสูตรที่สอน</h3>
+                      <p>ไม่พบหลักสูตรที่มีรายวิชาที่ท่านสอน</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                courses.filter(course => (course.subject_count || 0) > 0).map((course, index) => (
                 <tr 
                   key={`course-table-${course.course_id}-${index}`}
                   onClick={() => onCourseSelect(course)}
@@ -593,7 +615,8 @@ const AllInstructorCoursesList: React.FC<{
                   </td>
                   <td>{course.faculty || 'ไม่ระบุคณะ'}</td>
                 </tr>
-              ))}
+              ))
+              )}
             </tbody>
           </table>
         </div>
@@ -1309,7 +1332,7 @@ const InsCreditbankArea: React.FC = () => {
   
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(12);
+  const [itemsPerPage] = useState(50);
   const [totalPages, setTotalPages] = useState(1);
 
   // Add state for initialization
@@ -1375,8 +1398,8 @@ const InsCreditbankArea: React.FC = () => {
         }
       }
       
-      // ดึงข้อมูลหลักสูตรที่อาจารย์เกี่ยวข้อง - ใช้ endpoint เฉพาะสำหรับหลักสูตร
-      const coursesResponse = await axios.get(`${apiURL}/api/courses`, {
+      // ดึงข้อมูลหลักสูตรที่อาจารย์เกี่ยวข้อง - ใช้ endpoint เฉพาะสำหรับหลักสูตรที่อาจารย์สอน
+      const coursesResponse = await axios.get(`${apiURL}/api/courses/subjects/instructors/courses`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -1387,8 +1410,34 @@ const InsCreditbankArea: React.FC = () => {
       }
 
       // ดึงข้อมูลหลักสูตรที่อาจารย์เกี่ยวข้อง
-      if (coursesResponse.data.success && Array.isArray(coursesResponse.data.courses)) {
-        const formattedCourses: Course[] = coursesResponse.data.courses.map((course: any) => ({
+      if (coursesResponse.data.success && Array.isArray(coursesResponse.data.subjects)) {
+        // สร้าง Set ของ course_id ที่อาจารย์สอน
+        const instructorCourseIds = new Set();
+        coursesResponse.data.subjects.forEach((subject: any) => {
+          if (subject.course_id) {
+            instructorCourseIds.add(subject.course_id);
+          }
+        });
+        
+        console.log('Course IDs that instructor teaches:', Array.from(instructorCourseIds));
+        
+        // ดึงข้อมูลหลักสูตรทั้งหมด
+        const allCoursesResponse = await axios.get(`${apiURL}/api/courses`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        
+        if (!allCoursesResponse.data.success) {
+          throw new Error('ไม่สามารถดึงข้อมูลหลักสูตรทั้งหมดได้');
+        }
+        
+        // กรองเฉพาะหลักสูตรที่อาจารย์สอน
+        const instructorCourses = allCoursesResponse.data.courses.filter((course: any) => 
+          instructorCourseIds.has(course.course_id)
+        );
+        
+        console.log('Filtered instructor courses:', instructorCourses.length, 'out of', allCoursesResponse.data.courses.length);
+        
+        const formattedCourses: Course[] = instructorCourses.map((course: any) => ({
           course_id: course.course_id,
           course_code: course.course_code || '',
           title: course.title || '',
@@ -1410,8 +1459,8 @@ const InsCreditbankArea: React.FC = () => {
         setCurrentView('courses'); // ตั้งให้แสดง courses โดยตรง
         console.log('Found instructor courses:', formattedCourses.length, formattedCourses);
       } else {
-        console.log('No courses found for instructor or API response failed');
-        setError('ไม่พบหลักสูตรที่ท่านเกี่ยวข้อง กรุณาติดต่อผู้ดูแลระบบ');
+        console.log('No subjects found for instructor or API response failed');
+        setError('ไม่พบรายวิชาที่ท่านสอน กรุณาติดต่อผู้ดูแลระบบ');
       }
     } catch (error) {
       console.error('Error fetching all instructor courses:', error);
@@ -2177,40 +2226,22 @@ const InsCreditbankArea: React.FC = () => {
   // Don't render anything until initialized
   if (!isInitialized) {
     return (
-      <section className="dashboard__area section-pb-120">
-        <div className="container">
-          <DashboardBanner />
-          <div className="dashboard__inner-wrap">
-            <div className="row">
-              <DashboardSidebar />
-              <div className="dashboard__content-area col-lg-9">
-                <div className="dashboard__content-main">
-                  <div className="loading-container">
-                    <div className="loading-spinner">
-                      <div className="spinner-border text-primary" role="status">
-                        <span className="visually-hidden">กำลังโหลด...</span>
-                      </div>
-                      <p className="loading-text">กำลังเตรียมข้อมูล...</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
+      <IconPanelLayout>
+        <div className="loading-container">
+          <div className="loading-spinner">
+            <div className="spinner-border text-primary" role="status">
+              <span className="visually-hidden">กำลังโหลด...</span>
             </div>
+            <p className="loading-text">กำลังเตรียมข้อมูล...</p>
           </div>
         </div>
-      </section>
+      </IconPanelLayout>
     );
   }
 
   return (
-    <section className="dashboard__area section-pb-120">
-      <div className="container">
-        <DashboardBanner />
-        <div className="dashboard__inner-wrap">
-          <div className="row">
-            <DashboardSidebar />
-            <div className="dashboard__content-area col-lg-9">
-              <div className="dashboard__content-main">
+    <IconPanelLayout>
+      <div className="dashboard__content-main">
                 
                 {/* Navigation Breadcrumb - แสดงเฉพาะเมื่อไม่ใช่หน้าหลักสูตรทั้งหมด */}
                 {currentView !== 'courses' && (
@@ -2332,14 +2363,20 @@ const InsCreditbankArea: React.FC = () => {
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
 
-      {/* ลบ Modals - อาจารย์ไม่มีสิทธิ์ CRUD คณะและสาขา */}
-    </section>
+                {/* Loading Overlay */}
+                {isLoading && (
+                  <div className="loading-overlay">
+                    <div className="loading-spinner-overlay">
+                      <div className="spinner-border text-primary" role="status">
+                        <span className="visually-hidden">กำลังโหลด...</span>
+                      </div>
+                      <p className="loading-text-overlay">กำลังโหลดข้อมูล...</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </IconPanelLayout>
   );
 };
 

@@ -32,4 +32,6 @@ const instructor_reviewe_data: DataType[] = [
    },
 ];
 
+export const tab_title: string[] = ["Received", "Given"];
+
 export default instructor_reviewe_data;

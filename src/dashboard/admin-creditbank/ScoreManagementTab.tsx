@@ -96,38 +96,63 @@ const ScoreManagementTab: React.FC<ScoreManagementTabProps> = ({ subject }) => {
 
   const apiURL = import.meta.env.VITE_API_URL;
 
-  // Progress Bar Component
+    // Progress Bar Component
   const ProgressBar: React.FC<{
     usedScore: number;
     totalScore: number;
     status: 'complete' | 'incomplete' | 'exceeded';
-  }> = ({ usedScore, totalScore, status }) => {
+    type?: 'big-lesson' | 'lesson' | 'quiz';
+    segments?: Array<{
+      percentage: number;
+      color: string;
+      label: string;
+    }>;
+  }> = ({ usedScore, totalScore, status, type = 'big-lesson', segments }) => {
     const percentage = totalScore > 0 ? Math.min((usedScore / totalScore) * 100, 100) : 0;
     
     return (
       <div className="score-progress-container">
         <div className="score-progress-bar">
-          <div 
-            className={`score-progress-bar-fill score-progress-bar-${status}`}
-            style={{ width: `${percentage}%` }}
-          />
+          {segments ? (
+            // แสดงหลายสีตาม segments
+            segments.map((segment, index) => (
+              <div
+                key={index}
+                className="score-progress-segment"
+                style={{
+                  width: `${segment.percentage}%`,
+                  background: segment.color,
+                  left: `${segments.slice(0, index).reduce((sum, s) => sum + s.percentage, 0)}%`
+                }}
+                title={`${segment.label}: ${segment.percentage}%`}
+              />
+            ))
+          ) : (
+            // แสดงสีเดียวแบบเดิม
+            <div 
+              className={`score-progress-bar-fill score-progress-bar-${status} score-progress-bar-${type}`}
+              style={{ width: `${percentage}%` }}
+            />
+          )}
         </div>
-        <div className="score-progress-text">
-          {Math.round(percentage)}% ({usedScore}/{totalScore} คะแนน)
-        </div>
+               <div className="score-progress-text">
+         {Math.round(percentage)}% ({usedScore}/{totalScore}%)
+       </div>
       </div>
     );
   };
 
 
 
-  // Simple PercentageInput Component - ช่องกรอกตัวเลขธรรมดา
+  // Simple PercentageInput Component
   const PercentageInput: React.FC<{
     value: number;
     onChange: (newValue: number) => void;
     disabled?: boolean;
     placeholder?: string;
-  }> = ({ value, onChange, disabled = false, placeholder = "0" }) => {
+    showStatus?: boolean;
+    status?: 'complete' | 'incomplete' | 'exceeded';
+  }> = ({ value, onChange, disabled = false, placeholder = "0", showStatus = false, status = 'incomplete' }) => {
     const [inputValue, setInputValue] = useState(value.toString());
     const [isFocused, setIsFocused] = useState(false);
 
@@ -140,7 +165,7 @@ const ScoreManagementTab: React.FC<ScoreManagementTabProps> = ({ subject }) => {
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const newValue = e.target.value;
-      setInputValue(newValue); // อัปเดตแค่ inputValue ไม่เรียก onChange
+      setInputValue(newValue);
     };
 
     const handleFocus = () => {
@@ -158,7 +183,6 @@ const ScoreManagementTab: React.FC<ScoreManagementTabProps> = ({ subject }) => {
         if (!isNaN(numValue)) {
           onChange(numValue);
         } else {
-          // ถ้าไม่ใช่ตัวเลข ให้ส่ง 0
           onChange(0);
         }
       }
@@ -167,7 +191,15 @@ const ScoreManagementTab: React.FC<ScoreManagementTabProps> = ({ subject }) => {
     const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
       if (e.key === 'Enter') {
         e.preventDefault();
-        e.currentTarget.blur(); // เรียก handleBlur
+        e.currentTarget.blur();
+      }
+    };
+
+    const getStatusText = () => {
+      switch (status) {
+        case 'complete': return '✅';
+        case 'exceeded': return '❌';
+        default: return '⏳';
       }
     };
 
@@ -194,6 +226,14 @@ const ScoreManagementTab: React.FC<ScoreManagementTabProps> = ({ subject }) => {
         >
           %
         </span>
+        {showStatus && (
+          <span 
+            className="score-table-percentage-status"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {getStatusText()}
+          </span>
+        )}
       </div>
     );
   };
@@ -215,6 +255,10 @@ const ScoreManagementTab: React.FC<ScoreManagementTabProps> = ({ subject }) => {
         const lesson = bigLesson.lessons.find(l => l.id === lessonId);
         if (lesson) {
           lesson.percentage = newValue;
+          // อัปเดตแบบทดสอบบทเรียนเป็น 100% อัตโนมัติ
+          if (lesson.quiz) {
+            lesson.quiz.percentage = 100;
+          }
           break;
         }
       }
@@ -260,41 +304,88 @@ const ScoreManagementTab: React.FC<ScoreManagementTabProps> = ({ subject }) => {
     });
   };
 
-  // คำนวณเปอร์เซ็นต์แบบ hierarchical
+  // คำนวณเปอร์เซ็นต์แบบ hierarchical ตาม logic ที่ถูกต้อง
   const calculateBigLessonProgress = (bigLesson: BigLesson) => {
-    const usedPercentage = (bigLesson.quiz?.percentage || 0) + 
+    // คำนวณคะแนนที่ใช้ภายในหน่วย (เป็นเปอร์เซ็นต์ของหน่วยนั้น)
+    // แบบทดสอบท้ายหน่วย + บทเรียนย่อย (ไม่รวมแบบทดสอบบทเรียน เพราะจะไม่เอาไปบวกกับหน่วย)
+    const totalInternalPercentage = (bigLesson.quiz?.percentage || 0) + 
       bigLesson.lessons.reduce((sum, lesson) => 
-        sum + lesson.percentage + (lesson.quiz?.percentage || 0), 0
+        sum + lesson.percentage, 0  // รวม lesson.percentage เพราะเป็นสัดส่วนในหน่วย
       );
     
-    const remainingPercentage = bigLesson.weight_percentage - usedPercentage;
+    // คำนวณคะแนนจริงที่ใช้ (แปลงจากเปอร์เซ็นต์เป็นคะแนน)
+    const actualUsedScore = (totalInternalPercentage / 100) * bigLesson.weight_percentage;
+    
+    const remainingScore = bigLesson.weight_percentage - actualUsedScore;
     
     let status: 'complete' | 'incomplete' | 'exceeded' = 'incomplete';
-    if (Math.abs(usedPercentage - bigLesson.weight_percentage) < 0.01) {
+    if (Math.abs(totalInternalPercentage - 100) < 0.01) {
       status = 'complete';
-    } else if (usedPercentage > bigLesson.weight_percentage) {
+    } else if (totalInternalPercentage > 100) {
       status = 'exceeded';
     }
 
     return {
-      usedPercentage: Math.round(usedPercentage * 100) / 100,
-      remainingPercentage: Math.round(remainingPercentage * 100) / 100,
+      usedPercentage: Math.round(actualUsedScore * 100) / 100,
+      remainingPercentage: Math.round(remainingScore * 100) / 100,
+      internalPercentage: Math.round(totalInternalPercentage * 100) / 100,
       status,
-      progressText: `ใช้ไป ${Math.round(usedPercentage * 100) / 100} คะแนน / เหลือ ${Math.round(remainingPercentage * 100) / 100} คะแนน`
+      progressText: `${Math.round(totalInternalPercentage * 100) / 100}% ของหน่วย (${Math.round(actualUsedScore * 100) / 100}/${bigLesson.weight_percentage} คะแนน)`
     };
+  };
+
+  // คำนวณคะแนนดิบของแต่ละส่วน
+  const calculateRawScore = (percentage: number, baseScore: number) => {
+    return Math.round((percentage / 100) * baseScore * 100) / 100;
+  };
+
+  // คำนวณคะแนนดิบของบทเรียน
+  const calculateLessonRawScore = (lesson: Lesson, bigLessonWeight: number) => {
+    return calculateRawScore(lesson.percentage, bigLessonWeight);
+  };
+
+  // คำนวณคะแนนดิบของแบบทดสอบบทเรียน
+  const calculateLessonQuizRawScore = (lesson: Lesson, bigLessonWeight: number) => {
+    if (!lesson.quiz) return 0;
+    return calculateRawScore(lesson.quiz.percentage, calculateLessonRawScore(lesson, bigLessonWeight));
+  };
+
+  // คำนวณคะแนนดิบของแบบทดสอบท้ายหน่วย
+  const calculateBigLessonQuizRawScore = (bigLesson: BigLesson) => {
+    if (!bigLesson.quiz) return 0;
+    return calculateRawScore(bigLesson.quiz.percentage, bigLesson.weight_percentage);
   };
 
   const calculateTotalValidation = () => {
     if (!scoreStructure) return { totalUsed: 0, isValid: false, errors: [] };
 
+    // คำนวณคะแนนรวมจาก big lessons และ post test
     const totalUsed = scoreStructure.big_lessons.reduce((sum, bl) => sum + bl.weight_percentage, 0) +
       (scoreStructure.post_test?.percentage || 0);
 
+    // ตรวจสอบว่าแต่ละ big lesson มีการกระจายคะแนนภายในถูกต้องหรือไม่
+    const bigLessonErrors: string[] = [];
+    scoreStructure.big_lessons.forEach((bl, index) => {
+      const internalTotal = (bl.quiz?.percentage || 0) + 
+        bl.lessons.reduce((sum, lesson) => 
+          sum + lesson.percentage, 0  // รวม lesson.percentage เพราะเป็นสัดส่วนในหน่วย
+        );
+      
+      if (Math.abs(internalTotal - 100) > 0.01) {
+        bigLessonErrors.push(`หน่วยที่ ${index + 1}: ${internalTotal.toFixed(1)}% (ควรเป็น 100%)`);
+      }
+    });
+
+    const errors = [
+      ...(totalUsed > 100 ? [`เกิน 100% (${totalUsed}%)`] : 
+          totalUsed < 100 ? [`ไม่ครบ 100% (${totalUsed}%)`] : []),
+      ...bigLessonErrors
+    ];
+
     return {
       totalUsed,
-      isValid: totalUsed === 100,
-      errors: totalUsed > 100 ? [`เกิน 100 คะแนน (${totalUsed} คะแนน)`] : 
-              totalUsed < 100 ? [`ไม่ครบ 100 คะแนน (${totalUsed} คะแนน)`] : []
+      isValid: totalUsed === 100 && bigLessonErrors.length === 0,
+      errors
     };
   };
 
@@ -304,8 +395,32 @@ const ScoreManagementTab: React.FC<ScoreManagementTabProps> = ({ subject }) => {
       const newSet = new Set(prev);
       if (newSet.has(bigLessonId)) {
         newSet.delete(bigLessonId);
+        // ปิด collapse ของบทเรียนทั้งหมดในหน่วยนี้ด้วย
+        setExpandedLessons(prevLessons => {
+          const newLessonsSet = new Set(prevLessons);
+          const bigLesson = scoreStructure?.big_lessons.find(bl => bl.id === bigLessonId);
+          if (bigLesson) {
+            bigLesson.lessons.forEach(lesson => {
+              newLessonsSet.delete(lesson.id);
+            });
+          }
+          return newLessonsSet;
+        });
       } else {
         newSet.add(bigLessonId);
+        // เปิด collapse ของบทเรียนทั้งหมดในหน่วยนี้ด้วย
+        setExpandedLessons(prevLessons => {
+          const newLessonsSet = new Set(prevLessons);
+          const bigLesson = scoreStructure?.big_lessons.find(bl => bl.id === bigLessonId);
+          if (bigLesson) {
+            bigLesson.lessons.forEach(lesson => {
+              if (lesson.quiz) {
+                newLessonsSet.add(lesson.id);
+              }
+            });
+          }
+          return newLessonsSet;
+        });
       }
       return newSet;
     });
@@ -490,165 +605,20 @@ const ScoreManagementTab: React.FC<ScoreManagementTabProps> = ({ subject }) => {
     }
   };
 
-  // Frontend-only auto-distribute function
-  const calculateFrontendAutoDistribute = () => {
-    if (!scoreStructure) return null;
 
-    const newStructure = JSON.parse(JSON.stringify(scoreStructure)); // Deep clone
-    
-    const messages: string[] = [];
 
-    // 1. นับ BigLessons ที่ไม่ได้ล็อค และ Post-test ที่ไม่ได้ล็อค
-    const autoBigLessons = newStructure.big_lessons.filter((bl: BigLesson) => !bl.is_fixed_weight);
-    const autoBigLessonsCount = autoBigLessons.length;
-    const hasPostTest = newStructure.post_test && !newStructure.post_test.is_fixed_weight;
-    const totalItems = autoBigLessonsCount + (hasPostTest ? 1 : 0);
-
-    if (totalItems === 0) {
-      return {
-        success: false,
-        message: "ไม่มีรายการที่สามารถปรับได้ (ทั้งหมดถูกล็อค)",
-        structure: null
-      };
-    }
-
-    // 2. แบ่งน้ำหนัก BigLessons และ Post-test (100% เท่าๆ กัน)
-    const weightPerItem = 100.0 / totalItems;
-    
-    // ปัดเศษให้รายการสุดท้ายรับส่วนที่เหลือ เพื่อให้รวมเป็น 100% พอดี
-    let remainingWeight = 100.0;
-    
-    autoBigLessons.forEach((bl: BigLesson, index: number) => {
-      if (index === autoBigLessons.length - 1 && !hasPostTest) {
-        // รายการสุดท้าย (ถ้าไม่มี Post-test)
-        bl.weight_percentage = Math.round(remainingWeight * 100) / 100;
-      } else {
-        bl.weight_percentage = Math.round(weightPerItem * 100) / 100;
-        remainingWeight -= bl.weight_percentage;
-      }
-    });
-
-    // อัปเดต Post-test ถ้ามีและไม่ได้ล็อค
-    if (hasPostTest && newStructure.post_test) {
-      newStructure.post_test.percentage = Math.round(remainingWeight * 100) / 100;
-    }
-
-    messages.push(`แบ่งน้ำหนัก: ${weightPerItem.toFixed(1)}% ต่อรายการ (${totalItems} รายการ)`);
-    if (autoBigLessonsCount > 0) {
-      messages.push(`- BigLessons: ${autoBigLessonsCount} หน่วย`);
-    }
-    if (hasPostTest) {
-      messages.push(`- Post-test: 1 รายการ`);
-    }
-
-    // 3. แบ่งน้ำหนักภายในแต่ละ BigLesson
-    newStructure.big_lessons.forEach((bl: BigLesson) => {
-      // นับจำนวน items ที่สามารถปรับได้ในแต่ละ BigLesson
-      const items: Array<{type: 'big_lesson_quiz' | 'lesson_quiz', item: any}> = [];
-      
-      // เพิ่ม BigLesson Quiz (แบบทดสอบหน่วย) ถ้ามีและไม่ได้ล็อค
-      if (bl.quiz && !bl.quiz.is_fixed_weight) {
-        items.push({ type: 'big_lesson_quiz', item: bl.quiz });
-      }
-      
-      // เพิ่ม Lesson Quizzes (แบบทดสอบบทเรียน) ที่ไม่ได้ล็อค
-      bl.lessons.forEach((lesson: Lesson) => {
-        if (lesson.quiz && !lesson.quiz.is_fixed_weight) {
-          items.push({ type: 'lesson_quiz', item: lesson.quiz });
-        }
-      });
-      
-      const totalItems = items.length;
-      
-      if (totalItems > 0) {
-        // แบ่งน้ำหนักเท่าๆ กันให้ทุก item
-        const weightPerItem = bl.weight_percentage / totalItems;
-        
-        items.forEach(({ item }) => {
-          item.percentage = weightPerItem;
-        });
-
-        const bigLessonQuizCount = items.filter(i => i.type === 'big_lesson_quiz').length;
-        const lessonQuizCount = items.filter(i => i.type === 'lesson_quiz').length;
-        
-        let detailText = `${totalItems} รายการ`;
-        if (bigLessonQuizCount > 0) {
-          detailText += `: ${bigLessonQuizCount} แบบทดสอบหน่วย`;
-        }
-        if (lessonQuizCount > 0) {
-          detailText += ` + ${lessonQuizCount} แบบทดสอบบทเรียน`;
-        }
-
-        messages.push(`BigLesson "${bl.title}": แบ่งน้ำหนักภายใน (${detailText})`);
-      }
-    });
-
-    // 4. คำนวณ total_used และ total_remaining
-    let totalUsed = 0;
-    newStructure.big_lessons.forEach((bl: BigLesson) => {
-      totalUsed += bl.weight_percentage;
-      if (bl.quiz) {
-        totalUsed += bl.quiz.percentage;
-      }
-      bl.lessons.forEach((lesson: Lesson) => {
-        totalUsed += lesson.percentage;
-        if (lesson.quiz) {
-          totalUsed += lesson.quiz.percentage;
-        }
-      });
-    });
-
-    // รวม Post-test ในการคำนวณ total_used
-    if (newStructure.post_test) {
-      totalUsed += newStructure.post_test.percentage;
-    }
-
-    newStructure.total_used = totalUsed;
-    newStructure.total_remaining = 100 - totalUsed;
-    newStructure.is_valid = Math.abs(newStructure.total_remaining) < 0.01;
-
-    return {
-      success: true,
-      message: "คำนวณการกระจายน้ำหนักอัตโนมัติสำเร็จ",
-      structure: newStructure,
-      details: messages
-    };
-  };
-
-  const handleFrontendAutoDistribute = () => {
+  const handleAutoDistribute = async () => {
     if (!scoreStructure) {
       toast.error("ไม่พบข้อมูลโครงสร้างคะแนน");
       return;
     }
 
     const confirmReset = window.confirm(
-      "การแบ่งน้ำหนักอัตโนมัติจะปรับเปอร์เซ็นต์ให้เท่ากันทุกหน่วย\nคุณต้องการดูตัวอย่างก่อนหรือไม่?"
+      "การแบ่งน้ำหนักอัตโนมัติจะปรับเปอร์เซ็นต์ให้เท่ากันทุกหน่วย\nคุณต้องการดำเนินการต่อหรือไม่?"
     );
 
     if (!confirmReset) return;
 
-    const result = calculateFrontendAutoDistribute();
-    
-    if (!result || !result.success) {
-      toast.error(result?.message || "ไม่สามารถคำนวณการกระจายน้ำหนักได้");
-      return;
-    }
-
-    // แสดงผลลัพธ์ใน modal หรือ alert
-    const details = result.details?.join('\n') || '';
-    const previewMessage = `🎯 ผลการคำนวณการกระจายน้ำหนักอัตโนมัติ:\n\n${details}\n\nน้ำหนักที่ใช้: ${result.structure.total_used.toFixed(1)}%\nน้ำหนักที่เหลือ: ${result.structure.total_remaining.toFixed(1)}%\n\nคุณต้องการบันทึกการเปลี่ยนแปลงนี้หรือไม่?`;
-
-    const shouldSave = window.confirm(previewMessage);
-    
-    if (shouldSave) {
-      // บันทึกโดยใช้ API
-      saveAutoDistributeResult(result.structure);
-    } else {
-      toast.info("ยกเลิกการบันทึก - การเปลี่ยนแปลงจะไม่ถูกบันทึก");
-    }
-  };
-
-  const saveAutoDistributeResult = async (newStructure: ScoreStructure) => {
     try {
       setIsAutoDistributing(true);
       
@@ -658,58 +628,107 @@ const ScoreManagementTab: React.FC<ScoreManagementTabProps> = ({ subject }) => {
         return;
       }
 
-      // ส่งข้อมูลใหม่ไปบันทึก
-      const payload = {
-        updates: {
-          big_lessons: newStructure.big_lessons.map(bl => ({
-            id: bl.id,
-            weight_percentage: bl.weight_percentage,
-            is_fixed_weight: bl.is_fixed_weight,
-            quiz: bl.quiz ? {
-              id: bl.quiz.id,
-              percentage: bl.quiz.percentage,
-              is_fixed_weight: bl.quiz.is_fixed_weight
-            } : null,
-            lessons: bl.lessons.map(lesson => ({
-              id: lesson.id,
-              percentage: lesson.percentage,
-              is_fixed_weight: lesson.is_fixed_weight,
-              quiz: lesson.quiz ? {
-                id: lesson.quiz.id,
-                percentage: lesson.quiz.percentage,
-                is_fixed_weight: lesson.quiz.is_fixed_weight
-              } : null
-            }))
-          })),
-          post_test: newStructure.post_test ? {
-            id: newStructure.post_test.id,
-            percentage: newStructure.post_test.percentage,
-            is_fixed_weight: newStructure.post_test.is_fixed_weight
-          } : null
-        }
-      };
+      console.log("เริ่มแบ่งน้ำหนักอัตโนมัติสำหรับวิชา:", subject.subject_name);
+      toast.info("กำลังแบ่งน้ำหนักอัตโนมัติ...");
 
-      const response = await axios.put(
-        `${apiURL}/api/subjects/${subject.subject_id}/scores-hierarchical`,
-        payload,
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
+      const response = await axios.post(
+        `${apiURL}/api/subjects/${subject.subject_id}/auto-distribute`,
+        { 
+          resetBeforeDistribute: true,
+          subject_id: subject.subject_id
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
+      console.log("ผลลัพธ์ auto-distribute:", response.data);
+
       if (response.data.success) {
-        toast.success("🎉 บันทึกการกระจายน้ำหนักอัตโนมัติสำเร็จ");
-        await fetchScoreStructure(); // โหลดข้อมูลใหม่
+        toast.success("แบ่งน้ำหนักอัตโนมัติสำเร็จ - กระจายเปอร์เซ็นต์เท่าๆ กันให้ทุกหน่วย");
+        await fetchScoreStructure();
       } else {
-        toast.error(response.data.message || "ไม่สามารถบันทึกการกระจายน้ำหนักได้");
+        toast.error(response.data.message || "ไม่สามารถแบ่งน้ำหนักอัตโนมัติได้");
       }
     } catch (error: any) {
-      console.error('❌ Error saving auto-distribute result:', error);
-      toast.error("❌ เกิดข้อผิดพลาดในการบันทึก กรุณาลองใหม่อีกครั้ง");
+      console.error('Error auto-distributing:', error);
+      toast.error(error.response?.data?.message || "เกิดข้อผิดพลาดในการแบ่งน้ำหนักอัตโนมัติ");
     } finally {
       setIsAutoDistributing(false);
     }
   };
+
+  // Export JSON function
+  const handleExportJSON = () => {
+    if (!scoreStructure) {
+      toast.error("ไม่พบข้อมูลโครงสร้างคะแนน");
+      return;
+    }
+
+    const exportData = {
+      subject: {
+        id: subject.subject_id,
+        name: subject.subject_name,
+        code: subject.subject_code
+      },
+      passing_percentage: passingPercentage,
+      score_structure: {
+        pre_test: scoreStructure.pre_test ? {
+          id: scoreStructure.pre_test.id,
+          title: scoreStructure.pre_test.title,
+          percentage: 0, // ไม่นับคะแนน
+          score: 0
+        } : null,
+        big_lessons: scoreStructure.big_lessons.map((bl, index) => ({
+          id: bl.id,
+          title: bl.title,
+          unit_number: index + 1,
+          weight_percentage: bl.weight_percentage,
+          score: bl.weight_percentage, // คะแนนจริง
+          quiz: bl.quiz ? {
+            id: bl.quiz.id,
+            title: bl.quiz.title,
+            percentage: bl.quiz.percentage,
+            score: (bl.quiz.percentage / 100) * bl.weight_percentage
+          } : null,
+          lessons: bl.lessons.map((lesson, lessonIndex) => ({
+            id: lesson.id,
+            title: lesson.title,
+            lesson_number: lessonIndex + 1,
+            percentage: lesson.percentage,
+            score: 0, // บทเรียน = 0 คะแนน
+            quiz: lesson.quiz ? {
+              id: lesson.quiz.id,
+              title: lesson.quiz.title,
+              percentage: lesson.quiz.percentage,
+              score: (lesson.quiz.percentage / 100) * (lesson.percentage / 100) * bl.weight_percentage
+            } : null
+          }))
+        })),
+        post_test: scoreStructure.post_test ? {
+          id: scoreStructure.post_test.id,
+          title: scoreStructure.post_test.title,
+          percentage: scoreStructure.post_test.percentage,
+          score: scoreStructure.post_test.percentage
+        } : null,
+        total_score: 100,
+        total_used: validation.totalUsed
+      }
+    };
+
+    const dataStr = JSON.stringify(exportData, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `score_structure_${subject.subject_code}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    toast.success("ส่งออก JSON สำเร็จ");
+  };
+
+
 
 
 
@@ -854,317 +873,376 @@ const ScoreManagementTab: React.FC<ScoreManagementTabProps> = ({ subject }) => {
       <div className="score-table-management-section">
         <div className="score-table-management-header">
           <h2>⚖️ จัดการน้ำหนักคะแนน</h2>
-          <div className="score-table-management-actions">
-              <button
-              className="score-table-action-btn"
-                onClick={handleFrontendAutoDistribute}
-                disabled={!scoreStructure || isAutoDistributing}
-                title="คำนวณการกระจายน้ำหนักบน Frontend และแสดงตัวอย่างก่อนบันทึก"
-              >
-                🎯 แบ่งอัตโนมัติ (Frontend)
-              </button>
-              <button
-              className="score-table-action-btn score-table-action-btn-primary"
-              onClick={handleSaveHierarchicalScores}
-              disabled={!scoreStructure || isSaving}
-            >
-              {isSaving ? '🔄 กำลังบันทึก...' : '💾 บันทึกน้ำหนัก'}
-              </button>
-            </div>
+                     <div className="score-table-management-actions">
+               <button
+               className="score-table-action-btn"
+                 onClick={handleAutoDistribute}
+                 disabled={!scoreStructure || isAutoDistributing}
+               >
+                 {isAutoDistributing ? '🔄 กำลังแบ่ง...' : '✨ แบ่งอัตโนมัติ'}
+               </button>
+               <button
+               className="score-table-action-btn"
+               onClick={handleExportJSON}
+               disabled={!scoreStructure}
+             >
+               📥 ส่งออก JSON
+               </button>
+               <button
+               className="score-table-action-btn score-table-action-btn-primary"
+               onClick={handleSaveHierarchicalScores}
+               disabled={!scoreStructure || isSaving}
+             >
+               {isSaving ? '🔄 กำลังบันทึก...' : '💾 บันทึกน้ำหนัก'}
+               </button>
+             </div>
           </div>
           
         {/* Summary */}
         <div className="score-table-summary">
           <div className="score-table-summary-content">
             <div className="score-table-summary-text">
-              📈 สรุปน้ำหนักคะแนนรวม: {validation.totalUsed} คะแนน (จากทั้งหมด 100 คะแนน)
-                  </div>
+              📈 สรุปน้ำหนักคะแนนรวม: {validation.totalUsed}% (จากทั้งหมด 100%)
+            </div>
             <div className={`score-table-summary-badge ${validation.isValid ? 'score-table-summary-badge-valid' : 'score-table-summary-badge-invalid'}`}>
               {validation.isValid ? '✅ ถูกต้อง' : '❌ ผิดพลาด'}
-                  </div>
-                </div>
+            </div>
+          </div>
           <div className="score-table-summary-progress">
-            <div 
-              className={`score-table-summary-progress-bar ${validation.isValid ? 'score-table-summary-progress-bar-valid' : 'score-table-summary-progress-bar-invalid'}`}
-              style={{ width: `${Math.min(validation.totalUsed, 100)}%` }}
-            ></div>
+            <div className="score-progress-bar">
+              {scoreStructure?.big_lessons.map((bigLesson, index) => (
+                <div
+                  key={`big-lesson-${bigLesson.id}`}
+                  className="score-progress-segment"
+                  style={{
+                    width: `${bigLesson.weight_percentage}%`,
+                    background: 'linear-gradient(90deg, #007bff, #0056b3)',
+                    left: `${scoreStructure.big_lessons.slice(0, index).reduce((sum, bl) => sum + bl.weight_percentage, 0)}%`
+                  }}
+                  title={`หน่วยที่ ${index + 1}: ${bigLesson.title} - ${bigLesson.weight_percentage}%`}
+                />
+              ))}
+       {scoreStructure?.post_test && (
+  <div
+    className="score-progress-segment"
+    style={{
+      width: `${scoreStructure.post_test.percentage}%`,
+      background: 'linear-gradient(90deg, #9b59b6, #8e44ad)',
+      left: `${(scoreStructure.big_lessons ?? []).reduce((sum, bl) => sum + bl.weight_percentage, 0)}%`,
+    }}
+    title={`แบบทดสอบหลังเรียน: ${scoreStructure.post_test.title} - ${scoreStructure.post_test.percentage}%`}
+  />
+)}
+
+            </div>
           </div>
           {!validation.isValid && (
             <div className="score-table-summary-error">
               ⚠️ {validation.errors.join(', ')}
             </div>
           )}
+        </div>
+        
+        {/* Score Items */}
+        <div className="score-table-score-items">
+          {/* Pre-test */}
+          {sortedData?.pre_test && (
+            <div className="score-table-score-item score-table-score-item-pretest">
+              <div className="score-table-score-item-header">
+                <div className="score-table-score-item-icon">🔍</div>
+                <div className="score-table-score-item-info">
+                  <h3 className="score-table-score-item-title">{sortedData!.pre_test!.title}</h3>
+                  <p className="score-table-score-item-subtitle">แบบทดสอบก่อนเรียน (0 คะแนน)</p>
+                </div>
+                <div className="score-table-score-item-badge">ไม่นับคะแนน</div>
               </div>
-              
-                 {/* Score Items */}
-         <div className="score-table-score-items">
-           {/* Pre-test */}
-           {sortedData?.pre_test && (
-             <div className="score-table-score-item score-table-score-item-pretest">
-               <div className="score-table-score-item-header">
-                 <div className="score-table-score-item-icon">🔍</div>
-                 <div className="score-table-score-item-info">
-                   <h3 className="score-table-score-item-title">{sortedData!.pre_test!.title}</h3>
-                   <p className="score-table-score-item-subtitle">แบบทดสอบก่อนเรียน (0 คะแนน)</p>
-                   </div>
-                 <div className="score-table-score-item-badge">ไม่นับคะแนน</div>
-               </div>
-             </div>
-           )}
+            </div>
+          )}
 
-                      {/* Big Lessons */}
-            {sortedData?.big_lessons.map((bigLesson: BigLesson, index: number) => {
-              const progress = calculateBigLessonProgress(bigLesson);
-              const isExpanded = expandedBigLessons.has(bigLesson.id);
-              const hasContent = bigLesson.quiz || bigLesson.lessons.length > 0;
+          {/* Big Lessons */}
+          {sortedData?.big_lessons.map((bigLesson: BigLesson, index: number) => {
+            const progress = calculateBigLessonProgress(bigLesson);
+            const isExpanded = expandedBigLessons.has(bigLesson.id);
+            const hasContent = bigLesson.quiz || bigLesson.lessons.length > 0;
 
-                         return (
-               <div key={bigLesson.id} className="score-table-score-item score-table-score-item-big-lesson">
-                 <div 
-                   className="score-table-score-item-header score-table-score-item-header-clickable"
-                   onClick={(e) => {
-                     // ไม่ให้คลิกที่ header ถ้าคลิกที่ input หรือ controls
-                     const target = e.target as HTMLElement;
-                     if (!target.closest('.score-table-percentage-control') && !target.closest('.score-table-percentage-input-wrapper')) {
-                       hasContent && toggleBigLesson(bigLesson.id);
-                     }
-                   }}
-                 >
-                   <div 
-                     className="score-table-score-item-icon"
-                     onClick={(e) => e.stopPropagation()}
-                   >
-                     📚
-                   </div>
-                   <div 
-                     className="score-table-score-item-info"
-                     onClick={(e) => e.stopPropagation()}
-                   >
-                                          <h3 className="score-table-score-item-title">หน่วยที่ {index + 1}: {bigLesson.title}</h3>
-                     <p className="score-table-score-item-subtitle">น้ำหนัก: {bigLesson.weight_percentage} คะแนน</p>
-                   </div>
-                   <div 
-                     className="score-table-score-item-controls"
-                     onClick={(e) => e.stopPropagation()}
-                   >
-                     {hasContent && (
-                       <div 
-                         className="score-table-collapse-indicator"
-                         onClick={(e) => {
-                           e.stopPropagation();
-                           toggleBigLesson(bigLesson.id);
-                         }}
-                       >
-                         {isExpanded ? '▼' : '▶'}
-                       </div>
-                     )}
-                     <div 
-                       className="score-table-percentage-control"
-                       onClick={(e) => e.stopPropagation()}
-                     >
-                       <div 
-                         className="score-table-percentage-label"
-                         onClick={(e) => e.stopPropagation()}
-                       >
-                         น้ำหนักหน่วย (คะแนน)
-                       </div>
-                       <PercentageInput 
-                         value={bigLesson.weight_percentage}
-                         onChange={(newValue) => handleBigLessonUpdate(bigLesson.id, newValue)}
-                       />
-                     </div>
-                     <div 
-                       className={`score-table-status-indicator score-table-status-indicator-${progress.status}`}
-                       onClick={(e) => e.stopPropagation()}
-                     >
-                       {progress.status === 'complete' ? '✅ สมบูรณ์' : 
-                        progress.status === 'exceeded' ? '❌ เกิน' : '⏳ ไม่ครบ'}
-                   </div>
-                 </div>
-                 
-                 {/* Add progress bar for big lesson */}
-                 <ProgressBar 
-                   usedScore={progress.usedPercentage}
-                   totalScore={bigLesson.weight_percentage}
-                   status={progress.status}
-                 />
-               </div>
-               
-                 {/* Sub Items */}
-                 {hasContent && isExpanded && (
-                   <div className="score-table-score-sub-items">
-                                          {/* BigLesson Quiz */}
-                      {bigLesson.quiz && (
-                        <div className="score-table-score-sub-item score-table-score-sub-item-quiz">
-                          <div className="score-table-score-sub-item-header">
-                            <div 
-                              className="score-table-score-sub-item-icon"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              📝
+            return (
+              <div key={bigLesson.id} className="score-table-score-item score-table-score-item-big-lesson">
+                <div 
+                  className="score-table-score-item-header score-table-score-item-header-clickable"
+                  onClick={(e) => {
+                    // ไม่ให้คลิกที่ header ถ้าคลิกที่ input หรือ controls
+                    const target = e.target as HTMLElement;
+                    if (!target.closest('.score-table-percentage-control') && !target.closest('.score-table-percentage-input-wrapper')) {
+                      hasContent && toggleBigLesson(bigLesson.id);
+                    }
+                  }}
+                >
+                  <div 
+                    className="score-table-score-item-icon"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    📚
+                  </div>
+                  <div 
+                    className="score-table-score-item-info"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      hasContent && toggleBigLesson(bigLesson.id);
+                    }}
+                    style={{ cursor: hasContent ? 'pointer' : 'default' }}
+                  >
+                    <h3 className="score-table-score-item-title">หน่วยที่ {index + 1}: {bigLesson.title}</h3>
+                    <p className="score-table-score-item-subtitle">น้ำหนัก: {bigLesson.weight_percentage}% ของ 100 คะแนน | แบบทดสอบท้ายหน่วย + บทเรียนย่อยต้องรวม = 100%</p>
+                  </div>
+                  <div 
+                    className="score-table-score-item-controls"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div 
+                      className="score-table-percentage-control"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div 
+                        className="score-table-percentage-label"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        น้ำหนักหน่วย (%)
+                      </div>
+                      <PercentageInput 
+                        value={bigLesson.weight_percentage}
+                        onChange={(newValue) => handleBigLessonUpdate(bigLesson.id, newValue)}
+                        showStatus={true}
+                        status={progress.status}
+                      />
                     </div>
+                  </div>
+                  
+                  {/* Add progress bar for big lesson */}
+                  <ProgressBar 
+                    usedScore={progress.internalPercentage}
+                    totalScore={100}
+                    status={progress.status}
+                    type="big-lesson"
+                    segments={[
+                      ...(bigLesson.quiz ? [{
+                        percentage: bigLesson.quiz.percentage,
+                        color: 'linear-gradient(90deg, #e74c3c, #c0392b)',
+                        label: 'แบบทดสอบท้ายหน่วย'
+                      }] : []),
+                      ...bigLesson.lessons.map((lesson, lessonIndex) => {
+                        // สร้างสีที่หลากหลายสำหรับแต่ละบทเรียน
+                        const colors = [
+                          'linear-gradient(90deg, #3498db, #2980b9)', // น้ำเงิน
+                          'linear-gradient(90deg, #2ecc71, #27ae60)', // เขียว
+                          'linear-gradient(90deg, #f39c12, #e67e22)', // ส้ม
+                          'linear-gradient(90deg, #9b59b6, #8e44ad)', // ม่วง
+                          'linear-gradient(90deg, #1abc9c, #16a085)', // เขียวมิ้นท์
+                          'linear-gradient(90deg, #e67e22, #d35400)', // ส้มเข้ม
+                          'linear-gradient(90deg, #34495e, #2c3e50)', // น้ำเงินเข้ม
+                          'linear-gradient(90deg, #f1c40f, #f39c12)', // เหลือง
+                          'linear-gradient(90deg, #e91e63, #c2185b)', // ชมพู
+                          'linear-gradient(90deg, #00bcd4, #0097a7)', // ฟ้า
+                          'linear-gradient(90deg, #795548, #5d4037)', // น้ำตาล
+                          'linear-gradient(90deg, #607d8b, #455a64)', // เทา
+                        ];
+                        return {
+                          percentage: lesson.percentage,
+                          color: colors[lessonIndex % colors.length],
+                          label: `บทเรียน: ${lesson.title}`
+                        };
+                      })
+                    ]}
+                  />
+                </div>
+                
+                {/* Sub Items */}
+                {hasContent && isExpanded && (
+                  <div className="score-table-score-sub-items">
+                    {/* BigLesson Quiz */}
+                    {bigLesson.quiz && (
+                      <div className="score-table-score-sub-item score-table-score-sub-item-quiz">
+                        <div className="score-table-score-sub-item-header">
+                          <div 
+                            className="score-table-score-sub-item-icon"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            📝
+                          </div>
+                          <div 
+                            className="score-table-score-item-info"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <h4 className="score-table-score-item-title">แบบทดสอบหน่วย: {bigLesson.title}</h4>
+                            <p className="score-table-score-item-subtitle">Quiz ประจำหน่วยการเรียนรู้ | คะแนนดิบ: {calculateBigLessonQuizRawScore(bigLesson)} คะแนน</p>
+                          </div>
+                          <div 
+                            className="score-table-percentage-control"
+                            onClick={(e) => e.stopPropagation()}
+                          >
                             <div 
-                              className="score-table-score-item-info"
+                              className="score-table-percentage-label"
                               onClick={(e) => e.stopPropagation()}
                             >
-                              <h4 className="score-table-score-item-title">แบบทดสอบหน่วย: {bigLesson.title}</h4>
-                              <p className="score-table-score-item-subtitle">Quiz ประจำหน่วยการเรียนรู้</p>
-                    </div>
-                            <div 
-                              className="score-table-percentage-control"
-                              onClick={(e) => e.stopPropagation()}
-                            >
+                              สัดส่วนในหน่วย (%)
+                            </div>
+                            <PercentageInput 
+                              value={bigLesson.quiz?.percentage || 0}
+                              onChange={(newValue) => handleBigLessonQuizPercentageUpdate(bigLesson.id, newValue)}
+                            />
+                          </div>
+                        </div>
+                        <ProgressBar 
+                          usedScore={bigLesson.quiz?.percentage || 0}
+                          totalScore={100}
+                          status="complete"
+                          type="quiz"
+                          segments={[{
+                            percentage: bigLesson.quiz?.percentage || 0,
+                            color: 'linear-gradient(90deg, #e74c3c, #c0392b)',
+                            label: 'แบบทดสอบท้ายหน่วย'
+                          }]}
+                        />
+                      </div>
+                    )}
+
+                    {/* Lessons */}
+                    {bigLesson.lessons.map((lesson: Lesson, lessonIndex: number) => {
+                      const isLessonExpanded = expandedLessons.has(lesson.id);
+                      const hasQuiz = !!lesson.quiz;
+
+                      return (
+                        <div key={lesson.id}>
+                          <div 
+                            className="score-table-score-sub-item score-table-score-sub-item-lesson score-table-score-sub-item-clickable"
+                            onClick={(e) => {
+                              // ไม่ให้คลิกที่ header ถ้าคลิกที่ input หรือ controls
+                              const target = e.target as HTMLElement;
+                              if (!target.closest('.score-table-percentage-control') && !target.closest('.score-table-percentage-input-wrapper')) {
+                                hasQuiz && toggleLesson(lesson.id);
+                              }
+                            }}
+                          >
+                            <div className="score-table-score-sub-item-header">
+                              <div className="score-table-score-sub-item-icon">
+                                {lesson.has_video ? '🎥' : '📄'}
+                              </div>
                               <div 
-                                className="score-table-percentage-label"
+                                className="score-table-score-item-info"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  hasQuiz && toggleLesson(lesson.id);
+                                }}
+                                style={{ cursor: hasQuiz ? 'pointer' : 'default' }}
+                              >
+                                <h4 className="score-table-score-item-title">
+                                  บทเรียนที่ {lessonIndex + 1}: {lesson.title}
+                                </h4>
+                                <p className="score-table-score-item-subtitle">
+                                  {lesson.has_video ? 'บทเรียนวิดีโอ' : 'บทเรียนเอกสาร'}
+                                  {hasQuiz ? ' + แบบทดสอบ' : ' (ไม่มีแบบทดสอบ)'} | คะแนนดิบ: {calculateLessonRawScore(lesson, bigLesson.weight_percentage)} คะแนน
+                                  {hasQuiz && ' 📋'}
+                                </p>
+                              </div>
+                              <div 
+                                className="score-table-score-item-controls"
                                 onClick={(e) => e.stopPropagation()}
                               >
-                                คะแนน
-                  </div>
-                              <PercentageInput 
-                                value={bigLesson.quiz?.percentage || 0}
-                                onChange={(newValue) => handleBigLessonQuizPercentageUpdate(bigLesson.id, newValue)}
+                                <div 
+                                  className="score-table-percentage-control"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <div 
+                                    className="score-table-percentage-label"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    สัดส่วนในหน่วย (%)
+                                  </div>
+                                  <PercentageInput 
+                                    value={lesson.percentage || 0}
+                                    onChange={(newValue) => handleLessonPercentageUpdate(lesson.id, newValue)}
+                                    disabled={!hasQuiz}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <ProgressBar 
+                              usedScore={lesson.percentage || 0}
+                              totalScore={100}
+                              status="complete"
+                              type="lesson"
+                              segments={[{
+                                percentage: lesson.percentage || 0,
+                                color: 'linear-gradient(90deg, #3498db, #2980b9)',
+                                label: 'บทเรียน'
+                              }]}
+                            />
+                          </div>
+
+                          {/* Lesson Quiz */}
+                          {hasQuiz && isLessonExpanded && (
+                            <div className="score-table-score-sub-item score-table-score-sub-item-lesson-quiz score-table-score-sub-item-nested">
+                              <div className="score-table-score-sub-item-header">
+                                <div className="score-table-score-sub-item-icon">📋</div>
+                                <div 
+                                  className="score-table-score-item-info"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <h4 className="score-table-score-item-title">แบบทดสอบบทเรียน: {lesson.title}</h4>
+                                  <p className="score-table-score-item-subtitle">Quiz ประจำบทเรียน | คะแนนดิบ: {calculateLessonQuizRawScore(lesson, bigLesson.weight_percentage)} คะแนน</p>
+                                </div>
+                                <div 
+                                  className="score-table-percentage-control"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <div 
+                                    className="score-table-percentage-label"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    สัดส่วนในบทเรียน (%) (อัปเดตอัตโนมัติเป็น 100%)
+                                  </div>
+                                  <PercentageInput 
+                                    value={lesson.quiz?.percentage || 0}
+                                    onChange={(newValue) => handleLessonQuizPercentageUpdate(lesson.id, newValue)}
+                                    disabled={true}
+                                  />
+                                </div>
+                              </div>
+                              
+                              <ProgressBar 
+                                usedScore={lesson.quiz?.percentage || 0}
+                                totalScore={100}
+                                status="complete"
+                                type="quiz"
+                                segments={[{
+                                  percentage: lesson.quiz?.percentage || 0,
+                                  color: 'linear-gradient(90deg, #2ecc71, #27ae60)',
+                                  label: 'แบบทดสอบบทเรียน'
+                                }]}
                               />
-                </div>
-              </div>
-              <ProgressBar 
-                usedScore={bigLesson.quiz?.percentage || 0}
-                totalScore={bigLesson.quiz?.percentage || 0}
-                status="complete"
-              />
-            </div>
-                      )}
-
-                                         {/* Lessons */}
-                     {bigLesson.lessons.map((lesson: Lesson, lessonIndex: number) => {
-                       const isLessonExpanded = expandedLessons.has(lesson.id);
-                       const hasQuiz = !!lesson.quiz;
-                       const quizScore = lesson.quiz?.percentage || 0;
-
-                                             return (
-                         <div key={lesson.id}>
-                           <div className="score-table-score-sub-item score-table-score-sub-item-lesson">
-                             <div 
-                               className="score-table-score-sub-item-header score-table-score-sub-item-header-clickable"
-                               onClick={(e) => {
-                                 // ไม่ให้คลิกที่ header ถ้าคลิกที่ input หรือ controls
-                                 const target = e.target as HTMLElement;
-                                 if (!target.closest('.score-table-percentage-control') && !target.closest('.score-table-percentage-input-wrapper')) {
-                                   hasQuiz && toggleLesson(lesson.id);
-                                 }
-                               }}
-                             >
-                               <div className="score-table-score-sub-item-icon">
-                                 {lesson.has_video ? '🎥' : '📄'}
-         </div>
-                               <div 
-                                 className="score-table-score-item-info"
-                                 onClick={(e) => e.stopPropagation()}
-                               >
-                                                                  <h4 className="score-table-score-item-title">
-                                    บทเรียนที่ {lessonIndex + 1}: {lesson.title}
-                                  </h4>
-                                 <p className="score-table-score-item-subtitle">
-                                   {lesson.has_video ? 'บทเรียนวิดีโอ' : 'บทเรียนเอกสาร'}
-                                   {hasQuiz && ' + แบบทดสอบ'}
-                                 </p>
-             </div>
-                               <div 
-                                 className="score-table-score-item-controls"
-                                 onClick={(e) => e.stopPropagation()}
-                               >
-                                 {hasQuiz && (
-                                   <div 
-                                     className="score-table-collapse-indicator"
-                                     onClick={(e) => {
-                                       e.stopPropagation();
-                                       toggleLesson(lesson.id);
-                                     }}
-                                   >
-                                     {isLessonExpanded ? '▼' : '▶'}
-             </div>
-                                 )}
-                                                                  <div 
-                                    className="score-table-percentage-control"
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
-                                    <div 
-                                      className="score-table-percentage-label"
-                                      onClick={(e) => e.stopPropagation()}
-                                    >
-                                      คะแนน
-                                    </div>
-                                    <PercentageInput 
-                                      value={lesson.percentage || 0}
-                                      onChange={(newValue) => handleLessonPercentageUpdate(lesson.id, newValue)}
-                                    />
-                                  </div>
-                               </div>
-                             </div>
-                             
-                             <ProgressBar 
-                               usedScore={quizScore}
-                               totalScore={quizScore}
-                               status="complete"
-                             />
-           </div>
-
-                           {/* Lesson Quiz */}
-                           {hasQuiz && isLessonExpanded && (
-                             <div className="score-table-score-sub-item score-table-score-sub-item-quiz score-table-score-sub-item-nested">
-                               <div className="score-table-score-sub-item-header">
-                                 <div className="score-table-score-sub-item-icon">📋</div>
-                                 <div 
-                                   className="score-table-score-item-info"
-                                   onClick={(e) => e.stopPropagation()}
-                                 >
-                                   <h4 className="score-table-score-item-title">แบบทดสอบบทเรียน: {lesson.title}</h4>
-                                   <p className="score-table-score-item-subtitle">Quiz ประจำบทเรียน</p>
-             </div>
-                                                                  <div 
-                                    className="score-table-percentage-control"
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
-                                    <div 
-                                      className="score-table-percentage-label"
-                                      onClick={(e) => e.stopPropagation()}
-                                    >
-                                      คะแนน
-                                    </div>
-                                    <PercentageInput 
-                                      value={lesson.quiz?.percentage || 0}
-                                      onChange={(newValue) => handleLessonQuizPercentageUpdate(lesson.id, newValue)}
-                                    />
-                                  </div>
-                               </div>
-                               
-                               <ProgressBar 
-                                 usedScore={quizScore}
-                                 totalScore={quizScore}
-                                 status="complete"
-                               />
-             </div>
-           )}
-         </div>
-                       );
-                     })}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
             );
           })}
 
-                     {/* Post-test */}
-           {sortedData?.post_test && (
-             <div className="score-table-score-item score-table-score-item-posttest">
-               <div className="score-table-score-item-header">
-                 <div className="score-table-score-item-icon">🏁</div>
-                 <div 
-                   className="score-table-score-item-info"
-                   onClick={(e) => e.stopPropagation()}
-                 >
-                   <h3 className="score-table-score-item-title">{sortedData!.post_test!.title}</h3>
-                   <p className="score-table-score-item-subtitle">แบบทดสอบหลังเรียน</p>
-                 </div>
+          {/* Post-test */}
+          {sortedData?.post_test && (
+            <div className="score-table-score-item score-table-score-item-posttest">
+              <div className="score-table-score-item-header">
+                <div className="score-table-score-item-icon">🏁</div>
+                <div 
+                  className="score-table-score-item-info"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <h3 className="score-table-score-item-title">{sortedData!.post_test!.title}</h3>
+                  <p className="score-table-score-item-subtitle">แบบทดสอบหลังเรียน</p>
+                </div>
                 <div 
                   className="score-table-percentage-control"
                   onClick={(e) => e.stopPropagation()}
@@ -1173,7 +1251,7 @@ const ScoreManagementTab: React.FC<ScoreManagementTabProps> = ({ subject }) => {
                     className="score-table-percentage-label"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    น้ำหนักแบบทดสอบ (คะแนน)
+                    น้ำหนักแบบทดสอบ (%)
                   </div>
                   <PercentageInput 
                     value={scoreStructure!.post_test!.percentage}
@@ -1184,8 +1262,14 @@ const ScoreManagementTab: React.FC<ScoreManagementTabProps> = ({ subject }) => {
               
               <ProgressBar 
                 usedScore={scoreStructure!.post_test!.percentage}
-                totalScore={scoreStructure!.post_test!.percentage}
+                totalScore={100}
                 status="complete"
+                type="quiz"
+                segments={[{
+                  percentage: scoreStructure!.post_test!.percentage,
+                  color: 'linear-gradient(90deg, #9b59b6, #8e44ad)',
+                  label: 'แบบทดสอบหลังเรียน'
+                }]}
               />
             </div>
           )}

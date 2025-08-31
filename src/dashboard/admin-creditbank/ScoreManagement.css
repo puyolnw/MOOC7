@@ -17,23 +17,45 @@
   position: relative !important;
 }
 
-.score-progress-bar-fill {
-  height: 100% !important;
-  transition: all 0.3s ease !important;
-  border-radius: 4px !important;
-}
+ .score-progress-bar-fill {
+   height: 100% !important;
+   transition: all 0.3s ease !important;
+   border-radius: 4px !important;
+ }
 
-.score-progress-bar-complete {
-  background: linear-gradient(90deg, #28a745, #20c997) !important;
-}
+ .score-progress-segment {
+   height: 100% !important;
+   position: absolute !important;
+   top: 0 !important;
+   transition: all 0.3s ease !important;
+   border-radius: 4px !important;
+   box-shadow: 0 1px 3px rgba(0,0,0,0.2) !important;
+ }
 
-.score-progress-bar-incomplete {
-  background: linear-gradient(90deg, #ffc107, #fd7e14) !important;
-}
+ .score-progress-bar-complete {
+   background: linear-gradient(90deg, #28a745, #20c997) !important;
+ }
+ 
+ .score-progress-bar-incomplete {
+   background: linear-gradient(90deg, #ffc107, #fd7e14) !important;
+ }
+ 
+ .score-progress-bar-exceeded {
+   background: linear-gradient(90deg, #dc3545, #e74c3c) !important;
+ }
 
-.score-progress-bar-exceeded {
-  background: linear-gradient(90deg, #dc3545, #e74c3c) !important;
-}
+ /* Progress Bar Colors by Type */
+ .score-progress-bar-big-lesson {
+   background: linear-gradient(90deg, #007bff, #0056b3) !important;
+ }
+ 
+ .score-progress-bar-lesson {
+   background: linear-gradient(90deg, #343a40, #212529) !important;
+ }
+ 
+ .score-progress-bar-quiz {
+   background: linear-gradient(90deg, #dc3545, #c82333) !important;
+ }
 
 .score-progress-text {
   font-size: 12px !important;
@@ -720,6 +742,11 @@
   border-bottom: 2px solid #ffeaa7 !important;
 }
 
+.score-table-score-sub-item-lesson-quiz .score-table-score-sub-item-header {
+  background: linear-gradient(135deg, #e8f5e8, #d4edda) !important;
+  border-bottom: 2px solid #d4edda !important;
+}
+
 .score-table-score-sub-item-lesson .score-table-score-sub-item-header {
   background: linear-gradient(135deg, #d1ecf1, #bee5eb) !important;
   border-bottom: 2px solid #bee5eb !important;
@@ -739,6 +766,10 @@
 
 .score-table-score-sub-item-quiz .score-table-score-sub-item-icon {
   background: linear-gradient(135deg, #ffc107, #e0a800) !important;
+}
+
+.score-table-score-sub-item-lesson-quiz .score-table-score-sub-item-icon {
+  background: linear-gradient(135deg, #28a745, #20c997) !important;
 }
 
 .score-table-score-sub-item-lesson .score-table-score-sub-item-icon {

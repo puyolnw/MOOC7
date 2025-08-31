@@ -1,6 +1,5 @@
 import { useState } from "react"
-import DashboardBanner from "../../dashboard-common/DashboardBanner"
-import DashboardSidebar from "../../dashboard-common/DashboardSidebar"
+import IconPanelLayout from "../../dashboard-common/IconPanelLayout"
 import InstructorGrading from "./InstructorGrading"
 import Gradingpopup from "./Gradingpopup"
 import './InstructorGrading.css'
@@ -15,25 +14,15 @@ const InstructorGradingArea = () => {
   };
 
   return (
-    <section className="dashboard__area section-pb-120">
-      <div className="container">
-        <DashboardBanner />
-        <div className="dashboard__inner-wrap">
-          <div className="row">
-            <DashboardSidebar />
-            <div className="col-lg-9">
-              <div className="dashboard__content-wrap">
-                <div className="dashboard__content-title">
-                  <h4 className="title">ตรวจงานแบบทดสอบพิเศษ</h4>
-                </div>
-                <InstructorGrading 
-                  isPopup={false} 
-                  onOpenGrading={handleOpenGrading} 
-                />
-              </div>
-            </div>
-          </div>
+    <IconPanelLayout>
+      <div className="dashboard__content-wrap">
+        <div className="dashboard__content-title">
+          <h4 className="title">ตรวจงานแบบทดสอบพิเศษ</h4>
         </div>
+        <InstructorGrading 
+          isPopup={false} 
+          onOpenGrading={handleOpenGrading} 
+        />
       </div>
 
       {/* Grading Popup */}
@@ -42,7 +31,7 @@ const InstructorGradingArea = () => {
         setIsOpen={setIsGradingPopupOpen} 
         attemptId={selectedAttemptId} 
       />
-    </section>
+    </IconPanelLayout>
   )
 }
 

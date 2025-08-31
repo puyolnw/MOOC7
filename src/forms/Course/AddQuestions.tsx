@@ -51,10 +51,12 @@ interface ValidationErrors {
 interface AddQuestionsProps {
   onSubmit?: (questionData: any) => void;
   onCancel?: () => void;
+  initialCategory?: 'objective' | 'subjective' | null;
+  quizTypeName?: string | null;
 }
 
 // ===== MAIN COMPONENT =====
-const AddQuestions: React.FC<AddQuestionsProps> = ({ onSubmit, onCancel }) => {
+const AddQuestions: React.FC<AddQuestionsProps> = ({ onSubmit, onCancel, initialCategory, quizTypeName }) => {
   const generateId = () => `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   
   // ===== STATE MANAGEMENT =====
@@ -62,7 +64,7 @@ const AddQuestions: React.FC<AddQuestionsProps> = ({ onSubmit, onCancel }) => {
   const [apiError, setApiError] = useState("");
   const [apiSuccess, setApiSuccess] = useState("");
   const [currentStep, setCurrentStep] = useState<'category' | 'form' | 'preview'>('category');
-  const [selectedCategory, setSelectedCategory] = useState<QuestionCategory | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<QuestionCategory | null>(initialCategory || null);
   
   // Quiz data
   const [availableQuizzes, setAvailableQuizzes] = useState<Quiz[]>([]);
@@ -149,6 +151,13 @@ const AddQuestions: React.FC<AddQuestionsProps> = ({ onSubmit, onCancel }) => {
       setCurrentStep('form');
     }
   }, [selectedCategory]);
+
+  // ถ้ามี initialCategory ให้ข้ามขั้นตอนการเลือกประเภท
+  useEffect(() => {
+    if (initialCategory && !selectedCategory) {
+      setSelectedCategory(initialCategory);
+    }
+  }, [initialCategory, selectedCategory]);
 
   // Update choices when objective question type changes
   useEffect(() => {
@@ -342,14 +351,15 @@ const AddQuestions: React.FC<AddQuestionsProps> = ({ onSubmit, onCancel }) => {
 
     try {
       const apiUrl = import.meta.env.VITE_API_URL;
+      const token = localStorage.getItem('token');
       
       let apiData: any = {
         title: questionData.title,
         description: questionData.description,
         category: questionData.category,
         type: questionData.type,
-        score: questionData.score,
-        quizzes: questionData.quizzes
+        score: questionData.score
+        // ลบ quizzes ออก เพราะจะให้ backend จัดการเอง
       };
 
       if (questionData.category === "objective") {
@@ -363,11 +373,25 @@ const AddQuestions: React.FC<AddQuestionsProps> = ({ onSubmit, onCancel }) => {
         };
       }
 
-      const response = await axios.post(`${apiUrl}/api/courses/questions`, apiData);
+      console.log('Sending question data to API:', apiData);
+
+      const response = await axios.post(
+        `${apiUrl}/api/courses/questions`,
+        apiData,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      
+      console.log('API response:', response.data);
       
       setApiSuccess("สร้างคำถามสำเร็จ");
       
-      if (onSubmit) {
+      // ส่งข้อมูลคำถามที่สร้างสำเร็จไปให้ parent component
+      if (onSubmit && response.data.question) {
         onSubmit(response.data.question);
       }
 
@@ -378,8 +402,19 @@ const AddQuestions: React.FC<AddQuestionsProps> = ({ onSubmit, onCancel }) => {
       
     } catch (error) {
       console.error("Error submitting question:", error);
+      console.error("Error details:", {
+        isAxiosError: axios.isAxiosError(error),
+        response: axios.isAxiosError(error) ? error.response : null,
+        responseData: axios.isAxiosError(error) ? error.response?.data : null,
+        message: axios.isAxiosError(error) ? error.response?.data?.message : null
+      });
+      
       if (axios.isAxiosError(error) && error.response) {
-        setApiError(error.response.data.message || "เกิดข้อผิดพลาดในการสร้างคำถาม");
+        const errorMessage = error.response.data?.message || 
+                           error.response.data?.error || 
+                           "เกิดข้อผิดพลาดในการสร้างคำถาม";
+        setApiError(errorMessage);
+        console.log("Setting API error:", errorMessage);
       } else {
         setApiError("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้");
       }
@@ -406,63 +441,77 @@ const AddQuestions: React.FC<AddQuestionsProps> = ({ onSubmit, onCancel }) => {
   };
 
   // ===== RENDER FUNCTIONS =====
-  const renderCategorySelection = () => (
-    <div className="card shadow-sm border-0 mb-4">
-      <div className="card-header bg-primary text-white">
-        <h5 className="mb-0">
-          <i className="fas fa-question-circle me-2"></i>
-          เลือกประเภทข้อสอบ
-        </h5>
-      </div>
-      <div className="card-body">
-        <div className="row g-4">
-          <div className="col-md-6">
-            <div 
-              className={`card h-100 cursor-pointer border-2 ${selectedCategory === 'objective' ? 'border-primary bg-light' : 'border-light'}`}
-              onClick={() => handleCategorySelect('objective')}
-              style={{ cursor: 'pointer' }}
-            >
-              <div className="card-body text-center">
-                <div className="mb-3">
-                  <i className="fas fa-list-ul fa-3x text-primary"></i>
+  const renderCategorySelection = () => {
+    const hasInitialCategory = initialCategory !== null && initialCategory !== undefined;
+    const displayQuizTypeName = quizTypeName || (initialCategory === 'objective' ? 'ข้อสอบปรนัย' : initialCategory === 'subjective' ? 'ข้อสอบอัตนัย' : '');
+
+    return (
+      <div className="card shadow-sm border-0 mb-4">
+        <div className="card-header bg-primary text-white">
+          <h5 className="mb-0">
+            <i className="fas fa-question-circle me-2"></i>
+            {hasInitialCategory ? `เพิ่มคำถามในแบบทดสอบ (${displayQuizTypeName})` : 'เลือกประเภทข้อสอบ'}
+          </h5>
+        </div>
+        <div className="card-body">
+          {hasInitialCategory ? (
+            <div className="alert alert-info">
+              <i className="fas fa-info-circle me-2"></i>
+              <strong>แบบทดสอบนี้เป็น {displayQuizTypeName}</strong>
+              <br />
+              คุณสามารถเพิ่มคำถามประเภท{initialCategory === 'objective' ? 'ปรนัย' : 'อัตนัย'} ได้เท่านั้น
+            </div>
+          ) : (
+            <div className="row g-4">
+              <div className="col-md-6">
+                <div 
+                  className={`card h-100 cursor-pointer border-2 ${selectedCategory === 'objective' ? 'border-primary bg-light' : 'border-light'}`}
+                  onClick={() => handleCategorySelect('objective')}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <div className="card-body text-center">
+                    <div className="mb-3">
+                      <i className="fas fa-list-ul fa-3x text-primary"></i>
+                    </div>
+                    <h5 className="card-title">ข้อสอบปรนัย</h5>
+                    <p className="card-text text-muted">
+                      ข้อสอบที่มีตัวเลือกให้เลือก เช่น หลายตัวเลือก, ตัวเลือกเดียว, ถูก/ผิด
+                    </p>
+                    <div className="mt-3">
+                      <span className="badge bg-primary me-2">หลายตัวเลือก</span>
+                      <span className="badge bg-primary me-2">ตัวเลือกเดียว</span>
+                      <span className="badge bg-primary">ถูก/ผิด</span>
+                    </div>
+                  </div>
                 </div>
-                <h5 className="card-title">ข้อสอบปรนัย</h5>
-                <p className="card-text text-muted">
-                  ข้อสอบที่มีตัวเลือกให้เลือก เช่น หลายตัวเลือก, ตัวเลือกเดียว, ถูก/ผิด
-                </p>
-                <div className="mt-3">
-                  <span className="badge bg-primary me-2">หลายตัวเลือก</span>
-                  <span className="badge bg-primary me-2">ตัวเลือกเดียว</span>
-                  <span className="badge bg-primary">ถูก/ผิด</span>
+              </div>
+              
+              <div className="col-md-6">
+                <div 
+                  className={`card h-100 cursor-pointer border-2 ${selectedCategory === 'subjective' ? 'border-success bg-light' : 'border-light'}`}
+                  onClick={() => handleCategorySelect('subjective')}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <div className="card-body text-center">
+                    <div className="mb-3">
+                      <i className="fas fa-edit fa-3x text-success"></i>
+                    </div>
+                    <h5 className="card-title">ข้อสอบอัตนัย</h5>
+                    <p className="card-text text-muted">
+                      ข้อสอบที่ต้องพิมพ์คำตอบ เช่น เติมคำ
+                    </p>
+                    <div className="mt-3">
+                      <span className="badge bg-success">เติมคำ</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-          
-          <div className="col-md-6">
-            <div 
-              className={`card h-100 cursor-pointer border-2 ${selectedCategory === 'subjective' ? 'border-success bg-light' : 'border-light'}`}
-              onClick={() => handleCategorySelect('subjective')}
-              style={{ cursor: 'pointer' }}
-            >
-              <div className="card-body text-center">
-                <div className="mb-3">
-                  <i className="fas fa-edit fa-3x text-success"></i>
-                </div>
-                <h5 className="card-title">ข้อสอบอัตนัย</h5>
-                <p className="card-text text-muted">
-                  ข้อสอบที่ต้องพิมพ์คำตอบ เช่น เติมคำ
-                </p>
-                <div className="mt-3">
-                  <span className="badge bg-success">เติมคำ</span>
-                </div>
-              </div>
-            </div>
-          </div>
+          )}
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderQuestionInfo = () => (
     <div className="card shadow-sm border-0 mb-4">
@@ -564,7 +613,7 @@ const AddQuestions: React.FC<AddQuestionsProps> = ({ onSubmit, onCancel }) => {
             
             <div className="choices-container">
               {objData.choices.map((choice, choiceIndex) => (
-                <div key={choice.id} className="d-flex align-items-center mb-2">
+                <div key={choice.id} className={`choice-item d-flex align-items-center ${choice.isCorrect ? 'correct' : 'incorrect'}`}>
                   <div className="form-check me-2">
                     <input
                       className="form-check-input"
@@ -576,7 +625,7 @@ const AddQuestions: React.FC<AddQuestionsProps> = ({ onSubmit, onCancel }) => {
                   </div>
                   <input
                     type="text"
-                    className="form-control me-2"
+                    className={`form-control me-2 choice-text-input ${choice.isCorrect ? 'correct' : ''}`}
                     value={choice.text}
                     onChange={(e) => handleChoiceChange(choice.id, e.target.value)}
                     placeholder={`ตัวเลือกที่ ${choiceIndex + 1}`}
@@ -590,6 +639,11 @@ const AddQuestions: React.FC<AddQuestionsProps> = ({ onSubmit, onCancel }) => {
                     >
                       <i className="fas fa-times"></i>
                     </button>
+                  )}
+                  {choice.isCorrect && (
+                    <div className="ms-2">
+                      <i className="fas fa-check-circle correct-indicator"></i>
+                    </div>
                   )}
                 </div>
               ))}
@@ -663,74 +717,7 @@ const AddQuestions: React.FC<AddQuestionsProps> = ({ onSubmit, onCancel }) => {
     );
   };
 
-  const renderQuizSelection = () => (
-    <div className="card shadow-sm border-0 mb-4">
-      <div className="card-header bg-light">
-        <h5 className="mb-0">
-          <i className="fas fa-list-ul me-2"></i>
-          เลือกแบบทดสอบที่จะใช้คำถามนี้
-        </h5>
-      </div>
-      <div className="card-body">
-        <p className="text-muted mb-3">
-          คุณสามารถเลือกแบบทดสอบที่ต้องการใช้คำถามนี้ได้ (ไม่บังคับ) และสามารถเลือกได้มากกว่า 1 แบบทดสอบ
-        </p>
-        
-        <div className="d-flex justify-content-between align-items-center mb-3">
-          <div>
-            {questionData.quizzes.length > 0 ? (
-              <span className="badge bg-success rounded-pill">
-                เลือกแล้ว {questionData.quizzes.length} แบบทดสอบ
-              </span>
-            ) : (
-              <span className="badge bg-secondary rounded-pill">
-                ยังไม่ได้เลือกแบบทดสอบ
-              </span>
-            )}
-          </div>
-          <button
-            type="button"
-            className="btn btn-outline-primary btn-sm"
-            onClick={() => setShowQuizModal(true)}
-          >
-            <i className="fas fa-list-ul me-2"></i>เลือกแบบทดสอบ
-          </button>
-        </div>
-        
-        {questionData.quizzes.length > 0 && (
-          <div className="selected-quizzes">
-            <h6 className="mb-2">แบบทดสอบที่เลือก:</h6>
-            <div className="row g-2">
-              {questionData.quizzes.map(quizId => {
-                const quiz = availableQuizzes.find(q => q.id === quizId);
-                return quiz ? (
-                  <div key={quiz.id} className="col-md-6">
-                    <div className="card border h-100">
-                      <div className="card-body py-2 px-3">
-                        <div className="d-flex justify-content-between align-items-center">
-                          <div>
-                            <h6 className="mb-1">{quiz.title}</h6>
-                            <p className="mb-0 small text-muted">จำนวนคำถาม: {quiz.questions} ข้อ</p>
-                          </div>
-                          <button
-                            type="button"
-                            className="btn btn-sm text-danger"
-                            onClick={() => handleToggleQuiz(quiz.id)}
-                          >
-                            <i className="fas fa-times-circle"></i>
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ) : null;
-              })}
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
+  // ลบ renderQuizSelection() ออก
 
   const renderPreview = () => (
     <div className="card shadow-sm border-0 mb-4">
@@ -950,7 +937,7 @@ const AddQuestions: React.FC<AddQuestionsProps> = ({ onSubmit, onCancel }) => {
             {renderQuestionInfo()}
             {renderObjectiveSettings()}
             {renderSubjectiveSettings()}
-            {renderQuizSelection()}
+            {/* ตัดส่วน renderQuizSelection() ออก */}
           </>
         )}
         
@@ -1067,6 +1054,25 @@ const AddQuestions: React.FC<AddQuestionsProps> = ({ onSubmit, onCancel }) => {
             border-color: #198754;
           }
           
+          /* Custom Checkbox and Radio Button Styles */
+          .form-check-input:checked {
+            background-color: #198754 !important;
+            border-color: #198754 !important;
+          }
+          
+          .form-check-input:focus {
+            border-color: #198754;
+            box-shadow: 0 0 0 0.25rem rgba(25, 135, 84, 0.25);
+          }
+          
+          .form-check-input[type="radio"]:checked {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='2' fill='%23fff'/%3e%3c/svg%3e");
+          }
+          
+          .form-check-input[type="checkbox"]:checked {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='m6 10 3 3 6-6'/%3e%3c/svg%3e");
+          }
+          
           .question-preview {
             font-family: inherit;
           }
@@ -1074,6 +1080,53 @@ const AddQuestions: React.FC<AddQuestionsProps> = ({ onSubmit, onCancel }) => {
           .cursor-pointer:hover {
             transform: translateY(-2px);
             transition: transform 0.2s ease;
+          }
+
+          .choice-item {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            background-color: #f9f9f9;
+            transition: background-color 0.2s ease;
+          }
+
+          .choice-item:hover {
+            background-color: #f0f0f0;
+          }
+
+          .choice-item.correct {
+            border-color: #198754;
+            background-color: #e8f5e9;
+          }
+
+          .choice-item.incorrect {
+            border-color: #dc3545;
+            background-color: #f8d7da;
+          }
+
+          .choice-text-input {
+            flex-grow: 1;
+            border: none;
+            outline: none;
+            padding: 0;
+            font-size: 0.95rem;
+            color: #333;
+          }
+
+          .choice-text-input.correct {
+            color: #198754;
+            font-weight: bold;
+          }
+
+          .choice-text-input.incorrect {
+            color: #dc3545;
+            font-style: italic;
+          }
+
+          .correct-indicator {
+            color: #198754;
+            font-size: 1.2rem;
           }
         `}
       </style>
