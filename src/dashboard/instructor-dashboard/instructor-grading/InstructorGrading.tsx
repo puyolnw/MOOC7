@@ -71,6 +71,321 @@ interface SubjectSummary {
     is_home_faculty?: boolean;
 }
 
+// Mock data for instructor grading
+const mockSubjects: Subject[] = [
+    {
+        subject_id: 1,
+        subject_name: "การเขียนโปรแกรมคอมพิวเตอร์เบื้องต้น",
+        subject_code: "CS101",
+        department_id: 1
+    },
+    {
+        subject_id: 2,
+        subject_name: "โครงสร้างข้อมูลและอัลกอริทึม",
+        subject_code: "CS102",
+        department_id: 1
+    },
+    {
+        subject_id: 3,
+        subject_name: "การออกแบบและพัฒนาเว็บไซต์",
+        subject_code: "CS103",
+        department_id: 1
+    },
+    {
+        subject_id: 4,
+        subject_name: "ฐานข้อมูลและการจัดการข้อมูล",
+        subject_code: "CS104",
+        department_id: 2
+    },
+    {
+        subject_id: 5,
+        subject_name: "การเขียนโปรแกรมเชิงวัตถุ",
+        subject_code: "CS105",
+        department_id: 2
+    }
+];
+
+const mockAttempts: Attempt[] = [
+    {
+        attempt_id: 1,
+        user_id: 1001,
+        quiz_id: 1,
+        quiz_title: "แบบทดสอบบทที่ 1 - พื้นฐานการเขียนโปรแกรม",
+        subject_id: 1,
+        subject_title: "การเขียนโปรแกรมคอมพิวเตอร์เบื้องต้น",
+        subject_code: "CS101",
+        status: "completed",
+        score: -1, // -1 means not graded yet
+        max_score: 100,
+        passed: false,
+        created_at: "2024-01-15T09:00:00Z",
+        end_time: "2024-01-15T10:30:00Z",
+        username: "student001",
+        email: "student001@example.com",
+        first_name: "สมชาย",
+        last_name: "ใจดี",
+        answers: [
+            {
+                answer_id: 1,
+                question_id: 1,
+                text_answer: "การเขียนโปรแกรมคือการเขียนคำสั่งให้คอมพิวเตอร์ทำงานตามที่เราต้องการ โดยใช้ภาษาคอมพิวเตอร์ต่างๆ เช่น C++, Java, Python",
+                is_correct: false,
+                score_earned: 0,
+                question_title: "อธิบายความหมายของการเขียนโปรแกรม",
+                question_type: "essay",
+                question_max_score: 20,
+                attachments: []
+            },
+            {
+                answer_id: 2,
+                question_id: 2,
+                text_answer: "1. วิเคราะห์ปัญหา\n2. ออกแบบอัลกอริทึม\n3. เขียนโปรแกรม\n4. ทดสอบและแก้ไขข้อผิดพลาด",
+                is_correct: false,
+                score_earned: 0,
+                question_title: "จงอธิบายขั้นตอนการพัฒนาโปรแกรม",
+                question_type: "essay",
+                question_max_score: 30,
+                attachments: [
+                    {
+                        attachment_id: 1,
+                        file_url: "/uploads/flowchart.pdf",
+                        file_name: "flowchart.pdf",
+                        file_type: "application/pdf",
+                        file_size: 1024000
+                    }
+                ]
+            },
+            {
+                answer_id: 3,
+                question_id: 3,
+                text_answer: "ตัวแปรคือชื่อที่ใช้เก็บข้อมูลในโปรแกรม เช่น int age = 25; โดย age คือชื่อตัวแปรที่เก็บค่า 25",
+                is_correct: false,
+                score_earned: 0,
+                question_title: "อธิบายความหมายของตัวแปรพร้อมตัวอย่าง",
+                question_type: "essay",
+                question_max_score: 25,
+                attachments: []
+            },
+            {
+                answer_id: 4,
+                question_id: 4,
+                text_answer: "ลูป for ใช้สำหรับการทำซ้ำเมื่อทราบจำนวนรอบที่แน่นอน เช่น for(int i=0; i<10; i++) { cout << i; }",
+                is_correct: false,
+                score_earned: 0,
+                question_title: "อธิบายการทำงานของลูป for พร้อมตัวอย่าง",
+                question_type: "essay",
+                question_max_score: 25,
+                attachments: []
+            }
+        ]
+    },
+    {
+        attempt_id: 2,
+        user_id: 1002,
+        quiz_id: 1,
+        quiz_title: "แบบทดสอบบทที่ 1 - พื้นฐานการเขียนโปรแกรม",
+        subject_id: 1,
+        subject_title: "การเขียนโปรแกรมคอมพิวเตอร์เบื้องต้น",
+        subject_code: "CS101",
+        status: "completed",
+        score: 85,
+        max_score: 100,
+        passed: true,
+        created_at: "2024-01-16T14:00:00Z",
+        end_time: "2024-01-16T15:30:00Z",
+        username: "student002",
+        email: "student002@example.com",
+        first_name: "สมหญิง",
+        last_name: "รักเรียน",
+        answers: [
+            {
+                answer_id: 5,
+                question_id: 1,
+                text_answer: "การเขียนโปรแกรมคือกระบวนการสร้างชุดคำสั่งให้คอมพิวเตอร์ทำงานตามที่ต้องการ โดยใช้ภาษาคอมพิวเตอร์",
+                is_correct: true,
+                score_earned: 18,
+                question_title: "อธิบายความหมายของการเขียนโปรแกรม",
+                question_type: "essay",
+                question_max_score: 20,
+                attachments: []
+            },
+            {
+                answer_id: 6,
+                question_id: 2,
+                text_answer: "ขั้นตอนการพัฒนาโปรแกรม: 1) วิเคราะห์ปัญหา 2) ออกแบบอัลกอริทึม 3) เขียนโปรแกรม 4) ทดสอบและแก้ไข",
+                is_correct: true,
+                score_earned: 28,
+                question_title: "จงอธิบายขั้นตอนการพัฒนาโปรแกรม",
+                question_type: "essay",
+                question_max_score: 30,
+                attachments: []
+            },
+            {
+                answer_id: 7,
+                question_id: 3,
+                text_answer: "ตัวแปรคือชื่อที่ใช้เก็บข้อมูลในโปรแกรม เช่น int score = 100;",
+                is_correct: true,
+                score_earned: 22,
+                question_title: "อธิบายความหมายของตัวแปรพร้อมตัวอย่าง",
+                question_type: "essay",
+                question_max_score: 25,
+                attachments: []
+            },
+            {
+                answer_id: 8,
+                question_id: 4,
+                text_answer: "ลูป for ใช้สำหรับการทำซ้ำเมื่อทราบจำนวนรอบ เช่น for(int i=0; i<5; i++) { cout << i; }",
+                is_correct: true,
+                score_earned: 17,
+                question_title: "อธิบายการทำงานของลูป for พร้อมตัวอย่าง",
+                question_type: "essay",
+                question_max_score: 25,
+                attachments: []
+            }
+        ]
+    },
+    {
+        attempt_id: 3,
+        user_id: 1003,
+        quiz_id: 2,
+        quiz_title: "แบบทดสอบบทที่ 2 - โครงสร้างข้อมูล",
+        subject_id: 2,
+        subject_title: "โครงสร้างข้อมูลและอัลกอริทึม",
+        subject_code: "CS102",
+        status: "completed",
+        score: -1,
+        max_score: 100,
+        passed: false,
+        created_at: "2024-01-20T10:00:00Z",
+        end_time: "2024-01-20T11:30:00Z",
+        username: "student003",
+        email: "student003@example.com",
+        first_name: "วิชัย",
+        last_name: "มุ่งมั่น",
+        answers: [
+            {
+                answer_id: 9,
+                question_id: 5,
+                text_answer: "Array คือโครงสร้างข้อมูลที่เก็บข้อมูลหลายตัวในรูปแบบตารางที่มีดัชนี เช่น int numbers[5] = {1,2,3,4,5};",
+                is_correct: false,
+                score_earned: 0,
+                question_title: "อธิบายโครงสร้างข้อมูล Array",
+                question_type: "essay",
+                question_max_score: 25,
+                attachments: []
+            },
+            {
+                answer_id: 10,
+                question_id: 6,
+                text_answer: "Linked List คือโครงสร้างข้อมูลที่เชื่อมต่อกันด้วย pointer แต่ละ node มีข้อมูลและ pointer ชี้ไปยัง node ถัดไป",
+                is_correct: false,
+                score_earned: 0,
+                question_title: "อธิบายโครงสร้างข้อมูล Linked List",
+                question_type: "essay",
+                question_max_score: 30,
+                attachments: [
+                    {
+                        attachment_id: 2,
+                        file_url: "/uploads/linkedlist_diagram.png",
+                        file_name: "linkedlist_diagram.png",
+                        file_type: "image/png",
+                        file_size: 512000
+                    }
+                ]
+            },
+            {
+                answer_id: 11,
+                question_id: 7,
+                text_answer: "Stack ทำงานแบบ LIFO (Last In First Out) เช่น การวางหนังสือซ้อนกัน",
+                is_correct: false,
+                score_earned: 0,
+                question_title: "อธิบายหลักการทำงานของ Stack",
+                question_type: "essay",
+                question_max_score: 25,
+                attachments: []
+            },
+            {
+                answer_id: 12,
+                question_id: 8,
+                text_answer: "Queue ทำงานแบบ FIFO (First In First Out) เช่น คิวซื้อตั๋วหนัง",
+                is_correct: false,
+                score_earned: 0,
+                question_title: "อธิบายหลักการทำงานของ Queue",
+                question_type: "essay",
+                question_max_score: 20,
+                attachments: []
+            }
+        ]
+    }
+];
+
+const mockQuestions: Question[] = [
+    {
+        question_id: 1,
+        title: "อธิบายความหมายของการเขียนโปรแกรม",
+        type: "essay",
+        score: 20,
+        max_score: 20,
+        points: 20
+    },
+    {
+        question_id: 2,
+        title: "จงอธิบายขั้นตอนการพัฒนาโปรแกรม",
+        type: "essay",
+        score: 30,
+        max_score: 30,
+        points: 30
+    },
+    {
+        question_id: 3,
+        title: "อธิบายความหมายของตัวแปรพร้อมตัวอย่าง",
+        type: "essay",
+        score: 25,
+        max_score: 25,
+        points: 25
+    },
+    {
+        question_id: 4,
+        title: "อธิบายการทำงานของลูป for พร้อมตัวอย่าง",
+        type: "essay",
+        score: 25,
+        max_score: 25,
+        points: 25
+    },
+    {
+        question_id: 5,
+        title: "อธิบายโครงสร้างข้อมูล Array",
+        type: "essay",
+        score: 25,
+        max_score: 25,
+        points: 25
+    },
+    {
+        question_id: 6,
+        title: "อธิบายโครงสร้างข้อมูล Linked List",
+        type: "essay",
+        score: 30,
+        max_score: 30,
+        points: 30
+    },
+    {
+        question_id: 7,
+        title: "อธิบายหลักการทำงานของ Stack",
+        type: "essay",
+        score: 25,
+        max_score: 25,
+        points: 25
+    },
+    {
+        question_id: 8,
+        title: "อธิบายหลักการทำงานของ Queue",
+        type: "essay",
+        score: 20,
+        max_score: 20,
+        points: 20
+    }
+];
+
 interface InstructorGradingProps {
     isPopup?: boolean;
     selectedAttemptId?: number | null;
@@ -124,240 +439,103 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
         return question.score || question.max_score || question.points || 0;
     };
 
-
-
     const loadData = async () => {
         try {
             setLoading(true);
             setError(null);
 
-            const token = localStorage.getItem("token");
-            if (!token) {
-                toast.error("กรุณาเข้าสู่ระบบ");
-                setLoading(false);
-                return;
-            }
+            // Simulate API delay
+            await new Promise(resolve => setTimeout(resolve, 1000));
 
             if (isPopup && selectedAttemptId) {
                 // โหมด Popup: ดึงข้อมูล attempt เฉพาะ
                 setCurrentAttemptId(selectedAttemptId);
-                const response = await axios.get(
-                    `${apiURL}/api/special-quiz/attempt/${selectedAttemptId}`,
-                    {
-                        headers: {
-                            Authorization: `Bearer ${token}`,
-                        },
-                    }
-                );
-
-                if (response.data.success) {
-                    const attempt: Attempt = response.data.attempt;
-
-                    if (!attempt || !attempt.answers) {
-                        setError("ข้อมูลการทำแบบทดสอบไม่ถูกต้อง");
-                        setLoading(false);
-                        return;
-                    }
-
-                    setAttemptAnswers(attempt.answers);
-                    setStudentInfo({
-                        fullname: `${attempt.first_name} ${attempt.last_name}`,
-                        email: attempt.email,
-                        attemptDate: new Date(attempt.end_time).toLocaleString(),
-                    });
-
-                    // ดึงข้อมูลแบบทดสอบ
-                    const quizResponse = await axios.get(
-                        `${apiURL}/api/courses/quizzes/${attempt.quiz_id}`,
-                        {
-                            headers: {
-                                Authorization: `Bearer ${token}`,
-                            },
-                        }
-                    );
-
-                    if (quizResponse.data.success) {
-                        console.log('Full quiz response (popup mode):', quizResponse.data);
-                        console.log('Quiz questions data (popup mode):', quizResponse.data.quiz.questions);
-                        console.log('Quiz questions individual (popup mode):', quizResponse.data.quiz.questions.map((q: any) => ({
-                            question_id: q.question_id,
-                            title: q.title,
-                            score: q.score,
-                            max_score: q.max_score,
-                            points: q.points,
-                            allFields: Object.keys(q)
-                        })));
-                        setQuestions(quizResponse.data.quiz.questions);
-                        setQuizTitle(quizResponse.data.quiz.title);
-
-                        const initialScores: { [key: number]: number } = {};
-                        const initialIsCorrect: { [key: number]: boolean } = {};
-                        const initialFeedback: { [key: number]: string } = {};
-
-                        attempt.answers.forEach((answer) => {
-                            initialScores[answer.question_id] = answer.score_earned || 0;
-                            initialIsCorrect[answer.question_id] = answer.is_correct || false;
-                            initialFeedback[answer.question_id] = "";
-                        });
-
-                        setScores(initialScores);
-                        setIsCorrect(initialIsCorrect);
-                        setFeedback(initialFeedback);
-
-                        let total = 0;
-                        let maxTotal = 0;
-                        quizResponse.data.quiz.questions.forEach((q: Question) => {
-                            const questionScore = getQuestionMaxScore(q);
-                            maxTotal += questionScore;
-                            if (initialScores[q.question_id] !== undefined) {
-                                total += initialScores[q.question_id];
-                            }
-                        });
-
-                        setTotalScore(total);
-                        setTotalMaxScore(maxTotal);
-                        setCurrentView('grading');
-                    } else {
-                        setError("ไม่สามารถโหลดข้อมูลแบบทดสอบได้");
-                    }
-                } else {
-                    setError("ไม่สามารถโหลดข้อมูลการทำแบบทดสอบได้");
+                const attempt = mockAttempts.find(a => a.attempt_id === selectedAttemptId);
+                
+                if (!attempt || !attempt.answers) {
+                    setError("ข้อมูลการทำแบบทดสอบไม่ถูกต้อง");
+                    setLoading(false);
+                    return;
                 }
+
+                setAttemptAnswers(attempt.answers);
+                setStudentInfo({
+                    fullname: `${attempt.first_name} ${attempt.last_name}`,
+                    email: attempt.email,
+                    attemptDate: new Date(attempt.end_time).toLocaleString(),
+                });
+
+                // Set questions based on quiz_id
+                const quizQuestions = mockQuestions.filter(q => 
+                    [1, 2, 3, 4].includes(q.question_id) // Questions for quiz 1
+                );
+                setQuestions(quizQuestions);
+                setQuizTitle(attempt.quiz_title);
+
+                const initialScores: { [key: number]: number } = {};
+                const initialIsCorrect: { [key: number]: boolean } = {};
+                const initialFeedback: { [key: number]: string } = {};
+
+                attempt.answers.forEach((answer) => {
+                    initialScores[answer.question_id] = answer.score_earned || 0;
+                    initialIsCorrect[answer.question_id] = answer.is_correct || false;
+                    initialFeedback[answer.question_id] = "";
+                });
+
+                setScores(initialScores);
+                setIsCorrect(initialIsCorrect);
+                setFeedback(initialFeedback);
+
+                let total = 0;
+                let maxTotal = 0;
+                quizQuestions.forEach((q: Question) => {
+                    const questionScore = getQuestionMaxScore(q);
+                    maxTotal += questionScore;
+                    if (initialScores[q.question_id] !== undefined) {
+                        total += initialScores[q.question_id];
+                    }
+                });
+
+                setTotalScore(total);
+                setTotalMaxScore(maxTotal);
+                setCurrentView('grading');
             } else {
                 // โหมด Non-Popup: ดึงรายวิชาทั้งหมดที่อาจารย์สอน
-                const config = {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                };
+                setInstructorFaculty("คณะวิทยาการคอมพิวเตอร์");
 
-                // ดึงรายวิชาทั้งหมดที่อาจารย์สอน
-                const subjectsResponse = await axios.get(
-                    `${apiURL}/api/courses/subjects/instructors/grading`,
-                    config
-                );
-
-                if (subjectsResponse.data.success) {
-                    const allSubjects = subjectsResponse.data.subjects || [];
-
-                    // ดึงข้อมูลอาจารย์และคณะที่สังกัด
-                    const userDataStr = localStorage.getItem('userData');
-                    let instructorDepartmentFaculty = null;
-                    
-                    if (userDataStr) {
-                        const userData = JSON.parse(userDataStr);
-                        if (userData.user_id) {
-                            try {
-                                const instructorResponse = await axios.get(
-                                    `${apiURL}/api/accounts/instructors/user/${userData.user_id}`,
-                                    config
-                                );
-                                if (instructorResponse.data.success) {
-                                    // ดึงข้อมูลคณะของอาจารย์จาก department
-                                    const departmentId = instructorResponse.data.instructor.department;
-                                    if (departmentId) {
-                                        const departmentResponse = await axios.get(
-                                            `${apiURL}/api/auth/departments`,
-                                            config
-                                        );
-                                        if (departmentResponse.data.success) {
-                                            const department = departmentResponse.data.departments.find(
-                                                (dept: any) => dept.department_id === departmentId
-                                            );
-                                            if (department) {
-                                                instructorDepartmentFaculty = department.faculty;
-                                                setInstructorFaculty(department.faculty);
-                                            }
-                                        }
-                                    }
-                                }
-                            } catch (error) {
-                                console.log("Could not fetch instructor department info:", error);
-                            }
-                        }
-                    }
-
-                    // ดึงข้อมูลงานที่รอตรวจทั้งหมด
-                    console.log('Fetching attempts from:', `${apiURL}/api/special-quiz/attempts/all`);
-                    
-                    const attemptsResponse = await axios.get(
-                        `${apiURL}/api/special-quiz/attempts/all`,
-                        config
-                    );
-
-                    console.log('Attempts response:', attemptsResponse.data);
-                    const pendingAttempts = attemptsResponse.data.success ? attemptsResponse.data.attempts || [] : [];
-                    console.log('Pending attempts found:', pendingAttempts.length, pendingAttempts);
-                    console.log('Attempt details:', pendingAttempts.map((a: Attempt) => ({
-                        attempt_id: a.attempt_id,
-                        quiz_id: a.quiz_id,
-                        subject_id: a.subject_id,
-                        subject_title: a.subject_title,
-                        subject_code: a.subject_code,
-                        quiz_title: a.quiz_title,
-                        user_id: a.user_id,
-                        first_name: a.first_name,
-                        last_name: a.last_name
-                    })));
-
-                    // ดึงข้อมูลคณะของแต่ละรายวิชา
-                    const departmentsResponse = await axios.get(
-                        `${apiURL}/api/auth/departments`,
-                        config
+                // สร้าง SubjectSummary จาก mock data
+                const subjectSummaries: SubjectSummary[] = mockSubjects.map((subject: Subject) => {
+                    // หางานที่รอตรวจสำหรับรายวิชานี้
+                    const subjectAttempts = mockAttempts.filter((attempt: Attempt) =>
+                        attempt.subject_id === subject.subject_id
                     );
                     
-                    const departments = departmentsResponse.data.success ? departmentsResponse.data.departments : [];
+                    const pendingAttempts = subjectAttempts.filter(attempt => 
+                        attempt.score === -1 || attempt.score === undefined
+                    );
 
-                    // สร้าง SubjectSummary จากรายวิชาทั้งหมด พร้อมข้อมูลคณะ
-                    console.log('All subjects:', allSubjects.length, allSubjects);
-                    console.log('Subject details:', allSubjects.map((s: Subject) => ({
-                        subject_id: s.subject_id,
-                        subject_name: s.subject_name,
-                        subject_code: s.subject_code
-                    })));
-                    
-                    const subjectSummaries: SubjectSummary[] = allSubjects.map((subject: Subject) => {
-                        // หางานที่รอตรวจสำหรับรายวิชานี้
-                        const subjectAttempts = pendingAttempts.filter((attempt: Attempt) =>
-                            attempt.subject_id === subject.subject_id
-                        );
-                        
-                        console.log(`Subject ${subject.subject_id} (${subject.subject_name}):`, 
-                            'Total attempts found:', subjectAttempts.length,
-                            'Attempt subject_ids:', pendingAttempts.map((a: Attempt) => a.subject_id));
+                    const isHomeFaculty = subject.department_id === 1; // CS subjects
 
-                        // หาคณะของรายวิชานี้
-                        const subjectDepartment = departments.find((dept: any) => dept.department_id === subject.department_id);
-                        const subjectFaculty = subjectDepartment?.faculty || null;
-                        const isHomeFaculty = instructorDepartmentFaculty && subjectFaculty === instructorDepartmentFaculty;
+                    return {
+                        subject_id: subject.subject_id,
+                        subject_title: subject.subject_name,
+                        subject_code: subject.subject_code,
+                        pending_count: pendingAttempts.length,
+                        attempts: subjectAttempts,
+                        department_name: subject.department_id === 1 ? "วิทยาการคอมพิวเตอร์" : "เทคโนโลยีสารสนเทศ",
+                        faculty: subject.department_id === 1 ? "คณะวิทยาการคอมพิวเตอร์" : "คณะเทคโนโลยีสารสนเทศ",
+                        is_home_faculty: isHomeFaculty
+                    };
+                });
 
-                        return {
-                            subject_id: subject.subject_id,
-                            subject_title: subject.subject_name,
-                            subject_code: subject.subject_code,
-                            pending_count: subjectAttempts.length,
-                            attempts: subjectAttempts,
-                            department_name: subjectDepartment?.department_name,
-                            faculty: subjectFaculty,
-                            is_home_faculty: isHomeFaculty
-                        };
-                    });
+                // เรียงลำดับ: คณะเดียวกันก่อน แล้วเรียงตามจำนวนงานรอตรวจ
+                subjectSummaries.sort((a, b) => {
+                    if (a.is_home_faculty && !b.is_home_faculty) return -1;
+                    if (!a.is_home_faculty && b.is_home_faculty) return 1;
+                    return b.pending_count - a.pending_count;
+                });
 
-                    // เรียงลำดับ: คณะเดียวกันก่อน แล้วเรียงตามจำนวนงานรอตรวจ
-                    subjectSummaries.sort((a, b) => {
-                        // คณะเดียวกันอยู่ข้างบน
-                        if (a.is_home_faculty && !b.is_home_faculty) return -1;
-                        if (!a.is_home_faculty && b.is_home_faculty) return 1;
-                        // ถ้าคณะเดียวกัน เรียงตามจำนวนงานรอตรวจ
-                        return b.pending_count - a.pending_count;
-                    });
-
-                    console.log('Final subject summaries:', subjectSummaries);
-                    console.log('Subjects with pending work:', subjectSummaries.filter(s => s.pending_count > 0));
-                    setSubjectSummaries(subjectSummaries);
-                } else {
-                    setError("ไม่สามารถโหลดรายการรายวิชาได้");
-                }
+                setSubjectSummaries(subjectSummaries);
             }
         } catch (error) {
             console.error("Error loading data:", error);
@@ -421,56 +599,24 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
         try {
             setIsSaving(true);
 
-            const token = localStorage.getItem("token");
-            if (!token) {
-                toast.error("กรุณาเข้าสู่ระบบ");
-                return;
+            // Simulate API delay
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
+            // Mock successful grading
+            toast.success("บันทึกการให้คะแนนเรียบร้อยแล้ว");
+
+            if (onGraded && attemptIdToUse !== null && attemptIdToUse !== undefined) {
+                const totalScore = Object.values(scores).reduce((sum, score) => sum + score, 0);
+                const passed = totalScore >= Math.ceil(totalMaxScore * 0.65);
+                onGraded(attemptIdToUse, passed);
             }
 
-            const answersToSubmit = attemptAnswers.map((answer) => ({
-                question_id: answer.question_id,
-                score_earned: scores[answer.question_id] || 0,
-                is_correct: isCorrect[answer.question_id] || false,
-                feedback: feedback[answer.question_id] || "",
-            }));
-
-            const response = await axios.post(
-                `${apiURL}/api/special-quiz/attempt/${attemptIdToUse}/grade`,
-                { answers: answersToSubmit },
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                }
-            );
-
-            if (response.data.success) {
-                toast.success("บันทึกการให้คะแนนเรียบร้อยแล้ว");
-
-                if (onGraded && attemptIdToUse !== null && attemptIdToUse !== undefined) {
-                    const passed = response.data.attempt.passed;
-                    onGraded(attemptIdToUse, passed);
-                }
-
-                // === Trigger refresh progress for student ===
-                // ใช้ selectedSubjectId (state) แทน
-                if (selectedSubjectId) {
-                    try {
-                        await axios.get(`${apiURL}/api/learn/subject/${selectedSubjectId}/progress`, {
-                            headers: { Authorization: `Bearer ${token}` },
-                        });
-                    } catch (e) { /* ignore */ }
-                }
-
-                if (onClose) {
-                    onClose();
-                } else {
-                    // กลับไปหน้ารายการรายวิชา
-                    setCurrentView('subjects');
-                    loadData();
-                }
+            if (onClose) {
+                onClose();
             } else {
-                toast.error(response.data.message || "ไม่สามารถบันทึกการให้คะแนนได้");
+                // กลับไปหน้ารายการรายวิชา
+                setCurrentView('subjects');
+                loadData();
             }
         } catch (error) {
             console.error("Error saving grading:", error);
@@ -494,36 +640,29 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
 
     // ฟังก์ชันโหลดข้อมูลสำหรับตรวจด่วน
     const loadQuickGradingData = async (attempts: Attempt[]) => {
-        const token = localStorage.getItem("token");
-        if (!token) return;
-
         const gradingData: {[attemptId: number]: any} = {};
 
         for (const attempt of attempts) {
             try {
-                // โหลดข้อมูลแบบทดสอบ
-                const quizResponse = await axios.get(
-                    `${apiURL}/api/courses/quizzes/${attempt.quiz_id}`,
-                    { headers: { Authorization: `Bearer ${token}` } }
+                // Use mock questions based on quiz_id
+                const quizQuestions = mockQuestions.filter(q => 
+                    attempt.quiz_id === 1 ? [1, 2, 3, 4].includes(q.question_id) : [5, 6, 7, 8].includes(q.question_id)
                 );
+                
+                const initialScores: {[questionId: number]: number} = {};
+                const initialFeedback: {[questionId: number]: string} = {};
 
-                if (quizResponse.data.success) {
-                    const questions = quizResponse.data.quiz.questions;
-                    const initialScores: {[questionId: number]: number} = {};
-                    const initialFeedback: {[questionId: number]: string} = {};
+                // เตรียมค่าเริ่มต้น
+                quizQuestions.forEach((q: Question) => {
+                    initialScores[q.question_id] = 0;
+                    initialFeedback[q.question_id] = "";
+                });
 
-                    // เตรียมค่าเริ่มต้น
-                    questions.forEach((q: Question) => {
-                        initialScores[q.question_id] = 0;
-                        initialFeedback[q.question_id] = "";
-                    });
-
-                    gradingData[attempt.attempt_id] = {
-                        scores: initialScores,
-                        feedback: initialFeedback,
-                        questions: questions
-                    };
-                }
+                gradingData[attempt.attempt_id] = {
+                    scores: initialScores,
+                    feedback: initialFeedback,
+                    questions: quizQuestions
+                };
             } catch (error) {
                 console.error(`Error loading quiz for attempt ${attempt.attempt_id}:`, error);
             }
@@ -563,38 +702,14 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
         try {
             setQuickGradingSaving(prev => ({ ...prev, [attemptId]: true }));
 
-            const token = localStorage.getItem("token");
-            if (!token) {
-                toast.error("กรุณาเข้าสู่ระบบ");
-                return;
-            }
+            // Simulate API delay
+            await new Promise(resolve => setTimeout(resolve, 1500));
 
-            // เตรียมข้อมูลเพื่อส่ง
-            const answersToSubmit = Object.keys(attemptData.scores).map(questionId => ({
-                question_id: parseInt(questionId),
-                score_earned: attemptData.scores[parseInt(questionId)] || 0,
-                is_correct: attemptData.scores[parseInt(questionId)] === getQuestionMaxScore(attemptData.questions.find((q: Question) => q.question_id === parseInt(questionId))!),
-                feedback: attemptData.feedback[parseInt(questionId)] || "",
-            }));
-
-            const response = await axios.post(
-                `${apiURL}/api/special-quiz/attempt/${attemptId}/grade`,
-                { answers: answersToSubmit },
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                }
-            );
-
-            if (response.data.success) {
-                toast.success("บันทึกการให้คะแนนเรียบร้อยแล้ว");
-                
-                // รีเฟรชข้อมูล
-                loadData();
-            } else {
-                toast.error(response.data.message || "ไม่สามารถบันทึกการให้คะแนนได้");
-            }
+            // Mock successful grading
+            toast.success("บันทึกการให้คะแนนเรียบร้อยแล้ว");
+            
+            // รีเฟรชข้อมูล
+            loadData();
         } catch (error) {
             console.error("Error saving quick grading:", error);
             toast.error("เกิดข้อผิดพลาดในการบันทึกการให้คะแนน");
@@ -607,83 +722,58 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
     const handleSelectAttempt = async (attemptId: number) => {
         try {
             setLoading(true);
-            const token = localStorage.getItem("token");
 
-            // Set selectedAttemptId so it can be used in grading save
-            const response = await axios.get(
-                `${apiURL}/api/special-quiz/attempt/${attemptId}`,
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                }
-            );
-
-            if (response.data.success) {
-                const attempt: Attempt = response.data.attempt;
-                
-                // Set current attempt ID for saving later
-                setCurrentAttemptId(attemptId);
-                setAttemptAnswers(attempt.answers);
-                setStudentInfo({
-                    fullname: `${attempt.first_name} ${attempt.last_name}`,
-                    email: attempt.email,
-                    attemptDate: new Date(attempt.end_time).toLocaleString(),
-                });
-
-                // ดึงข้อมูลแบบทดสอบ
-                const quizResponse = await axios.get(
-                    `${apiURL}/api/courses/quizzes/${attempt.quiz_id}`,
-                    {
-                        headers: {
-                            Authorization: `Bearer ${token}`,
-                        },
-                    }
-                );
-
-                if (quizResponse.data.success) {
-                    console.log('Full quiz response:', quizResponse.data);
-                    console.log('Quiz questions data:', quizResponse.data.quiz.questions);
-                    console.log('Quiz questions individual:', quizResponse.data.quiz.questions.map((q: any) => ({
-                        question_id: q.question_id,
-                        title: q.title,
-                        score: q.score,
-                        max_score: q.max_score,
-                        points: q.points,
-                        allFields: Object.keys(q)
-                    })));
-                    setQuestions(quizResponse.data.quiz.questions);
-                    setQuizTitle(quizResponse.data.quiz.title);
-
-                    const initialScores: { [key: number]: number } = {};
-                    const initialIsCorrect: { [key: number]: boolean } = {};
-                    const initialFeedback: { [key: number]: string } = {};
-
-                    attempt.answers.forEach((answer) => {
-                        initialScores[answer.question_id] = answer.score_earned || 0;
-                        initialIsCorrect[answer.question_id] = answer.is_correct || false;
-                        initialFeedback[answer.question_id] = "";
-                    });
-
-                    setScores(initialScores);
-                    setIsCorrect(initialIsCorrect);
-                    setFeedback(initialFeedback);
-
-                    let total = 0;
-                    let maxTotal = 0;
-                    quizResponse.data.quiz.questions.forEach((q: Question) => {
-                        const questionScore = getQuestionMaxScore(q);
-                        maxTotal += questionScore;
-                        if (initialScores[q.question_id] !== undefined) {
-                            total += initialScores[q.question_id];
-                        }
-                    });
-
-                    setTotalScore(total);
-                    setTotalMaxScore(maxTotal);
-                    setCurrentView('grading');
-                }
+            // Find attempt from mock data
+            const attempt = mockAttempts.find(a => a.attempt_id === attemptId);
+            
+            if (!attempt) {
+                toast.error("ไม่พบข้อมูลการทำแบบทดสอบ");
+                return;
             }
+
+            // Set current attempt ID for saving later
+            setCurrentAttemptId(attemptId);
+            setAttemptAnswers(attempt.answers);
+            setStudentInfo({
+                fullname: `${attempt.first_name} ${attempt.last_name}`,
+                email: attempt.email,
+                attemptDate: new Date(attempt.end_time).toLocaleString(),
+            });
+
+            // Set questions based on quiz_id
+            const quizQuestions = mockQuestions.filter(q => 
+                attempt.quiz_id === 1 ? [1, 2, 3, 4].includes(q.question_id) : [5, 6, 7, 8].includes(q.question_id)
+            );
+            setQuestions(quizQuestions);
+            setQuizTitle(attempt.quiz_title);
+
+            const initialScores: { [key: number]: number } = {};
+            const initialIsCorrect: { [key: number]: boolean } = {};
+            const initialFeedback: { [key: number]: string } = {};
+
+            attempt.answers.forEach((answer) => {
+                initialScores[answer.question_id] = answer.score_earned || 0;
+                initialIsCorrect[answer.question_id] = answer.is_correct || false;
+                initialFeedback[answer.question_id] = "";
+            });
+
+            setScores(initialScores);
+            setIsCorrect(initialIsCorrect);
+            setFeedback(initialFeedback);
+
+            let total = 0;
+            let maxTotal = 0;
+            quizQuestions.forEach((q: Question) => {
+                const questionScore = getQuestionMaxScore(q);
+                maxTotal += questionScore;
+                if (initialScores[q.question_id] !== undefined) {
+                    total += initialScores[q.question_id];
+                }
+            });
+
+            setTotalScore(total);
+            setTotalMaxScore(maxTotal);
+            setCurrentView('grading');
         } catch (error) {
             console.error("Error loading attempt:", error);
             toast.error("เกิดข้อผิดพลาดในการโหลดข้อมูล");
