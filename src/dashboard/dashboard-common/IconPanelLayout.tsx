@@ -9,18 +9,18 @@ interface IconPanelLayoutProps {
 const IconPanelLayout: React.FC<IconPanelLayoutProps> = ({ children }) => {
    return (
       <section className="dashboard__area section-pb-120">
-         <div className="container-fluid" style={{ padding: 0 }}>
+         <div className="container-fluid" style={{ padding: 0, maxWidth: '100%' }}>
             {/* Icon Panel */}
             <IconPanel
                isOpen={false} // Always false since IconPanel manages its own visibility
             />
 
             {/* Main Content */}
-            <div className="dashboard__inner-wrap">
-               <div className="container">
+            <div className="dashboard__inner-wrap" style={{ width: '100%', maxWidth: '100%' }}>
+               <div className="container-fluid" style={{ padding: 0, maxWidth: '100%' }}>
                   <DashboardBanner />
-                  <div className="row">
-                     <div className="col-12">
+                  <div className="row" style={{ margin: 0 }}>
+                     <div className="col-12" style={{ padding: 0 }}>
                         {children}
                      </div>
                   </div>

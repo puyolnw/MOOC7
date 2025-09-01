@@ -237,21 +237,68 @@
   }
 }
 
+/* เพิ่ม CSS เพื่อให้เนื้อหาใน dashboard ยาวไปจนสุด */
+
 /* Full width content adjustments */
 .dashboard__area .container-fluid {
   max-width: 100% !important;
   padding: 0 !important;
+  width: 100% !important;
 }
 
 .dashboard__area .container {
   max-width: 100% !important;
   padding: 0 20px !important;
+  width: 100% !important;
 }
 
-/* Content spacing */
-.dashboard__count-wrap,
-.dashboard__content-wrap {
-  margin-bottom: 30px;
+/* Force full width for instructor dashboard */
+.dashboard__area .dashboard__inner-wrap {
+  margin-top: 0 !important;
+  padding-top: 2rem !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.dashboard__area .dashboard__inner-wrap .container-fluid {
+  max-width: 100% !important;
+  padding: 0 !important;
+  width: 100% !important;
+}
+
+.dashboard__area .dashboard__inner-wrap .row {
+  margin: 0 !important;
+  width: 100% !important;
+}
+
+.dashboard__area .dashboard__inner-wrap .col-12 {
+  padding: 0 !important;
+  width: 100% !important;
+}
+
+/* Override any max-width restrictions */
+.dashboard__area * {
+  max-width: none !important;
+}
+
+.dashboard__area .container-fluid,
+.dashboard__area .container,
+.dashboard__area .row,
+.dashboard__area .col-12 {
+  max-width: 100% !important;
+  width: 100% !important;
+}
+
+/* Ensure content flows to full width */
+.dashboard__area .selection-container,
+.dashboard__area .course-list-container,
+.dashboard__area .courses-table-container,
+.dashboard__area .course-detail-container,
+.dashboard__area .subjects-table-container {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 0 20px !important;
 }
 
 /* Mobile optimizations */
@@ -263,6 +310,14 @@
   .dashboard__inner-wrap {
     padding-left: 15px !important;
     padding-right: 15px !important;
+  }
+  
+  .dashboard__area .selection-container,
+  .dashboard__area .course-list-container,
+  .dashboard__area .courses-table-container,
+  .dashboard__area .course-detail-container,
+  .dashboard__area .subjects-table-container {
+    padding: 0 15px !important;
   }
 }
 

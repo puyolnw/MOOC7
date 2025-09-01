@@ -168,34 +168,47 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
         
         let totalScore = 0;
         
+        // ✅ Debug: ดูข้อมูลที่ใช้ในการคำนวณ
+        console.log('🔍 calculateCurrentScore - scoreStructure:', scoreStructure);
+        
         // คำนวณคะแนนจาก Big Lessons
         scoreStructure.big_lessons.forEach((bigLesson: any) => {
-            // คำนวณคะแนนจาก Quiz ใน BigLesson
+            // คำนวณคะแนนจาก Quiz ใน BigLesson - ใช้ weight_percentage และ progress
             if (bigLesson.quiz && bigLesson.quiz.progress?.passed) {
-                totalScore += parseFloat(bigLesson.quiz.weight_percentage) || 0;
+                // ใช้ weight_percentage เป็นคะแนนที่ได้ (เพราะผ่านแล้ว)
+                const quizScore = Number(bigLesson.quiz.weight_percentage || bigLesson.quiz.percentage || 0);
+                totalScore += quizScore;
+                console.log(`📊 BigLesson Quiz ${bigLesson.quiz.title}: ${quizScore} คะแนน (จาก weight_percentage)`);
             }
             
             // คำนวณคะแนนจาก Lessons ใน BigLesson
             if (bigLesson.lessons) {
                 bigLesson.lessons.forEach((lesson: any) => {
-                    // คำนวณคะแนนจาก Video completion (Lesson)
+                    // คำนวณคะแนนจาก Video completion (Lesson) - ใช้ weight_percentage
                     if (lesson.video_completed === true) {
-                        totalScore += parseFloat(lesson.total_weight_in_biglesson) || 0;
+                        const videoScore = Number(lesson.weight_percentage || lesson.percentage || 0);
+                        totalScore += videoScore;
+                        console.log(`📹 Lesson Video ${lesson.title}: ${videoScore} คะแนน (จาก weight_percentage)`);
                     }
                     
-                    // คำนวณคะแนนจาก Lesson Quiz
+                    // คำนวณคะแนนจาก Lesson Quiz - ใช้ weight_percentage และ progress
                     if (lesson.quiz && lesson.quiz.progress?.passed) {
-                        totalScore += parseFloat(lesson.quiz.weight_percentage) || 0;
+                        const lessonQuizScore = Number(lesson.quiz.weight_percentage || lesson.quiz.percentage || 0);
+                        totalScore += lessonQuizScore;
+                        console.log(`📝 Lesson Quiz ${lesson.quiz.title}: ${lessonQuizScore} คะแนน (จาก weight_percentage)`);
                     }
                 });
             }
         });
         
-        // คำนวณคะแนนจาก Post-test
+        // คำนวณคะแนนจาก Post-test - ใช้ weight_percentage และ progress
         if (scoreStructure.post_test && scoreStructure.post_test.progress?.passed) {
-            totalScore += parseFloat(scoreStructure.post_test.weight_percentage) || 0;
+            const postTestScore = Number(scoreStructure.post_test.weight_percentage || scoreStructure.post_test.percentage || 0);
+            totalScore += postTestScore;
+            console.log(`🏁 Post-test ${scoreStructure.post_test.title}: ${postTestScore} คะแนน (จาก weight_percentage)`);
         }
 
+        console.log(`🎯 Total Current Score: ${totalScore}`);
         return Math.round(totalScore * 100) / 100;
     }, [scoreStructure]);
 
@@ -207,16 +220,44 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
         
         let maxScore = 0;
         
+        // ✅ Debug: ดูข้อมูลที่ใช้ในการคำนวณ
+        console.log('🔍 calculateMaxScore - scoreStructure:', scoreStructure);
+        
         // คำนวณคะแนนเต็มจาก weight_percentage ของแต่ละ BigLesson
         scoreStructure.big_lessons.forEach((bigLesson: any) => {
-            maxScore += parseFloat(bigLesson.weight_percentage) || 0;
+            // เพิ่มคะแนนเต็มจาก BigLesson Quiz
+            if (bigLesson.quiz) {
+                const quizMaxScore = Number(bigLesson.quiz.weight_percentage || bigLesson.quiz.percentage || 0);
+                maxScore += quizMaxScore;
+                console.log(`📊 BigLesson Quiz ${bigLesson.quiz.title}: max_score = ${quizMaxScore} (จาก weight_percentage)`);
+            }
+            
+            // เพิ่มคะแนนเต็มจาก Lessons ใน BigLesson
+            if (bigLesson.lessons) {
+                bigLesson.lessons.forEach((lesson: any) => {
+                    // เพิ่มคะแนนเต็มจาก Video completion
+                    const videoMaxScore = Number(lesson.weight_percentage || lesson.percentage || 0);
+                    maxScore += videoMaxScore;
+                    console.log(`📹 Lesson Video ${lesson.title}: max_score = ${videoMaxScore} (จาก weight_percentage)`);
+                    
+                    // เพิ่มคะแนนเต็มจาก Lesson Quiz
+                    if (lesson.quiz) {
+                        const lessonQuizMaxScore = Number(lesson.quiz.weight_percentage || lesson.quiz.percentage || 0);
+                        maxScore += lessonQuizMaxScore;
+                        console.log(`📝 Lesson Quiz ${lesson.quiz.title}: max_score = ${lessonQuizMaxScore} (จาก weight_percentage)`);
+                    }
+                });
+            }
         });
         
-        // เพิ่มคะแนนจาก Post-test
+        // เพิ่มคะแนนเต็มจาก Post-test
         if (scoreStructure.post_test) {
-            maxScore += parseFloat(scoreStructure.post_test.weight_percentage) || 0;
+            const postTestMaxScore = Number(scoreStructure.post_test.weight_percentage || scoreStructure.post_test.percentage || 0);
+            maxScore += postTestMaxScore;
+            console.log(`🏁 Post-test ${scoreStructure.post_test.title}: max_score = ${postTestMaxScore} (จาก weight_percentage)`);
         }
 
+        console.log(`🎯 Total Max Score: ${maxScore}`);
         // ถ้าคำนวณได้ 0 ให้ใช้ 100 แทน
         return maxScore > 0 ? maxScore : 100;
     }, [scoreStructure]);
@@ -230,6 +271,95 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
         return passingScore;
     }, [calculateMaxScore, subjectPassingPercentage]);
 
+    // ✅ ฟังก์ชันใหม่: คำนวณ Overall Progress ตามที่ User ขอ
+    const calculateOverallProgress = useCallback((): number => {
+        if (!scoreStructure || !scoreStructure.big_lessons) {
+            return 0;
+        }
+        
+        let totalComponents = 0;
+        let completedComponents = 0;
+        
+        // ✅ Debug: ดูข้อมูลที่ใช้ในการคำนวณ
+        console.log('🔍 calculateOverallProgress - scoreStructure:', scoreStructure);
+        
+        // 1. Pre-test (ถ้ามี)
+        if (scoreStructure.pre_test) {
+            totalComponents++;
+            const preTestCompleted = scoreStructure.pre_test.progress?.passed || scoreStructure.pre_test.progress?.completed;
+            if (preTestCompleted) {
+                completedComponents++;
+            }
+            console.log(`🎯 Pre-test ${scoreStructure.pre_test.title}: ${preTestCompleted ? 'เสร็จ' : 'ยังไม่เสร็จ'}`);
+        }
+        
+        // 2. Big Lessons Content (ทุกอัน)
+        scoreStructure.big_lessons.forEach((bigLesson: any) => {
+            // เพิ่ม BigLesson Quiz
+            if (bigLesson.quiz) {
+                totalComponents++;
+                const quizCompleted = bigLesson.quiz.progress?.passed || bigLesson.quiz.progress?.completed;
+                if (quizCompleted) {
+                    completedComponents++;
+                }
+                console.log(`📊 BigLesson Quiz ${bigLesson.quiz.title}: ${quizCompleted ? 'เสร็จ' : 'ยังไม่เสร็จ'}`);
+            }
+            
+            // เพิ่ม Lessons ใน BigLesson
+            if (bigLesson.lessons) {
+                bigLesson.lessons.forEach((lesson: any) => {
+                    // เพิ่ม Video completion
+                    totalComponents++;
+                    if (lesson.video_completed === true) {
+                        completedComponents++;
+                    }
+                    console.log(`📹 Lesson Video ${lesson.title}: ${lesson.video_completed ? 'เสร็จ' : 'ยังไม่เสร็จ'}`);
+                    
+                    // เพิ่ม Lesson Quiz
+                    if (lesson.quiz) {
+                        totalComponents++;
+                        const lessonQuizCompleted = lesson.quiz.progress?.passed || lesson.quiz.progress?.completed;
+                        if (lessonQuizCompleted) {
+                            completedComponents++;
+                        }
+                        console.log(`📝 Lesson Quiz ${lesson.quiz.title}: ${lessonQuizCompleted ? 'เสร็จ' : 'ยังไม่เสร็จ'}`);
+                    }
+                });
+            }
+        });
+        
+        // 3. Post-test
+        if (scoreStructure.post_test) {
+            totalComponents++;
+            const postTestCompleted = scoreStructure.post_test.progress?.passed || scoreStructure.post_test.progress?.completed;
+            if (postTestCompleted) {
+                completedComponents++;
+            }
+            console.log(`🏁 Post-test ${scoreStructure.post_test.title}: ${postTestCompleted ? 'เสร็จ' : 'ยังไม่เสร็จ'}`);
+        }
+        
+        // คำนวณเปอร์เซ็นต์เฉลี่ย
+        const overallProgress = totalComponents > 0 ? (completedComponents / totalComponents) * 100 : 0;
+        console.log(`🎯 Overall Progress: ${completedComponents}/${totalComponents} = ${overallProgress.toFixed(1)}%`);
+        return Math.round(overallProgress * 10) / 10; // ปัดเป็นทศนิยม 1 ตำแหน่ง
+    }, [scoreStructure]);
+
+    // ✅ ฟังก์ชันใหม่: ตรวจสอบว่าวิชานี้ผ่านหรือไม่ ตามเงื่อนไขใหม่
+    const isSubjectPassed = useCallback((): boolean => {
+        const currentScore = calculateCurrentScore();
+        const passingScore = calculatePassingScore();
+        const overallProgress = calculateOverallProgress();
+        
+        // เงื่อนไขที่ 1: คะแนนต้องมากกว่าเกณฑ์ผ่าน
+        const scorePassed = currentScore >= passingScore;
+        
+        // เงื่อนไขที่ 2: Progress ต้องครบ 100%
+        const progressPassed = overallProgress >= 100;
+        
+        // ต้องผ่านทั้งสองเงื่อนไข
+        return scorePassed && progressPassed;
+    }, [calculateCurrentScore, calculatePassingScore, calculateOverallProgress]);
+
     // ฟังก์ชันดึงข้อมูลคะแนนจาก Score Management API (Hierarchical)
     const fetchScoreItems = useCallback(async () => {
         try {
@@ -241,7 +371,7 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
             }
 
             const response = await axios.get(
-                `${API_URL}/api/subjects/${currentSubjectId}/scores-hierarchical`,
+                    `${API_URL}/api/learn/subject/${currentSubjectId}/scores-hierarchical`,
                 {
                     headers: { Authorization: `Bearer ${token}` }
                 }
@@ -253,8 +383,56 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
                 
                 console.log('📊 Hierarchical Score Structure loaded:', response.data.scoreStructure);
                 
-                // ✅ ใช้ setTimeout เพื่อให้ state update ก่อน แล้วค่อย log
-                setTimeout(() => {
+                // ✅ เพิ่มการ log ข้อมูลคะแนนที่ได้มา
+                console.group('🔍 ข้อมูลคะแนนที่ได้จาก API');
+                if (response.data.scoreStructure.pre_test) {
+                    console.log('🎯 Pre-test:', {
+                        title: response.data.scoreStructure.pre_test.title,
+                        weight_percentage: response.data.scoreStructure.pre_test.weight_percentage,
+                        percentage: response.data.scoreStructure.pre_test.percentage,
+                        progress: response.data.scoreStructure.pre_test.progress
+                    });
+                }
+                
+                if (response.data.scoreStructure.big_lessons) {
+                    response.data.scoreStructure.big_lessons.forEach((bl: any, index: number) => {
+                        console.log(`📚 BigLesson ${index + 1}:`, {
+                            title: bl.title,
+                            weight_percentage: bl.weight_percentage,
+                            percentage: bl.percentage,
+                            quiz: bl.quiz ? {
+                                title: bl.quiz.title,
+                                weight_percentage: bl.quiz.weight_percentage,
+                                percentage: bl.quiz.percentage,
+                                progress: bl.quiz.progress
+                            } : null,
+                            lessons: bl.lessons?.map((l: any) => ({
+                                title: l.title,
+                                weight_percentage: l.weight_percentage,
+                                percentage: l.percentage,
+                                video_completed: l.video_completed,
+                                quiz: l.quiz ? {
+                                    title: l.quiz.title,
+                                    weight_percentage: l.quiz.weight_percentage,
+                                    percentage: l.quiz.percentage,
+                                    progress: l.quiz.progress
+                                } : null
+                            })) || []
+                        });
+                    });
+                }
+                
+                if (response.data.scoreStructure.post_test) {
+                    console.log('🏁 Post-test:', {
+                        title: response.data.scoreStructure.post_test.title,
+                        weight_percentage: response.data.scoreStructure.post_test.weight_percentage,
+                        percentage: response.data.scoreStructure.post_test.percentage,
+                        progress: response.data.scoreStructure.post_test.progress
+                    });
+                }
+                console.groupEnd();
+                
+                // ✅ Log ข้อมูลทันทีหลังจากได้ข้อมูลมา
                     console.group('🎯 Console Log ตามที่ User ขอ');
                     console.log('📚 1. ชื่อวิชา:', response.data.subject?.title || currentSubjectTitle);
                     console.log('💯 2. คะแนนดิบของวิชา:', {
@@ -263,7 +441,53 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
                         passingScore: calculatePassingScore(),
                         passingPercentage: response.data.subject?.passing_percentage || 80
                     });
-                    console.log('🏗️ 3. โครงสร้างของวิชา:', {
+                    
+                    // ✅ เพิ่มการ log ข้อมูลคะแนนที่ใช้ในการคำนวณ
+                    console.log('🔍 ข้อมูลคะแนนที่ใช้ในการคำนวณ:', {
+                        scoreStructure: response.data.scoreStructure,
+                        preTest: response.data.scoreStructure.pre_test ? {
+                            title: response.data.scoreStructure.pre_test.title,
+                            weight_percentage: response.data.scoreStructure.pre_test.weight_percentage,
+                            percentage: response.data.scoreStructure.pre_test.percentage,
+                            progress: response.data.scoreStructure.pre_test.progress
+                        } : null,
+                        bigLessons: response.data.scoreStructure.big_lessons?.map((bl: any) => ({
+                            title: bl.title,
+                            weight_percentage: bl.weight_percentage,
+                            percentage: bl.percentage,
+                            quiz: bl.quiz ? {
+                                title: bl.quiz.title,
+                                weight_percentage: bl.quiz.weight_percentage,
+                                percentage: bl.quiz.percentage,
+                                progress: bl.quiz.progress
+                            } : null,
+                            lessons: bl.lessons?.map((l: any) => ({
+                                title: l.title,
+                                weight_percentage: l.weight_percentage,
+                                percentage: l.percentage,
+                                video_completed: l.video_completed,
+                                quiz: l.quiz ? {
+                                    title: l.quiz.title,
+                                    weight_percentage: l.quiz.weight_percentage,
+                                    percentage: l.quiz.percentage,
+                                    progress: l.quiz.progress
+                                } : null
+                            })) || []
+                        })) || [],
+                        postTest: response.data.scoreStructure.post_test ? {
+                            title: response.data.scoreStructure.post_test.title,
+                            weight_percentage: response.data.scoreStructure.post_test.weight_percentage,
+                            percentage: response.data.scoreStructure.post_test.percentage,
+                            progress: response.data.scoreStructure.post_test.progress
+                        } : null
+                    });
+                console.log('📊 3. Progress และสถานะการผ่าน:', {
+                    overallProgress: calculateOverallProgress(),
+                    isSubjectPassed: isSubjectPassed(),
+                    scorePassed: calculateCurrentScore() >= calculatePassingScore(),
+                    progressPassed: calculateOverallProgress() >= 100
+                });
+                console.log('🏗️ 4. โครงสร้างของวิชา:', {
                         totalBigLessons: response.data.scoreStructure.big_lessons?.length || 0,
                         bigLessons: response.data.scoreStructure.big_lessons?.map((bl: any) => ({
                             id: bl.id,
@@ -287,8 +511,118 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
                             weight: response.data.scoreStructure.post_test.weight_percentage
                         } : null
                     });
-                    console.groupEnd();
-                }, 100);
+                
+                // ✅ เพิ่มการ log ข้อมูล 4.1-4.8 ตามที่ User ขอ
+                console.group('📋 4. สถานะการเรียนของวิชานี้');
+                
+                // 4.1 Pre-test
+                if (response.data.scoreStructure.pre_test) {
+                    console.log('🎯 4.1 แบบทดสอบก่อนเรียน:', {
+                        title: response.data.scoreStructure.pre_test.title,
+                        status: response.data.scoreStructure.pre_test.progress?.passed ? 'ผ่าน' : 
+                               response.data.scoreStructure.pre_test.progress?.completed ? 'ไม่ผ่าน' : 'ยังไม่ทำ',
+                        canTake: !response.data.scoreStructure.pre_test.locked ? 'ได้' : 'ไม่ได้'
+                    });
+                } else {
+                    console.log('🎯 4.1 แบบทดสอบก่อนเรียน: ไม่มีในวิชานี้');
+                }
+                
+                // 4.2 Big Lessons
+                if (response.data.scoreStructure.big_lessons && response.data.scoreStructure.big_lessons.length > 0) {
+                    console.log('📖 4.2 Big Lessons:', {
+                        count: response.data.scoreStructure.big_lessons.length,
+                        lessons: response.data.scoreStructure.big_lessons.map((bl: any, index: number) => ({
+                            index: index + 1,
+                            title: bl.title,
+                            subLessonsCount: bl.lessons?.length || 0,
+                            hasQuiz: !!bl.quiz,
+                            status: 'ดูใน modal'
+                        }))
+                    });
+                } else {
+                    console.log('📖 4.2 Big Lessons: ไม่มีในวิชานี้');
+                }
+                
+                // 4.3 แบบทดสอบประจำ
+                if (response.data.scoreStructure.big_lessons && response.data.scoreStructure.big_lessons.length > 0) {
+                    const quizzes = response.data.scoreStructure.big_lessons
+                        .filter((bl: any) => bl.quiz)
+                        .map((bl: any) => ({
+                            bigLesson: bl.title,
+                            quiz: bl.quiz.title,
+                            status: bl.quiz.progress?.passed ? 'ผ่าน' :
+                                   bl.quiz.progress?.awaiting_review ? 'รอตรวจ' :
+                                   bl.quiz.progress?.completed ? 'ไม่ผ่าน' : 'ยังไม่ทำ',
+                            canTake: (bl.lessons?.every((l: any) => l.video_completed) || false) ? 'ได้' : 'ไม่ได้'
+                        }));
+                    console.log('🎯 4.3 แบบทดสอบประจำ:', {
+                        count: quizzes.length,
+                        quizzes: quizzes
+                    });
+                } else {
+                    console.log('🎯 4.3 แบบทดสอบประจำ: ไม่มีในวิชานี้');
+                }
+                
+                // 4.4 บทเรียนย่อย
+                if (response.data.scoreStructure.big_lessons && response.data.scoreStructure.big_lessons.length > 0) {
+                    const subLessons = response.data.scoreStructure.big_lessons.flatMap((bl: any) => 
+                        (bl.lessons || []).map((lesson: any) => ({
+                            bigLesson: bl.title,
+                            lesson: lesson.title,
+                            status: lesson.video_completed ? 'เสร็จ' : 'ยังไม่เสร็จ',
+                            hasQuiz: !!lesson.quiz
+                        }))
+                    );
+                    console.log('📚 4.4 บทเรียนย่อย:', {
+                        count: subLessons.length,
+                        lessons: subLessons
+                    });
+                } else {
+                    console.log('📚 4.4 บทเรียนย่อย: ไม่มีในวิชานี้');
+                }
+                
+                // 4.5 แบบทดสอบประจำบทเรียนย่อย
+                if (response.data.scoreStructure.big_lessons && response.data.scoreStructure.big_lessons.length > 0) {
+                    const subQuizzes = response.data.scoreStructure.big_lessons.flatMap((bl: any) => 
+                        (bl.lessons || []).filter((lesson: any) => lesson.quiz).map((lesson: any) => ({
+                            bigLesson: bl.title,
+                            lesson: lesson.title,
+                            quiz: lesson.quiz.title,
+                            status: lesson.quiz.progress?.passed ? 'ผ่าน' :
+                                   lesson.quiz.progress?.awaiting_review ? 'รอตรวจ' :
+                                   lesson.quiz.progress?.completed ? 'ไม่ผ่าน' : 'ยังไม่ทำ',
+                            canTake: lesson.video_completed ? 'ได้' : 'ไม่ได้'
+                        }))
+                    );
+                    console.log('📝 4.5 แบบทดสอบประจำบทเรียนย่อย:', {
+                        count: subQuizzes.length,
+                        quizzes: subQuizzes
+                    });
+                } else {
+                    console.log('📝 4.5 แบบทดสอบประจำบทเรียนย่อย: ไม่มีในวิชานี้');
+                }
+                
+                // 4.6 โครงสร้างทั้งหมด
+                console.log('🏗️ 4.6 โครงสร้างทั้งหมด: ดูใน modal');
+                
+                // 4.7 Post-test
+                if (response.data.scoreStructure.post_test) {
+                    console.log('🏁 4.7 แบบทดสอบท้ายบทเรียน:', {
+                        title: response.data.scoreStructure.post_test.title,
+                        status: response.data.scoreStructure.post_test.progress?.passed ? 'ผ่าน' :
+                               response.data.scoreStructure.post_test.progress?.awaiting_review ? 'รอตรวจ' :
+                               response.data.scoreStructure.post_test.progress?.completed ? 'ไม่ผ่าน' : 'ยังไม่ทำ',
+                        canTake: 'ดูเงื่อนไขใน modal'
+                    });
+                } else {
+                    console.log('🏁 4.7 แบบทดสอบท้ายบทเรียน: ไม่มีในวิชานี้');
+                }
+                
+                // 4.8 แหล่งข้อมูล
+                console.log('🗄️ 4.8 แหล่งข้อมูล: subjects, big_lessons, lessons, quizzes, score_management, student_quiz_attempts, student_lesson_progress tables');
+                
+                console.groupEnd(); // ปิด 4. สถานะการเรียน
+                console.groupEnd(); // ปิด Console Log ตามที่ User ขอ
             }
         } catch (error: any) {
             console.error('Error fetching hierarchical scores:', error);
@@ -419,6 +753,10 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
                                 <p><strong>คะแนนเต็ม:</strong> <span style={{ color: '#81c784' }}>{calculateMaxScore()}</span></p>
                                 <p><strong>คะแนนผ่าน:</strong> <span style={{ color: '#81c784' }}>{calculatePassingScore()}</span></p>
                                 <p><strong>แหล่งข้อมูล:</strong> <code style={{ color: '#ffb74d' }}>calculated from scoreStructure hierarchy</code></p>
+                        <p><strong>ข้อมูลคะแนนที่ใช้:</strong> <code style={{ color: '#81c784' }}>weight_percentage + progress status</code></p>
+                        <p><strong>คะแนนปัจจุบัน:</strong> <span style={{ color: '#81c784' }}>{calculateCurrentScore().toFixed(2)}</span></p>
+                        <p><strong>คะแนนเต็ม:</strong> <span style={{ color: '#81c784' }}>{calculateMaxScore().toFixed(2)}</span></p>
+                        <p><strong>เกณฑ์ผ่าน:</strong> <span style={{ color: '#81c784' }}>{calculatePassingScore().toFixed(2)}</span></p>
                             </div>
                         </div>
 
@@ -430,6 +768,7 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
                                 <p><strong>มีแบบทดสอบก่อนเรียน:</strong> <span style={{ color: !!scoreStructure?.pre_test ? '#81c784' : '#f48fb1' }}>{!!scoreStructure?.pre_test ? 'มี' : 'ไม่มี'}</span></p>
                                 <p><strong>มีแบบทดสอบหลังเรียน:</strong> <span style={{ color: !!scoreStructure?.post_test ? '#81c784' : '#f48fb1' }}>{!!scoreStructure?.post_test ? 'มี' : 'ไม่มี'}</span></p>
                                 <p><strong>แหล่งข้อมูล:</strong> <code style={{ color: '#ffb74d' }}>scoreStructure API</code></p>
+                        <p><strong>ข้อมูลคะแนน:</strong> <code style={{ color: '#81c784' }}>weight_percentage + progress status</code></p>
                             </div>
                         </div>
 
@@ -720,13 +1059,52 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
                             console.log('✅ Direct fetchScoreItems success:', scoreResponse.data.scoreStructure);
                             
                             // ✅ Log ข้อมูลทันทีหลังจาก setScoreStructure
-                            setTimeout(() => {
                                 console.group('🎯 Console Log ตามที่ User ขอ (from fetchCourseData)');
                                 console.log('📚 1. ชื่อวิชา:', scoreResponse.data.subject?.title || subject.title);
                                 console.log('💯 2. คะแนนดิบของวิชา:', {
+                                    currentScore: calculateCurrentScore(),
+                                    maxScore: calculateMaxScore(),
+                                    passingScore: calculatePassingScore()
+                                });
+                                
+                                // ✅ เพิ่มการ log ข้อมูลคะแนนที่ใช้ในการคำนวณ
+                                console.log('🔍 ข้อมูลคะแนนที่ใช้ในการคำนวณ:', {
                                     scoreStructure: scoreResponse.data.scoreStructure,
-                                    hasData: !!scoreResponse.data.scoreStructure,
-                                    bigLessonsCount: scoreResponse.data.scoreStructure.big_lessons?.length || 0
+                                    preTest: scoreResponse.data.scoreStructure.pre_test ? {
+                                        title: scoreResponse.data.scoreStructure.pre_test.title,
+                                        weight_percentage: scoreResponse.data.scoreStructure.pre_test.weight_percentage,
+                                        percentage: scoreResponse.data.scoreStructure.pre_test.percentage,
+                                        progress: scoreResponse.data.scoreStructure.pre_test.progress
+                                    } : null,
+                                    bigLessons: scoreResponse.data.scoreStructure.big_lessons?.map((bl: any) => ({
+                                        title: bl.title,
+                                        weight_percentage: bl.weight_percentage,
+                                        percentage: bl.percentage,
+                                        quiz: bl.quiz ? {
+                                            title: bl.quiz.title,
+                                            weight_percentage: bl.quiz.weight_percentage,
+                                            percentage: bl.quiz.percentage,
+                                            progress: bl.quiz.progress
+                                        } : null,
+                                        lessons: bl.lessons?.map((l: any) => ({
+                                            title: l.title,
+                                            weight_percentage: l.weight_percentage,
+                                            percentage: l.percentage,
+                                            video_completed: l.video_completed,
+                                            quiz: l.quiz ? {
+                                                title: l.quiz.title,
+                                                weight_percentage: l.quiz.weight_percentage,
+                                                percentage: l.quiz.percentage,
+                                                progress: l.quiz.progress
+                                            } : null
+                                        })) || []
+                                    })) || [],
+                                    postTest: scoreResponse.data.scoreStructure.post_test ? {
+                                        title: scoreResponse.data.scoreStructure.post_test.title,
+                                        weight_percentage: scoreResponse.data.scoreStructure.post_test.weight_percentage,
+                                        percentage: scoreResponse.data.scoreStructure.post_test.percentage,
+                                        progress: scoreResponse.data.scoreStructure.post_test.progress
+                                    } : null
                                 });
                                 console.log('🏗️ 3. โครงสร้างของวิชา:', {
                                     totalBigLessons: scoreResponse.data.scoreStructure.big_lessons?.length || 0,
@@ -752,8 +1130,118 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
                                         weight: scoreResponse.data.scoreStructure.post_test.weight_percentage
                                     } : null
                                 });
-                                console.groupEnd();
-                            }, 50);
+                            
+                            // ✅ เพิ่มการ log ข้อมูล 4.1-4.8 ตามที่ User ขอ
+                            console.group('📋 4. สถานะการเรียนของวิชานี้ (from fetchCourseData)');
+                            
+                            // 4.1 Pre-test
+                            if (scoreResponse.data.scoreStructure.pre_test) {
+                                console.log('🎯 4.1 แบบทดสอบก่อนเรียน:', {
+                                    title: scoreResponse.data.scoreStructure.pre_test.title,
+                                    status: scoreResponse.data.scoreStructure.pre_test.progress?.passed ? 'ผ่าน' : 
+                                           scoreResponse.data.scoreStructure.pre_test.progress?.completed ? 'ไม่ผ่าน' : 'ยังไม่ทำ',
+                                    canTake: !scoreResponse.data.scoreStructure.pre_test.locked ? 'ได้' : 'ไม่ได้'
+                                });
+                            } else {
+                                console.log('🎯 4.1 แบบทดสอบก่อนเรียน: ไม่มีในวิชานี้');
+                            }
+                            
+                            // 4.2 Big Lessons
+                            if (scoreResponse.data.scoreStructure.big_lessons && scoreResponse.data.scoreStructure.big_lessons.length > 0) {
+                                console.log('📖 4.2 Big Lessons:', {
+                                    count: scoreResponse.data.scoreStructure.big_lessons.length,
+                                    lessons: scoreResponse.data.scoreStructure.big_lessons.map((bl: any, index: number) => ({
+                                        index: index + 1,
+                                        title: bl.title,
+                                        subLessonsCount: bl.lessons?.length || 0,
+                                        hasQuiz: !!bl.quiz,
+                                        status: 'ดูใน modal'
+                                    }))
+                                });
+                            } else {
+                                console.log('📖 4.2 Big Lessons: ไม่มีในวิชานี้');
+                            }
+                            
+                            // 4.3 แบบทดสอบประจำ
+                            if (scoreResponse.data.scoreStructure.big_lessons && scoreResponse.data.scoreStructure.big_lessons.length > 0) {
+                                const quizzes = scoreResponse.data.scoreStructure.big_lessons
+                                    .filter((bl: any) => bl.quiz)
+                                    .map((bl: any) => ({
+                                        bigLesson: bl.title,
+                                        quiz: bl.quiz.title,
+                                        status: bl.quiz.progress?.passed ? 'ผ่าน' :
+                                               bl.quiz.progress?.awaiting_review ? 'รอตรวจ' :
+                                               bl.quiz.progress?.completed ? 'ไม่ผ่าน' : 'ยังไม่ทำ',
+                                        canTake: (bl.lessons?.every((l: any) => l.video_completed) || false) ? 'ได้' : 'ไม่ได้'
+                                    }));
+                                console.log('🎯 4.3 แบบทดสอบประจำ:', {
+                                    count: quizzes.length,
+                                    quizzes: quizzes
+                                });
+                            } else {
+                                console.log('🎯 4.3 แบบทดสอบประจำ: ไม่มีในวิชานี้');
+                            }
+                            
+                            // 4.4 บทเรียนย่อย
+                            if (scoreResponse.data.scoreStructure.big_lessons && scoreResponse.data.scoreStructure.big_lessons.length > 0) {
+                                const subLessons = scoreResponse.data.scoreStructure.big_lessons.flatMap((bl: any) => 
+                                    (bl.lessons || []).map((lesson: any) => ({
+                                        bigLesson: bl.title,
+                                        lesson: lesson.title,
+                                        status: lesson.video_completed ? 'เสร็จ' : 'ยังไม่เสร็จ',
+                                        hasQuiz: !!lesson.quiz
+                                    }))
+                                );
+                                console.log('📚 4.4 บทเรียนย่อย:', {
+                                    count: subLessons.length,
+                                    lessons: subLessons
+                                });
+                            } else {
+                                console.log('📚 4.4 บทเรียนย่อย: ไม่มีในวิชานี้');
+                            }
+                            
+                            // 4.5 แบบทดสอบประจำบทเรียนย่อย
+                            if (scoreResponse.data.scoreStructure.big_lessons && scoreResponse.data.scoreStructure.big_lessons.length > 0) {
+                                const subQuizzes = scoreResponse.data.scoreStructure.big_lessons.flatMap((bl: any) => 
+                                    (bl.lessons || []).filter((lesson: any) => lesson.quiz).map((lesson: any) => ({
+                                        bigLesson: bl.title,
+                                        lesson: lesson.title,
+                                        quiz: lesson.quiz.title,
+                                        status: lesson.quiz.progress?.passed ? 'ผ่าน' :
+                                               lesson.quiz.progress?.awaiting_review ? 'รอตรวจ' :
+                                               lesson.quiz.progress?.completed ? 'ไม่ผ่าน' : 'ยังไม่ทำ',
+                                        canTake: lesson.video_completed ? 'ได้' : 'ไม่ได้'
+                                    }))
+                                );
+                                console.log('📝 4.5 แบบทดสอบประจำบทเรียนย่อย:', {
+                                    count: subQuizzes.length,
+                                    quizzes: subQuizzes
+                                });
+                            } else {
+                                console.log('📝 4.5 แบบทดสอบประจำบทเรียนย่อย: ไม่มีในวิชานี้');
+                            }
+                            
+                            // 4.6 โครงสร้างทั้งหมด
+                            console.log('🏗️ 4.6 โครงสร้างทั้งหมด: ดูใน modal');
+                            
+                            // 4.7 Post-test
+                            if (scoreResponse.data.scoreStructure.post_test) {
+                                console.log('🏁 4.7 แบบทดสอบท้ายบทเรียน:', {
+                                    title: scoreResponse.data.scoreStructure.post_test.title,
+                                    status: scoreResponse.data.scoreStructure.post_test.progress?.passed ? 'ผ่าน' :
+                                           scoreResponse.data.scoreStructure.post_test.progress?.awaiting_review ? 'รอตรวจ' :
+                                           scoreResponse.data.scoreStructure.post_test.progress?.completed ? 'ไม่ผ่าน' : 'ยังไม่ทำ',
+                                    canTake: 'ดูเงื่อนไขใน modal'
+                                });
+                            } else {
+                                console.log('🏁 4.7 แบบทดสอบท้ายบทเรียน: ไม่มีในวิชานี้');
+                            }
+                            
+                            // 4.8 แหล่งข้อมูล
+                            console.log('🗄️ 4.8 แหล่งข้อมูล: subjects, big_lessons, lessons, quizzes, score_management, student_quiz_attempts, student_lesson_progress tables');
+                            
+                            console.groupEnd(); // ปิด 4. สถานะการเรียน
+                            console.groupEnd(); // ปิด Console Log ตามที่ User ขอ
                         }
                     }
                 } catch (scoreError) {
@@ -1537,51 +2025,17 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
     //     }
     // }, [lessonData, progress]);
 
-    // ปรับสูตร progress bar ให้ใช้ hierarchical score structure
+    // ✅ ปรับสูตร progress bar ให้ใช้ฟังก์ชันใหม่ calculateOverallProgress
     useEffect(() => {
         // ต้องรอให้ scoreStructure โหลดเสร็จ
         if (!scoreStructure || !scoreStructure.big_lessons) return;
         
-        let calculatedProgress = 0;
-        
-        // คำนวณ progress จาก hierarchical structure
-        scoreStructure.big_lessons.forEach((bigLesson: any) => {
-            const bigLessonWeight = Number(bigLesson.weight_percentage || 0);
-            let bigLessonProgress = 0;
-            
-            // คำนวณ progress จาก Quiz ใน BigLesson
-            if (bigLesson.quiz && bigLesson.quiz.progress?.passed) {
-                bigLessonProgress += Number(bigLesson.quiz.weight_percentage || 0);
-            }
-            
-            // คำนวณ progress จาก Lessons ใน BigLesson
-            if (bigLesson.lessons) {
-                bigLesson.lessons.forEach((lesson: any) => {
-                    if (lesson.quiz && lesson.quiz.progress?.passed) {
-                        bigLessonProgress += Number(lesson.quiz.weight_percentage || 0);
-                    }
-                });
-            }
-            
-            // คำนวณเปอร์เซ็นต์ของ BigLesson นี้
-            const bigLessonPercentage = bigLessonWeight > 0 ? (bigLessonProgress / bigLessonWeight) * 100 : 0;
-            calculatedProgress += (bigLessonWeight / 100) * bigLessonPercentage;
-        });
-        
-        // คำนวณ progress จาก Post-test
-        if (scoreStructure.post_test) {
-            const postTestWeight = Number(scoreStructure.post_test.weight_percentage || 0);
-            if (scoreStructure.post_test.progress?.passed) {
-                calculatedProgress += postTestWeight;
-            }
-        }
-        
-        // ✅ ตรวจสอบว่า calculatedProgress เป็นตัวเลขที่ถูกต้อง
-        calculatedProgress = Number(calculatedProgress || 0);
+        // ใช้ฟังก์ชันใหม่ calculateOverallProgress
+        const calculatedProgress = calculateOverallProgress();
         
         // ✅ ป้องกันการ update progress ที่ไม่จำเป็น และป้องกันการกระพริบ
         if (Math.abs(calculatedProgress - progress) > 0.1) {
-            console.log("📊 Hierarchical Progress calculation:", {
+            console.log("📊 New Overall Progress calculation:", {
                 calculatedProgress: calculatedProgress.toFixed(1) + "%",
                 previousProgress: (progress || 0).toFixed(1) + "%",
                 scoreStructure: scoreStructure
@@ -1592,7 +2046,7 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
                 setProgress(calculatedProgress);
             }, 50);
         }
-    }, [scoreStructure]); // ✅ ใช้ scoreStructure แทน lessonData และ subjectQuizzes
+    }, [scoreStructure, calculateOverallProgress, progress]); // ✅ เพิ่ม dependencies
 
     // ตั้งค่าบทเรียนแรกเมื่อข้อมูลพร้อม
     useEffect(() => {
@@ -3358,6 +3812,7 @@ const handleNextLesson = useCallback(() => {
                                 progressPercentage={progress}
                                 subjectTitle={currentSubjectTitle}
                                 passingPercentage={subjectPassingPercentage}
+                                isSubjectPassed={isSubjectPassed()}
                             />
                             
                             {/* ✅ เพิ่มปุ่ม Debugger */}

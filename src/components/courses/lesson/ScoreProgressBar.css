@@ -1,15 +1,17 @@
-.score-progress-container {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border-radius: 20px;
-    padding: 25px;
-    margin-bottom: 20px;
-    color: white;
-    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
-    position: relative;
-    overflow: hidden;
+/* เพิ่ม CSS specificity สูงขึ้นเพื่อไม่ให้ถูก CSS หลักทับ */
+
+.score-progress-container.score-progress-container {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    border-radius: 20px !important;
+    padding: 25px !important;
+    margin-bottom: 20px !important;
+    color: white !important;
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3) !important;
+    position: relative !important;
+    overflow: hidden !important;
 }
 
-.score-progress-container::before {
+.score-progress-container.score-progress-container::before {
     content: '';
     position: absolute;
     top: 0;
@@ -20,98 +22,98 @@
     pointer-events: none;
 }
 
-.score-progress-header {
-    text-align: center;
-    margin-bottom: 20px;
-    position: relative;
-    z-index: 1;
+.score-progress-header.score-progress-header {
+    text-align: center !important;
+    margin-bottom: 20px !important;
+    position: relative !important;
+    z-index: 1 !important;
 }
 
-.score-progress-header h4 {
-    color: white;
-    font-size: 1.2rem;
-    font-weight: 600;
-    margin: 0;
-    margin-bottom: 5px;
+.score-progress-header.score-progress-header h4 {
+    color: white !important;
+    font-size: 1.2rem !important;
+    font-weight: 600 !important;
+    margin: 0 !important;
+    margin-bottom: 5px !important;
 }
 
-.subject-title {
-    color: rgba(255, 255, 255, 0.9);
-    font-size: 0.9rem;
-    margin: 0;
-    font-style: italic;
+.subject-title.subject-title {
+    color: rgba(255, 255, 255, 0.9) !important;
+    font-size: 0.9rem !important;
+    margin: 0 !important;
+    font-style: italic !important;
 }
 
-.score-summary {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin-bottom: 25px;
-    gap: 15px;
-    position: relative;
-    z-index: 1;
+.score-summary.score-summary {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    margin-bottom: 25px !important;
+    gap: 15px !important;
+    position: relative !important;
+    z-index: 1 !important;
 }
 
-.score-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+.score-item.score-item {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
 }
 
-.score-label {
-    font-size: 0.8rem;
-    color: rgba(255, 255, 255, 0.8);
-    margin-bottom: 5px;
+.score-label.score-label {
+    font-size: 0.8rem !important;
+    color: rgba(255, 255, 255, 0.8) !important;
+    margin-bottom: 5px !important;
 }
 
-.score-value {
-    font-size: 1.8rem;
-    font-weight: 700;
-    line-height: 1;
+.score-value.score-value {
+    font-size: 1.8rem !important;
+    font-weight: 700 !important;
+    line-height: 1 !important;
 }
 
-.score-value.current {
-    color: #ffd700;
-    text-shadow: 0 2px 4px rgba(255, 215, 0, 0.3);
+.score-value.score-value.current {
+    color: #ffd700 !important;
+    text-shadow: 0 2px 4px rgba(255, 215, 0, 0.3) !important;
 }
 
-.score-value.total {
-    color: rgba(255, 255, 255, 0.9);
+.score-value.score-value.total {
+    color: rgba(255, 255, 255, 0.9) !important;
 }
 
-.score-divider {
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.6);
+.score-divider.score-divider {
+    font-size: 1.5rem !important;
+    font-weight: 600 !important;
+    color: rgba(255, 255, 255, 0.6) !important;
 }
 
-.progress-bar-container {
-    margin-bottom: 20px;
-    position: relative;
-    z-index: 1;
+.progress-bar-container.progress-bar-container {
+    margin-bottom: 20px !important;
+    position: relative !important;
+    z-index: 1 !important;
 }
 
-.progress-bar-wrapper {
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 25px;
-    height: 20px;
-    overflow: visible;
-    position: relative;
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.3);
+.progress-bar-wrapper.progress-bar-wrapper {
+    background: rgba(255, 255, 255, 0.2) !important;
+    border-radius: 25px !important;
+    height: 20px !important;
+    overflow: visible !important;
+    position: relative !important;
+    backdrop-filter: blur(10px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
 }
 
-.progress-bar-fill {
-    background: linear-gradient(90deg, #ffd700, #ffed4e, #ffd700);
-    background-size: 200% 100%;
-    animation: shimmer 2s ease-in-out infinite;
-    height: 100%;
-    border-radius: 25px;
-    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+.progress-bar-fill.progress-bar-fill {
+    background: linear-gradient(90deg, #ffd700, #ffed4e, #ffd700) !important;
+    background-size: 200% 100% !important;
+    animation: shimmer 2s ease-in-out infinite !important;
+    height: 100% !important;
+    border-radius: 25px !important;
+    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1) !important;
     box-shadow: 
-        0 2px 10px rgba(255, 215, 0, 0.4),
-        inset 0 1px 0 rgba(255, 255, 255, 0.5);
-    position: relative;
+        0 2px 10px rgba(255, 215, 0, 0.4) !important,
+        inset 0 1px 0 rgba(255, 255, 255, 0.5) !important;
+    position: relative !important;
 }
 
 @keyframes shimmer {
@@ -119,25 +121,25 @@
     100% { background-position: -200% 0; }
 }
 
-.passing-threshold {
-    position: absolute;
-    top: -8px;
-    bottom: -8px;
-    width: 2px;
-    z-index: 2;
-    transform: translateX(-1px);
+.passing-threshold.passing-threshold {
+    position: absolute !important;
+    top: -8px !important;
+    bottom: -8px !important;
+    width: 2px !important;
+    z-index: 2 !important;
+    transform: translateX(-1px) !important;
 }
 
-.threshold-marker {
-    width: 4px;
-    height: 36px;
-    background: #ff6b6b;
-    border-radius: 2px;
-    position: relative;
-    box-shadow: 0 2px 8px rgba(255, 107, 107, 0.4);
+.threshold-marker.threshold-marker {
+    width: 4px !important;
+    height: 36px !important;
+    background: #ff6b6b !important;
+    border-radius: 2px !important;
+    position: relative !important;
+    box-shadow: 0 2px 8px rgba(255, 107, 107, 0.4) !important;
 }
 
-.threshold-marker::before {
+.threshold-marker.threshold-marker::before {
     content: '';
     position: absolute;
     top: -3px;
@@ -150,7 +152,7 @@
     border-bottom: 6px solid #ff6b6b;
 }
 
-.threshold-marker::after {
+.threshold-marker.threshold-marker::after {
     content: '';
     position: absolute;
     bottom: -3px;
@@ -163,22 +165,22 @@
     border-top: 6px solid #ff6b6b;
 }
 
-.threshold-label {
-    position: absolute;
-    top: -30px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: #ff6b6b;
-    color: white;
-    padding: 4px 8px;
-    border-radius: 8px;
-    font-size: 0.7rem;
-    font-weight: 600;
-    white-space: nowrap;
-    box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
+.threshold-label.threshold-label {
+    position: absolute !important;
+    top: -30px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    background: #ff6b6b !important;
+    color: white !important;
+    padding: 4px 8px !important;
+    border-radius: 8px !important;
+    font-size: 0.7rem !important;
+    font-weight: 600 !important;
+    white-space: nowrap !important;
+    box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3) !important;
 }
 
-.threshold-label::after {
+.threshold-label.threshold-label::after {
     content: '';
     position: absolute;
     top: 100%;
@@ -191,135 +193,381 @@
     border-top: 4px solid #ff6b6b;
 }
 
-.progress-labels {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 8px;
-    font-size: 0.8rem;
-    color: rgba(255, 255, 255, 0.7);
-    position: relative;
-    z-index: 1;
+.progress-labels.progress-labels {
+    display: flex !important;
+    justify-content: space-between !important;
+    margin-top: 8px !important;
+    font-size: 0.8rem !important;
+    color: rgba(255, 255, 255, 0.7) !important;
+    position: relative !important;
+    z-index: 1 !important;
 }
 
-.score-status {
-    margin-bottom: 20px;
-    position: relative;
-    z-index: 1;
+.score-status.score-status {
+    margin-bottom: 20px !important;
+    position: relative !important;
+    z-index: 1 !important;
 }
 
-.status-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 8px;
-    background: rgba(255, 255, 255, 0.1);
-    padding: 8px 12px;
-    border-radius: 10px;
-    backdrop-filter: blur(10px);
+.status-row.status-row {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    margin-bottom: 8px !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+    padding: 8px 12px !important;
+    border-radius: 10px !important;
+    backdrop-filter: blur(10px) !important;
 }
 
-.status-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
+.status-item.status-item {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    width: 100% !important;
 }
 
-.status-label {
-    font-size: 0.9rem;
-    color: rgba(255, 255, 255, 0.9);
-    font-weight: 500;
+.status-label.status-label {
+    font-size: 0.9rem !important;
+    color: rgba(255, 255, 255, 0.9) !important;
+    font-weight: 500 !important;
 }
 
-.status-value {
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: white;
+.status-value.status-value {
+    font-size: 0.9rem !important;
+    font-weight: 600 !important;
+    color: white !important;
 }
 
-.status-value.passed {
-    color: #4ade80;
-    text-shadow: 0 1px 2px rgba(74, 222, 128, 0.3);
+.status-value.status-value.passed {
+    color: #81c784 !important;
+    text-shadow: 0 1px 2px rgba(129, 199, 132, 0.5) !important;
+    font-weight: 700 !important;
 }
 
-.status-value.needed {
-    color: #fbbf24;
-    text-shadow: 0 1px 2px rgba(251, 191, 36, 0.3);
+.status-value.status-value.needed {
+    color: #ffb74d !important;
+    text-shadow: 0 1px 2px rgba(255, 183, 77, 0.5) !important;
+    font-weight: 700 !important;
 }
 
-.overall-status {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    padding: 15px;
-    border-radius: 15px;
-    font-weight: 600;
-    position: relative;
-    z-index: 1;
+.overall-status.overall-status {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 10px !important;
+    padding: 15px !important;
+    border-radius: 15px !important;
+    font-weight: 600 !important;
+    position: relative !important;
+    z-index: 1 !important;
 }
 
-.overall-status.passed {
-    background: rgba(74, 222, 128, 0.2);
-    border: 2px solid rgba(74, 222, 128, 0.5);
-    color: #4ade80;
+.overall-status.overall-status.passed {
+    background: rgba(129, 199, 132, 0.2) !important;
+    border: 2px solid rgba(129, 199, 132, 0.5) !important;
+    color: #81c784 !important;
 }
 
-.overall-status.in-progress {
-    background: rgba(251, 191, 36, 0.2);
-    border: 2px solid rgba(251, 191, 36, 0.5);
-    color: #fbbf24;
+.overall-status.overall-status.in-progress {
+    background: rgba(244, 143, 177, 0.2) !important;
+    border: 2px solid rgba(244, 143, 177, 0.5) !important;
+    color: #f48fb1 !important;
 }
 
-.status-icon {
-    font-size: 1.2rem;
+.status-icon.status-icon {
+    font-size: 1.2rem !important;
 }
 
-.status-text {
-    font-size: 1rem;
+.status-text.status-text {
+    font-size: 1rem !important;
+}
+
+/* เพิ่ม CSS classes ใหม่สำหรับส่วนที่เพิ่มเข้ามา */
+
+.progress-summary.progress-summary {
+    margin-top: 15px !important;
+    padding: 10px !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+    border-radius: 8px !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    backdrop-filter: blur(10px) !important;
+}
+
+.progress-label.progress-label {
+    color: #ffffff !important;
+    font-weight: 500 !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+}
+
+.progress-value.progress-value {
+    font-weight: bold !important;
+    font-size: 1.1rem !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+}
+
+.progress-value.progress-value.completed {
+    color: #81c784 !important;
+}
+
+.progress-value.progress-value.in-progress {
+    color: #ffb74d !important;
+}
+
+.progress-100-line.progress-100-line {
+    position: absolute !important;
+    left: 100% !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    width: 2px !important;
+    background-color: #81c784 !important;
+    z-index: 2 !important;
+}
+
+.status-details.status-details {
+    font-size: 0.8rem !important;
+    margin-top: 8px !important;
+    padding: 8px !important;
+    background: rgba(255, 255, 255, 0.15) !important;
+    border-radius: 4px !important;
+    backdrop-filter: blur(10px) !important;
+}
+
+.status-details.status-details > div {
+    margin-bottom: 4px !important;
+    padding: 4px !important;
+    background: rgba(0, 0, 0, 0.3) !important;
+    border-radius: 3px !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.status-details.status-details > div:last-child {
+    margin-bottom: 0 !important;
+}
+
+/* ปรับปรุงสีของ status rows ที่เพิ่มเข้ามา */
+.status-row.status-row.enhanced {
+    background: rgba(255, 255, 255, 0.15) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    backdrop-filter: blur(10px) !important;
+}
+
+.status-row.status-row.enhanced .status-label {
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5) !important;
+}
+
+.status-row.status-row.enhanced .status-value {
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* ปรับปรุงสีของ progress description */
+.progress-description.progress-description {
+    margin-top: 8px !important;
+    text-align: center !important;
+    font-size: 0.8rem !important;
+    color: #ffffff !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5) !important;
+    font-weight: 500 !important;
+}
+
+/* ปรับปรุงสีของ status summary */
+.status-summary.status-summary {
+    margin-top: 8px !important;
+    padding: 6px !important;
+    border-radius: 4px !important;
+    border: 1px solid !important;
+    text-align: center !important;
+    font-weight: bold !important;
+    font-size: 0.9rem !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5) !important;
+}
+
+.status-summary.status-summary.passed {
+    background: rgba(129, 199, 132, 0.3) !important;
+    border-color: #81c784 !important;
+    color: #81c784 !important;
+}
+
+.status-summary.status-summary.in-progress {
+    background: rgba(244, 143, 177, 0.3) !important;
+    border-color: #f48fb1 !important;
+    color: #f48fb1 !important;
+}
+
+/* ปรับปรุงสีของ progress bar fill */
+.progress-bar-fill.progress-bar-fill.enhanced {
+    background: linear-gradient(90deg, #81c784, #4caf50, #81c784) !important;
+    background-size: 200% 100% !important;
+    animation: shimmer 2s ease-in-out infinite !important;
+    box-shadow: 
+        0 2px 10px rgba(129, 199, 132, 0.4) !important,
+        inset 0 1px 0 rgba(255, 255, 255, 0.5) !important;
+}
+
+.progress-bar-fill.progress-bar-fill.warning {
+    background: linear-gradient(90deg, #ffb74d, #ff9800, #ffb74d) !important;
+    background-size: 200% 100% !important;
+    animation: shimmer 2s ease-in-out infinite !important;
+    box-shadow: 
+        0 2px 10px rgba(255, 183, 77, 0.4) !important,
+        inset 0 1px 0 rgba(255, 255, 255, 0.5) !important;
+}
+
+/* ปรับปรุงสีของ progress bar สำหรับความคืบหน้า */
+.progress-bar-mini.progress-bar-mini {
+    width: 100% !important;
+    height: 8px !important;
+    background: rgba(255, 255, 255, 0.2) !important;
+    border-radius: 4px !important;
+    overflow: hidden !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+}
+
+.progress-bar-mini-fill.progress-bar-mini-fill {
+    height: 100% !important;
+    transition: width 0.3s ease !important;
+    border-radius: 4px !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+}
+
+.progress-bar-mini-fill.progress-bar-mini-fill.completed {
+    background: linear-gradient(90deg, #81c784, #4caf50) !important;
+}
+
+.progress-bar-mini-fill.progress-bar-mini-fill.in-progress {
+    background: linear-gradient(90deg, #ffb74d, #ff9800) !important;
+}
+
+/* ปรับปรุงสีของ progress status message */
+.progress-status-message.progress-status-message {
+    margin-top: 8px !important;
+    text-align: center !important;
+    font-size: 0.8rem !important;
+    font-weight: 500 !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5) !important;
+}
+
+.progress-status-message.progress-status-message.completed {
+    color: #81c784 !important;
+}
+
+.progress-status-message.progress-status-message.in-progress {
+    color: #ffb74d !important;
+}
+
+/* ปรับปรุงสีของ condition details */
+.condition-details.condition-details {
+    margin-top: 10px !important;
+    padding: 8px !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+    border-radius: 4px !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+.condition-details.condition-details .status-label {
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5) !important;
+}
+
+.condition-details.condition-details .status-value {
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* ปรับปรุงสีของ condition items */
+.condition-item.condition-item {
+    margin-bottom: 5px !important;
+    padding: 4px !important;
+    background: rgba(0, 0, 0, 0.3) !important;
+    border-radius: 3px !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.condition-item.condition-item:last-child {
+    margin-bottom: 0 !important;
+}
+
+.condition-item.condition-item .score-status {
+    color: #81c784 !important;
+    font-weight: 600 !important;
+}
+
+.condition-item.condition-item .progress-status {
+    color: #ffb74d !important;
+    font-weight: 600 !important;
+}
+
+/* ปรับปรุงสีของ overall status summary */
+.overall-status-summary.overall-status-summary {
+    margin-top: 8px !important;
+    padding: 6px !important;
+    border-radius: 4px !important;
+    border: 1px solid !important;
+    text-align: center !important;
+    font-weight: bold !important;
+    font-size: 0.9rem !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5) !important;
+}
+
+.overall-status-summary.overall-status-summary.passed {
+    background: rgba(129, 199, 132, 0.3) !important;
+    border-color: #81c784 !important;
+    color: #81c784 !important;
+}
+
+.overall-status-summary.overall-status-summary.in-progress {
+    background: rgba(244, 143, 177, 0.3) !important;
+    border-color: #f48fb1 !important;
+    color: #f48fb1 !important;
 }
 
 /* Responsive Design */
 @media (max-width: 768px) {
-    .score-progress-container {
-        padding: 20px 15px;
+    .score-progress-container.score-progress-container {
+        padding: 20px 15px !important;
     }
     
-    .score-summary {
-        gap: 10px;
+    .score-summary.score-summary {
+        gap: 10px !important;
     }
     
-    .score-value {
-        font-size: 1.5rem;
+    .score-value.score-value {
+        font-size: 1.5rem !important;
     }
     
-    .threshold-label {
-        font-size: 0.6rem;
-        padding: 3px 6px;
+    .threshold-label.threshold-label {
+        font-size: 0.6rem !important;
+        padding: 3px 6px !important;
     }
     
-    .status-row {
-        padding: 6px 10px;
+    .status-row.status-row {
+        padding: 6px 10px !important;
     }
     
-    .status-label,
-    .status-value {
-        font-size: 0.8rem;
+    .status-label.status-label,
+    .status-value.status-value {
+        font-size: 0.8rem !important;
     }
 }
 
 @media (max-width: 480px) {
-    .score-summary {
-        flex-direction: column;
-        gap: 5px;
+    .score-summary.score-summary {
+        flex-direction: column !important;
+        gap: 5px !important;
     }
     
-    .score-divider {
-        display: none;
+    .score-divider.score-divider {
+        display: none !important;
     }
     
-    .overall-status {
-        flex-direction: column;
-        gap: 5px;
+    .overall-status.overall-status {
+        flex-direction: column !important;
+        gap: 5px !important;
     }
 }

@@ -8289,3 +8289,77 @@
   background-color: #ffffff !important;
   color: #333333 !important;
 }
+
+/* ===== FORCE FULL WIDTH FOR INSTRUCTOR DASHBOARD ===== */
+.dashboard__area .dashboard__inner-wrap {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.dashboard__area .dashboard__inner-wrap .container-fluid {
+  width: 100% !important;
+  max-width: 100% !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.dashboard__area .dashboard__inner-wrap .row {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.dashboard__area .dashboard__inner-wrap .col-12 {
+  width: 100% !important;
+  max-width: 100% !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* Force full width for all containers in instructor dashboard */
+.dashboard__area .selection-container,
+.dashboard__area .course-list-container,
+.dashboard__area .courses-table-container,
+.dashboard__area .course-detail-container,
+.dashboard__area .subjects-table-container,
+.dashboard__area .loading-container,
+.dashboard__area .search-container {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 0 20px !important;
+}
+
+/* Override any Bootstrap container restrictions */
+.dashboard__area .container,
+.dashboard__area .container-fluid {
+  width: 100% !important;
+  max-width: 100% !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* Ensure tables and grids use full width */
+.dashboard__area .table-responsive,
+.dashboard__area .table,
+.dashboard__area .courses-grid,
+.dashboard__area .subjects-grid {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+/* Mobile optimizations for full width */
+@media (max-width: 768px) {
+  .dashboard__area .selection-container,
+  .dashboard__area .course-list-container,
+  .dashboard__area .courses-table-container,
+  .dashboard__area .course-detail-container,
+  .dashboard__area .subjects-table-container,
+  .dashboard__area .loading-container,
+  .dashboard__area .search-container {
+    padding: 0 15px !important;
+  }
+}
