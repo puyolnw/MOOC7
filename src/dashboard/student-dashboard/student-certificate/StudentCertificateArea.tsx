@@ -1,7 +1,6 @@
 import { useEffect, useState, FC } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
-import DashboardBannerTwo from "../../dashboard-common/DashboardBannerTwo";
 import "./StudentCertificate.css";
 
 // --- Interfaces ---
