@@ -2,8 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 
-import DashboardSidebar from "../dashboard-common/AdminSidebar";
-import DashboardBanner from "../dashboard-common/AdminBanner";
+import AdminBanner from "../dashboard-common/AdminBanner";
 import AdminSubjectArea from "./AdminSubjectArea";
 import "./mega.css";
 import "./color-fix.css";
@@ -2749,10 +2748,9 @@ const AdminCreditbankArea: React.FC = () => {
     return (
       <section className="dashboard__area section-pb-120">
         <div className="container">
-          <DashboardBanner />
+          <AdminBanner />
           <div className="dashboard__inner-wrap">
             <div className="row">
-              <DashboardSidebar />
               <div className="dashboard__content-area col-lg-9">
                 <div className="dashboard__content-main">
                   <div className="loading-container">
@@ -2776,10 +2774,9 @@ const AdminCreditbankArea: React.FC = () => {
     <section className="dashboard__area section-pb-120">
       
       <div className="container">
-        <DashboardBanner />
+        <AdminBanner />
         <div className="dashboard__inner-wrap">
           <div className="row">
-            <DashboardSidebar />
             <div className="dashboard__content-area col-lg-9">
               <div className="dashboard__content-main">
                 

@@ -4,8 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-toastify';
-import DashboardSidebar from "../../../dashboard-common/AdminSidebar";
-import DashboardBanner from "../../../dashboard-common/AdminBanner";
+import AdminBanner from "../../../dashboard-common/AdminBanner";
 
 // Interface สำหรับข้อมูลแผนก
 interface Department {
@@ -251,11 +250,10 @@ const CreateAccountManagersArea: React.FC = () => {
   return (
     <section className="dashboard__area section-pb-120">
       <div className="container">
-        <DashboardBanner />
+        <AdminBanner />
         <div className="dashboard__inner-wrap">
           <div className="row">
-            <DashboardSidebar />
-            <div className="dashboard__content-area col-lg-9">
+            <div className="dashboard__content-area col-12">
               <div className="dashboard__content-main">
                 <div className="d-flex justify-content-between align-items-center mb-4">
                   <h5 className="card-title mb-0">สร้างบัญชีผู้จัดการใหม่</h5>

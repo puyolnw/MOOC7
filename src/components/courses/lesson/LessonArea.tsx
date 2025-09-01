@@ -156,6 +156,8 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
     const [completionStatusSent, setCompletionStatusSent] = useState(false);
     // ✅ เพิ่ม ref เพื่อป้องกันการ refresh ซ้ำ
     const refreshInProgressRef = useRef(false);
+    // ✅ เพิ่ม state สำหรับ Debug Modal
+    const [showDebugModal, setShowDebugModal] = useState(false);
 
     // ฟังก์ชันคำนวณคะแนนต่างๆ สำหรับ Real Score System
     const calculateCurrentScore = useCallback((): number => {
@@ -232,7 +234,9 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
     const fetchScoreItems = useCallback(async () => {
         try {
             const token = localStorage.getItem("token");
+            console.log('🔍 fetchScoreItems called with:', { token: !!token, currentSubjectId });
             if (!token || !currentSubjectId) {
+                console.log('❌ fetchScoreItems aborted:', { hasToken: !!token, currentSubjectId });
                 return;
             }
 
@@ -248,12 +252,407 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
                 setSubjectPassingPercentage(Number(response.data.subject?.passing_percentage) || 80);
                 
                 console.log('📊 Hierarchical Score Structure loaded:', response.data.scoreStructure);
+                
+                // ✅ ใช้ setTimeout เพื่อให้ state update ก่อน แล้วค่อย log
+                setTimeout(() => {
+                    console.group('🎯 Console Log ตามที่ User ขอ');
+                    console.log('📚 1. ชื่อวิชา:', response.data.subject?.title || currentSubjectTitle);
+                    console.log('💯 2. คะแนนดิบของวิชา:', {
+                        currentScore: calculateCurrentScore(),
+                        maxScore: calculateMaxScore(),
+                        passingScore: calculatePassingScore(),
+                        passingPercentage: response.data.subject?.passing_percentage || 80
+                    });
+                    console.log('🏗️ 3. โครงสร้างของวิชา:', {
+                        totalBigLessons: response.data.scoreStructure.big_lessons?.length || 0,
+                        bigLessons: response.data.scoreStructure.big_lessons?.map((bl: any) => ({
+                            id: bl.id,
+                            title: bl.title,
+                            totalSubLessons: bl.lessons?.length || 0,
+                            hasQuiz: !!bl.quiz,
+                            subLessons: bl.lessons?.map((lesson: any) => ({
+                                id: lesson.id,
+                                title: lesson.title,
+                                hasQuiz: !!lesson.quiz
+                            })) || []
+                        })) || [],
+                        hasPreTest: !!response.data.scoreStructure.pre_test,
+                        hasPostTest: !!response.data.scoreStructure.post_test,
+                        preTest: response.data.scoreStructure.pre_test ? {
+                            title: response.data.scoreStructure.pre_test.title,
+                            weight: response.data.scoreStructure.pre_test.weight_percentage
+                        } : null,
+                        postTest: response.data.scoreStructure.post_test ? {
+                            title: response.data.scoreStructure.post_test.title,
+                            weight: response.data.scoreStructure.post_test.weight_percentage
+                        } : null
+                    });
+                    console.groupEnd();
+                }, 100);
             }
         } catch (error: any) {
             console.error('Error fetching hierarchical scores:', error);
             // ไม่แสดง error toast เพราะอาจเป็น API ที่ยังไม่ได้ implement
         }
     }, [currentSubjectId]);
+
+    // ✅ เพิ่ม useEffect เพื่อ log เมื่อ scoreStructure เปลี่ยน
+    useEffect(() => {
+        if (scoreStructure && Object.keys(scoreStructure).length > 0) {
+            console.group('🔄 scoreStructure State Updated');
+            console.log('📊 Current scoreStructure state:', scoreStructure);
+            console.log('📚 Subject title from state:', currentSubjectTitle);
+            console.log('💯 Scores calculated from current state:', {
+                currentScore: calculateCurrentScore(),
+                maxScore: calculateMaxScore(),
+                passingScore: calculatePassingScore()
+            });
+            console.log('🎯 hierarchicalData ที่จะส่งไป LessonFaq:', scoreStructure);
+            console.groupEnd();
+        }
+    }, [scoreStructure, currentSubjectTitle, calculateCurrentScore, calculateMaxScore, calculatePassingScore]);
+
+    // ✅ เพิ่มฟังก์ชัน debug สถานะการเรียน
+    const displayDebugStatus = () => {
+        console.group('🔍 Debug: ตรวจสอบข้อมูลปัจจุบัน');
+        console.log('📊 Current scoreStructure:', scoreStructure);
+        console.log('📚 Current subject title:', currentSubjectTitle);
+        console.log('🔢 Current subject ID:', currentSubjectId);
+        console.log('📈 Current passing percentage:', subjectPassingPercentage);
+        console.log('📚 lessonData:', lessonData);
+        console.log('🎯 subjectQuizzes:', subjectQuizzes);
+        console.groupEnd();
+
+        // ✅ แสดง Modal แทนการใช้ alert
+        setShowDebugModal(true);
+    };
+
+    // ✅ เพิ่มฟังก์ชันสำหรับ render Debug Modal
+    const renderDebugModal = () => {
+        if (!showDebugModal) return null;
+
+        return (
+            <div 
+                className="debug-modal-overlay" 
+                style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    zIndex: 9999,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '20px'
+                }}
+                onClick={() => setShowDebugModal(false)}
+            >
+                <div 
+                    className="debug-modal-content"
+                    style={{
+                        backgroundColor: '#1a1a1a',
+                        color: '#fff',
+                        borderRadius: '15px',
+                        padding: '25px',
+                        maxWidth: '90vw',
+                        maxHeight: '90vh',
+                        overflowY: 'auto',
+                        boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)',
+                        border: '2px solid #333'
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    {/* Header */}
+                    <div style={{ 
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
+                        alignItems: 'center',
+                        marginBottom: '20px',
+                        borderBottom: '2px solid #333',
+                        paddingBottom: '15px'
+                    }}>
+                        <h2 style={{ 
+                            margin: 0, 
+                            fontSize: '1.5rem',
+                            color: '#ff6b6b',
+                            fontWeight: 'bold'
+                        }}>
+                            🐛 Debug Console - สถานะการเรียนของวิชานี้
+                        </h2>
+                        <button
+                            onClick={() => setShowDebugModal(false)}
+                            style={{
+                                background: 'none',
+                                border: 'none',
+                                color: '#fff',
+                                fontSize: '1.5rem',
+                                cursor: 'pointer',
+                                padding: '5px 10px',
+                                borderRadius: '5px'
+                            }}
+                        >
+                            ✕
+                        </button>
+                    </div>
+
+                    {/* Content Preview */}
+                    <div style={{ fontSize: '0.9rem', lineHeight: '1.6' }}>
+                        
+                        {/* 1. Subject Info */}
+                        <div style={{ marginBottom: '25px', padding: '15px', backgroundColor: '#2a2a2a', borderRadius: '8px' }}>
+                            <h3 style={{ color: '#4fc3f7', marginBottom: '10px' }}>📚 1. ข้อมูลวิชา</h3>
+                            <div style={{ paddingLeft: '15px' }}>
+                                <p><strong>ชื่อวิชา:</strong> <span style={{ color: '#81c784' }}>{currentSubjectTitle || 'ไม่มีข้อมูล'}</span></p>
+                                <p><strong>รหัสวิชา:</strong> <span style={{ color: '#81c784' }}>{currentSubjectId || 'ไม่มีข้อมูล'}</span></p>
+                                <p><strong>เกณฑ์ผ่าน:</strong> <span style={{ color: '#81c784' }}>{subjectPassingPercentage}%</span></p>
+                                <p><strong>แหล่งข้อมูล:</strong> <code style={{ color: '#ffb74d' }}>subjects table + scoreStructure API</code></p>
+                            </div>
+                        </div>
+
+                        {/* 2. Scores */}
+                        <div style={{ marginBottom: '25px', padding: '15px', backgroundColor: '#2a2a2a', borderRadius: '8px' }}>
+                            <h3 style={{ color: '#4fc3f7', marginBottom: '10px' }}>💯 2. คะแนนดิบของวิชา</h3>
+                            <div style={{ paddingLeft: '15px' }}>
+                                <p><strong>คะแนนปัจจุบัน:</strong> <span style={{ color: '#81c784' }}>{calculateCurrentScore()}</span></p>
+                                <p><strong>คะแนนเต็ม:</strong> <span style={{ color: '#81c784' }}>{calculateMaxScore()}</span></p>
+                                <p><strong>คะแนนผ่าน:</strong> <span style={{ color: '#81c784' }}>{calculatePassingScore()}</span></p>
+                                <p><strong>แหล่งข้อมูล:</strong> <code style={{ color: '#ffb74d' }}>calculated from scoreStructure hierarchy</code></p>
+                            </div>
+                        </div>
+
+                        {/* 3. Structure */}
+                        <div style={{ marginBottom: '25px', padding: '15px', backgroundColor: '#2a2a2a', borderRadius: '8px' }}>
+                            <h3 style={{ color: '#4fc3f7', marginBottom: '10px' }}>🏗️ 3. โครงสร้างของวิชา</h3>
+                            <div style={{ paddingLeft: '15px' }}>
+                                <p><strong>จำนวน Big Lessons:</strong> <span style={{ color: '#81c784' }}>{scoreStructure?.big_lessons?.length || 0}</span></p>
+                                <p><strong>มีแบบทดสอบก่อนเรียน:</strong> <span style={{ color: !!scoreStructure?.pre_test ? '#81c784' : '#f48fb1' }}>{!!scoreStructure?.pre_test ? 'มี' : 'ไม่มี'}</span></p>
+                                <p><strong>มีแบบทดสอบหลังเรียน:</strong> <span style={{ color: !!scoreStructure?.post_test ? '#81c784' : '#f48fb1' }}>{!!scoreStructure?.post_test ? 'มี' : 'ไม่มี'}</span></p>
+                                <p><strong>แหล่งข้อมูล:</strong> <code style={{ color: '#ffb74d' }}>scoreStructure API</code></p>
+                            </div>
+                        </div>
+
+                        {/* 4.1 Pre-test */}
+                        {scoreStructure?.pre_test && (
+                            <div style={{ marginBottom: '25px', padding: '15px', backgroundColor: '#2a2a2a', borderRadius: '8px' }}>
+                                <h3 style={{ color: '#4fc3f7', marginBottom: '10px' }}>🎯 4.1 แบบทดสอบก่อนเรียน</h3>
+                                <div style={{ paddingLeft: '15px' }}>
+                                    <p><strong>ชื่อ:</strong> <span style={{ color: '#81c784' }}>{scoreStructure.pre_test.title}</span></p>
+                                    <p><strong>สถานะ:</strong> <span style={{ 
+                                        color: scoreStructure.pre_test.progress?.passed ? '#81c784' : 
+                                               scoreStructure.pre_test.progress?.completed ? '#f48fb1' : '#ffb74d' 
+                                    }}>
+                                        {scoreStructure.pre_test.progress?.passed ? 'ผ่าน' : 
+                                         scoreStructure.pre_test.progress?.completed ? 'ไม่ผ่าน' : 'ยังไม่ทำ'}
+                                    </span></p>
+                                    <p><strong>สามารถทำได้:</strong> <span style={{ color: '#81c784' }}>{!scoreStructure.pre_test.locked ? 'ได้' : 'ไม่ได้'}</span></p>
+                                    <p><strong>แหล่งข้อมูล:</strong> <code style={{ color: '#ffb74d' }}>quizzes table + score_management</code></p>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 4.2 Big Lessons */}
+                        {scoreStructure?.big_lessons && scoreStructure.big_lessons.length > 0 && (
+                            <div style={{ marginBottom: '25px', padding: '15px', backgroundColor: '#2a2a2a', borderRadius: '8px' }}>
+                                <h3 style={{ color: '#4fc3f7', marginBottom: '10px' }}>📖 4.2 Big Lessons ({scoreStructure.big_lessons.length} บท)</h3>
+                                {scoreStructure.big_lessons.map((bl: any, blIndex: number) => {
+                                    const totalItems = (bl.lessons?.length || 0) + (bl.quiz ? 1 : 0);
+                                    const completedItems = (bl.lessons?.filter((l: any) => l.video_completed)?.length || 0) + 
+                                                         (bl.quiz?.progress?.passed ? 1 : 0);
+                                    const status = totalItems > 0 && completedItems === totalItems ? 'ผ่าน' : 'ไม่ผ่าน';
+                                    
+                                    return (
+                                        <div key={bl.id} style={{ marginBottom: '20px', paddingLeft: '20px', borderLeft: '3px solid #555' }}>
+                                            <h4 style={{ color: '#ffb74d', marginBottom: '8px' }}>
+                                                {blIndex + 1}. {bl.title} - <span style={{ color: status === 'ผ่าน' ? '#81c784' : '#f48fb1' }}>{status}</span>
+                                            </h4>
+                                            
+                                            {/* Sub Lessons */}
+                                            {bl.lessons && bl.lessons.length > 0 && (
+                                                <div style={{ marginBottom: '10px' }}>
+                                                    <p style={{ fontWeight: 'bold', color: '#b39ddb' }}>4.4 Sub Lessons:</p>
+                                                    {bl.lessons.map((lesson: any, lIndex: number) => (
+                                                        <div key={lesson.id} style={{ paddingLeft: '15px', marginBottom: '5px' }}>
+                                                            <span style={{ color: '#e0e0e0' }}>
+                                                                {blIndex + 1}.{lIndex + 1} {lesson.title}
+                                                            </span>
+                                                            <br />
+                                                            <span style={{ fontSize: '0.8rem', paddingLeft: '20px' }}>
+                                                                Video: <span style={{ color: lesson.video_completed ? '#81c784' : '#f48fb1' }}>
+                                                                    {lesson.video_completed ? '✓ เสร็จ' : '✗ ยังไม่เสร็จ'}
+                                                                </span>
+                                                                {lesson.quiz && (
+                                                                    <>
+                                                                        , Quiz: <span style={{ 
+                                                                            color: lesson.quiz.progress?.passed ? '#81c784' :
+                                                                                   lesson.quiz.progress?.awaiting_review ? '#ffb74d' :
+                                                                                   lesson.quiz.progress?.completed ? '#f48fb1' : '#bdbdbd'
+                                                                        }}>
+                                                                            {lesson.quiz.progress?.passed ? 'ผ่าน' :
+                                                                             lesson.quiz.progress?.awaiting_review ? 'รอตรวจ' :
+                                                                             lesson.quiz.progress?.completed ? 'ไม่ผ่าน' : 'ยังไม่ทำ'}
+                                                                        </span>
+                                                                        , สามารถทำได้: <span style={{ color: lesson.video_completed ? '#81c784' : '#f48fb1' }}>
+                                                                            {lesson.video_completed ? 'ได้' : 'ไม่ได้'}
+                                                                        </span>
+                                                                    </>
+                                                                )}
+                                                            </span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                            
+                                            {/* Big Lesson Quiz */}
+                                            {bl.quiz && (
+                                                <div style={{ paddingLeft: '15px' }}>
+                                                    <p style={{ fontWeight: 'bold', color: '#b39ddb' }}>4.3 แบบทดสอบประจำบทเรียน:</p>
+                                                    <span style={{ color: '#e0e0e0' }}>{bl.quiz.title}</span>
+                                                    <br />
+                                                    <span style={{ fontSize: '0.8rem', paddingLeft: '20px' }}>
+                                                        สถานะ: <span style={{ 
+                                                            color: bl.quiz.progress?.passed ? '#81c784' :
+                                                                   bl.quiz.progress?.awaiting_review ? '#ffb74d' :
+                                                                   bl.quiz.progress?.completed ? '#f48fb1' : '#bdbdbd'
+                                                        }}>
+                                                            {bl.quiz.progress?.passed ? 'ผ่าน' :
+                                                             bl.quiz.progress?.awaiting_review ? 'รอตรวจ' :
+                                                             bl.quiz.progress?.completed ? 'ไม่ผ่าน' : 'ยังไม่ทำ'}
+                                                        </span>
+                                                        , สามารถทำได้: <span style={{ color: '#81c784' }}>
+                                                            {(bl.lessons?.every((l: any) => l.video_completed) || false) ? 'ได้' : 'ไม่ได้'}
+                                                        </span>
+                                                    </span>
+                                                </div>
+                                            )}
+                                            
+                                            <p style={{ fontSize: '0.8rem', color: '#888', marginTop: '8px' }}>
+                                                <strong>แหล่งข้อมูล:</strong> <code>big_lessons + lessons + quizzes tables</code>
+                                            </p>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+
+                        {/* 4.7 Post-test */}
+                        {scoreStructure?.post_test && (
+                            <div style={{ marginBottom: '25px', padding: '15px', backgroundColor: '#2a2a2a', borderRadius: '8px' }}>
+                                <h3 style={{ color: '#4fc3f7', marginBottom: '10px' }}>🏁 4.7 แบบทดสอบท้ายบทเรียน</h3>
+                                <div style={{ paddingLeft: '15px' }}>
+                                    <p><strong>ชื่อ:</strong> <span style={{ color: '#81c784' }}>{scoreStructure.post_test.title}</span></p>
+                                    <p><strong>สถานะ:</strong> <span style={{ 
+                                        color: scoreStructure.post_test.progress?.passed ? '#81c784' :
+                                               scoreStructure.post_test.progress?.awaiting_review ? '#ffb74d' :
+                                               scoreStructure.post_test.progress?.completed ? '#f48fb1' : '#bdbdbd'
+                                    }}>
+                                        {scoreStructure.post_test.progress?.passed ? 'ผ่าน' :
+                                         scoreStructure.post_test.progress?.awaiting_review ? 'รอตรวจ' :
+                                         scoreStructure.post_test.progress?.completed ? 'ไม่ผ่าน' : 'ยังไม่ทำ'}
+                                    </span></p>
+                                    
+                                    {/* Requirements */}
+                                    <div style={{ marginTop: '10px' }}>
+                                        <p style={{ fontWeight: 'bold', color: '#b39ddb' }}>เงื่อนไขการปลดล็อค:</p>
+                                        <div style={{ paddingLeft: '15px' }}>
+                                            {(() => {
+                                                const preTestPassed = scoreStructure?.pre_test?.progress?.passed || false;
+                                                const totalLessons = scoreStructure?.big_lessons?.reduce((total: number, bl: any) => 
+                                                    total + (bl.lessons?.length || 0), 0) || 0;
+                                                const completedLessons = scoreStructure?.big_lessons?.reduce((total: number, bl: any) => 
+                                                    total + (bl.lessons?.filter((l: any) => l.video_completed)?.length || 0), 0) || 0;
+                                                const lessonsProgress = totalLessons > 0 ? (completedLessons / totalLessons) * 100 : 0;
+                                                const canTake = preTestPassed && lessonsProgress >= 90;
+                                                
+                                                return (
+                                                    <>
+                                                        <p>Pre-test ผ่าน: <span style={{ color: preTestPassed ? '#81c784' : '#f48fb1' }}>
+                                                            {preTestPassed ? '✓ ผ่าน' : '✗ ยังไม่ผ่าน'}
+                                                        </span></p>
+                                                        <p>ความคืบหน้าบทเรียน: <span style={{ color: lessonsProgress >= 90 ? '#81c784' : '#f48fb1' }}>
+                                                            {lessonsProgress.toFixed(1)}% ({completedLessons}/{totalLessons})
+                                                        </span></p>
+                                                        <p><strong>สามารถทำได้:</strong> <span style={{ color: canTake ? '#81c784' : '#f48fb1' }}>
+                                                            {canTake ? 'ได้' : 'ไม่ได้'}
+                                                        </span></p>
+                                                    </>
+                                                );
+                                            })()}
+                                        </div>
+                                    </div>
+                                    
+                                    <p style={{ fontSize: '0.8rem', color: '#888', marginTop: '15px' }}>
+                                        <strong>แหล่งข้อมูล:</strong> <code>quizzes table + score_management + progress calculation</code>
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 4.8 Data Sources */}
+                        <div style={{ marginBottom: '20px', padding: '15px', backgroundColor: '#2a2a2a', borderRadius: '8px' }}>
+                            <h3 style={{ color: '#4fc3f7', marginBottom: '10px' }}>🗄️ 4.8 แหล่งข้อมูลจาก Database Tables</h3>
+                            <div style={{ paddingLeft: '15px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '10px' }}>
+                                <div><code style={{ color: '#ffb74d' }}>subjects</code> - ข้อมูลวิชา</div>
+                                <div><code style={{ color: '#ffb74d' }}>big_lessons</code> - บทเรียนใหญ่</div>
+                                <div><code style={{ color: '#ffb74d' }}>lessons</code> - บทเรียนย่อย</div>
+                                <div><code style={{ color: '#ffb74d' }}>quizzes</code> - แบบทดสอบ</div>
+                                <div><code style={{ color: '#ffb74d' }}>score_management</code> - การจัดการคะแนน</div>
+                                <div><code style={{ color: '#ffb74d' }}>student_quiz_attempts</code> - ประวัติทำแบบทดสอบ</div>
+                                <div><code style={{ color: '#ffb74d' }}>student_lesson_progress</code> - ความก้าวหน้าบทเรียน</div>
+                            </div>
+                        </div>
+
+                        {/* Frontend vs Backend Status */}
+                        <div style={{ marginTop: '20px', padding: '15px', backgroundColor: '#1a3a1a', borderRadius: '8px', border: '2px solid #4caf50' }}>
+                            <h3 style={{ color: '#81c784', marginBottom: '10px' }}>⚖️ สถานะข้อมูล Frontend vs Backend</h3>
+                            <div style={{ paddingLeft: '15px' }}>
+                                <p><strong>Frontend lessonData:</strong> <span style={{ color: '#ffb74d' }}>{lessonData.length} sections</span></p>
+                                <p><strong>Backend scoreStructure:</strong> <span style={{ color: '#ffb74d' }}>{scoreStructure?.big_lessons?.length || 0} big_lessons</span></p>
+                                <p><strong>Frontend subjectQuizzes:</strong> <span style={{ color: '#ffb74d' }}>{subjectQuizzes.length} quizzes</span></p>
+                                <div style={{ marginTop: '10px', padding: '10px', backgroundColor: '#0d2f0d', borderRadius: '5px' }}>
+                                    <p style={{ color: '#a5d6a7', fontSize: '0.9rem' }}>
+                                        <strong>สถานะ:</strong> {Object.keys(scoreStructure).length > 0 ? 
+                                            '✅ ข้อมูล Backend ถูกโหลดและส่งไป Frontend เรียบร้อย' : 
+                                            '❌ ข้อมูล Backend ยังไม่ถูกโหลด'}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    {/* Footer */}
+                    <div style={{ 
+                        textAlign: 'center', 
+                        marginTop: '20px',
+                        paddingTop: '15px',
+                        borderTop: '2px solid #333'
+                    }}>
+                        <button
+                            onClick={() => setShowDebugModal(false)}
+                            style={{
+                                backgroundColor: '#ff6b6b',
+                                color: 'white',
+                                border: 'none',
+                                padding: '12px 24px',
+                                borderRadius: '8px',
+                                fontSize: '1rem',
+                                fontWeight: 'bold',
+                                cursor: 'pointer',
+                                transition: 'all 0.3s ease'
+                            }}
+                            onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#ff5252'}
+                            onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#ff6b6b'}
+                        >
+                            ปิด Debug Console
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
     // ✅ Task 5: ลบ paymentStatus state
     // const [paymentStatus, setPaymentStatus] = useState<any>(null);
 
@@ -297,6 +696,69 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
 
                 setCurrentSubjectTitle(subject.title);
                 setCurrentSubjectId(subject.subject_id);
+                
+                // ✅ เรียก fetchScoreItems ทันทีหลังจากตั้งค่า currentSubjectId
+                console.log('🎯 Setting currentSubjectId to:', subject.subject_id);
+                console.log('🎯 Will call fetchScoreItems with subjectId:', subject.subject_id);
+
+                // ✅ เรียก fetchScoreItems โดยตรงด้วย subjectId ที่เพิ่งได้
+                try {
+                    const token = localStorage.getItem("token");
+                    if (token) {
+                        console.log('🚀 Calling fetchScoreItems directly with subjectId:', subject.subject_id);
+                        const scoreResponse = await axios.get(
+                            `${API_URL}/api/subjects/${subject.subject_id}/scores-hierarchical`,
+                            {
+                                headers: { Authorization: `Bearer ${token}` }
+                            }
+                        );
+
+                        if (scoreResponse.data.success && scoreResponse.data.scoreStructure) {
+                            setScoreStructure(scoreResponse.data.scoreStructure);
+                            setSubjectPassingPercentage(Number(scoreResponse.data.subject?.passing_percentage) || 80);
+                            
+                            console.log('✅ Direct fetchScoreItems success:', scoreResponse.data.scoreStructure);
+                            
+                            // ✅ Log ข้อมูลทันทีหลังจาก setScoreStructure
+                            setTimeout(() => {
+                                console.group('🎯 Console Log ตามที่ User ขอ (from fetchCourseData)');
+                                console.log('📚 1. ชื่อวิชา:', scoreResponse.data.subject?.title || subject.title);
+                                console.log('💯 2. คะแนนดิบของวิชา:', {
+                                    scoreStructure: scoreResponse.data.scoreStructure,
+                                    hasData: !!scoreResponse.data.scoreStructure,
+                                    bigLessonsCount: scoreResponse.data.scoreStructure.big_lessons?.length || 0
+                                });
+                                console.log('🏗️ 3. โครงสร้างของวิชา:', {
+                                    totalBigLessons: scoreResponse.data.scoreStructure.big_lessons?.length || 0,
+                                    bigLessons: scoreResponse.data.scoreStructure.big_lessons?.map((bl: any) => ({
+                                        id: bl.id,
+                                        title: bl.title,
+                                        totalSubLessons: bl.lessons?.length || 0,
+                                        hasQuiz: !!bl.quiz,
+                                        subLessons: bl.lessons?.map((lesson: any) => ({
+                                            id: lesson.id,
+                                            title: lesson.title,
+                                            hasQuiz: !!lesson.quiz
+                                        })) || []
+                                    })) || [],
+                                    hasPreTest: !!scoreResponse.data.scoreStructure.pre_test,
+                                    hasPostTest: !!scoreResponse.data.scoreStructure.post_test,
+                                    preTest: scoreResponse.data.scoreStructure.pre_test ? {
+                                        title: scoreResponse.data.scoreStructure.pre_test.title,
+                                        weight: scoreResponse.data.scoreStructure.pre_test.weight_percentage
+                                    } : null,
+                                    postTest: scoreResponse.data.scoreStructure.post_test ? {
+                                        title: scoreResponse.data.scoreStructure.post_test.title,
+                                        weight: scoreResponse.data.scoreStructure.post_test.weight_percentage
+                                    } : null
+                                });
+                                console.groupEnd();
+                            }, 50);
+                        }
+                    }
+                } catch (scoreError) {
+                    console.error('❌ Direct fetchScoreItems error:', scoreError);
+                }
 
                 if (subject.lessons && subject.lessons.length > 0) {
                     subject.lessons.forEach((lesson: any, lessonIndex: number) => {
@@ -2846,6 +3308,7 @@ const handleNextLesson = useCallback(() => {
     }
 
     return (
+        <>
         <section className="lesson__area section-pb-120" style={{
             background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
             minHeight: '100vh',
@@ -2896,6 +3359,58 @@ const handleNextLesson = useCallback(() => {
                                 subjectTitle={currentSubjectTitle}
                                 passingPercentage={subjectPassingPercentage}
                             />
+                            
+                            {/* ✅ เพิ่มปุ่ม Debugger */}
+                            <div className="debug-section mt-4" style={{
+                                background: 'linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%)',
+                                borderRadius: '15px',
+                                padding: '20px',
+                                boxShadow: '0 8px 25px rgba(255, 107, 107, 0.3)',
+                                border: '1px solid rgba(255, 255, 255, 0.2)'
+                            }}>
+                                <h5 style={{
+                                    color: 'white',
+                                    fontSize: '1rem',
+                                    fontWeight: '600',
+                                    marginBottom: '15px',
+                                    textAlign: 'center'
+                                }}>
+                                    🐛 Debug Console
+                                </h5>
+                                <button
+                                    onClick={displayDebugStatus}
+                                    className="btn btn-light w-100"
+                                    style={{
+                                        borderRadius: '12px',
+                                        padding: '12px',
+                                        fontWeight: '600',
+                                        fontSize: '0.9rem',
+                                        background: 'rgba(255, 255, 255, 0.95)',
+                                        border: 'none',
+                                        transition: 'all 0.3s ease',
+                                        boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.transform = 'translateY(-2px)';
+                                        e.currentTarget.style.boxShadow = '0 6px 20px rgba(0, 0, 0, 0.15)';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.transform = 'translateY(0)';
+                                        e.currentTarget.style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.1)';
+                                    }}
+                                >
+                                    🔍 Debug Learning Status
+                                </button>
+                                <div className="mt-3" style={{
+                                    fontSize: '0.8rem',
+                                    color: 'rgba(255, 255, 255, 0.8)',
+                                    textAlign: 'center',
+                                    lineHeight: '1.4'
+                                }}>
+                                    <p>กดปุ่มเพื่อดูสถานะการเรียนแบบละเอียดใน Console</p>
+                                    <p>📱 เปิด Developer Tools (F12) ก่อนกดปุ่ม</p>
+                                </div>
+                            </div>
                        
                         </div>
                     </div>
@@ -3037,6 +3552,10 @@ const handleNextLesson = useCallback(() => {
                 </div>
             </div>
         </section>
+        
+        {/* ✅ Debug Modal */}
+        {renderDebugModal()}
+        </>
     );
 };
 

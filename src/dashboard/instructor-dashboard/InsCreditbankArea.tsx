@@ -765,7 +765,7 @@ const EditableCourseDetail: React.FC<{
     try {
       const token = localStorage.getItem('token');
       const response = await axios.delete(
-        `${apiURL}/api/subjects/${subject.subject_id}`,
+        `${apiURL}/api/courses/subjects/${subject.subject_id}`,
         {
           headers: { Authorization: `Bearer ${token}` }
         }

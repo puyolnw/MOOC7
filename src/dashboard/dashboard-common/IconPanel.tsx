@@ -26,13 +26,14 @@ const IconPanel: React.FC<IconPanelProps> = ({ isOpen }) => {
    const [isPinned, setIsPinned] = useState(false);
    const [isHovered, setIsHovered] = useState(false);
    const [isFaded, setIsFaded] = useState(false);
+   const [isVisible, setIsVisible] = useState(false); // New state for overall visibility
    const location = useLocation();
    const currentPath = location.pathname;
    const [instructorId, setInstructorId] = useState<string | null>(null);
    const panelRef = useRef<HTMLDivElement>(null);
    const toggleRef = useRef<HTMLButtonElement>(null);
-   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
    const fadeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+   const visibilityTimeoutRef = useRef<NodeJS.Timeout | null>(null);
    
    // Get user data from localStorage
    useEffect(() => {
@@ -56,6 +57,7 @@ const IconPanel: React.FC<IconPanelProps> = ({ isOpen }) => {
       const pinnedState = localStorage.getItem('iconPanelPinned');
       if (pinnedState === 'true') {
          setIsPinned(true);
+         setIsVisible(true); // If pinned, always visible
       }
    }, []);
 
@@ -131,40 +133,45 @@ const IconPanel: React.FC<IconPanelProps> = ({ isOpen }) => {
       });
    }, [currentPath]);
 
-   // Handle hover events
-   const handleToggleMouseEnter = () => {
-      if (hoverTimeoutRef.current) {
-         clearTimeout(hoverTimeoutRef.current);
+   // Handle hover events for the invisible hover area
+   const handleHoverAreaMouseEnter = () => {
+      if (visibilityTimeoutRef.current) {
+         clearTimeout(visibilityTimeoutRef.current);
       }
       if (fadeTimeoutRef.current) {
          clearTimeout(fadeTimeoutRef.current);
          setIsFaded(false);
       }
+      setIsVisible(true);
       setIsHovered(true);
    };
 
-   const handleToggleMouseLeave = () => {
+   const handleHoverAreaMouseLeave = () => {
       if (!isPinned) {
-         hoverTimeoutRef.current = setTimeout(() => {
+         visibilityTimeoutRef.current = setTimeout(() => {
+            setIsVisible(false);
             setIsHovered(false);
-         }, 300); // Small delay to prevent flickering
+         }, 300);
       }
    };
 
+   // Handle hover events for the panel itself
    const handlePanelMouseEnter = () => {
-      if (hoverTimeoutRef.current) {
-         clearTimeout(hoverTimeoutRef.current);
+      if (visibilityTimeoutRef.current) {
+         clearTimeout(visibilityTimeoutRef.current);
       }
       if (fadeTimeoutRef.current) {
          clearTimeout(fadeTimeoutRef.current);
          setIsFaded(false);
       }
+      setIsVisible(true);
       setIsHovered(true);
    };
 
    const handlePanelMouseLeave = () => {
       if (!isPinned) {
-         hoverTimeoutRef.current = setTimeout(() => {
+         visibilityTimeoutRef.current = setTimeout(() => {
+            setIsVisible(false);
             setIsHovered(false);
          }, 300);
       }
@@ -182,6 +189,7 @@ const IconPanel: React.FC<IconPanelProps> = ({ isOpen }) => {
          setIsHovered(false);
       } else {
          setIsPinned(true);
+         setIsVisible(true);
          setIsHovered(true);
       }
    };
@@ -214,17 +222,30 @@ const IconPanel: React.FC<IconPanelProps> = ({ isOpen }) => {
          if (fadeTimeoutRef.current) {
             clearTimeout(fadeTimeoutRef.current);
          }
+         if (visibilityTimeoutRef.current) {
+            clearTimeout(visibilityTimeoutRef.current);
+         }
       };
    }, [isPanelVisible, isPinned]);
 
    return (
       <>
+         {/* Small Hover Indicator */}
+         <div className="instructor-hover-indicator" />
+
+         {/* Invisible Hover Area */}
+         <div 
+            className="icon-panel-hover-area"
+            onMouseEnter={handleHoverAreaMouseEnter}
+            onMouseLeave={handleHoverAreaMouseLeave}
+         />
+
          {/* Floating Icon Strip */}
          <div 
             ref={panelRef}
-            className={`icon-panel-strip ${isFaded ? 'faded' : ''}`}
-            onMouseEnter={handleToggleMouseEnter}
-            onMouseLeave={handleToggleMouseLeave}
+            className={`icon-panel-strip ${isFaded ? 'faded' : ''} ${isVisible ? 'visible' : 'hidden'}`}
+            onMouseEnter={handlePanelMouseEnter}
+            onMouseLeave={handlePanelMouseLeave}
          >
             <div className="icon-strip-content">
                {menuItems.map((item) => (
@@ -251,7 +272,7 @@ const IconPanel: React.FC<IconPanelProps> = ({ isOpen }) => {
 
          {/* Expanded Icon Panel */}
          <div 
-            className={`icon-panel ${isPanelVisible ? 'open' : ''} ${isPinned ? 'pinned' : ''} ${isFaded ? 'faded' : ''}`}
+            className={`icon-panel ${isPanelVisible ? 'open' : ''} ${isPinned ? 'pinned' : ''} ${isFaded ? 'faded' : ''} ${isVisible ? 'visible' : 'hidden'}`}
             onMouseEnter={handlePanelMouseEnter}
             onMouseLeave={handlePanelMouseLeave}
             onClick={handlePanelInteraction}

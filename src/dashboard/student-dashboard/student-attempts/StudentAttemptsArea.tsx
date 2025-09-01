@@ -1,8 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import './d.css';
-import DashboardBannerTwo from "../../dashboard-common/DashboardBannerTwo";
-import DashboardSidebarTwo from "../../dashboard-common/DashboardSidebarTwo";
 
 // กำหนด interface สำหรับข้อมูลประวัติการทำแบบทดสอบ
 interface QuizAttempt {
@@ -90,20 +88,14 @@ const StudentAttemptsArea = () => {
   };
 
   return (
-    <section className="dashboard__area section-pb-120">
-      <div className="container">
-        <DashboardBannerTwo />
-        <div className="dashboard__inner-wrap">
-          <div className="row">
-            <DashboardSidebarTwo />
-            <div className="col-lg-9">
-              <div className="dashboard__content-wrap">
-                <div className="dashboard__content-title">
-                  <h4 className="title">ประวัติการทำแบบทดสอบ</h4>
-                </div>
-                <div className="row">
-                  <div className="col-12">
-                    <div className="dashboard__review-table">
+    <>
+      <div className="dashboard__content-wrap">
+        <div className="dashboard__content-title">
+          <h4 className="title">ประวัติการทำแบบทดสอบ</h4>
+        </div>
+        <div className="row">
+          <div className="col-12">
+            <div className="dashboard__review-table">
                       {loading ? (
                         // แสดง loading state
                         <div className="text-center py-5">
@@ -172,15 +164,11 @@ const StudentAttemptsArea = () => {
                           </tbody>
                         </table>
                       )}
-                    </div>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         </div>
       </div>
-    </section>
+    </>
   );
 };
 

@@ -2,7 +2,6 @@ import { useEffect, useState, FC } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import DashboardBannerTwo from "../../dashboard-common/DashboardBannerTwo";
-import DashboardSidebarTwo from "../../dashboard-common/DashboardSidebarTwo";
 import "./StudentCertificate.css";
 
 // --- Interfaces ---
@@ -345,11 +344,9 @@ const StudentCertificateArea = () => {
    return (
       <section className="dashboard__area section-pb-120">
          <div className="container">
-            <DashboardBannerTwo />
             <div className="dashboard__inner-wrap">
                <div className="row">
-                  <DashboardSidebarTwo />
-                  <div className="col-lg-9">
+                  <div className="col-12">
                      <div className="dashboard__content-wrap">
                         {renderContent()}
                      </div>

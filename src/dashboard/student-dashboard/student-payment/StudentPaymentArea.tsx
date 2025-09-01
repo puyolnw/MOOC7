@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
-import DashboardSidebar from "../../dashboard-common/DashboardSidebarTwo";
-import DashboardBanner from "../../dashboard-common/DashboardBannerTwo";
 
 interface CompletedSubject {
   subject_id: number;
@@ -178,41 +176,34 @@ const StudentPaymentArea: React.FC = () => {
   };
 
   return (
-    <section className="dashboard__area section-pb-120">
-      <div className="container">
-        <DashboardBanner />
-        <div className="dashboard__inner-wrap">
-          <div className="row">
-            <DashboardSidebar />
-            <div className="dashboard__content-area col-lg-9">
-              <div className="dashboard__content-main">
-                <div className="dashboard__content-title">
-                  <h4 className="title">การชำระเงิน</h4>
-                  <p className="text-muted">จัดการการชำระเงินค่าเกียรติบัตรสำหรับรายวิชาที่เรียนจบแล้ว</p>
-                </div>
-
-                {/* Completed Subjects List */}
-                <div className="dashboard__table-wrap">
-                  {isLoading ? (
+    <>
+      <div className="dashboard__content-title">
+        <h4 className="title">การชำระเงิน</h4>
+        <p className="text-muted">จัดการการชำระเงินค่าเกียรติบัตรสำหรับรายวิชาที่เรียนจบแล้ว</p>
+      </div>
+      <div className="dashboard__table-wrap">
+        {/* Completed Subjects List */}
+        <div className="dashboard__table-wrap">
+          {isLoading ? (
                     <div className="text-center py-4">
                       <div className="spinner-border text-primary" role="status">
                         <span className="visually-hidden">กำลังโหลด...</span>
                       </div>
                       <p className="mt-2">กำลังโหลดข้อมูลรายวิชา...</p>
                     </div>
-                  ) : error ? (
+          ) : error ? (
                     <div className="alert alert-danger" role="alert">
                       <i className="fas fa-exclamation-circle me-2"></i>
                       {error}
                     </div>
-                  ) : completedSubjects.length === 0 ? (
+          ) : completedSubjects.length === 0 ? (
                     <div className="text-center py-4">
                       <div className="alert alert-info" role="alert">
                         <i className="fas fa-info-circle me-2"></i>
                         ยังไม่มีรายวิชาที่เรียนจบ
                       </div>
                     </div>
-                  ) : (
+          ) : (
                     <div className="table-responsive">
                       <table className="table table-hover">
                         <thead>
@@ -276,14 +267,9 @@ const StudentPaymentArea: React.FC = () => {
                         </tbody>
                       </table>
                     </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
+          )}
         </div>
       </div>
-
       {/* Payment Form Modal */}
       {showPaymentForm && selectedSubject && (
         <div className="modal-overlay" style={{ 
@@ -429,7 +415,7 @@ const StudentPaymentArea: React.FC = () => {
           </div>
         </div>
       )}
-    </section>
+    </>
   );
 };
 

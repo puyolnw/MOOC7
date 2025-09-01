@@ -92,9 +92,11 @@
   margin: 0 2rem 2rem 2rem;
   border-radius: 0 0 20px 20px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
+  overflow: visible; /* Allow content to scroll */
   width: 100%;
   max-width: 100%;
+  max-height: 80vh; /* Set maximum height */
+  overflow-y: auto; /* Add vertical scrollbar when needed */
 }
 
 /* ===== MODERN PANELS ===== */
@@ -104,6 +106,8 @@
   max-width: 100%;
   background: #ffffff;
   min-height: 500px;
+  height: auto; /* Allow dynamic height */
+  overflow: visible; /* Allow content to be visible */
 }
 
 .admin-lessons-area .lessons-header,

@@ -16,6 +16,56 @@
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
+/* Visibility states for Admin Icon Panel */
+.admin-icon-panel-strip.hidden {
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-50%) translateX(-100%);
+}
+
+.admin-icon-panel-strip.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(-50%) translateX(0);
+}
+
+.admin-icon-panel.hidden {
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-50%) translateX(-100%);
+}
+
+.admin-icon-panel.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(-50%) translateX(0);
+}
+
+/* Visibility states for Instructor Icon Panel */
+.icon-panel-strip.hidden {
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-50%) translateX(-100%);
+}
+
+.icon-panel-strip.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(-50%) translateX(0);
+}
+
+.icon-panel.hidden {
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-50%) translateX(-100%);
+}
+
+.icon-panel.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(-50%) translateX(0);
+}
+
 .icon-panel-strip.faded {
   opacity: 0.3;
   background: rgba(255, 255, 255, 0.6);
@@ -79,6 +129,57 @@
   text-align: center;
 }
 
+/* Category Icons in Strip */
+.icon-strip-category {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  height: 50px;
+  background: #f8f9fa;
+  border: none;
+  border-radius: 12px;
+  color: #333;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.icon-strip-category::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  transition: left 0.5s ease;
+}
+
+.icon-strip-category:hover::before {
+  left: 100%;
+}
+
+.icon-strip-category:hover {
+  background: #007bff;
+  color: white;
+  transform: scale(1.05);
+  box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
+}
+
+.icon-strip-category.active {
+  background: #28a745;
+  color: white;
+  box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+}
+
+.icon-strip-category i {
+  font-size: 20px;
+  width: 24px;
+  text-align: center;
+}
+
 .icon-strip-toggle {
   display: flex;
   align-items: center;
@@ -128,14 +229,18 @@
   opacity: 1;
   visibility: visible;
   transform: translateY(-50%) scale(1);
-  width: 400px;
+  width: auto;
+  min-width: 400px;
+  max-width: 600px;
 }
 
 .icon-panel.pinned {
   opacity: 1;
   visibility: visible;
   transform: translateY(-50%) scale(1);
-  width: 400px;
+  width: auto;
+  min-width: 400px;
+  max-width: 600px;
 }
 
 .icon-panel.faded {
@@ -304,7 +409,8 @@
 }
 
 .submenu.open {
-  max-height: 200px;
+  max-height: 300px; /* Increased max-height */
+  padding: 5px 0; /* Add padding when open */
 }
 
 .submenu-item {
@@ -525,5 +631,74 @@
 .icon-panel-content::-webkit-scrollbar-thumb:hover {
   background: var(--tg-theme-secondary);
 }
+
+/* Invisible Hover Area for Admin Icon Panel */
+.admin-icon-panel-hover-area {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 120px; /* Increased width for easier hovering */
+  height: 100vh;
+  z-index: 1000;
+  background: transparent;
+  cursor: default;
+}
+
+/* Invisible Hover Area for Instructor Icon Panel */
+.icon-panel-hover-area {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 120px; /* Increased width for easier hovering */
+  height: 100vh;
+  z-index: 1000;
+  background: transparent;
+  cursor: default;
+}
+
+/* Small Hover Indicator */
+.admin-hover-indicator {
+  position: fixed;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+  width: 6px; /* Increased width */
+  height: 80px; /* Increased height */
+  background: linear-gradient(45deg, #007bff, #28a745);
+  border-radius: 0 3px 3px 0;
+  z-index: 999;
+  opacity: 0.7; /* Increased opacity */
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+}
+
+.admin-hover-indicator:hover {
+  opacity: 1;
+  width: 8px;
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.5);
+}
+
+/* Small Hover Indicator for Instructor */
+.instructor-hover-indicator {
+  position: fixed;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+  width: 6px; /* Increased width */
+  height: 80px; /* Increased height */
+  background: linear-gradient(45deg, #007bff, #28a745);
+  border-radius: 0 3px 3px 0;
+  z-index: 999;
+  opacity: 0.7; /* Increased opacity */
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+}
+
+.instructor-hover-indicator:hover {
+  opacity: 1;
+  width: 8px;
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.5);
+}
+
 
 

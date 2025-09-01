@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-toastify';
-import DashboardSidebar from "../../dashboard-common/AdminSidebar";
-import DashboardBanner from "../../dashboard-common/AdminBanner";
+import AdminBanner from "../../dashboard-common/AdminBanner";
 
 // Interface สำหรับข้อมูลแผนก
 interface Department {
@@ -487,7 +486,13 @@ const AccountStudentArea: React.FC = () => {
 
     return (
         <section className="dashboard__area section-pb-120">
-            <style>
+            <div className="container">
+                <AdminBanner />
+                <div className="dashboard__inner-wrap">
+                    <div className="row">
+                        <div className="dashboard__content-area col-12">
+                            <div className="dashboard__content-main">
+                                <style>
                 {`
           /* Responsive table styling */
           @media (max-width: 768px) {
@@ -562,14 +567,6 @@ const AccountStudentArea: React.FC = () => {
           }
         `}
             </style>
-
-            <div className="container">
-                <DashboardBanner />
-                <div className="dashboard__inner-wrap">
-                    <div className="row">
-                        <DashboardSidebar />
-                        <div className="dashboard__content-area col-lg-9">
-                            <div className="dashboard__content-main">
                                 <div className="d-flex justify-content-between align-items-center mb-4">
                                     <h5 className="card-title mb-0">จัดการบัญชีนักศึกษา</h5>
                                     <Link to="/admin-account/students/create-new" className="btn btn-primary">

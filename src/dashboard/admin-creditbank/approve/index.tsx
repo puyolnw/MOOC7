@@ -1,14 +1,14 @@
-import DashboardBreadcrumb from '../../../components/common/breadcrumb/DashboardBreadcrumb'
 import FooterOne from '../../../layouts/footers/FooterOne'
 import HeaderOne from '../../../layouts/headers/HeaderOne'
+import AdminIconPanel from '../../dashboard-common/AdminIconPanel'
 import ApproveArea from './ApproveArea'
 
 const AdminApprove = () => {
    return (
       <>
          <HeaderOne />
+         <AdminIconPanel isOpen={true} />
          <main className="main-area fix">
-            <DashboardBreadcrumb />
             <ApproveArea/>
          </main>
          <FooterOne />
@@ -16,4 +16,4 @@ const AdminApprove = () => {
    )
 }
 
-export default AdminApprove;
+export default AdminApprove

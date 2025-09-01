@@ -14,7 +14,7 @@ const StudentSettingContent = () => {
    };
 
    return (
-      <div className="col-lg-9">
+      <div className="col-12">
          <div className="dashboard__content-wrap">
             <div className="dashboard__content-title">
                <h4 className="title">ตั้งค่า</h4>

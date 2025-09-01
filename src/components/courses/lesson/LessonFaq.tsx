@@ -266,8 +266,77 @@ const LessonFaq = ({
   const { totalItems, completedItems, progress: overallProgress } = calculateHierarchicalProgress();
   
   // ✅ เพิ่ม debug log
-  console.log("🎯 LessonFaq hierarchicalData:", hierarchicalData);
+  console.log("🎯 LessonFaq received hierarchicalData:", hierarchicalData);
+  console.log("🎯 LessonFaq hierarchicalData type:", typeof hierarchicalData);
+  console.log("🎯 LessonFaq hierarchicalData keys:", hierarchicalData ? Object.keys(hierarchicalData) : 'null');
   console.log("🎯 LessonFaq calculated progress:", { totalItems, completedItems, overallProgress });
+  
+  // ✅ เพิ่ม console.log รายละเอียดเพิ่มเติมตามที่ user ขอ
+  if (hierarchicalData) {
+    console.log("🔍 4.3 แบบทดสอบประจำบทเรียน:", {
+      big_lessons: hierarchicalData.big_lessons?.map((bl: any) => ({
+        big_lesson_id: bl.id,
+        title: bl.title,
+        quiz: bl.quiz ? {
+          id: bl.quiz.id,
+          title: bl.quiz.title,
+          status: bl.quiz.progress?.passed ? 'ผ่าน' : 
+                 bl.quiz.progress?.awaiting_review ? 'รอตรวจ' : 
+                 bl.quiz.progress?.completed ? 'ไม่ผ่าน' : 'ยังไม่ทำ',
+          can_take: bl.lessons?.every((l: any) => l.video_completed) || false
+        } : null
+      })) || []
+    });
+    
+    console.log("🔍 4.4 บทเรียนย่อยประจำ:", {
+      sub_lessons: hierarchicalData.big_lessons?.flatMap((bl: any) => 
+        bl.lessons?.map((lesson: any) => ({
+          big_lesson_id: bl.id,
+          big_lesson_title: bl.title,
+          lesson_id: lesson.id,
+          lesson_title: lesson.title,
+          video_completed: lesson.video_completed === true,
+          status: lesson.video_completed ? 'ผ่าน' : 'ไม่ผ่าน'
+        })) || []
+      ) || []
+    });
+    
+    console.log("🔍 4.5 แบบทดสอบประจำบทเรียนย่อย:", {
+      sub_lesson_quizzes: hierarchicalData.big_lessons?.flatMap((bl: any) => 
+        bl.lessons?.filter((lesson: any) => lesson.quiz).map((lesson: any) => ({
+          big_lesson_id: bl.id,
+          big_lesson_title: bl.title,
+          lesson_id: lesson.id,
+          lesson_title: lesson.title,
+          quiz: {
+            id: lesson.quiz.id,
+            title: lesson.quiz.title,
+            status: lesson.quiz.progress?.passed ? 'ผ่าน' : 
+                   lesson.quiz.progress?.awaiting_review ? 'รอตรวจ' : 
+                   lesson.quiz.progress?.completed ? 'ไม่ผ่าน' : 'ยังไม่ทำ',
+            can_take: lesson.video_completed === true
+          }
+        })) || []
+      ) || []
+    });
+  }
+
+  // ✅ เพิ่ม useEffect เพื่อติดตาม hierarchicalData
+  useEffect(() => {
+    console.group('📥 LessonFaq: hierarchicalData prop changed');
+    console.log('🎯 New hierarchicalData:', hierarchicalData);
+    console.log('🎯 Is valid:', !!hierarchicalData);
+    console.log('🎯 Has big_lessons:', !!(hierarchicalData && hierarchicalData.big_lessons));
+    console.log('🎯 Big lessons count:', hierarchicalData?.big_lessons?.length || 0);
+    if (hierarchicalData && hierarchicalData.big_lessons) {
+      console.log('🎯 Big lessons structure:', hierarchicalData.big_lessons.map((bl: any) => ({
+        id: bl.id,
+        title: bl.title,
+        lessonsCount: bl.lessons?.length || 0
+      })));
+    }
+    console.groupEnd();
+  }, [hierarchicalData]);
 
   // ใช้ข้อมูลแบบทดสอบจาก parent component
   useEffect(() => {

@@ -1,14 +1,14 @@
-import DashboardBreadcrumb from '../../../components/common/breadcrumb/DashboardBreadcrumb'
 import FooterOne from '../../../layouts/footers/FooterOne'
 import HeaderOne from '../../../layouts/headers/HeaderOne'
+import AdminIconPanel from '../../dashboard-common/AdminIconPanel'
 import StudentsComplete from './StudentsCompleteArea'
 
 const AdminStudentsCompleteArea = () => {
    return (
       <>
          <HeaderOne />
+         <AdminIconPanel isOpen={true} />
          <main className="main-area fix">
-            <DashboardBreadcrumb />
             <StudentsComplete/>
          </main>
          <FooterOne />
@@ -16,4 +16,4 @@ const AdminStudentsCompleteArea = () => {
    )
 }
 
-export default AdminStudentsCompleteArea ;
+export default AdminStudentsCompleteArea

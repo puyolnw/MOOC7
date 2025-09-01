@@ -24,11 +24,11 @@ interface CategoryType {
   items: MenuItemType[];
 }
 
-interface AdminIconPanelProps {
+interface StudentIconPanelProps {
   isOpen?: boolean;
 }
 
-const AdminIconPanel: React.FC<AdminIconPanelProps> = () => {
+const StudentIconPanel: React.FC<StudentIconPanelProps> = () => {
   const [openSubmenu, setOpenSubmenu] = useState<number | null>(null);
   const [isPinned, setIsPinned] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
@@ -45,11 +45,9 @@ const AdminIconPanel: React.FC<AdminIconPanelProps> = () => {
   const fadeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const visibilityTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-
-
   // Load pinned state from localStorage
   useEffect(() => {
-    const pinnedState = localStorage.getItem("adminIconPanelPinned");
+    const pinnedState = localStorage.getItem("studentIconPanelPinned");
     if (pinnedState === "true") {
       setIsPinned(true);
       setIsVisible(true);
@@ -58,168 +56,77 @@ const AdminIconPanel: React.FC<AdminIconPanelProps> = () => {
 
   // Save pinned state to localStorage
   useEffect(() => {
-    localStorage.setItem("adminIconPanelPinned", isPinned.toString());
+    localStorage.setItem("studentIconPanelPinned", isPinned.toString());
   }, [isPinned]);
 
-  // Define categories with their menu items
+  // Resolve user id for dynamic settings link (match DashboardSidebarTwo)
+  const resolvedUserId: string = (() => {
+    try {
+      const userData = localStorage.getItem("user");
+      if (userData) {
+        const parsed = JSON.parse(userData);
+        return String(parsed.id || parsed.user_id || "");
+      }
+    } catch {}
+    return "";
+  })();
+
+  // Define categories with items to mirror DashboardSidebarTwo exactly
   const categories: CategoryType[] = [
     {
       id: 1,
       title: "ภาพรวม",
-      icon: "fas fa-chart-pie",
+      icon: "fas fa-home",
       items: [
         {
           id: 1,
-          link: "/admin-dashboard",
-          icon: "fas fa-chart-pie",
+          link: "/student-dashboard",
+          icon: "fas fa-home",
           title: "แดชบอร์ด",
         },
       ],
     },
     {
       id: 2,
-      title: "จัดการหลักสูตร",
-      icon: "fas fa-graduation-cap",
+      title: "การเรียน",
+      icon: "skillgro-book",
       items: [
         {
           id: 3,
-          link: "/admin-creditbank",
-          icon: "fas fa-graduation-cap",
-          title: "คลังหลักสูตร",
-          hasSubmenu: true,
-          submenu: [
-            {
-              id: 4,
-              link: "/admin-creditbank",
-              title: "เรียกดูหลักสูตร",
-            },
-            {
-              id: 5,
-              link: "/admin-creditbank/create-new",
-              title: "สร้างหลักสูตรใหม่",
-            },
-          ],
+          link: "/student-enrolled-courses",
+          icon: "skillgro-book",
+          title: "หลักสูตรที่ลงทะเบียน",
+        },
+        {
+          id: 6,
+          link: "/student-attempts",
+          icon: "fas fa-tasks",
+          title: "ประวัติการทำแบบทดสอบ",
+        },
+        {
+          id: 7,
+          link: "/student-certificate",
+          icon: "fas fa-certificate",
+          title: "ใบรับรองของฉัน",
+        },
+        {
+          id: 8,
+          link: "/student-payment",
+          icon: "fas fa-credit-card",
+          title: "การชำระเงิน",
         },
       ],
     },
     {
       id: 3,
-      title: "จัดการผู้ใช้",
-      icon: "fas fa-users",
-      items: [
-        {
-          id: 18,
-          link: "/admin-account/instructors",
-          icon: "fas fa-chalkboard-teacher",
-          title: "อาจารย์",
-          hasSubmenu: true,
-          submenu: [
-            {
-              id: 19,
-              link: "/admin-account/instructors",
-              title: "รายชื่ออาจารย์",
-            },
-            {
-              id: 20,
-              link: "/admin-account/instructors/create-new",
-              title: "เพิ่มอาจารย์ใหม่",
-            },
-          ],
-        },
-        {
-          id: 21,
-          link: "/admin-account/students",
-          icon: "fas fa-user-graduate",
-          title: "นักเรียน",
-          hasSubmenu: true,
-          submenu: [
-            {
-              id: 22,
-              link: "/admin-account/students",
-              title: "รายชื่อนักเรียน",
-            },
-            {
-              id: 23,
-              link: "/admin-account/students/create-new",
-              title: "การลงทะเบียน",
-            },
-          ],
-        },
-        {
-          id: 24,
-          link: "/admin-account/managers",
-          icon: "fas fa-user-tie",
-          title: "ประธานหลักสูตร",
-          hasSubmenu: true,
-          submenu: [
-            {
-              id: 25,
-              link: "/admin-account/managers",
-              title: "รายชื่อประธานหลักสูตร",
-            },
-            {
-              id: 26,
-              link: "/admin-account/managers/create-new",
-              title: "เพิ่มประธานหลักสูตร",
-            },
-          ],
-        },
-      ],
-    },
-    {
-      id: 4,
-      title: "รายงาน",
-      icon: "fas fa-chart-bar",
-      items: [
-        {
-          id: 27,
-          link: "/admin-reports/students",
-          icon: "fas fa-chart-bar",
-          title: "รายงานนักศึกษาและนักเรียน",
-        },
-        {
-          id: 28,
-          link: "/admin-reports/students-progress",
-          icon: "fas fa-chart-bar",
-          title: "รายงานสรุปผู้เรียนที่ลงทะเบียนและความคืบหน้า",
-        },
-        {
-          id: 29,
-          link: "/admin-reports/students-complete",
-          icon: "fas fa-chart-bar",
-          title: "รายงานสรุปผู้เรียนที่สำเร็จการเรียนรู้",
-        },
-      ],
-    },
-    {
-      id: 5,
-      title: "การเงิน",
-      icon: "fas fa-credit-card",
-      items: [
-        {
-          id: 30,
-          link: "/admin-approve",
-          icon: "fas fa-check-circle",
-          title: "อนุมัติการชำระเงิน",
-        },
-        {
-          id: 31,
-          link: "/admin-bank-accounts",
-          icon: "fas fa-university",
-          title: "จัดการบัญชีธนาคาร",
-        },
-      ],
-    },
-    {
-      id: 6,
-      title: "ตั้งค่า",
+      title: "การจัดการบัญชี",
       icon: "fas fa-cog",
       items: [
         {
-          id: 32,
-          link: "/admin-display",
-          icon: "fas fa-display",
-          title: "การแสดงผล",
+          id: 9,
+          link: resolvedUserId ? `/student-setting/${resolvedUserId}` : "/student-setting",
+          icon: "fas fa-cog",
+          title: "ตั้งค่าโปรไฟล์",
         },
       ],
     },
@@ -308,6 +215,7 @@ const AdminIconPanel: React.FC<AdminIconPanelProps> = () => {
     setHoveredCategory(categoryId);
     setLastHoveredCategory(categoryId);
   };
+  
   const handleCategoryLeave = () => {
     setHoveredCategory(null);
   };
@@ -475,4 +383,4 @@ const AdminIconPanel: React.FC<AdminIconPanelProps> = () => {
   );
 };
 
-export default AdminIconPanel;
+export default StudentIconPanel;

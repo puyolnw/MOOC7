@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import DashboardSidebar from "../../dashboard-common/AdminSidebar";
-import DashboardBanner from "../../dashboard-common/AdminBanner";
+import AdminBanner from "../../dashboard-common/AdminBanner";
 
 // Interface สำหรับข้อมูลผู้เรียนที่เรียนสำเร็จ
 interface StudentComplete {
@@ -305,11 +304,10 @@ const StudentsCompleteArea: React.FC = () => {
         return (
             <section className="dashboard__area section-pb-120">
                 <div className="container">
-                    <DashboardBanner />
+                    <AdminBanner />
                     <div className="dashboard__inner-wrap">
                         <div className="row">
-                            <DashboardSidebar />
-                            <div className="dashboard__content-area col-lg-9">
+                            <div className="dashboard__content-area col-12">
                                 <div className="dashboard__content-main">
                                     <div className="text-center py-5">
                                         <div className="spinner-border text-primary" role="status">
@@ -330,11 +328,10 @@ const StudentsCompleteArea: React.FC = () => {
         return (
             <section className="dashboard__area section-pb-120">
                 <div className="container">
-                    <DashboardBanner />
+                    <AdminBanner />
                     <div className="dashboard__inner-wrap">
                         <div className="row">
-                            <DashboardSidebar />
-                            <div className="dashboard__content-area col-lg-9">
+                            <div className="dashboard__content-area col-12">
                                 <div className="dashboard__content-main">
                                     <div className="alert alert-danger" role="alert">
                                         <h4 className="alert-heading">เกิดข้อผิดพลาด!</h4>
@@ -352,11 +349,10 @@ const StudentsCompleteArea: React.FC = () => {
     return (
         <section className="dashboard__area section-pb-120">
             <div className="container">
-                <DashboardBanner />
+                <AdminBanner />
                 <div className="dashboard__inner-wrap">
                     <div className="row">
-                        <DashboardSidebar />
-                        <div className="dashboard__content-area col-lg-9">
+                        <div className="dashboard__content-area col-12">
                             <div className="dashboard__content-main">
                                 <div className="dashboard__content-header">
                                     <h2 className="dashboard__content-title">

@@ -1,7 +1,5 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-import DashboardBannerTwo from "../../dashboard-common/DashboardBannerTwo";
-import DashboardSidebarTwo from "../../dashboard-common/DashboardSidebarTwo";
 import './d.css';
 // กำหนด interface สำหรับข้อมูลคอร์ส
 interface CourseType {
@@ -157,14 +155,8 @@ const StudentEnrolledCoursesArea = () => {
    };
 
    return (
-      <section className="dashboard__area section-pb-120">
-         <div className="container">
-            <DashboardBannerTwo />
-            <div className="dashboard__inner-wrap">
-               <div className="row">
-                  <DashboardSidebarTwo />
-                  <div className="col-lg-9">
-                     <div className="dashboard__content-wrap">
+      <>
+         <div className="dashboard__content-wrap">
                         <div className="dashboard__content-title mb-25">
                            <h4 className="title">หลักสูตรที่ลงทะเบียน</h4>
                         </div>
@@ -274,11 +266,7 @@ const StudentEnrolledCoursesArea = () => {
                            )}
                         </div>
                      </div>
-                  </div>
-               </div>
-            </div>
-         </div>
-      </section>
+      </>
    );
 };
 

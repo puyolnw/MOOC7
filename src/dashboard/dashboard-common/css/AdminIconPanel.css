@@ -1,0 +1,557 @@
+/* Admin Icon Panel CSS */
+
+/* Floating Icon Strip */
+.admin-icon-panel-strip {
+  position: fixed;
+  top: 50%;
+  left: 20px;
+  transform: translateY(-50%);
+  z-index: 1001;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  padding: 10px;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #333;
+}
+
+/* Visibility states for Admin Icon Panel */
+.admin-icon-panel-strip.hidden {
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-50%) translateX(-100%);
+  pointer-events: none;
+}
+
+.admin-icon-panel-strip.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(-50%) translateX(0);
+  pointer-events: auto;
+}
+
+.admin-icon-panel.hidden {
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-50%) translateX(-100%);
+  pointer-events: none;
+  display: none;
+}
+
+.admin-icon-panel.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(-50%) translateX(0);
+  pointer-events: auto;
+}
+
+.admin-icon-panel-strip.faded {
+  opacity: 0.3;
+  background: rgba(255, 255, 255, 0.6);
+  transform: translateY(-50%) scale(0.95);
+}
+
+.admin-icon-strip-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Category Icons in Strip */
+.admin-icon-strip-category {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  height: 50px;
+  background: #f8f9fa;
+  border: none;
+  border-radius: 12px;
+  color: #333;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.admin-icon-strip-category::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  transition: left 0.5s ease;
+}
+
+.admin-icon-strip-category:hover::before {
+  left: 100%;
+}
+
+.admin-icon-strip-category:hover,
+.admin-icon-strip-category.hovered {
+  background: #17a2b8;
+  color: white;
+  transform: scale(1.05);
+  box-shadow: 0 4px 15px rgba(23, 162, 184, 0.3);
+}
+
+.admin-icon-strip-category.active {
+  background: #dc3545;
+  color: white;
+  box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+}
+
+.admin-icon-strip-category i {
+  font-size: 20px;
+  width: 24px;
+  text-align: center;
+}
+
+.admin-icon-strip-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  height: 50px;
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 18px;
+  margin-top: 5px;
+}
+
+.admin-icon-strip-toggle:hover {
+  background: #c82333;
+  transform: scale(1.05);
+  box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+}
+
+.admin-icon-strip-toggle.pinned {
+  background: #28a745;
+}
+
+/* Admin Icon Panel */
+.admin-icon-panel {
+  position: fixed;
+  top: 50%;
+  left: 90px;
+  transform: translateY(-50%);
+  z-index: 1000;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  width: 80px;
+  max-height: 80vh;
+  overflow: hidden;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #333;
+  pointer-events: none;
+}
+
+.admin-icon-panel.open {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(-50%) scale(1);
+  width: auto;
+  min-width: 400px;
+  max-width: 600px;
+  pointer-events: auto;
+}
+
+.admin-icon-panel.pinned {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(-50%) scale(1);
+  width: auto;
+  min-width: 400px;
+  max-width: 600px;
+  pointer-events: auto;
+}
+
+.admin-icon-panel.faded {
+  opacity: 0.4;
+  background: rgba(255, 255, 255, 0.7);
+  transform: translateY(-50%) scale(0.98);
+}
+
+.admin-icon-panel-content {
+  padding: 15px 10px;
+  max-height: 60vh;
+  overflow-y: auto;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s ease;
+}
+
+.admin-icon-panel.open .admin-icon-panel-content {
+  padding: 25px;
+  opacity: 1;
+  visibility: visible;
+}
+
+.admin-icon-panel.pinned .admin-icon-panel-content {
+  padding: 25px;
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Category Content */
+.admin-category-content {
+  animation: fadeIn 0.3s ease;
+}
+
+.admin-category-title {
+  margin: 0 0 20px 0;
+  color: #dc3545;
+  font-size: 18px;
+  font-weight: 600;
+  border-bottom: 2px solid #dc3545;
+  padding-bottom: 10px;
+}
+
+.admin-icon-panel-menu .admin-menu-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Focus states for accessibility */
+.admin-menu-item:focus,
+.admin-submenu-item:focus {
+  outline: 2px solid #dc3545;
+  outline-offset: 2px;
+}
+
+/* Menu Item Styling */
+.admin-menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  padding: 12px;
+  background: #f8f9fa;
+  border: none;
+  border-radius: 12px;
+  color: #333;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  width: 100%;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  min-height: 50px;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.admin-icon-panel.open .admin-menu-item {
+  justify-content: flex-start;
+  gap: 15px;
+  padding: 15px 20px;
+  text-align: left;
+}
+
+.admin-icon-panel.pinned .admin-menu-item {
+  justify-content: flex-start;
+  gap: 15px;
+  padding: 15px 20px;
+  text-align: left;
+}
+
+.admin-menu-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  transition: left 0.5s ease;
+}
+
+.admin-menu-item:hover::before {
+  left: 100%;
+}
+
+.admin-menu-item:hover {
+  background: #dc3545;
+  color: white;
+  transform: scale(1.05);
+  box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+}
+
+.admin-icon-panel.open .admin-menu-item:hover {
+  transform: translateX(5px);
+}
+
+.admin-icon-panel.pinned .admin-menu-item:hover {
+  transform: translateX(5px);
+}
+
+.admin-menu-item.active {
+  background: #dc3545;
+  color: white;
+  box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+}
+
+.admin-menu-item i {
+  font-size: 20px;
+  width: 24px;
+  text-align: center;
+}
+
+.admin-menu-title {
+  display: none;
+  font-weight: 500;
+  flex: 1;
+}
+
+.admin-icon-panel.open .admin-menu-title {
+  display: block;
+}
+
+.admin-icon-panel.pinned .admin-menu-title {
+  display: block;
+}
+
+.admin-submenu-arrow {
+  display: none;
+  font-size: 12px;
+  transition: transform 0.3s ease;
+}
+
+.admin-icon-panel.open .admin-submenu-arrow {
+  display: block;
+}
+
+.admin-icon-panel.pinned .admin-submenu-arrow {
+  display: block;
+}
+
+.admin-submenu-arrow.open {
+  transform: rotate(180deg);
+}
+
+.admin-submenu {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0 0;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 12px;
+  overflow: hidden;
+  max-height: 0;
+  transition: all 0.3s ease;
+  position: absolute;
+  left: 100%;
+  top: 0;
+  width: 220px;
+  z-index: 1002;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.admin-icon-panel.open .admin-submenu {
+  position: static;
+  width: auto;
+  margin: 10px 0 0 0;
+}
+
+.admin-icon-panel.pinned .admin-submenu {
+  position: static;
+  width: auto;
+  margin: 10px 0 0 0;
+}
+
+.admin-submenu.open {
+  max-height: 300px;
+  padding: 8px 0;
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.admin-submenu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 18px;
+  color: #495057;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  font-size: 14px;
+  font-family: inherit;
+  line-height: inherit;
+  position: relative;
+  border-left: 3px solid transparent;
+}
+
+.admin-submenu-item:hover {
+  background: linear-gradient(90deg, rgba(23, 162, 184, 0.1) 0%, rgba(23, 162, 184, 0.05) 100%);
+  color: #17a2b8;
+  border-left-color: #17a2b8;
+  transform: translateX(3px);
+}
+
+.admin-submenu-item.active {
+  background: linear-gradient(90deg, rgba(220, 53, 69, 0.1) 0%, rgba(220, 53, 69, 0.05) 100%);
+  color: #dc3545;
+  border-left-color: #dc3545;
+  font-weight: 500;
+}
+
+.admin-submenu-item i {
+  font-size: 6px;
+  color: #6c757d;
+  transition: all 0.3s ease;
+}
+
+.admin-submenu-item:hover i {
+  color: #17a2b8;
+}
+
+.admin-submenu-item.active i {
+  color: #dc3545;
+}
+
+.admin-submenu-item span {
+  flex: 1;
+}
+
+/* Invisible Hover Area for Admin Icon Panel */
+.admin-icon-panel-hover-area {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 30px;
+  height: 100vh;
+  z-index: 1000;
+  background: transparent;
+  cursor: default;
+}
+
+/* Small Hover Indicator */
+.admin-hover-indicator {
+  position: fixed;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+  width: 6px;
+  height: 80px;
+  background: linear-gradient(45deg, #dc3545, #28a745);
+  border-radius: 0 3px 3px 0;
+  z-index: 999;
+  opacity: 0.7;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+}
+
+.admin-hover-indicator:hover {
+  opacity: 1;
+  width: 8px;
+  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.5);
+}
+
+/* Overlay for pinned state */
+.admin-icon-panel-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 999;
+  cursor: pointer;
+  backdrop-filter: blur(2px);
+}
+
+/* Animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Scrollbar Styling */
+.admin-icon-panel-content::-webkit-scrollbar {
+  width: 4px;
+}
+
+.admin-icon-panel-content::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 2px;
+}
+
+.admin-icon-panel-content::-webkit-scrollbar-thumb {
+  background: #dc3545;
+  border-radius: 2px;
+}
+
+.admin-icon-panel-content::-webkit-scrollbar-thumb:hover {
+  background: #c82333;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .admin-icon-panel-strip {
+    left: 10px;
+    padding: 6px;
+  }
+  
+  .admin-icon-panel {
+    left: 70px;
+  }
+  
+  .admin-icon-panel.open {
+    width: 250px;
+    max-width: 250px;
+  }
+  
+  .admin-icon-panel.pinned {
+    width: 250px;
+    max-width: 250px;
+  }
+  
+  .admin-icon-panel-hover-area {
+    width: 20px;
+  }
+}
+
+/* Responsive adjustments for submenu */
+@media (max-width: 768px) {
+  .admin-submenu {
+    position: static;
+    width: auto;
+    margin: 5px 0 0 0;
+  }
+  
+  .admin-submenu-item {
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+}

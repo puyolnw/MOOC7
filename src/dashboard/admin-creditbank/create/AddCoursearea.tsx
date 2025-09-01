@@ -1,7 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import DashboardSidebar from "../../dashboard-common/AdminSidebar";
-import DashboardBanner from "../../dashboard-common/AdminBanner";
+import AdminBanner from "../../dashboard-common/AdminBanner";
 import AddCourses from "../../../forms/Course/Courses/AddCourses";
 
 const AddCoursearea: React.FC = () => {
@@ -25,11 +24,10 @@ const AddCoursearea: React.FC = () => {
   return (
     <section className="dashboard__area section-pb-120">
       <div className="container">
-        <DashboardBanner />
+        <AdminBanner />
         <div className="dashboard__inner-wrap">
           <div className="row">
-            <DashboardSidebar />
-            <div className="dashboard__content-area col-lg-9">
+            <div className="dashboard__content-area col-12">
               <div className="dashboard__content-main">
                 <div className="dashboard__content-header mb-4">
   

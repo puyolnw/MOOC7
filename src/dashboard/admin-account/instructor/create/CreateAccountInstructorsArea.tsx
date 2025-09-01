@@ -3,8 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify"; // Import toast และ ToastContainer
 import "react-toastify/dist/ReactToastify.css"; // Import CSS ของ react-toastify
 
-import DashboardSidebar from "../../../dashboard-common/AdminSidebar";
-import DashboardBanner from "../../../dashboard-common/AdminBanner";
+import AdminBanner from "../../../dashboard-common/AdminBanner";
 import AddInstructors from "../../../../forms/Account/AddInstuctors";
 
 interface CreateAccountInstructorsAreaProps {
@@ -63,11 +62,10 @@ const CreateAccountInstructorsArea: React.FC<CreateAccountInstructorsAreaProps> 
   return (
     <section className="dashboard__area section-pb-120">
       <div className="container">
-        <DashboardBanner />
+        <AdminBanner />
         <div className="dashboard__inner-wrap">
           <div className="row">
-            <DashboardSidebar />
-            <div className="dashboard__content-area col-lg-9">
+            <div className="dashboard__content-area col-12">
               <div className="dashboard__content-main">
                 <div className="dashboard__content-header mb-4">
                   <h2 className="title text-muted">เพิ่มผู้สอนใหม่</h2>
@@ -78,13 +76,14 @@ const CreateAccountInstructorsArea: React.FC<CreateAccountInstructorsAreaProps> 
                   onSubmit={handleSubmit}
                   onCancel={handleCancel}
                 />
+                
+                {/* เพิ่ม ToastContainer ตรงนี้เพื่อให้ Notification แสดงผลได้ */}
+                <ToastContainer />
               </div>
             </div>
           </div>
         </div>
       </div>
-      {/* เพิ่ม ToastContainer ตรงนี้เพื่อให้ Notification แสดงผลได้ */}
-      <ToastContainer />
     </section>
   );
 };

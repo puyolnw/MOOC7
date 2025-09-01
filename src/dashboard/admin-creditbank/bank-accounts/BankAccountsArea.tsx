@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
-import DashboardSidebar from "../../dashboard-common/AdminSidebar";
-import DashboardBanner from "../../dashboard-common/AdminBanner";
+import AdminBanner from "../../dashboard-common/AdminBanner";
 
 interface BankAccount {
   account_id: number;
@@ -162,11 +161,10 @@ const BankAccountsArea: React.FC = () => {
   return (
     <section className="dashboard__area section-pb-120">
       <div className="container">
-        <DashboardBanner />
+        <AdminBanner />
         <div className="dashboard__inner-wrap">
           <div className="row">
-            <DashboardSidebar />
-            <div className="dashboard__content-area col-lg-9">
+            <div className="dashboard__content-area col-12">
               <div className="dashboard__content-main">
                 <div className="dashboard__content-title">
                   <h4 className="title">จัดการบัญชีธนาคาร</h4>

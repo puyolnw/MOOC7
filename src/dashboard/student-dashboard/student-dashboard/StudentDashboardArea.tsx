@@ -1,9 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import Count from "../../../components/common/Count";
-import DashboardBannerTwo from "../../dashboard-common/DashboardBannerTwo";
 import DashboardCourse from "../../dashboard-common/DashboardCourse";
-import DashboardSidebarTwo from "../../dashboard-common/DashboardSidebarTwo";
 
 interface DashboardStats {
   totalEnrolled: number;
@@ -110,55 +108,45 @@ const StudentDashboardArea = () => {
   ];
 
   return (
-    <section className="dashboard__area section-pb-120">
-      <div className="container">
-        <DashboardBannerTwo />
-        <div className="dashboard__inner-wrap">
-          <div className="row">
-            <DashboardSidebarTwo />
-            <div className="col-lg-9">
-              <div className="dashboard__count-wrap">
-                <div className="dashboard__content-title">
-                  <h4 className="title">แดชบอร์ด</h4>
-                </div>
-                <div className="row">
-                  {dashboardStats.isLoading ? (
-                    <div className="col-12 text-center py-5">
-                      <div className="spinner-border text-primary" role="status">
-                        <span className="visually-hidden">กำลังโหลด...</span>
-                      </div>
-                      <p className="mt-3">กำลังโหลดข้อมูล...</p>
-                    </div>
-                  ) : dashboardStats.error ? (
-                    <div className="col-12 text-center py-5">
-                      <div className="alert alert-danger" role="alert">
-                        <i className="fas fa-exclamation-circle me-2"></i>
-                        {dashboardStats.error}
-                      </div>
-                    </div>
-                  ) : (
-                    dashboard_count_data.map((item) => (
-                      <div key={item.id} className="col-lg-4 col-md-4 col-sm-6">
-                        <div className="dashboard__counter-item">
-                          <div className="icon">
-                            <i className={item.icon}></i>
-                          </div>
-                          <div className="content">
-                            <span className="count"><Count number={item.count} /></span>
-                            <p style={{ marginTop: "14px" }}>{item.title}</p>
-                          </div>
-                        </div>
-                      </div>
-                    ))
-                  )}
+    <>
+      <div className="dashboard__count-wrap">
+        <div className="dashboard__content-title">
+          <h4 className="title">แดชบอร์ด</h4>
+        </div>
+        <div className="row">
+          {dashboardStats.isLoading ? (
+            <div className="col-12 text-center py-5">
+              <div className="spinner-border text-primary" role="status">
+                <span className="visually-hidden">กำลังโหลด...</span>
+              </div>
+              <p className="mt-3">กำลังโหลดข้อมูล...</p>
+            </div>
+          ) : dashboardStats.error ? (
+            <div className="col-12 text-center py-5">
+              <div className="alert alert-danger" role="alert">
+                <i className="fas fa-exclamation-circle me-2"></i>
+                {dashboardStats.error}
+              </div>
+            </div>
+          ) : (
+            dashboard_count_data.map((item) => (
+              <div key={item.id} className="col-lg-4 col-md-4 col-sm-6">
+                <div className="dashboard__counter-item">
+                  <div className="icon">
+                    <i className={item.icon}></i>
+                  </div>
+                  <div className="content">
+                    <span className="count"><Count number={item.count} /></span>
+                    <p style={{ marginTop: "14px" }}>{item.title}</p>
+                  </div>
                 </div>
               </div>
-              <DashboardCourse />
-            </div>
-          </div>
+            ))
+          )}
         </div>
       </div>
-    </section>
+      <DashboardCourse />
+    </>
   );
 };
 

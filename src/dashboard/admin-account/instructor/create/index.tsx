@@ -1,14 +1,14 @@
-import DashboardBreadcrumb from '../../../../components/common/breadcrumb/DashboardBreadcrumb'
 import FooterOne from '../../../../layouts/footers/FooterOne'
 import HeaderOne from '../../../../layouts/headers/HeaderOne'
+import AdminIconPanel from '../../../dashboard-common/AdminIconPanel'
 import CreateAccountInstructorsArea from './CreateAccountInstructorsArea'
 
 const AdminCreateAccountInstructors = () => {
    return (
       <>
          <HeaderOne />
+         <AdminIconPanel isOpen={true} />
          <main className="main-area fix">
-            <DashboardBreadcrumb />
             <CreateAccountInstructorsArea />
          </main>
          <FooterOne />
@@ -16,4 +16,4 @@ const AdminCreateAccountInstructors = () => {
    )
 }
 
-export default AdminCreateAccountInstructors;
+export default AdminCreateAccountInstructors
