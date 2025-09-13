@@ -5,7 +5,7 @@ import useMenuData from '../../../data/home-data/MenuData';
 const MobileMenu = () => {
    const [navTitle, setNavTitle] = useState<string | null>(null);
    const [subNavTitle, setSubNavTitle] = useState<string | null>(null);
-   const menuData = useMenuData();
+   const { menuData, isLoading } = useMenuData();
 
    const openMobileMenu = (menu: string) => {
       setNavTitle(navTitle === menu ? null : menu);
@@ -14,6 +14,16 @@ const MobileMenu = () => {
    const openMobileSubMenu = (sub_m: string) => {
       setSubNavTitle(subNavTitle === sub_m ? null : sub_m);
    };
+
+   if (isLoading) {
+      return (
+         <ul className="navigation">
+            <li>
+               <span style={{ padding: "10px 15px", color: "#666" }}>กำลังโหลด...</span>
+            </li>
+         </ul>
+      );
+   }
 
    if (!menuData || menuData.length === 0) {
       return null;

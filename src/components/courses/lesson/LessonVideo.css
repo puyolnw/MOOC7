@@ -1,313 +1,380 @@
-.video-lesson-container {
-  position: relative;
-  background: #000;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+/* ========================================
+   🎥 MODERN VIDEO LESSON UI/UX DESIGN
+   ======================================== */
+
+/* ✅ CSS Specificity สูงสุดเพื่อป้องกัน override */
+html body div.lesson__main .modern-video-container.modern-video-container.modern-video-container {
+  background: #f8f9fa !important;
+  border: 1px solid #e9ecef !important;
+  border-radius: 12px !important;
+  padding: 30px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+  margin-bottom: 30px !important;
+  position: relative !important;
+  overflow: hidden !important;
 }
 
-.video-lesson-title {
-  background: #fff;
-  padding: 15px 20px;
-  border-bottom: 1px solid #eee;
+/* Background Pattern - ลบออกเพื่อความเรียบง่าย */
+
+/* Video Header */
+html body div.lesson__main .video-header.video-header.video-header {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  margin-bottom: 25px !important;
+  position: relative !important;
+  z-index: 2 !important;
 }
 
-.lesson-title h3 {
-  margin: 0;
-  font-size: 1.2rem;
-  color: #333;
-  font-weight: 600;
+html body div.lesson__main .video-title.video-title.video-title {
+  color: #333 !important;
+  font-size: 1.8rem !important;
+  font-weight: 600 !important;
+  margin: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
 }
 
-.video-player {
-  position: relative;
-  width: 100%;
-  background: #000;
+html body div.lesson__main .video-title::before {
+  content: '🎥' !important;
+  font-size: 1.5rem !important;
 }
 
-.lesson-progress {
-  height: 4px;
-  background: rgba(255, 255, 255, 0.2);
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 10;
+/* Progress Indicator */
+html body div.lesson__main .video-progress-indicator.video-progress-indicator.video-progress-indicator {
+  background: #e9ecef !important;
+  border-radius: 20px !important;
+  padding: 8px 16px !important;
+  color: #495057 !important;
+  font-size: 0.9rem !important;
+  font-weight: 500 !important;
+  border: 1px solid #dee2e6 !important;
 }
 
-.progress-bar {
-  height: 100%;
-  background: linear-gradient(90deg, #4CAF50, #8BC34A);
-  transition: width 0.3s ease;
+/* Video Player Container */
+html body div.lesson__main .video-player-container.video-player-container.video-player-container {
+  position: relative !important;
+  background: #000 !important;
+  border-radius: 16px !important;
+  overflow: hidden !important;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4) !important;
+  margin-bottom: 20px !important;
+  aspect-ratio: 16/9 !important;
 }
 
-.completion-badge {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  background: rgba(46, 204, 113, 0.9);
-  color: white;
-  padding: 8px 16px;
-  border-radius: 20px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  animation: fadeIn 0.3s ease;
-  z-index: 20;
+/* Video Player */
+html body div.lesson__main .video-player.video-player.video-player {
+  width: 100% !important;
+  height: 100% !important;
+  border: none !important;
+  border-radius: 16px !important;
 }
 
-.completion-badge i {
-  font-size: 16px;
+/* Progress Bar */
+html body div.lesson__main .video-progress-bar.video-progress-bar.video-progress-bar {
+  background: #e9ecef !important;
+  height: 6px !important;
+  border-radius: 3px !important;
+  overflow: hidden !important;
+  margin: 20px 0 !important;
+  position: relative !important;
 }
 
-.video-controls-info {
-  display: flex;
-  justify-content: space-between;
-  padding: 10px 15px;
-  background: #f8f9fa;
-  border-top: 1px solid #eee;
+html body div.lesson__main .video-progress-bar .progress-fill.progress-fill.progress-fill {
+  height: 100% !important;
+  background: #28a745 !important;
+  border-radius: 3px !important;
+  transition: width 0.3s ease !important;
+  position: relative !important;
+  overflow: hidden !important;
 }
 
-.video-status {
-  font-size: 0.9rem;
+/* Video Controls */
+html body div.lesson__main .video-controls.video-controls.video-controls {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  padding: 15px 0 !important;
+  color: #6c757d !important;
+  font-size: 0.9rem !important;
 }
 
-.status-playing {
-  color: #4CAF50;
-  font-weight: 500;
+html body div.lesson__main .video-status.video-status.video-status {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  font-weight: 500 !important;
 }
 
-.status-paused {
-  color: #f44336;
-  font-weight: 500;
+html body div.lesson__main .status-playing.status-playing.status-playing {
+  color: #4CAF50 !important;
 }
 
-.video-progress-info {
-  font-size: 0.9rem;
-  color: #666;
+html body div.lesson__main .status-paused.status-paused.status-paused {
+  color: #FF5722 !important;
 }
 
-/* Plyr custom styles */
-.plyr--full-ui input[type=range] {
-  color: #4CAF50;
+html body div.lesson__main .video-time.video-time.video-time {
+  color: #6c757d !important;
+  font-family: 'Courier New', monospace !important;
 }
 
-.plyr__control--overlaid {
-  background: rgba(76, 175, 80, 0.8);
+/* Completion Badge */
+html body div.lesson__main .completion-badge.completion-badge.completion-badge {
+  position: absolute !important;
+  top: 20px !important;
+  right: 20px !important;
+  background: #28a745 !important;
+  color: white !important;
+  padding: 8px 16px !important;
+  border-radius: 20px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  font-weight: 500 !important;
+  box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3) !important;
+  animation: bounceIn 0.6s ease !important;
+  z-index: 10 !important;
 }
 
-.plyr--video .plyr__control.plyr__tab-focus,
-.plyr--video .plyr__control:hover,
-.plyr--video .plyr__control[aria-expanded=true] {
-  background: #4CAF50;
+@keyframes bounceIn {
+  0% { transform: scale(0.3); opacity: 0; }
+  50% { transform: scale(1.05); }
+  70% { transform: scale(0.9); }
+  100% { transform: scale(1); opacity: 1; }
 }
 
-.plyr__control.plyr__tab-focus {
-  box-shadow: 0 0 0 5px rgba(76, 175, 80, 0.5);
+/* Action Buttons */
+html body div.lesson__main .video-actions.video-actions.video-actions {
+  display: flex !important;
+  justify-content: center !important;
+  gap: 15px !important;
+  margin-top: 25px !important;
 }
 
-.plyr__menu__container .plyr__control[role=menuitemradio][aria-checked=true]::before {
-  background: #4CAF50;
+html body div.lesson__main .btn-modern.btn-modern.btn-modern {
+  padding: 14px 28px !important;
+  border-radius: 50px !important;
+  font-weight: 600 !important;
+  font-size: 1rem !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  border: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 10px !important;
+  text-decoration: none !important;
+  position: relative !important;
+  overflow: hidden !important;
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+html body div.lesson__main .btn-primary.btn-primary.btn-primary {
+  background: #007bff !important;
+  color: white !important;
+  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3) !important;
 }
 
-/* Responsive adjustments */
+html body div.lesson__main .btn-primary:hover {
+  background: #0056b3 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.4) !important;
+}
+
+html body div.lesson__main .btn-secondary.btn-secondary.btn-secondary {
+  background: #6c757d !important;
+  color: white !important;
+  border: 1px solid #6c757d !important;
+}
+
+html body div.lesson__main .btn-secondary:hover {
+  background: #545b62 !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Ripple Effect - ลบออกเพื่อความเรียบง่าย */
+
+/* Completion Modal */
+html body div.lesson__main .completion-modal.completion-modal.completion-modal {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  background: rgba(0, 0, 0, 0.8) !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  z-index: 1000 !important;
+  backdrop-filter: blur(10px) !important;
+  animation: fadeIn 0.3s ease !important;
+}
+
+html body div.lesson__main .completion-modal-content.completion-modal-content.completion-modal-content {
+  background: white !important;
+  border: 1px solid #dee2e6 !important;
+  border-radius: 12px !important;
+  width: 90% !important;
+  max-width: 500px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
+  overflow: hidden !important;
+  animation: slideUp 0.4s ease !important;
+  position: relative !important;
+}
+
+html body div.lesson__main .completion-header.completion-header.completion-header {
+  padding: 30px 30px 20px !important;
+  text-align: center !important;
+  position: relative !important;
+  z-index: 2 !important;
+}
+
+html body div.lesson__main .completion-icon.completion-icon.completion-icon {
+  font-size: 3rem !important;
+  margin-bottom: 15px !important;
+  color: #28a745 !important;
+}
+
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-10px); }
+  60% { transform: translateY(-5px); }
+}
+
+html body div.lesson__main .completion-title.completion-title.completion-title {
+  color: #333 !important;
+  font-size: 1.5rem !important;
+  font-weight: 600 !important;
+  margin: 0 0 10px 0 !important;
+}
+
+html body div.lesson__main .completion-subtitle.completion-subtitle.completion-subtitle {
+  color: #6c757d !important;
+  font-size: 1rem !important;
+  margin: 0 !important;
+}
+
+html body div.lesson__main .completion-body.completion-body.completion-body {
+  padding: 0 30px 30px !important;
+  text-align: center !important;
+  position: relative !important;
+  z-index: 2 !important;
+}
+
+html body div.lesson__main .completion-buttons.completion-buttons.completion-buttons {
+  display: flex !important;
+  justify-content: center !important;
+  gap: 15px !important;
+  margin-top: 25px !important;
+}
+
+/* Loading State */
+html body div.lesson__main .video-loading.video-loading.video-loading {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: center !important;
+  height: 400px !important;
+  background: #f8f9fa !important;
+  border-radius: 12px !important;
+  color: #6c757d !important;
+  font-size: 1.2rem !important;
+  border: 1px solid #e9ecef !important;
+}
+
+html body div.lesson__main .loading-spinner.loading-spinner.loading-spinner {
+  width: 40px !important;
+  height: 40px !important;
+  border: 3px solid #e9ecef !important;
+  border-top-color: #007bff !important;
+  border-radius: 50% !important;
+  animation: spin 1s linear infinite !important;
+  margin-bottom: 20px !important;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Responsive Design */
 @media (max-width: 768px) {
-  .lesson-title h3 {
-    font-size: 1rem;
+  html body div.lesson__main .modern-video-container {
+    padding: 20px !important;
+    margin-bottom: 20px !important;
   }
   
-  .completion-badge {
-    padding: 6px 12px;
-    font-size: 0.9rem;
+  html body div.lesson__main .video-title {
+    font-size: 1.4rem !important;
   }
   
-  .video-controls-info {
-    flex-direction: column;
-    gap: 5px;
+  html body div.lesson__main .video-actions {
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+  
+  html body div.lesson__main .btn-modern {
+    width: 100% !important;
+    padding: 16px 24px !important;
+  }
+  
+  html body div.lesson__main .completion-modal-content {
+    width: 95% !important;
+    margin: 20px !important;
+  }
+  
+  html body div.lesson__main .completion-buttons {
+    flex-direction: column !important;
   }
 }
-.lesson-video-container {
-  width: 100%;
-  margin-bottom: 20px;
+
+@media (max-width: 480px) {
+  html body div.lesson__main .video-header {
+    flex-direction: column !important;
+    gap: 15px !important;
+    text-align: center !important;
+  }
+  
+  html body div.lesson__main .video-title {
+    font-size: 1.2rem !important;
+  }
+  
+  html body div.lesson__main .completion-icon {
+    font-size: 3rem !important;
+  }
+  
+  html body div.lesson__main .completion-title {
+    font-size: 1.4rem !important;
+  }
 }
 
-.video-wrapper {
-  position: relative;
-  padding-bottom: 56.25%; /* 16:9 aspect ratio */
-  height: 0;
-  overflow: hidden;
-  margin-bottom: 15px;
+/* Plyr Customization */
+html body div.lesson__main .plyr--full-ui input[type=range] {
+  color: #007bff !important;
 }
 
-.video-wrapper iframe {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  border: none;
+html body div.lesson__main .plyr__control--overlaid {
+  background: rgba(0, 123, 255, 0.9) !important;
 }
 
-.video-progress {
-  margin-top: 10px;
+html body div.lesson__main .plyr--video .plyr__control.plyr__tab-focus,
+html body div.lesson__main .plyr--video .plyr__control:hover,
+html body div.lesson__main .plyr--video .plyr__control[aria-expanded=true] {
+  background: #007bff !important;
 }
 
-.progress-bar {
-  height: 8px;
-  background-color: #e9ecef;
-  border-radius: 4px;
-  overflow: hidden;
+html body div.lesson__main .plyr__control.plyr__tab-focus {
+  box-shadow: 0 0 0 5px rgba(0, 123, 255, 0.5) !important;
 }
 
-.progress-fill {
-  height: 100%;
-  background-color: #4CAF50;
-  transition: width 0.3s ease;
+html body div.lesson__main .plyr__menu__container .plyr__control[role=menuitemradio][aria-checked=true]::before {
+  background: #007bff !important;
 }
 
-.progress-text {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 5px;
-  font-size: 14px;
-  color: #6c757d;
-}
-
-.completed-badge {
-  background-color: #28a745;
-  color: white;
-  padding: 2px 8px;
-  border-radius: 10px;
-  font-size: 12px;
-}
-.video-completion-modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
-
-.video-completion-modal-content {
-  background-color: white;
-  border-radius: 8px;
-  width: 90%;
-  max-width: 500px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-  overflow: hidden;
-}
-
-.video-completion-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 15px 20px;
-  background-color: #f8f9fa;
-  border-bottom: 1px solid #e9ecef;
-}
-
-.video-completion-header h4 {
-  margin: 0;
-  font-size: 18px;
-  color: #333;
-}
-
-.close-button {
-  background: none;
-  border: none;
-  font-size: 24px;
-  cursor: pointer;
-  color: #6c757d;
-}
-
-.video-completion-body {
-  padding: 20px;
-  text-align: center;
-}
-
-.video-completion-body p {
-  margin-bottom: 20px;
-  font-size: 16px;
-}
-
-.video-completion-buttons {
-  display: flex;
-  justify-content: center;
-  gap: 15px;
-}
-
-.btn-rewatch, .btn-next-lesson {
-  padding: 10px 20px;
-  border-radius: 4px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  border: none;
-}
-
-.btn-rewatch {
-  background-color: #f8f9fa;
-  color: #495057;
-  border: 1px solid #ced4da;
-}
-
-.btn-rewatch:hover {
-  background-color: #e9ecef;
-}
-
-.btn-next-lesson {
-  background-color: #3f78e0;
-  color: white;
-}
-
-.btn-next-lesson:hover {
-  background-color: #3567c3;
-}
-
-/* เพิ่ม CSS สำหรับ modal */
-.video-completion-modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.7);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-  animation: fadeIn 0.3s ease;
-}
-
+/* Animation Classes */
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
-}
-
-.video-completion-modal-content {
-  background-color: white;
-  border-radius: 12px;
-  width: 90%;
-  max-width: 500px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
-  overflow: hidden;
-  animation: slideUp 0.4s ease;
 }
 
 @keyframes slideUp {
@@ -315,241 +382,12 @@
   to { transform: translateY(0); opacity: 1; }
 }
 
-.video-completion-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 18px 24px;
-  background-color: #f8f9fa;
-  border-bottom: 1px solid #e9ecef;
+@keyframes slideDown {
+  from { transform: translateY(-50px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
 
-.video-completion-header h4 {
-  margin: 0;
-  font-size: 20px;
-  color: #333;
-  font-weight: 600;
-}
-
-.close-button {
-  background: none;
-  border: none;
-  font-size: 28px;
-  cursor: pointer;
-  color: #6c757d;
-  transition: color 0.2s;
-}
-
-.close-button:hover {
-  color: #343a40;
-}
-
-.video-completion-body {
-  padding: 30px;
-  text-align: center;
-}
-
-.completion-icon {
-  font-size: 60px;
-  color: #28a745;
-  margin-bottom: 20px;
-}
-
-.video-completion-body h5 {
-  font-size: 22px;
-  margin-bottom: 15px;
-  color: #333;
-}
-
-.video-completion-body p {
-  margin-bottom: 25px;
-  font-size: 16px;
-  color: #6c757d;
-}
-
-.video-completion-buttons {
-  display: flex;
-  justify-content: center;
-  gap: 15px;
-  margin-top: 10px;
-}
-
-.btn-rewatch, .btn-next-lesson {
-  padding: 12px 24px;
-  border-radius: 50px;
-  font-weight: 500;
-  font-size: 16px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  border: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-
-.btn-rewatch {
-  background-color: #f8f9fa;
-  color: #495057;
-  border: 1px solid #ced4da;
-}
-
-.btn-rewatch:hover {
-  background-color: #e9ecef;
-  transform: translateY(-2px);
-}
-
-.btn-next-lesson {
-  background-color: #3f78e0;
-  color: white;
-  box-shadow: 0 4px 10px rgba(63, 120, 224, 0.3);
-}
-
-.btn-next-lesson:hover {
-  background-color: #3567c3;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 15px rgba(63, 120, 224, 0.4);
-}
-
-/* ปรับแต่ง completion badge */
-.completion-badge {
-  display: inline-flex;
-  align-items: center;
-  background-color: #28a745;
-  color: white;
-  padding: 8px 15px;
-  border-radius: 50px;
-  margin-top: 15px;
-  font-weight: 500;
-  box-shadow: 0 3px 8px rgba(40, 167, 69, 0.3);
-}
-
-.completion-badge i {
-  margin-right: 8px;
-  font-size: 16px;
-}
-
-/* ปรับแต่ง video controls info */
-.video-controls-info {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 15px;
-  padding: 10px 0;
-  border-top: 1px solid #eee;
-  color: #6c757d;
-  font-size: 14px;
-}
-
-.status-playing {
-  color: #28a745;
-  font-weight: 500;
-}
-
-.status-paused {
-  color: #dc3545;
-  font-weight: 500;
-}
-
-/* ปรับแต่ง progress bar */
-.lesson-progress {
-  height: 6px;
-  background-color: #e9ecef;
-  border-radius: 3px;
-  margin-top: 10px;
-  overflow: hidden;
-}
-
-.lesson-progress .progress-bar {
-  height: 100%;
-  background: linear-gradient(90deg, #3f78e0, #5a94ff);
-  border-radius: 3px;
-  transition: width 0.3s ease;
-}
-
-/* ปรับแต่ง video player */
-.video-player {
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-}
-
-/* ปรับแต่ง lesson title */
-.lesson-title {
-  margin-bottom: 20px;
-}
-
-.lesson-title h3 {
-  font-size: 24px;
-  font-weight: 600;
-  color: #333;
-}
-
-/* Loading state */
-.video-loading {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 400px;
-  background-color: #f8f9fa;
-  border-radius: 8px;
-  font-size: 18px;
-  color: #6c757d;
-}
-
-.video-loading::before {
-  content: "";
-  width: 24px;
-  height: 24px;
-  border: 3px solid #e9ecef;
-  border-top-color: #3f78e0;
-  border-radius: 50%;
-  margin-right: 12px;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-.video-additional-controls {
-  display: flex;
-  justify-content: center;
-  gap: 15px;
-  margin-top: 20px;
-}
-
-.btn-rewatch-inline, .btn-next-lesson-inline {
-  padding: 10px 20px;
-  border-radius: 50px;
-  font-weight: 500;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  border: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-
-.btn-rewatch-inline {
-  background-color: #f8f9fa;
-  color: #495057;
-  border: 1px solid #ced4da;
-}
-
-.btn-rewatch-inline:hover {
-  background-color: #e9ecef;
-  transform: translateY(-2px);
-}
-
-.btn-next-lesson-inline {
-  background-color: #3f78e0;
-  color: white;
-  box-shadow: 0 4px 10px rgba(63, 120, 224, 0.3);
-}
-
-.btn-next-lesson-inline:hover {
-  background-color: #3567c3;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 15px rgba(63, 120, 224, 0.4);
-}
+/* Utility Classes */
+.fade-in { animation: fadeIn 0.3s ease; }
+.slide-up { animation: slideUp 0.4s ease; }
+.slide-down { animation: slideDown 0.4s ease; }

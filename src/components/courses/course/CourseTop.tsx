@@ -1,14 +1,10 @@
-import { ChangeEvent, useState, Dispatch, SetStateAction } from "react";
-import { useSelector } from "react-redux";
+import { Dispatch, SetStateAction } from "react";
 import { useNavigate } from "react-router-dom";
-import { selectCourses } from "../../../redux/features/courseSlice";
-import { Course } from "./CourseS";
 
 interface CourseTopProps {
   startOffset: number;
   endOffset: number;
   totalItems: number;
-  setCourses: (courses: Course[]) => void;
   handleTabClick: (index: number) => void;
   activeTab: number;
   searchQuery: string;
@@ -65,41 +61,16 @@ const CourseTop = ({
   startOffset,
   endOffset,
   totalItems,
-  setCourses,
   handleTabClick,
   activeTab,
   searchQuery,
   setSearchQuery,
 }: CourseTopProps) => {
-  const allCourses = useSelector(selectCourses);
-  const [selected, setSelected] = useState("");
   const navigate = useNavigate();
 
   // Debug: Log props on every render
   console.log("CourseTop Props:", { searchQuery, setSearchQuery, isSetSearchQueryFunction: typeof setSearchQuery === "function" });
 
-  const selectHandler = (event: ChangeEvent<HTMLSelectElement>) => {
-    const select = event.target.value;
-    setSelected(select);
-
-    let sortedCourses = [...allCourses];
-
-    switch (select) {
-      case "popular":
-        sortedCourses = sortedCourses
-          .filter((item) => item.popular)
-          .sort((a, b) => {
-            const aPopular = parseFloat(a.popular || "0");
-            const bPopular = parseFloat(b.popular || "0");
-            return bPopular - aPopular;
-          });
-        break;
-      default:
-        sortedCourses = allCourses;
-        break;
-    }
-    setCourses(sortedCourses);
-  };
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -113,53 +84,76 @@ const CourseTop = ({
 
   return (
     <div className="courses-top-wrap">
-      <div className="row align-items-center">
-        <div className="col-md-5">
-          <div className="courses-top-left">
-            <p>แสดง {startOffset} - {endOffset} จาก {totalItems} ผลลัพธ์</p>
-          </div>
-        </div>
-        <div className="col-md-7">
-          <div className="d-flex justify-content-center justify-content-md-end align-items-center flex-wrap gap-3">
-            <div className="courses__search mr-15">
-              <form onSubmit={handleSearchSubmit}>
-                <div className="input-group">
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder="ค้นหาหลักสูตร..."
-                    value={searchQuery}
-                    onChange={(e) => {
-                      console.log("Search Input:", e.target.value);
-                      if (typeof setSearchQuery === "function") {
-                        setSearchQuery(e.target.value);
-                      } else {
-                        console.error("setSearchQuery is not a function:", setSearchQuery);
-                      }
-                    }}
-                  />
-                  <button className="btn btn-primary" type="submit">
-                    <i className="fas fa-search"></i> ค้นหา
-                  </button>
+      <div className="container-fluid">
+        <div className="row">
+          {/* Controls Section */}
+          <div className="col-12">
+            <div className="courses-controls-wrapper">
+              <div className="row align-items-center">
+                {/* Search Section */}
+                <div className="col-lg-5 col-md-12 mb-3 mb-lg-0">
+                  <div className="courses-search-section">
+                    <form onSubmit={handleSearchSubmit} className="search-form">
+                      <div className="search-input-group">
+                        <input
+                          type="text"
+                          className="form-control search-input"
+                          placeholder="ค้นหาหลักสูตร..."
+                          value={searchQuery}
+                          onChange={(e) => {
+                            console.log("Search Input:", e.target.value);
+                            if (typeof setSearchQuery === "function") {
+                              setSearchQuery(e.target.value);
+                            } else {
+                              console.error("setSearchQuery is not a function:", setSearchQuery);
+                            }
+                          }}
+                        />
+                        <button 
+                          className="btn btn-primary search-btn" 
+                          type="submit"
+                        >
+                          <i className="fas fa-search"></i>
+                          <span>ค้นหา</span>
+                        </button>
+                      </div>
+                    </form>
+                  </div>
                 </div>
-              </form>
-            </div>
-            <div className="courses-top-right m-0 ms-md-auto">
-              <span className="sort-by">เรียง:</span>
-              <div className="courses-top-right-select">
-                <select onChange={selectHandler} value={selected} name="class" className="orderby">
-                  <option value="">การเลือกทั้งหมด</option>
-                  <option value="popular">เรียงลำดับตามความนิยม</option>
-                </select>
+
+                {/* Results Info */}
+                <div className="col-lg-3 col-md-6 mb-3 mb-lg-0">
+                  <div className="courses-results-info">
+                    <p className="results-text">
+                      แสดง {startOffset} - {endOffset} จาก {totalItems} ผลลัพธ์
+                    </p>
+                  </div>
+                </div>
+
+                {/* View Toggle Section */}
+                <div className="col-lg-4 col-md-6">
+                  <div className="courses-actions-section">
+                    <div className="d-flex align-items-center justify-content-lg-end flex-wrap gap-3">
+                      {/* View Toggle */}
+                      <div className="view-toggle-section">
+                        <div className="view-toggle-buttons">
+                          {tab_title.map((tab, index) => (
+                            <button 
+                              key={index}
+                              onClick={() => handleTabClick(index)} 
+                              className={`view-toggle-btn ${activeTab === index ? "active" : ""}`}
+                              type="button"
+                            >
+                              {tab.icon}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
-            <ul className="nav nav-tabs courses__nav-tabs" id="myTab" role="tablist">
-              {tab_title.map((tab, index) => (
-                <li key={index} onClick={() => handleTabClick(index)} className="nav-item" role="presentation">
-                  <button className={`nav-link ${activeTab === index ? "active" : ""}`}>{tab.icon}</button>
-                </li>
-              ))}
-            </ul>
           </div>
         </div>
       </div>

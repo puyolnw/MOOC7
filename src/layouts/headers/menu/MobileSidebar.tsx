@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom"
+import { useEffect } from "react"
 import MobileMenu from "./MobileMenu"
 
 interface MobileSidebarProps {
@@ -7,8 +8,22 @@ interface MobileSidebarProps {
 }
 const MobileSidebar = ({ isActive, setIsActive }: MobileSidebarProps) => {
 
+   // Add/remove class to body element
+   useEffect(() => {
+      if (isActive) {
+         document.body.classList.add('mobile-menu-visible');
+      } else {
+         document.body.classList.remove('mobile-menu-visible');
+      }
+      
+      // Cleanup on unmount
+      return () => {
+         document.body.classList.remove('mobile-menu-visible');
+      };
+   }, [isActive]);
+
    return (
-      <div className={isActive ? "mobile-menu-visible" : ""}>
+      <>
          <div className="tgmobile__menu">
             <nav className="tgmobile__menu-box">
                <div onClick={() => setIsActive(false)} className="close-btn"><i className="tg-flaticon-close-1"></i></div>
@@ -36,7 +51,7 @@ const MobileSidebar = ({ isActive, setIsActive }: MobileSidebarProps) => {
             </nav>
          </div>
          <div className="tgmobile__menu-backdrop"></div>
-      </div>
+      </>
    )
 }
 

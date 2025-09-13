@@ -90,6 +90,9 @@ const ScoreManagementTab: React.FC<ScoreManagementTabProps> = ({ subject }) => {
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isAutoDistributing, setIsAutoDistributing] = useState(false);
+  
+  // เก็บค่าที่กรอกจริงใน Frontend (ไม่แปลง)
+  const [frontendQuizPercentages, setFrontendQuizPercentages] = useState<{[key: number]: number}>({});
   const [passingPercentage, setPassingPercentage] = useState<number>(subject.passing_percentage || 80);
   const [expandedBigLessons, setExpandedBigLessons] = useState<Set<number>>(new Set());
   const [expandedLessons, setExpandedLessons] = useState<Set<number>>(new Set());
@@ -290,6 +293,12 @@ const ScoreManagementTab: React.FC<ScoreManagementTabProps> = ({ subject }) => {
   const handleBigLessonQuizPercentageUpdate = (bigLessonId: number, newValue: number) => {
     if (!scoreStructure) return;
     
+    // เก็บค่าที่กรอกจริงใน Frontend
+    setFrontendQuizPercentages(prev => ({
+      ...prev,
+      [bigLessonId]: newValue
+    }));
+    
     setScoreStructure(prev => {
       if (!prev) return prev;
       
@@ -308,10 +317,19 @@ const ScoreManagementTab: React.FC<ScoreManagementTabProps> = ({ subject }) => {
   const calculateBigLessonProgress = (bigLesson: BigLesson) => {
     // คำนวณคะแนนที่ใช้ภายในหน่วย (เป็นเปอร์เซ็นต์ของหน่วยนั้น)
     // แบบทดสอบท้ายหน่วย + บทเรียนย่อย (ไม่รวมแบบทดสอบบทเรียน เพราะจะไม่เอาไปบวกกับหน่วย)
-    const totalInternalPercentage = (bigLesson.quiz?.percentage || 0) + 
+    // ใช้ค่าที่กรอกจริงใน Frontend แทนค่าที่แปลงแล้ว
+    const quizPercentage = frontendQuizPercentages[bigLesson.id] ?? (bigLesson.quiz?.percentage || 0);
+    const totalInternalPercentage = quizPercentage + 
       bigLesson.lessons.reduce((sum, lesson) => 
         sum + lesson.percentage, 0  // รวม lesson.percentage เพราะเป็นสัดส่วนในหน่วย
       );
+    
+    console.log(`🔍 Debug: คำนวณ big lesson progress สำหรับ ${bigLesson.title}:`, {
+      quizPercentage: quizPercentage,
+      lessonsPercentage: bigLesson.lessons.reduce((sum, lesson) => sum + lesson.percentage, 0),
+      totalInternalPercentage: totalInternalPercentage,
+      formula: `${quizPercentage}% + ${bigLesson.lessons.reduce((sum, lesson) => sum + lesson.percentage, 0)}% = ${totalInternalPercentage}%`
+    });
     
     // คำนวณคะแนนจริงที่ใช้ (แปลงจากเปอร์เซ็นต์เป็นคะแนน)
     const actualUsedScore = (totalInternalPercentage / 100) * bigLesson.weight_percentage;
@@ -347,13 +365,19 @@ const ScoreManagementTab: React.FC<ScoreManagementTabProps> = ({ subject }) => {
   // คำนวณคะแนนดิบของแบบทดสอบบทเรียน
   const calculateLessonQuizRawScore = (lesson: Lesson, bigLessonWeight: number) => {
     if (!lesson.quiz) return 0;
-    return calculateRawScore(lesson.quiz.percentage, calculateLessonRawScore(lesson, bigLessonWeight));
+    // ใช้ค่าที่กรอกจริงใน Frontend แทนค่าที่แปลงแล้ว
+    // lesson quiz ใช้ 100% ของ lesson percentage
+    const lessonPercentage = lesson.percentage; // ใช้ค่าที่กรอกจริง (30%)
+    const quizPercentage = 100; // lesson quiz ใช้ 100% เสมอ
+    return calculateRawScore(quizPercentage, calculateRawScore(lessonPercentage, bigLessonWeight));
   };
 
   // คำนวณคะแนนดิบของแบบทดสอบท้ายหน่วย
   const calculateBigLessonQuizRawScore = (bigLesson: BigLesson) => {
     if (!bigLesson.quiz) return 0;
-    return calculateRawScore(bigLesson.quiz.percentage, bigLesson.weight_percentage);
+    // ใช้ค่าที่กรอกจริงใน Frontend แทนค่าที่แปลงแล้ว
+    const quizPercentage = frontendQuizPercentages[bigLesson.id] ?? bigLesson.quiz.percentage;
+    return calculateRawScore(quizPercentage, bigLesson.weight_percentage);
   };
 
   const calculateTotalValidation = () => {
@@ -366,10 +390,19 @@ const ScoreManagementTab: React.FC<ScoreManagementTabProps> = ({ subject }) => {
     // ตรวจสอบว่าแต่ละ big lesson มีการกระจายคะแนนภายในถูกต้องหรือไม่
     const bigLessonErrors: string[] = [];
     scoreStructure.big_lessons.forEach((bl, index) => {
-      const internalTotal = (bl.quiz?.percentage || 0) + 
+      // ใช้ค่าที่กรอกจริงใน Frontend แทนค่าที่แปลงแล้ว
+      const quizPercentage = frontendQuizPercentages[bl.id] ?? (bl.quiz?.percentage || 0);
+      const internalTotal = quizPercentage + 
         bl.lessons.reduce((sum, lesson) => 
           sum + lesson.percentage, 0  // รวม lesson.percentage เพราะเป็นสัดส่วนในหน่วย
         );
+      
+      console.log(`🔍 Debug: ตรวจสอบ big lesson ${index + 1} สำหรับ ${bl.title}:`, {
+        quizPercentage: quizPercentage,
+        lessonsPercentage: bl.lessons.reduce((sum, lesson) => sum + lesson.percentage, 0),
+        internalTotal: internalTotal,
+        formula: `${quizPercentage}% + ${bl.lessons.reduce((sum, lesson) => sum + lesson.percentage, 0)}% = ${internalTotal}%`
+      });
       
       if (Math.abs(internalTotal - 100) > 0.01) {
         bigLessonErrors.push(`หน่วยที่ ${index + 1}: ${internalTotal.toFixed(1)}% (ควรเป็น 100%)`);
@@ -490,6 +523,28 @@ const ScoreManagementTab: React.FC<ScoreManagementTabProps> = ({ subject }) => {
       if (response.data.success) {
         const loadedStructure = response.data.scoreStructure || null;
         if (loadedStructure) {
+          // 🔍 Debug: ตรวจสอบข้อมูลที่โหลดมาจาก API
+          console.log('🔍 Debug: ข้อมูลที่โหลดมาจาก API (ก่อนแก้ไข):', loadedStructure);
+          
+          // 🔍 Debug: ตรวจสอบข้อมูล quiz percentage ที่โหลดมาจาก API
+          console.log('🔍 Debug: ข้อมูล quiz percentage ที่โหลดมาจาก API:');
+          if (loadedStructure?.big_lessons) {
+            loadedStructure.big_lessons.forEach((bl: any, blIndex: number) => {
+              bl.lessons?.forEach((lesson: any, lIndex: number) => {
+                if (lesson.quiz) {
+                  console.log(`🔍 Debug: Big Lesson ${blIndex + 1}, Lesson ${lIndex + 1} Quiz ที่โหลดมา:`, {
+                    id: lesson.quiz.id,
+                    percentage: lesson.quiz.percentage,
+                    note: 'ถ้าเป็น 100 หมายความว่าข้อมูลในฐานข้อมูลไม่ถูกต้อง'
+                  });
+                }
+              });
+            });
+          }
+          
+          // 🔍 Debug: ตรวจสอบข้อมูลที่โหลดมาจาก API
+          console.log('🔍 Debug: ข้อมูลที่โหลดมาจาก API (หลังแก้ไข):', loadedStructure);
+          
           // เรียงลำดับข้อมูลตาม id (ง่ายและแน่นอน)
           loadedStructure.big_lessons.sort((a: any, b: any) => a.id - b.id);
           
@@ -499,6 +554,25 @@ const ScoreManagementTab: React.FC<ScoreManagementTabProps> = ({ subject }) => {
           });
         }
         setScoreStructure(loadedStructure);
+        
+        // แปลงค่า percentage จาก API กลับเป็นค่าที่แสดงใน Frontend
+        const frontendPercentages: {[key: number]: number} = {};
+        loadedStructure.big_lessons.forEach((bl: any) => {
+          if (bl.quiz) {
+            // แปลงจาก 12% กลับเป็น 40% สำหรับแสดงใน Frontend
+            // สูตร: (stored_percentage / big_lesson_weight) * 100
+            const originalPercentage = (bl.quiz.percentage / bl.weight_percentage) * 100;
+            frontendPercentages[bl.id] = originalPercentage;
+            console.log(`🔍 Debug: แปลงค่า big lesson quiz จาก API สำหรับ ${bl.title}:`, {
+              storedPercentage: bl.quiz.percentage,
+              bigLessonWeight: bl.weight_percentage,
+              originalPercentage: originalPercentage,
+              formula: `(${bl.quiz.percentage} / ${bl.weight_percentage}) * 100 = ${originalPercentage}%`
+            });
+          }
+        });
+        setFrontendQuizPercentages(frontendPercentages);
+        
         if (response.data.subject?.passing_percentage !== undefined) {
           setPassingPercentage(response.data.subject.passing_percentage);
         }
@@ -542,7 +616,19 @@ const ScoreManagementTab: React.FC<ScoreManagementTabProps> = ({ subject }) => {
             is_fixed_weight: bl.is_fixed_weight,
             quiz: bl.quiz ? {
               id: bl.quiz.id,
-              percentage: bl.quiz.percentage,
+              percentage: (() => {
+                // แปลง quiz percentage ของแบบทดสอบท้ายบทเรียนใหญ่
+                // จาก 40% เป็นเปอร์เซ็นต์จริงของหน่วย
+                // ตัวอย่าง: 40% ของหน่วย 30% = 12% ของ 100 คะแนน
+                const actualQuizPercentage = (bl.quiz.percentage / 100) * bl.weight_percentage;
+                console.log(`🔍 Debug: แปลง big lesson quiz percentage สำหรับ ${bl.title}:`, {
+                  originalQuizPercentage: bl.quiz.percentage,
+                  bigLessonWeight: bl.weight_percentage,
+                  calculatedPercentage: actualQuizPercentage,
+                  formula: `(${bl.quiz.percentage} / 100) * ${bl.weight_percentage} = ${actualQuizPercentage}%`
+                });
+                return actualQuizPercentage;
+              })(),
               is_fixed_weight: bl.quiz.is_fixed_weight
             } : null,
             lessons: bl.lessons.map(lesson => ({
@@ -551,7 +637,19 @@ const ScoreManagementTab: React.FC<ScoreManagementTabProps> = ({ subject }) => {
               is_fixed_weight: lesson.is_fixed_weight,
               quiz: lesson.quiz ? {
                 id: lesson.quiz.id,
-                percentage: lesson.quiz.percentage,
+                percentage: (() => {
+                  // แปลง quiz percentage ของแบบทดสอบบทเรียนย่อย
+                  // จาก 100% เป็นเปอร์เซ็นต์จริงของหน่วย
+                  // ตัวอย่าง: 100% ของบทเรียนย่อย 30% = 30% ของหน่วย
+                  const actualQuizPercentage = (lesson.percentage / 100) * bl.weight_percentage;
+                  console.log(`🔍 Debug: แปลง lesson quiz percentage สำหรับ ${lesson.title}:`, {
+                    originalQuizPercentage: lesson.quiz.percentage,
+                    lessonPercentage: lesson.percentage,
+                    calculatedPercentage: actualQuizPercentage,
+                    formula: `(${lesson.percentage} / 100) * ${bl.weight_percentage} = ${actualQuizPercentage}%`
+                  });
+                  return actualQuizPercentage;
+                })(),
                 is_fixed_weight: lesson.quiz.is_fixed_weight
               } : null
             }))
@@ -563,6 +661,59 @@ const ScoreManagementTab: React.FC<ScoreManagementTabProps> = ({ subject }) => {
           } : null
         }
       };
+
+      // 🔍 Debug: ตรวจสอบข้อมูลที่กรอกใน Frontend ก่อนคำนวณ
+      console.log("🔍 Debug: ข้อมูลที่กรอกใน Frontend ก่อนคำนวณ:");
+      if (scoreStructure?.big_lessons) {
+        scoreStructure.big_lessons.forEach((bl: any, blIndex: number) => {
+          console.log(`🔍 Debug: Big Lesson ${blIndex + 1} (${bl.title}) - ข้อมูลที่กรอกใน Frontend:`, {
+            weight_percentage: bl.weight_percentage,
+            quiz: bl.quiz ? {
+              id: bl.quiz.id,
+              percentage: bl.quiz.percentage,
+              note: 'ข้อมูลที่กรอกใน Frontend'
+            } : null,
+            lessons: bl.lessons?.map((lesson: any) => ({
+              id: lesson.id,
+              title: lesson.title,
+              percentage: lesson.percentage,
+              quiz: lesson.quiz ? {
+                id: lesson.quiz.id,
+                percentage: lesson.quiz.percentage,
+                note: 'ข้อมูลที่กรอกใน Frontend'
+              } : null
+            }))
+          });
+        });
+      }
+      
+      // 🔍 Debug: ตรวจสอบข้อมูล quiz percentage ที่ส่งไป
+      console.log("🔍 Debug: ข้อมูล quiz percentage ที่ส่งไปยัง API:");
+      payload.updates.big_lessons.forEach((bl: any, blIndex: number) => {
+        // ตรวจสอบแบบทดสอบท้ายบทเรียนใหญ่
+        if (bl.quiz) {
+          console.log(`🔍 Debug: Big Lesson ${blIndex + 1} Quiz ที่ส่งไป:`, {
+            id: bl.quiz.id,
+            percentage: bl.quiz.percentage,
+            note: `แปลงจาก 40% เป็น 12% (40% ของ 30% = 12%)`
+          });
+        }
+        
+        // ตรวจสอบแบบทดสอบบทเรียนย่อย
+        bl.lessons?.forEach((lesson: any, lIndex: number) => {
+          if (lesson.quiz) {
+            console.log(`🔍 Debug: Big Lesson ${blIndex + 1}, Lesson ${lIndex + 1} Quiz ที่ส่งไป:`, {
+              id: lesson.quiz.id,
+              percentage: lesson.quiz.percentage,
+              note: `แปลงจาก 100% เป็น ${lesson.percentage}% (${lesson.percentage}% ของ ${bl.weight_percentage}% = ${(lesson.percentage / 100) * bl.weight_percentage}%)`
+            });
+          }
+        });
+      });
+      
+      // 🔍 Debug: ตรวจสอบข้อมูลที่ส่งไปยัง API
+      console.log("🔍 Debug: ข้อมูลที่ส่งไปยัง API (Payload):", payload);
+      console.log("🔍 Debug: API URL:", `${apiURL}/api/subjects/${subject.subject_id}/scores-hierarchical`);
 
       console.log("บันทึกข้อมูลคะแนน:", payload);
       console.log("🎯 Sending request to:", `${apiURL}/api/subjects/${subject.subject_id}/scores-hierarchical`);
@@ -699,7 +850,7 @@ const ScoreManagementTab: React.FC<ScoreManagementTabProps> = ({ subject }) => {
               id: lesson.quiz.id,
               title: lesson.quiz.title,
               percentage: lesson.quiz.percentage,
-              score: (lesson.quiz.percentage / 100) * (lesson.percentage / 100) * bl.weight_percentage
+              score: (lesson.percentage / 100) * bl.weight_percentage
             } : null
           }))
         })),
@@ -1025,7 +1176,7 @@ const ScoreManagementTab: React.FC<ScoreManagementTabProps> = ({ subject }) => {
                     type="big-lesson"
                     segments={[
                       ...(bigLesson.quiz ? [{
-                        percentage: bigLesson.quiz.percentage,
+                        percentage: frontendQuizPercentages[bigLesson.id] ?? bigLesson.quiz.percentage,
                         color: 'linear-gradient(90deg, #e74c3c, #c0392b)',
                         label: 'แบบทดสอบท้ายหน่วย'
                       }] : []),
@@ -1086,18 +1237,18 @@ const ScoreManagementTab: React.FC<ScoreManagementTabProps> = ({ subject }) => {
                               สัดส่วนในหน่วย (%)
                             </div>
                             <PercentageInput 
-                              value={bigLesson.quiz?.percentage || 0}
+                              value={frontendQuizPercentages[bigLesson.id] ?? (bigLesson.quiz?.percentage || 0)}
                               onChange={(newValue) => handleBigLessonQuizPercentageUpdate(bigLesson.id, newValue)}
                             />
                           </div>
                         </div>
                         <ProgressBar 
-                          usedScore={bigLesson.quiz?.percentage || 0}
+                          usedScore={frontendQuizPercentages[bigLesson.id] ?? (bigLesson.quiz?.percentage || 0)}
                           totalScore={100}
                           status="complete"
                           type="quiz"
                           segments={[{
-                            percentage: bigLesson.quiz?.percentage || 0,
+                            percentage: frontendQuizPercentages[bigLesson.id] ?? (bigLesson.quiz?.percentage || 0),
                             color: 'linear-gradient(90deg, #e74c3c, #c0392b)',
                             label: 'แบบทดสอบท้ายหน่วย'
                           }]}
@@ -1202,7 +1353,7 @@ const ScoreManagementTab: React.FC<ScoreManagementTabProps> = ({ subject }) => {
                                     สัดส่วนในบทเรียน (%) (อัปเดตอัตโนมัติเป็น 100%)
                                   </div>
                                   <PercentageInput 
-                                    value={lesson.quiz?.percentage || 0}
+                                    value={100}
                                     onChange={(newValue) => handleLessonQuizPercentageUpdate(lesson.id, newValue)}
                                     disabled={true}
                                   />
@@ -1210,12 +1361,12 @@ const ScoreManagementTab: React.FC<ScoreManagementTabProps> = ({ subject }) => {
                               </div>
                               
                               <ProgressBar 
-                                usedScore={lesson.quiz?.percentage || 0}
+                                usedScore={100}
                                 totalScore={100}
                                 status="complete"
                                 type="quiz"
                                 segments={[{
-                                  percentage: lesson.quiz?.percentage || 0,
+                                  percentage: 100,
                                   color: 'linear-gradient(90deg, #2ecc71, #27ae60)',
                                   label: 'แบบทดสอบบทเรียน'
                                 }]}

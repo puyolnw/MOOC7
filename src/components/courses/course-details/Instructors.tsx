@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import styles from "./Instructors.module.css";
+import "./Instructors.css";
 
 interface Instructor {
   instructor_id: number;
@@ -38,59 +38,59 @@ const Instructors = ({ instructors }: InstructorsProps) => {
   };
 
   return (
-    <div className={styles["instructors-container"]}>
-      <div className={styles["section-header"]}>
-        <div className={styles["header-content"]}>
-          <div className={styles["section-icon"]}>
+    <div className="lesson-instructors-container">
+      <div className="lesson-instructors-header">
+        <div className="lesson-instructors-header-content">
+          <div className="lesson-instructors-icon">
             <i className="fas fa-chalkboard-teacher"></i>
           </div>
-          <div className={styles["header-text"]}>
-            <h2 className={styles["section-title"]}>อาจารย์ประจำรายวิชา</h2>
-            <p className={styles["section-subtitle"]}>
+          <div className="lesson-instructors-text">
+            <h2 className="lesson-instructors-title">อาจารย์ประจำรายวิชา</h2>
+            <p className="lesson-instructors-subtitle">
               พบกับทีมผู้สอนมืออาชีพที่จะนำพาคุณสู่ความสำเร็จ
             </p>
           </div>
         </div>
-        <div className={styles["instructor-count"]}>
-          <span className={styles["count-number"]}>{instructors.length}</span>
-          <span className={styles["count-label"]}>ท่าน</span>
+        <div className="lesson-instructors-count">
+          <span className="lesson-instructors-count-number">{instructors.length}</span>
+          <span className="lesson-instructors-count-label">ท่าน</span>
         </div>
       </div>
 
       {instructors && instructors.length > 0 ? (
-        <div className={styles["instructors-grid"]}>
+        <div className="lesson-instructors-grid">
           {instructors.map((instructor, index) => (
             <div
               key={instructor.instructor_id}
-              className={styles["instructor-card"]}
+              className="lesson-instructor-card"
               style={{ animationDelay: `${index * 0.1}s` }}
             >
-              <div className={styles["card-inner"]}>
+              <div className="lesson-instructor-card-inner">
                 {/* Avatar Section */}
-                <div className={styles["avatar-section"]}>
-                  <div className={styles["avatar-container"]}>
+                <div className="lesson-instructor-avatar-section">
+                  <div className="lesson-instructor-avatar-container">
                     <img
                       src={getAvatarUrl(instructor)}
                       alt={instructor.instructor_name || instructor.name}
-                      className={styles["instructor-avatar"]}
+                      className="lesson-instructor-avatar"
                       onError={handleImageError}
                     />
-                    <div className={styles["verified-badge"]}>
+                    <div className="lesson-instructor-verified-badge">
                       <i className="fas fa-check"></i>
                     </div>
                   </div>
                 </div>
 
                 {/* Info Section */}
-                <div className={styles["info-section"]}>
-                  <div className={styles["instructor-header"]}>
-                    <h3 className={styles["instructor-name"]}>{instructor.instructor_name || instructor.name}</h3>
-                    <p className={styles["instructor-position"]}>{instructor.position}</p>
+                <div className="lesson-instructor-info-section">
+                  <div className="lesson-instructor-header">
+                    <h3 className="lesson-instructor-name">{instructor.instructor_name || instructor.name}</h3>
+                    <p className="lesson-instructor-position">{instructor.position}</p>
                   </div>
 
                   {instructor.bio && (
-                    <div className={styles["bio-section"]}>
-                      <p className={styles["instructor-bio"]}>
+                    <div className="lesson-instructor-bio-section">
+                      <p className="lesson-instructor-bio">
                         {instructor.bio.length > 120 
                           ? `${instructor.bio.substring(0, 120)}...` 
                           : instructor.bio
@@ -100,8 +100,8 @@ const Instructors = ({ instructors }: InstructorsProps) => {
                   )}
 
                   {/* Social Links */}
-                  <div className={styles["social-section"]}>
-                    <div className={styles["social-links"]}>
+                  <div className="lesson-instructor-social-section">
+                    <div className="lesson-instructor-social-links">
                       {[
                         { icon: "envelope", color: "email", label: "อีเมล" },
                         { icon: "phone", color: "phone", label: "โทรศัพท์" },
@@ -111,7 +111,7 @@ const Instructors = ({ instructors }: InstructorsProps) => {
                         <Link
                           key={socialIndex}
                           to="#"
-                          className={`${styles["social-link"]} ${styles[social.color]}`}
+                          className={`lesson-instructor-social-link lesson-instructor-social-${social.color}`}
                           title={social.label}
                           aria-label={`ติดต่อผ่าน ${social.label}`}
                         >
@@ -123,8 +123,8 @@ const Instructors = ({ instructors }: InstructorsProps) => {
                 </div>
 
                 {/* Hover Effect Overlay */}
-                <div className={styles["hover-overlay"]}>
-                  <div className={styles["overlay-content"]}>
+                <div className="lesson-instructor-hover-overlay">
+                  <div className="lesson-instructor-overlay-content">
                     <i className="fas fa-user-circle"></i>
                     <span>ดูข้อมูลเพิ่มเติม</span>
                   </div>
@@ -134,12 +134,12 @@ const Instructors = ({ instructors }: InstructorsProps) => {
           ))}
         </div>
       ) : (
-        <div className={styles["empty-state"]}>
-          <div className={styles["empty-icon"]}>
+        <div className="lesson-instructors-empty-state">
+          <div className="lesson-instructors-empty-icon">
             <i className="fas fa-user-slash"></i>
           </div>
-          <h3 className={styles["empty-title"]}>ยังไม่มีข้อมูลอาจารย์ประจำรายวิชา</h3>
-          <p className={styles["empty-description"]}>
+          <h3 className="lesson-instructors-empty-title">ยังไม่มีข้อมูลอาจารย์ประจำรายวิชา</h3>
+          <p className="lesson-instructors-empty-description">
             ข้อมูลอาจารย์ผู้สอนจะแสดงที่นี่เมื่อมีการเพิ่มข้อมูล
           </p>
         </div>

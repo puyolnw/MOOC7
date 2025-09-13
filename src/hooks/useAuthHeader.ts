@@ -121,8 +121,8 @@ export const useAuthHeader = () => {
     document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('storage', handleStorageChange);
     
-    // ตรวจสอบทุก 60 วินาที (ไม่บ่อยมากเพื่อประสิทธิภาพ)
-    const intervalId = setInterval(checkAuthStatus, 60000);
+    // ตรวจสอบทุก 5 นาที (ลดความถี่เพื่อประสิทธิภาพ)
+    const intervalId = setInterval(checkAuthStatus, 300000);
     
     // Cleanup
     return () => {

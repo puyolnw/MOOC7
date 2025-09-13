@@ -1,9 +1,10 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import './LessonFaq.css';
 
 
 interface LessonItem {
   id: number;
+  lesson_id?: number; // ✅ เพิ่ม lesson_id สำหรับการจับคู่กับ hierarchicalData
   title: string;
   lock: boolean;
   completed: boolean;
@@ -46,6 +47,8 @@ interface LessonFaqProps {
   onAccordionChange?: (accordionId: number | null) => void;
   // ✅ เพิ่ม prop สำหรับ hierarchical data
   hierarchicalData?: any;
+  // ✅ เพิ่ม prop สำหรับแสดง modal
+  onShowLockedModal?: (data: any) => void;
   // ✅ Task 5: ลบ payment-related props
   // paymentStatus?: any;
   // onUploadSlip?: (file: File) => Promise<void>;
@@ -68,12 +71,14 @@ const LessonFaq = ({
   subjectId,
   subjectQuizzes: externalSubjectQuizzes,
   // เพิ่ม prop ใหม่เพื่อให้รู้ว่ากำลังเรียนบทไหนอยู่
-  // currentLessonId,
+  currentLessonId,
   // เพิ่ม prop สำหรับควบคุม activeAccordion จากภายนอก
   activeAccordion: externalActiveAccordion,
   onAccordionChange,
   // ✅ เพิ่ม prop สำหรับ hierarchical data
   hierarchicalData,
+  // ✅ เพิ่ม prop สำหรับแสดง modal
+  onShowLockedModal,
   // ✅ Task 5: ลบ payment-related parameters
   // paymentStatus,
   // onUploadSlip
@@ -142,74 +147,22 @@ const LessonFaq = ({
   
   // ฟังก์ชันสำหรับอัปเดต accordion
   const updateActiveAccordion = (accordionId: number | null) => {
-    console.log("🎯 LessonFaq updateActiveAccordion called with:", accordionId);
-    console.log("🎯 LessonFaq onAccordionChange exists:", !!onAccordionChange);
     if (onAccordionChange) {
-      console.log("🎯 เรียก onAccordionChange จากภายนอก");
       onAccordionChange(accordionId);
     } else {
-      console.log("🎯 ใช้ local state");
       setActiveAccordion(accordionId);
     }
   };
 
 
 
-  // ฟังก์ชันเช็คว่าควรล็อคบทเรียนหรือไม่ (รองรับระบบใหม่)
-  const shouldLockLesson = (sectionIndex: number, itemIndex: number) => {
-    const section = lessonData[sectionIndex];
-    const currentItem = section?.items[itemIndex];
-    
-    console.log(`🔍 ตรวจสอบการล็อค: sectionIndex=${sectionIndex}, itemIndex=${itemIndex}`);
-    console.log(`📚 Section: ${section?.title}`);
-    console.log(`🎯 Current Item:`, currentItem);
-    
-    if (currentItem && currentItem.type === "quiz") {
-      // ตรวจสอบว่าเป็นแบบทดสอบท้ายบทหรือไม่
-      const isEndOfChapterQuiz = currentItem.title.includes("แบบทดสอบท้ายบท") || 
-                                 currentItem.title.includes("แบบทดสอบท้ายบทใหญ่") ||
-                                 currentItem.title.includes("1.X แบบทดสอบท้ายบทใหญ่") ||
-                                 currentItem.title.includes("1.X");
-      
-      console.log(`🎯 Is End of Chapter Quiz: ${isEndOfChapterQuiz}`);
-      console.log(`🎯 Quiz Title: "${currentItem.title}"`);
-      
-      if (isEndOfChapterQuiz) {
-        // ตรวจสอบว่ามี video ใน section นี้หรือไม่
-        const videosInSection = section.items.filter(item => item.type === "video");
-        const hasVideo = videosInSection.length > 0;
-        
-        console.log(`📹 Videos in section: ${videosInSection.length}`);
-        console.log(`📹 Has video: ${hasVideo}`);
-        
-        // ถ้าไม่มี video เลย ให้ไม่ล็อค
-        if (!hasVideo) {
-          console.log(`✅ ไม่ล็อค: ไม่มี video ใน section นี้`);
-          return false;
-        }
-        
-        // ตรวจสอบว่า video ทั้งหมดใน section นี้เสร็จแล้วหรือไม่
-        const completedVideos = videosInSection.filter(item => item.completed === true);
-        const allVideosCompleted = completedVideos.length === videosInSection.length;
-        
-        console.log(`✅ Completed videos: ${completedVideos.length}/${videosInSection.length}`);
-        console.log(`✅ All videos completed: ${allVideosCompleted}`);
-        
-        // ถ้า video ทั้งหมดเสร็จแล้ว ให้ไม่ล็อค
-        if (allVideosCompleted) {
-          console.log(`✅ ไม่ล็อค: video ทั้งหมดเสร็จแล้ว`);
-          return false;
-        }
-        
-        // ล็อคถ้า video ยังไม่เสร็จ
-        console.log(`🔒 Should lock: video ยังไม่เสร็จ`);
-        return true;
-      }
+  // ฟังก์ชันแสดง modal สำหรับเนื้อหาที่ล็อค
+  const showLockedContentModal = (data: any) => {
+    if (onShowLockedModal) {
+      onShowLockedModal(data);
     }
-    
-    console.log(`✅ ไม่ล็อค: ไม่ใช่แบบทดสอบท้ายบท`);
-    return false;
   };
+
 
   // ✅ เพิ่มฟังก์ชันคำนวณ progress จาก hierarchical data
   const calculateHierarchicalProgress = () => {
@@ -265,78 +218,8 @@ const LessonFaq = ({
   // ✅ ใช้ hierarchical progress แทนการคำนวณแบบเก่า
   const { totalItems, completedItems, progress: overallProgress } = calculateHierarchicalProgress();
   
-  // ✅ เพิ่ม debug log
-  console.log("🎯 LessonFaq received hierarchicalData:", hierarchicalData);
-  console.log("🎯 LessonFaq hierarchicalData type:", typeof hierarchicalData);
-  console.log("🎯 LessonFaq hierarchicalData keys:", hierarchicalData ? Object.keys(hierarchicalData) : 'null');
-  console.log("🎯 LessonFaq calculated progress:", { totalItems, completedItems, overallProgress });
   
-  // ✅ เพิ่ม console.log รายละเอียดเพิ่มเติมตามที่ user ขอ
-  if (hierarchicalData) {
-    console.log("🔍 4.3 แบบทดสอบประจำบทเรียน:", {
-      big_lessons: hierarchicalData.big_lessons?.map((bl: any) => ({
-        big_lesson_id: bl.id,
-        title: bl.title,
-        quiz: bl.quiz ? {
-          id: bl.quiz.id,
-          title: bl.quiz.title,
-          status: bl.quiz.progress?.passed ? 'ผ่าน' : 
-                 bl.quiz.progress?.awaiting_review ? 'รอตรวจ' : 
-                 bl.quiz.progress?.completed ? 'ไม่ผ่าน' : 'ยังไม่ทำ',
-          can_take: bl.lessons?.every((l: any) => l.video_completed) || false
-        } : null
-      })) || []
-    });
-    
-    console.log("🔍 4.4 บทเรียนย่อยประจำ:", {
-      sub_lessons: hierarchicalData.big_lessons?.flatMap((bl: any) => 
-        bl.lessons?.map((lesson: any) => ({
-          big_lesson_id: bl.id,
-          big_lesson_title: bl.title,
-          lesson_id: lesson.id,
-          lesson_title: lesson.title,
-          video_completed: lesson.video_completed === true,
-          status: lesson.video_completed ? 'ผ่าน' : 'ไม่ผ่าน'
-        })) || []
-      ) || []
-    });
-    
-    console.log("🔍 4.5 แบบทดสอบประจำบทเรียนย่อย:", {
-      sub_lesson_quizzes: hierarchicalData.big_lessons?.flatMap((bl: any) => 
-        bl.lessons?.filter((lesson: any) => lesson.quiz).map((lesson: any) => ({
-          big_lesson_id: bl.id,
-          big_lesson_title: bl.title,
-          lesson_id: lesson.id,
-          lesson_title: lesson.title,
-          quiz: {
-            id: lesson.quiz.id,
-            title: lesson.quiz.title,
-            status: lesson.quiz.progress?.passed ? 'ผ่าน' : 
-                   lesson.quiz.progress?.awaiting_review ? 'รอตรวจ' : 
-                   lesson.quiz.progress?.completed ? 'ไม่ผ่าน' : 'ยังไม่ทำ',
-            can_take: lesson.video_completed === true
-          }
-        })) || []
-      ) || []
-    });
-  }
 
-  // ✅ เพิ่ม useEffect เพื่อติดตาม hierarchicalData
-  useEffect(() => {
-    console.group('📥 LessonFaq: hierarchicalData prop changed');
-    console.log('🎯 New hierarchicalData:', hierarchicalData);
-    console.log('🎯 Is valid:', !!hierarchicalData);
-    console.log('🎯 Has big_lessons:', !!(hierarchicalData && hierarchicalData.big_lessons));
-    console.log('🎯 Big lessons count:', hierarchicalData?.big_lessons?.length || 0);
-    if (hierarchicalData && hierarchicalData.big_lessons) {
-      console.log('🎯 Big lessons structure:', hierarchicalData.big_lessons.map((bl: any) => ({
-        id: bl.id,
-        title: bl.title,
-        lessonsCount: bl.lessons?.length || 0
-      })));
-    }
-    console.groupEnd();
-  }, [hierarchicalData]);
 
   // ใช้ข้อมูลแบบทดสอบจาก parent component
   useEffect(() => {
@@ -371,41 +254,69 @@ const LessonFaq = ({
   }, [lessonData]);
 
   const handleItemClick = (sectionId: number, item: LessonItem, sectionIndex: number, itemIndex: number) => {
-    console.log(`🎯 handleItemClick called:`, { sectionId, itemId: item.id, title: item.title, type: item.type });
-    
-    const isLocked = shouldLockLesson(sectionIndex, itemIndex);
-    console.log(`🔒 Is locked: ${isLocked}`);
+    // ✅ ใช้ cached status แทนการเรียก shouldLockLesson
+    const key = `${sectionId}-${item.id}`;
+    const cachedStatus = lessonStatusesRef.current.get(key);
+    const isLocked = cachedStatus?.isLocked ?? false;
     
     if (isLocked) {
-      // แสดงข้อความเฉพาะสำหรับแบบทดสอบท้ายบท
+      // แสดงข้อความเฉพาะสำหรับแบบทดสอบที่ล็อค
       const section = lessonData[sectionIndex];
-      const videosInSection = section.items.filter(item => item.type === "video");
-      const completedVideos = videosInSection.filter(item => item.completed === true);
+      const quizTitle = item.title;
       
-      let message = `🔒 แบบทดสอบท้ายบทยังไม่พร้อมใช้งาน\n\n`;
-      message += `📚 บทเรียน: ${section.title}\n`;
-      message += `🎯 แบบทดสอบ: ${item.title}\n\n`;
+      // ตรวจสอบประเภทของแบบทดสอบ
+      const isSubLessonQuiz = quizTitle.includes("แบบทดสอบย่อย") || quizTitle.includes("แบบทดสอบ -");
+      const isBigLessonQuiz = quizTitle.includes("แบบทดสอบท้ายบทใหญ่") || quizTitle.includes("แบบทดสอบประกอบบทเรียน");
       
-      // แสดงข้อมูล video
-      if (videosInSection.length > 0) {
-        message += `📹 วิดีโอในบทเรียนนี้: ${videosInSection.length} วิดีโอ\n`;
-        message += `✅ เรียนจบแล้ว: ${completedVideos.length} วิดีโอ\n`;
-        message += `❌ ยังไม่จบ: ${videosInSection.length - completedVideos.length} วิดีโอ\n\n`;
+      let lockedContentData: any = {
+        sectionTitle: section.title,
+        quizTitle: item.title,
+        totalVideos: 0,
+        completedVideos: 0,
+        incompleteVideos: [],
+        requirements: []
+      };
+      
+      if (isSubLessonQuiz) {
+        // แบบทดสอบย่อย: แสดงข้อมูลวิดีโอก่อนหน้า
+        const currentVideoIndex = itemIndex - 1;
+        if (currentVideoIndex >= 0) {
+          const previousVideo = section.items[currentVideoIndex];
+          if (previousVideo && previousVideo.type === "video") {
+            lockedContentData.totalVideos = 1;
+            lockedContentData.completedVideos = previousVideo.completed ? 1 : 0;
+            if (!previousVideo.completed) {
+              lockedContentData.incompleteVideos = [previousVideo];
+            }
+            lockedContentData.requirements.push("กรุณาดูวิดีโอก่อนหน้าให้เสร็จก่อนทำแบบทดสอบ");
+          }
+        }
+      } else if (isBigLessonQuiz) {
+        // แบบทดสอบท้ายบทใหญ่: แสดงข้อมูลวิดีโอและแบบทดสอบย่อยทั้งหมด
+        const videosInSection = section.items.filter(item => item.type === "video");
+        const subQuizzesInSection = section.items.filter(item => 
+          item.type === "quiz" && 
+          (item.title.includes("แบบทดสอบย่อย") || item.title.includes("แบบทดสอบ -"))
+        );
         
-        // แสดงรายการ video ที่ยังไม่จบ
-        const incompleteVideos = videosInSection.filter(item => item.completed !== true);
-        if (incompleteVideos.length > 0) {
-          message += `📹 วิดีโอที่ต้องเรียนให้จบ:\n`;
-          incompleteVideos.forEach((video, index) => {
-            message += `   ${index + 1}. ${video.title}\n`;
-          });
-          message += `\n`;
+        const completedVideos = videosInSection.filter(item => item.completed === true);
+        const completedSubQuizzes = subQuizzesInSection.filter(item => item.completed === true);
+        
+        lockedContentData.totalVideos = videosInSection.length;
+        lockedContentData.completedVideos = completedVideos.length;
+        lockedContentData.incompleteVideos = videosInSection.filter(item => !item.completed);
+        
+        // เพิ่มเงื่อนไขที่ต้องทำ
+        if (completedVideos.length < videosInSection.length) {
+          lockedContentData.requirements.push(`กรุณาดูวิดีโอให้เสร็จทั้งหมด (${completedVideos.length}/${videosInSection.length} เสร็จแล้ว)`);
+        }
+        if (completedSubQuizzes.length < subQuizzesInSection.length) {
+          lockedContentData.requirements.push(`กรุณาทำแบบทดสอบย่อยให้เสร็จทั้งหมด (${completedSubQuizzes.length}/${subQuizzesInSection.length} เสร็จแล้ว)`);
         }
       }
       
-      message += `💡 กรุณาเรียนวิดีโอให้จบก่อนทำแบบทดสอบท้ายบท`;
-      
-      alert(message);
+      // แสดง popup
+      showLockedContentModal(lockedContentData);
       return;
     }
     
@@ -419,32 +330,78 @@ const LessonFaq = ({
 
   // แปลง SubjectQuiz เป็น LessonItem แล้วเรียก onSelectLesson
   const handleSubjectQuizClick = (quiz: SubjectQuiz) => {
-    // ตรวจสอบการล็อคแบบทดสอบ
-    if (quiz.locked) {
+    // ✅ Debug: ตรวจสอบสถานะแบบทดสอบหลังเรียน
+    console.log(`🔍 Post Test Click: ${quiz.title}`, {
+      quiz_locked: quiz.locked,
+      quiz_type: quiz.type,
+      overall_progress: overallProgress,
+      total_items: totalItems,
+      completed_items: completedItems
+    });
+    
+    // ✅ ตรวจสอบเงื่อนไขการล็อคแบบทดสอบหลังเรียนใน frontend
+    let shouldLockPostTest = false;
+    if (quiz.type === 'post_test') {
+      const preTest = subjectQuizzes.find(q => q.type === 'pre_test' || q.type === 'big_pre_test');
+      
+      // เงื่อนไขการล็อคแบบทดสอบหลังเรียน:
+      // 1. แบบทดสอบก่อนเรียนยังไม่เสร็จ
+      // 2. ความคืบหน้าน้อยกว่า 90%
+      shouldLockPostTest = (preTest && !preTest.completed) || overallProgress < 90;
+      
+      console.log(`🔍 Post Test Lock Check:`, {
+        pre_test_completed: preTest?.completed,
+        overall_progress: overallProgress,
+        should_lock: shouldLockPostTest,
+        backend_locked: quiz.locked
+      });
+    }
+    
+    // ตรวจสอบการล็อคแบบทดสอบ (backend หรือ frontend)
+    if (quiz.locked || shouldLockPostTest) {
       if (quiz.type === 'post_test') {
         // ตรวจสอบเงื่อนไขการปลดล็อค post-test
         const preTest = subjectQuizzes.find(q => q.type === 'pre_test' || q.type === 'big_pre_test');
-        let message = "แบบทดสอบหลังเรียนยังไม่พร้อมใช้งาน\n\n";
         
+        // สร้างข้อมูลสำหรับ modal
+        const lockedContentData: any = {
+          sectionTitle: "แบบทดสอบหลังเรียน",
+          quizTitle: quiz.title,
+          totalVideos: totalItems,
+          completedVideos: completedItems,
+          incompleteVideos: [], // ไม่มีวิดีโอที่ต้องเรียนให้จบ
+          progressPercentage: overallProgress,
+          requirements: []
+        };
+        
+        // เพิ่มเงื่อนไขที่ต้องทำ
         if (preTest && !preTest.completed) {
-          message += "• กรุณาทำแบบทดสอบก่อนเรียนให้เสร็จก่อน\n";
+          lockedContentData.requirements.push("กรุณาทำแบบทดสอบก่อนเรียนให้เสร็จก่อน");
         }
         
-        // ตรวจสอบ progress ของทุก item ในบทเรียน
-        // ✅ ใช้ hierarchical progress แทนการคำนวณแบบเก่า
         if (overallProgress < 90) {
-          message += `• กรุณาเรียนบทเรียนให้เสร็จอย่างน้อย 90% (ปัจจุบัน ${overallProgress.toFixed(1)}%)\n`;
+          lockedContentData.requirements.push(`กรุณาเรียนบทเรียนให้เสร็จอย่างน้อย 90% (ปัจจุบัน ${overallProgress.toFixed(1)}%)`);
         }
         
-        // เพิ่มข้อมูลเพิ่มเติม
-        message += `\n📊 สรุป:\n`;
-        message += `• บทเรียนทั้งหมด: ${hierarchicalData?.big_lessons?.length || 0} บท\n`;
-        message += `• เนื้อหาทั้งหมด: ${totalItems} รายการ (เสร็จแล้ว ${completedItems} รายการ)\n`;
-        message += `• ความคืบหน้าโดยรวม: ${overallProgress.toFixed(1)}%\n`;
-        
-        alert(message);
+        // แสดง modal
+        if (onShowLockedModal) {
+          onShowLockedModal(lockedContentData);
+        }
       } else {
-        alert("แบบทดสอบนี้ยังไม่พร้อมใช้งาน");
+        // สำหรับแบบทดสอบอื่นๆ ที่ล็อค
+        const lockedContentData = {
+          sectionTitle: "แบบทดสอบ",
+          quizTitle: quiz.title,
+          totalVideos: 0,
+          completedVideos: 0,
+          incompleteVideos: [],
+          progressPercentage: 0,
+          requirements: ["แบบทดสอบนี้ยังไม่พร้อมใช้งาน"]
+        };
+        
+        if (onShowLockedModal) {
+          onShowLockedModal(lockedContentData);
+        }
       }
       return;
     }
@@ -461,39 +418,14 @@ const LessonFaq = ({
   };
 
   const toggleAccordion = (id: number) => {
-    console.log("🎯 LessonFaq toggleAccordion called with id:", id);
-    console.log("🎯 LessonFaq currentActiveAccordion:", currentActiveAccordion);
-    console.log("🎯 LessonFaq externalActiveAccordion:", externalActiveAccordion);
-    
-    // ✅ ป้องกันการปิด accordion โดยไม่ได้ตั้งใจ
-    // ถ้ามีการควบคุมจากภายนอก และ accordion ปัจจุบันเปิดอยู่ ให้ไม่ปิด
-    if (onAccordionChange && externalActiveAccordion === id) {
-      console.log("🎯 LessonFaq preventing accordion close - controlled by parent");
-      return;
-    }
-    
-    // ✅ ถ้ามีการควบคุมจากภายนอก ให้เปิด accordion ใหม่ได้ แต่ไม่ปิด accordion ที่เปิดอยู่
-    if (onAccordionChange) {
-      console.log("🎯 LessonFaq opening new accordion:", id);
-      onAccordionChange(id);
-      return;
-    }
-    
-    // ถ้าไม่มีการควบคุมจากภายนอก ให้ทำงานแบบปกติ
+    // ✅ ทำงานแบบง่าย - เปิด/ปิด accordion
     const newState = currentActiveAccordion === id ? null : id;
-    console.log("🎯 LessonFaq setting accordion to:", newState);
     updateActiveAccordion(newState);
     
-    // ✅ เพิ่มการป้องกัน accordion ปิดโดยไม่ได้ตั้งใจ
-    setTimeout(() => {
-      if (activeAccordion !== newState && newState !== null) {
-        console.log("⚠️ Accordion state was unexpectedly changed, restoring...");
-        // ✅ ใช้ setTimeout เพื่อป้องกัน infinite loop
-        setTimeout(() => {
-          setActiveAccordion(newState);
-        }, 0);
-      }
-    }, 50);
+    // ✅ ถ้ามีการควบคุมจากภายนอก ให้แจ้ง parent ด้วย
+    if (onAccordionChange) {
+      onAccordionChange(newState);
+    }
   };
 
   // ✅ Task 5: ลบ fetchBankAccounts function ที่ไม่ใช้แล้ว
@@ -512,88 +444,68 @@ const LessonFaq = ({
   //   }
   // };
 
-  // ฟังก์ชันสำหรับ render แบบทดสอบในรูปแบบ accordion เหมือนบทเรียน
-  const renderQuizSection = (quiz: SubjectQuiz, sectionId: number) => {
-    // เพิ่มการแสดงสถานะ "รอตรวจ"
+  // ฟังก์ชันสำหรับ render แบบทดสอบในรูปแบบใหม่
+  const renderQuizSection = (quiz: SubjectQuiz) => {
     const getQuizStatus = (quiz: SubjectQuiz) => {
+      // ถ้าล็อค ให้แสดงล็อค
+      if (quiz.locked) {
+        return {
+          status: 'locked',
+          text: 'ล็อค',
+          className: 'status-locked'
+        };
+      }
+      
+      // ถ้าไม่ล็อค ให้แสดงสถานะหลัก
       if (quiz.status === 'awaiting_review') {
         return {
           status: 'awaiting_review',
           text: 'รอตรวจ',
-          icon: 'fas fa-clock text-warning',
-          className: 'status-awaiting',
-          description: 'แบบทดสอบถูกส่งแล้ว รออาจารย์ตรวจให้คะแนน'
+          className: 'status-awaiting'
         };
       } else if (quiz.status === 'passed') {
         return {
           status: 'passed',
           text: 'ผ่าน',
-          icon: 'fas fa-check-circle text-success',
-          className: 'status-passed',
-          description: 'ผ่านการตรวจจากอาจารย์แล้ว'
+          className: 'status-passed'
         };
       } else if (quiz.status === 'failed') {
         return {
           status: 'failed',
           text: 'ไม่ผ่าน',
-          icon: 'fas fa-times-circle text-danger',
-          className: 'status-not-passed',
-          description: 'ไม่ผ่านการตรวจจากอาจารย์'
+          className: 'status-not-passed'
         };
       } else {
         return {
           status: 'not_started',
-          text: 'ยังไม่เริ่ม',
-          icon: 'fas fa-circle text-muted',
-          className: 'status-not-passed',
-          description: 'ยังไม่ได้เริ่มทำแบบทดสอบ'
+          text: 'ยังไม่ทำ',
+          className: 'status-not-passed'
         };
       }
     };
 
     const status = getQuizStatus(quiz);
+    const isPreTest = quiz.type === 'pre_test' || quiz.type === 'big_pre_test';
+    
+    // ตรวจสอบว่าอยู่ในหน้าปัจจุบันหรือไม่
+    const specialSectionId = isPreTest ? -1000 : -2000;
+    const isCurrentPage = currentLessonId === `${specialSectionId}-${quiz.quiz_id}`;
     
     return (
-      <div key={`${quiz.type}-${quiz.quiz_id}`} className="accordion-item">
-        <h2 className="accordion-header">
-          <button 
-            className={`accordion-button ${currentActiveAccordion === sectionId ? '' : 'collapsed'}`}
-            type="button"
-            onClick={() => toggleAccordion(sectionId)}
-          >
-            <span className="section-title">
-              {(quiz.type === 'pre_test' || quiz.type === 'big_pre_test') ? '🎯 ' : '🏁 '}{quiz.title}
-            </span>
-            <span className={`section-status ${status.className}`}>
-              <i className={status.icon}></i>
-              {status.text}
-            </span>
-          </button>
-        </h2>
-        <div 
-          id={`collapse${sectionId}`} 
-          className={`accordion-collapse collapse ${currentActiveAccordion === sectionId ? 'show' : ''}`}
-        >
-          <div className="accordion-body">
-            <ul className="list-wrap">
-              <li
-                className={`course-item ${quiz.completed ? 'completed' : ''} ${quiz.locked ? 'locked' : ''}`}
-                onClick={() => handleSubjectQuizClick(quiz)}
-                style={{ cursor: quiz.locked ? 'not-allowed' : 'pointer' }}
-              >
-                <div className="course-item-link">
-                  <span className="item-name">
-                    {quiz.locked && <i className="fas fa-lock lock-icon me-2"></i>}
-                    {quiz.title}
-                  </span>
-                  <span className={`item-status ${status.className}`}>
-                    <i className={status.icon}></i>
-                    {status.text}
-                  </span>
-                </div>
-              </li>
-            </ul>
-          </div>
+      <div 
+        key={`${quiz.type}-${quiz.quiz_id}`} 
+        className={`special-quiz ${isPreTest ? 'pretest' : 'posttest'} ${isCurrentPage ? 'current-page' : ''}`}
+        onClick={() => handleSubjectQuizClick(quiz)}
+        style={{ cursor: quiz.locked ? 'not-allowed' : 'pointer' }}
+      >
+        <div className={`special-quiz-icon ${isPreTest ? 'pretest' : 'posttest'}`}>
+          {isPreTest ? '🎯' : '🏁'}
+        </div>
+        <div className="special-quiz-title">
+          {quiz.title}
+        </div>
+        <div className={`special-quiz-status ${status.className}`}>
+          {status.text}
         </div>
       </div>
     );
@@ -653,11 +565,210 @@ const LessonFaq = ({
   //     }
   //   }, [currentLessonId, lessonData, externalSubjectQuizzes, onAccordionChange]);
 
+  // ✅ Cache lesson statuses to prevent flickering - ใช้ useRef เพื่อเก็บสถานะที่เสถียร
+  const lessonStatusesRef = useRef(new Map());
+  
+  // ✅ อัปเดต statuses เมื่อ hierarchicalData หรือ lessonData เปลี่ยน
+  useEffect(() => {
+    if (!hierarchicalData?.big_lessons) {
+      lessonStatusesRef.current.clear();
+      return;
+    }
+    
+    console.log("🔄 LessonFaq: Updating lesson statuses...", { 
+      lessonDataLength: lessonData.length, 
+      hierarchicalDataLength: hierarchicalData.big_lessons.length 
+    });
+    
+    const statusMap = new Map();
+    
+    lessonData.forEach((section) => {
+      const bigLesson = hierarchicalData.big_lessons.find((bl: any) => bl.id === section.id);
+      
+      section.items.forEach((item, itemIndex) => {
+        const key = `${section.id}-${item.id}`;
+        let itemCompleted = item.completed;
+        let isLocked = false;
+        
+        if (bigLesson) {
+          if (item.type === "video") {
+            // ✅ ใช้ lesson_id แทน id เพราะ ID ไม่ตรงกัน
+            const lesson = bigLesson.lessons?.find((l: any) => l.id === item.lesson_id);
+            if (lesson) {
+              itemCompleted = lesson.video_completed === true;
+              // ✅ Debug: ตรวจสอบข้อมูลวิดีโอ
+              console.log(`🎥 Video ${item.title}:`, {
+                item_id: item.id,
+                lesson_id: item.lesson_id,
+                video_completed: lesson.video_completed,
+                itemCompleted: itemCompleted,
+                lesson_data: lesson
+              });
+            } else {
+              console.log(`❌ No lesson found for video lesson_id: ${item.lesson_id}`);
+            }
+          } else if (item.type === "quiz") {
+            // ✅ ใช้ lesson_id แทน id เพราะ ID ไม่ตรงกัน
+            const lesson = bigLesson.lessons?.find((l: any) => l.quiz?.id === item.lesson_id);
+            if (lesson?.quiz) {
+              itemCompleted = lesson.quiz.progress?.passed === true;
+              // ✅ Debug: ตรวจสอบข้อมูลแบบทดสอบย่อย
+              console.log(`📝 Quiz ${item.title}:`, {
+                item_id: item.id,
+                lesson_id: item.lesson_id,
+                quiz_progress: lesson.quiz.progress,
+                itemCompleted: itemCompleted,
+                lesson_data: lesson
+              });
+            } else if (bigLesson.quiz?.id === item.lesson_id) {
+              itemCompleted = bigLesson.quiz.progress?.passed === true;
+              // ✅ Debug: ตรวจสอบข้อมูลแบบทดสอบท้ายบทใหญ่
+              console.log(`🎯 Big Quiz ${item.title}:`, {
+                item_id: item.id,
+                lesson_id: item.lesson_id,
+                quiz_progress: bigLesson.quiz.progress,
+                itemCompleted: itemCompleted,
+                big_lesson_data: bigLesson
+              });
+            } else {
+              console.log(`❌ No quiz found for lesson_id: ${item.lesson_id}`);
+            }
+            
+            // Check if quiz should be locked
+            const quizTitle = item.title;
+            // ✅ Debug: ดูชื่อแบบทดสอบจริง
+            console.log(`🔍 Quiz Title Check: "${quizTitle}"`);
+            
+            // ✅ ตรวจสอบแบบทดสอบท้ายบทใหญ่ก่อน เพราะมีคำว่า "แบบทดสอบท้ายบท" เหมือนกัน
+            const isBigLessonQuiz = quizTitle.includes("แบบทดสอบท้ายบทใหญ่") || quizTitle.includes("แบบทดสอบประกอบบทเรียน");
+            const isSubLessonQuiz = !isBigLessonQuiz && (quizTitle.includes("แบบทดสอบย่อย") || quizTitle.includes("แบบทดสอบ -") || quizTitle.includes("แบบทดสอบท้ายบท"));
+            
+            console.log(`🔍 Quiz Type Detection:`, {
+              title: quizTitle,
+              isSubLessonQuiz: isSubLessonQuiz,
+              isBigLessonQuiz: isBigLessonQuiz
+            });
+            
+            if (isSubLessonQuiz) {
+              console.log(`🔍 Entering Sub Quiz Lock Logic for: ${item.title}`);
+              const currentVideoIndex = itemIndex - 1;
+              console.log(`🔍 Current Video Index: ${currentVideoIndex}, Item Index: ${itemIndex}`);
+              
+              if (currentVideoIndex >= 0) {
+                const previousVideo = section.items[currentVideoIndex];
+                console.log(`🔍 Previous Video Found:`, previousVideo);
+                
+                if (previousVideo && previousVideo.type === "video") {
+                  // ✅ ใช้ lesson_id แทน id เพราะ ID ไม่ตรงกัน
+                  const prevLesson = bigLesson.lessons?.find((l: any) => l.id === previousVideo.lesson_id);
+                  console.log(`🔍 Previous Lesson Found:`, prevLesson);
+                  console.log(`🔍 Looking for lesson_id: ${previousVideo.lesson_id} in lessons:`, bigLesson.lessons?.map((l: any) => l.id));
+                  
+                  if (prevLesson) {
+                    // ✅ แบบทดสอบย่อยจะล็อคเมื่อวิดีโอก่อนหน้ายังไม่เสร็จ
+                    isLocked = !prevLesson.video_completed;
+                    // ✅ Debug: ตรวจสอบการล็อคแบบทดสอบย่อย
+                    console.log(`🔒 Sub Quiz Lock Check ${item.title}:`, {
+                      previous_video: previousVideo.title,
+                      video_completed: prevLesson.video_completed,
+                      isLocked: isLocked,
+                      prev_lesson_data: prevLesson
+                    });
+                  } else {
+                    console.log(`❌ No previous lesson found for video ID: ${previousVideo.id}`);
+                  }
+                } else {
+                  console.log(`❌ Previous item is not a video:`, previousVideo);
+                }
+              } else {
+                console.log(`❌ Current video index is negative: ${currentVideoIndex}`);
+              }
+            } else if (isBigLessonQuiz) {
+              console.log(`🔍 Entering Big Quiz Lock Logic for: ${item.title}`);
+              
+              const videosInSection = section.items.filter(item => item.type === "video");
+              const subQuizzesInSection = section.items.filter(item => 
+                item.type === "quiz" && 
+                (item.title.includes("แบบทดสอบย่อย") || item.title.includes("แบบทดสอบ -") || item.title.includes("แบบทดสอบท้ายบท"))
+              );
+              
+              console.log(`🔍 Videos in section:`, videosInSection.map(v => v.title));
+              console.log(`🔍 Sub quizzes in section:`, subQuizzesInSection.map(q => q.title));
+              
+              let completedVideos = 0;
+              if (bigLesson.lessons) {
+                completedVideos = bigLesson.lessons.filter((lesson: any) => lesson.video_completed === true).length;
+              }
+              
+              let completedSubQuizzes = 0;
+              if (bigLesson.lessons) {
+                completedSubQuizzes = bigLesson.lessons.filter((lesson: any) => 
+                  lesson.quiz && lesson.quiz.progress?.passed === true
+                ).length;
+              }
+              
+              console.log(`🔍 Completion stats:`, {
+                completedVideos: completedVideos,
+                totalVideos: videosInSection.length,
+                completedSubQuizzes: completedSubQuizzes,
+                totalSubQuizzes: subQuizzesInSection.length
+              });
+              
+              isLocked = completedVideos < videosInSection.length || completedSubQuizzes < subQuizzesInSection.length;
+              
+              console.log(`🔒 Big Quiz Lock Check ${item.title}:`, {
+                isLocked: isLocked,
+                reason: isLocked ? 
+                  (completedVideos < videosInSection.length ? 'videos not completed' : 'sub quizzes not completed') : 
+                  'all completed'
+              });
+            }
+          }
+        }
+        
+        statusMap.set(key, { itemCompleted, isLocked });
+        
+        // ✅ Debug: ตรวจสอบผลลัพธ์สุดท้าย
+        if (item.type === "quiz") {
+          console.log(`📊 Final Status ${item.title}:`, {
+            key: key,
+            itemCompleted: itemCompleted,
+            isLocked: isLocked,
+            final_display: isLocked ? "ล็อค" : itemCompleted ? "เสร็จ" : "ยังไม่เสร็จ"
+          });
+        }
+      });
+    });
+    
+    lessonStatusesRef.current = statusMap;
+    
+    console.log("✅ LessonFaq: Lesson statuses updated", statusMap);
+  }, [hierarchicalData, lessonData]); // ✅ เพิ่ม lessonData เป็น dependency // ✅ ใช้เฉพาะ hierarchicalData เป็น dependency
+
+  // ✅ Auto-open accordion when currentLessonId changes
+  useEffect(() => {
+    // ถ้ามี currentLessonId ให้เปิด accordion ที่ตรงกับบทเรียนปัจจุบัน
+    if (currentLessonId) {
+      const [sectionId] = currentLessonId.split("-").map(Number);
+      
+      // ตรวจสอบว่าเป็นแบบทดสอบพิเศษหรือไม่
+      if (sectionId < 0) {
+        // แบบทดสอบก่อน/หลังเรียน
+        updateActiveAccordion(sectionId);
+        return;
+      }
+      
+      // บทเรียนปกติ - เปิด accordion ของ section ที่กำลังเรียน
+      updateActiveAccordion(sectionId);
+      return;
+    }
+  }, [currentLessonId, updateActiveAccordion]);
+
   return (
     <div className="accordion" id="accordionExample">
       {/* Loading */}
       {loadingQuizzes && (
-        <div className="loading-container text-center p-3">
+        <div className="loading-state">
           <div className="spinner-border spinner-border-sm text-primary" role="status">
             <span className="visually-hidden">กำลังโหลด...</span>
           </div>
@@ -667,7 +778,7 @@ const LessonFaq = ({
 
       {/* Error */}
       {error && (
-        <div className="alert alert-danger" role="alert">
+        <div className="error-state">
           <i className="fas fa-exclamation-triangle me-2"></i>
           {error}
           <button 
@@ -688,7 +799,7 @@ const LessonFaq = ({
           // Pre-test ไม่มีใน hierarchical structure เพราะไม่นับคะแนน
           // แต่เราสามารถใช้ข้อมูลจาก subjectQuizzes ที่มีอยู่แล้ว
           
-          return renderQuizSection(quiz, -1000);
+          return renderQuizSection(quiz);
         })}
       {/* บทเรียนปกติ */}
       {lessonData.map((section, sectionIndex) => {
@@ -738,120 +849,59 @@ const LessonFaq = ({
           }
         }
         
+        const isOpen = currentActiveAccordion === section.id;
+        
         return (
-          <div key={section.id} className="accordion-item">
-            <h2 className="accordion-header">
-              <button 
-                className={`accordion-button ${currentActiveAccordion === section.id ? '' : 'collapsed'}`}
-                type="button"
-                onClick={() => toggleAccordion(section.id)}
-              >
-                <span className="section-title">{section.title}</span>
-                <span className={`section-status ${
-                  sectionStatus === "ผ่าน" ? "status-passed" : 
-                  sectionStatus === "กำลังเรียน" ? "status-awaiting" : "status-not-passed"
-                }`}>
-                  {sectionCount}
-                </span>
-              </button>
-            </h2>
+          <div key={section.id}>
+            {/* Section Header */}
             <div 
-              id={`collapseOne${section.id}`} 
-              className={`accordion-collapse collapse ${currentActiveAccordion === section.id ? 'show' : ''}`}
+              className={`section-header ${isOpen ? 'active' : ''}`}
+              onClick={() => toggleAccordion(section.id)}
             >
-              <div className="accordion-body">
-                <ul className="list-wrap">
-                  {section.items.map((item, itemIndex) => {
-                    // ✅ ใช้ hierarchical data เพื่อหาสถานะที่ถูกต้อง
-                    const bigLesson = hierarchicalData?.big_lessons?.find((bl: any) => bl.id === section.id);
-                    let itemCompleted = item.completed;
-                    let itemStatus = item.completed ? "เสร็จสิ้น" : "ยังไม่เสร็จ";
-                    
-                    if (bigLesson) {
-                      if (item.type === "video") {
-                        // หา lesson ที่ตรงกับ item
-                        const lesson = bigLesson.lessons?.find((l: any) => l.id === item.id);
-                        if (lesson) {
-                          itemCompleted = lesson.video_completed === true;
-                          itemStatus = itemCompleted ? "เสร็จสิ้น" : "ยังไม่เสร็จ";
-                        }
-                      } else if (item.type === "quiz") {
-                        // หา quiz ที่ตรงกับ item
-                        const lesson = bigLesson.lessons?.find((l: any) => l.quiz?.id === item.id);
-                        if (lesson?.quiz) {
-                          itemCompleted = lesson.quiz.progress?.passed === true;
-                          itemStatus = itemCompleted ? "ผ่าน" : "ยังไม่ผ่าน";
-                        } else if (bigLesson.quiz?.id === item.id) {
-                          // Big Lesson Quiz
-                          itemCompleted = bigLesson.quiz.progress?.passed === true;
-                          itemStatus = itemCompleted ? "ผ่าน" : "ยังไม่ผ่าน";
-                        }
-                      }
-                    }
-                    
-                    const isLocked = shouldLockLesson(sectionIndex, itemIndex);
-                    const isEndOfChapterQuiz = item.type === "quiz" && (
-                      item.title.includes("แบบทดสอบท้ายบท") || 
-                      item.title.includes("แบบทดสอบท้ายบทใหญ่") ||
-                      item.title.includes("1.X แบบทดสอบท้ายบทใหญ่") ||
-                      item.title.includes("1.X")
-                    );
-                    
-                    // คำนวณข้อมูลสำหรับแสดงสถานะล็อค
-                    let lockReason = "";
-                    if (isLocked && isEndOfChapterQuiz) {
-                      const videosInSection = section.items.filter(item => item.type === "video");
-                      const completedVideos = videosInSection.filter(item => item.completed === true);
-                      
-                      if (completedVideos.length < videosInSection.length) {
-                        lockReason = `📹 ต้องเรียนวิดีโอให้จบก่อน (${completedVideos.length}/${videosInSection.length})`;
-                      }
-                    }
-                    
-                    return (
-                      <li
-                        key={item.id}
-                        className={`course-item ${itemCompleted ? 'completed' : ''} ${isLocked ? 'locked' : ''}`}
-                        onClick={() => handleItemClick(section.id, item, sectionIndex, itemIndex)}
-                        style={{ cursor: isLocked ? 'not-allowed' : 'pointer' }}
-                        title={isLocked ? lockReason : ''}
-                      >
-                        <div className="item-content">
-                          <div className="item-icon">
-                            {item.type === "video" && (
-                              <i className={`fas fa-play-circle ${itemCompleted ? 'text-success' : 'text-primary'}`}></i>
-                            )}
-                            {item.type === "quiz" && (
-                              <i className={`fas fa-question-circle ${itemCompleted ? 'text-success' : isLocked ? 'text-warning' : 'text-info'}`}></i>
-                            )}
-                          </div>
-                          <div className="item-details">
-                            <div className="item-title">
-                              {item.title}
-                              {isLocked && (
-                                <span className="lock-indicator">
-                                  <i className="fas fa-lock text-warning ms-2"></i>
-                                </span>
-                              )}
-                            </div>
-                            {isLocked && lockReason && (
-                              <div className="lock-reason text-warning small">
-                                {lockReason}
-                              </div>
-                            )}
-                            {itemCompleted && (
-                              <div className="completion-status text-success small">
-                                <i className="fas fa-check-circle me-1"></i>
-                                {itemStatus}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
+              <div className="section-title">{section.title}</div>
+              <div className={`section-status ${
+                sectionStatus === "ผ่าน" ? "status-passed" : 
+                sectionStatus === "กำลังเรียน" ? "status-awaiting" : "status-not-passed"
+              }`}>
+                {sectionCount}
               </div>
+            </div>
+            
+            {/* Section Content */}
+            <div className={`section-content ${isOpen ? 'open' : ''}`}>
+              {section.items.map((item, itemIndex) => {
+                // ✅ ใช้ cached status เพื่อป้องกันการเปลี่ยนแปลงไปมา
+                const key = `${section.id}-${item.id}`;
+                const cachedStatus = lessonStatusesRef.current.get(key);
+                
+                const itemCompleted = cachedStatus?.itemCompleted ?? item.completed;
+                const isLocked = cachedStatus?.isLocked ?? false;
+                
+                // ตรวจสอบว่าอยู่ในหน้าปัจจุบันหรือไม่
+                const isCurrentPage = currentLessonId === `${section.id}-${item.id}`;
+                
+                return (
+                  <div
+                    key={item.id}
+                    className={`lesson-item ${itemCompleted ? 'completed' : ''} ${isLocked ? 'locked' : ''} ${isCurrentPage ? 'current-page' : ''}`}
+                    onClick={() => handleItemClick(section.id, item, sectionIndex, itemIndex)}
+                    style={{ cursor: isLocked ? 'not-allowed' : 'pointer' }}
+                  >
+                    <div className={`lesson-icon ${item.type} ${isLocked ? 'locked' : ''}`}>
+                      {item.type === "video" ? "▶️" : "❓"}
+                    </div>
+                    <div className={`lesson-title ${isLocked ? 'locked' : ''}`}>
+                      {item.title}
+                    </div>
+                    <div className={`lesson-status ${
+                      isLocked ? 'status-not-passed' : 
+                      itemCompleted ? 'status-passed' : 'status-awaiting'
+                    }`}>
+                      {isLocked ? "ล็อค" : itemCompleted ? "เสร็จ" : "ยังไม่เสร็จ"}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         );
@@ -881,24 +931,19 @@ const LessonFaq = ({
             status: quizStatus
           };
           
-          return renderQuizSection(updatedQuiz, -2000);
+          return renderQuizSection(updatedQuiz);
         })}
 
       {/* ✅ Task 5: ลบส่วนการชำระเงินทั้งหมด */}
 
       {/* แสดงข้อความเมื่อไม่มีแบบทดสอบหรือ error */}
         {!loadingQuizzes && subjectQuizzes?.length === 0 && subjectId && !error && (
-          <div className="no-quizzes alert alert-info text-center p-3 mb-0" role="alert">
+          <div className="empty-state">
             <i className="fas fa-info-circle me-2"></i>
             ไม่มีแบบทดสอบก่อนเรียนหรือหลังเรียนสำหรับวิชานี้
           </div>
         )}
-        {error && (
-          <div className="error-message alert alert-danger text-center p-3 mb-0" role="alert">
-            <i className="fas fa-exclamation-triangle me-2"></i>
-            เกิดข้อผิดพลาด: {typeof error === 'string' ? error : 'ไม่สามารถโหลดข้อมูลได้'}
-          </div>
-        )}
+
     </div>
   );
 };

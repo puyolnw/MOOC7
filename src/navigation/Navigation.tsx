@@ -1,6 +1,7 @@
 import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 import { FacultyProvider } from '../hooks/useFaculty';
 import PrivateRoute from '../hooks/PrivateRoute';
+import PageTransition from '../components/PageTransition';
 import AdminCreditbankpage from '../pages/Admin/AdminCreditbank';
 import AdminLessonsbankpage from '../pages/Admin/AdminLessons';
 import AdminQuestionspage from '../pages/Admin/AdminQuestions';
@@ -113,7 +114,8 @@ const AppNavigation = () => {
   return (
     <FacultyProvider>
     <Router>
-      <Routes>
+      <PageTransition>
+        <Routes>
         <Route path="/" element={<Home />} />
         {/* <Route path="/home-two" element={<HomeTwo />} />
         <Route path="/home-three" element={<HomeThree />} />
@@ -237,7 +239,8 @@ const AppNavigation = () => {
         </Route>
         {/* <Route path="/blog-details/:id" element={<DynamicBlogDeatils />} /> */}
         <Route path="*" element={<NotFound />} />
-      </Routes>
+        </Routes>
+      </PageTransition>
     </Router>
     </FacultyProvider>
   );

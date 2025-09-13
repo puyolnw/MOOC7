@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import Overview from "../course-details/Overview";
 import Instructors from "../course-details/Instructors";
+import "./LessonNavTav.css";
 
 const tab_title: string[] = ["ข้อมูลทั่วไป", "ผู้สอน", "ไฟล์ประกอบ"];
 
@@ -137,35 +138,35 @@ const LessonAttachments = ({ currentLessonId, currentBigLessonId }: { currentLes
   }
 
   return (
-    <div className="lesson-attachments">
-      <div className="attachments-header">
+    <div className="lesson-attachments-container">
+      <div className="lesson-attachments-header">
         <h4>ไฟล์ประกอบบทเรียน</h4>
         <p>ไฟล์ที่เกี่ยวข้องกับบทเรียนปัจจุบัน</p>
       </div>
-      <div className="attachments-list">
+      <div className="lesson-attachments-list">
         {attachments.map((attachment) => (
-          <div key={attachment.attachment_id} className="attachment-item">
-            <div className="attachment-info">
-              <div className="attachment-icon">
+          <div key={attachment.attachment_id} className="lesson-attachment-item">
+            <div className="lesson-attachment-info">
+              <div className="lesson-attachment-icon">
                 <i className={`fas ${getFileIcon(attachment.file_type)}`}></i>
               </div>
-              <div className="attachment-details">
-                <h6 className="attachment-name">{attachment.title || attachment.file_name}</h6>
-                <p className="attachment-meta">
+              <div className="lesson-attachment-details">
+                <h6 className="lesson-attachment-name">{attachment.title || attachment.file_name}</h6>
+                <p className="lesson-attachment-meta">
                   {formatFileSize(attachment.file_size)} • 
                   {attachment.created_at ? new Date(attachment.created_at).toLocaleDateString('th-TH') : ''}
                 </p>
               </div>
             </div>
-            <div className="attachment-actions">
+            <div className="lesson-attachment-actions">
               <a 
                 href={attachment.file_url} 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="btn btn-sm btn-outline-primary"
+                className="lesson-attachment-button"
                 title="ดูไฟล์"
               >
-                <i className="fas fa-external-link-alt me-1"></i>
+                <i className="fas fa-external-link-alt"></i>
                 ดูไฟล์
               </a>
             </div>
@@ -186,58 +187,29 @@ const LessonNavTav = ({ description, instructors, currentLessonId, currentBigLes
    };
 
    return (
-      <div className="courses__details-content lesson__details-content">
-         <ul className="nav nav-tabs" id="myTab" role="tablist" style={{
-            borderBottom: 'none',
-            marginBottom: '20px'
-         }}>
+      <div className="lesson-nav-tab-container">
+         <div className="lesson-nav-tab-header">
             {tab_title.map((tab, index) => (
-               <li key={index} onClick={() => handleTabClick(index)} className="nav-item" role="presentation" style={{marginRight: '5px'}}>
-                  <button 
-                     className={`nav-link ${activeTab === index ? "active" : ""}`}
-                     style={{
-                        border: 'none',
-                        borderRadius: '12px',
-                        padding: '12px 20px',
-                        fontWeight: '500',
-                        transition: 'all 0.3s ease',
-                        background: activeTab === index 
-                           ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' 
-                           : 'rgba(102, 126, 234, 0.1)',
-                        color: activeTab === index ? 'white' : '#667eea',
-                        boxShadow: activeTab === index 
-                           ? '0 4px 15px rgba(102, 126, 234, 0.3)' 
-                           : '0 2px 8px rgba(102, 126, 234, 0.1)'
-                     }}
-                     onMouseEnter={(e) => {
-                        if (activeTab !== index) {
-                           e.currentTarget.style.background = 'rgba(102, 126, 234, 0.2)';
-                           e.currentTarget.style.transform = 'translateY(-2px)';
-                        }
-                     }}
-                     onMouseLeave={(e) => {
-                        if (activeTab !== index) {
-                           e.currentTarget.style.background = 'rgba(102, 126, 234, 0.1)';
-                           e.currentTarget.style.transform = 'translateY(0)';
-                        }
-                     }}
-                  >
-                     {tab}
-                  </button>
-               </li>
+               <button 
+                  key={index}
+                  onClick={() => handleTabClick(index)} 
+                  className={`lesson-nav-tab-button ${activeTab === index ? "lesson-nav-tab-active" : ""}`}
+               >
+                  {tab}
+               </button>
             ))}
-         </ul>
-         <div className="tab-content" id="myTabContent">
-            <div className={`tab-pane fade ${activeTab === 0 ? 'show active' : ''}`} id="overview-tab-pane" role="tabpanel" aria-labelledby="overview-tab">
+         </div>
+         <div className="lesson-nav-tab-content">
+            <div className={`lesson-nav-tab-panel ${activeTab === 0 ? 'lesson-nav-tab-show' : ''}`}>
                <Overview description={description} />
             </div>
-            <div className={`tab-pane fade ${activeTab === 1 ? 'show active' : ''}`} id="instructors-tab-pane" role="tabpanel" aria-labelledby="instructors-tab">
+            <div className={`lesson-nav-tab-panel ${activeTab === 1 ? 'lesson-nav-tab-show' : ''}`}>
                <Instructors instructors={instructors} />
             </div>
-            <div className={`tab-pane fade ${activeTab === 2 ? 'show active' : ''}`} id="attachments-tab-pane" role="tabpanel" aria-labelledby="attachments-tab">
+            <div className={`lesson-nav-tab-panel ${activeTab === 2 ? 'lesson-nav-tab-show' : ''}`}>
                 <LessonAttachments currentLessonId={currentLessonId} currentBigLessonId={currentBigLessonId} />
             </div>
-            </div>
+         </div>
       </div>
    )
 }

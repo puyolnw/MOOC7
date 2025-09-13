@@ -1,573 +1,798 @@
-/* เพิ่ม CSS specificity สูงขึ้นเพื่อไม่ให้ถูก CSS หลักทับ */
+/* 🎨 Redesign ScoreProgressBar สำหรับ Sidebar Layout */
 
-.score-progress-container.score-progress-container {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-    border-radius: 20px !important;
-    padding: 25px !important;
+/* Container หลัก - ปรับให้เหมาะกับ sidebar */
+.score-progress-container {
+    background: #ffffff !important;
+    border-radius: 16px !important;
+    padding: 20px !important;
     margin-bottom: 20px !important;
-    color: white !important;
-    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3) !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08) !important;
+    border: 1px solid #e8ecf0 !important;
     position: relative !important;
     overflow: hidden !important;
 }
 
-.score-progress-container.score-progress-container::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-    pointer-events: none;
-}
-
-.score-progress-header.score-progress-header {
+/* Header - ปรับให้กะทัดรัด */
+.score-progress-header {
     text-align: center !important;
-    margin-bottom: 20px !important;
+    margin-bottom: 16px !important;
     position: relative !important;
     z-index: 1 !important;
 }
 
-.score-progress-header.score-progress-header h4 {
-    color: white !important;
-    font-size: 1.2rem !important;
+.score-progress-header h4 {
+    color: #2c3e50 !important;
+    font-size: 1rem !important;
     font-weight: 600 !important;
     margin: 0 !important;
-    margin-bottom: 5px !important;
+    margin-bottom: 4px !important;
 }
 
-.subject-title.subject-title {
-    color: rgba(255, 255, 255, 0.9) !important;
-    font-size: 0.9rem !important;
+.subject-title {
+    color: #7f8c8d !important;
+    font-size: 0.8rem !important;
     margin: 0 !important;
     font-style: italic !important;
 }
 
-.score-summary.score-summary {
+/* Score Summary - ปรับให้กะทัดรัด */
+.score-summary {
     display: flex !important;
-    justify-content: center !important;
+    justify-content: space-between !important;
     align-items: center !important;
-    margin-bottom: 25px !important;
-    gap: 15px !important;
+    margin-bottom: 16px !important;
+    gap: 8px !important;
     position: relative !important;
     z-index: 1 !important;
 }
 
-.score-item.score-item {
+.score-item {
     display: flex !important;
     flex-direction: column !important;
     align-items: center !important;
+    flex: 1 !important;
 }
 
-.score-label.score-label {
-    font-size: 0.8rem !important;
-    color: rgba(255, 255, 255, 0.8) !important;
-    margin-bottom: 5px !important;
+.score-label {
+    font-size: 0.7rem !important;
+    color: #7f8c8d !important;
+    margin-bottom: 4px !important;
+    font-weight: 500 !important;
 }
 
-.score-value.score-value {
-    font-size: 1.8rem !important;
+.score-value {
+    font-size: 1.2rem !important;
     font-weight: 700 !important;
     line-height: 1 !important;
 }
 
-.score-value.score-value.current {
-    color: #ffd700 !important;
-    text-shadow: 0 2px 4px rgba(255, 215, 0, 0.3) !important;
+.score-value.current {
+    color: #3498db !important;
 }
 
-.score-value.score-value.total {
-    color: rgba(255, 255, 255, 0.9) !important;
+.score-value.total {
+    color: #95a5a6 !important;
 }
 
-.score-divider.score-divider {
-    font-size: 1.5rem !important;
+.score-divider {
+    font-size: 1rem !important;
     font-weight: 600 !important;
-    color: rgba(255, 255, 255, 0.6) !important;
+    color: #bdc3c7 !important;
 }
 
-.progress-bar-container.progress-bar-container {
-    margin-bottom: 20px !important;
+/* Progress Summary - เพิ่ม CSS Specificity */
+html body div.progress-summary.progress-summary.progress-summary {
+    margin-top: 12px !important;
+    padding: 12px !important;
+    background: #f8f9fa !important;
+    border-radius: 8px !important;
+    border: 1px solid #e9ecef !important;
+    position: relative !important;
+    display: block !important;
+}
+
+.progress-summary {
+    margin-top: 12px;
+    padding: 12px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+    position: relative;
+    display: block;
+}
+
+html body span.progress-label.progress-label.progress-label {
+    color: #495057 !important;
+    font-weight: 500 !important;
+    font-size: 0.8rem !important;
+    display: inline-block !important;
+}
+
+.progress-label {
+    color: #495057;
+    font-weight: 500;
+    font-size: 0.8rem;
+    display: inline-block;
+}
+
+html body span.progress-value.progress-value.progress-value {
+    font-weight: bold !important;
+    font-size: 0.9rem !important;
+    display: inline-block !important;
+}
+
+.progress-value {
+    font-weight: bold;
+    font-size: 0.9rem;
+    display: inline-block;
+}
+
+html body span.progress-value.completed.progress-value.completed.progress-value.completed {
+    color: #28a745 !important;
+}
+
+.progress-value.completed {
+    color: #28a745;
+}
+
+html body span.progress-value.in-progress.progress-value.in-progress.progress-value.in-progress {
+    color: #ffc107 !important;
+}
+
+.progress-value.in-progress {
+    color: #ffc107;
+}
+
+/* Progress Bar Container - ปรับให้กะทัดรัด */
+.progress-bar-container {
+    margin-bottom: 16px !important;
     position: relative !important;
     z-index: 1 !important;
 }
 
-.progress-bar-wrapper.progress-bar-wrapper {
-    background: rgba(255, 255, 255, 0.2) !important;
-    border-radius: 25px !important;
-    height: 20px !important;
-    overflow: visible !important;
+.progress-bar-wrapper {
+    background: #e9ecef !important;
+    border-radius: 8px !important;
+    height: 12px !important;
+    overflow: hidden !important;
     position: relative !important;
-    backdrop-filter: blur(10px) !important;
-    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    border: 1px solid #dee2e6 !important;
 }
 
-.progress-bar-fill.progress-bar-fill {
-    background: linear-gradient(90deg, #ffd700, #ffed4e, #ffd700) !important;
-    background-size: 200% 100% !important;
-    animation: shimmer 2s ease-in-out infinite !important;
+html body div.progress-bar-fill.progress-bar-fill.progress-bar-fill {
     height: 100% !important;
-    border-radius: 25px !important;
-    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1) !important;
-    box-shadow: 
-        0 2px 10px rgba(255, 215, 0, 0.4) !important,
-        inset 0 1px 0 rgba(255, 255, 255, 0.5) !important;
+    border-radius: 8px !important;
+    transition: width 0.6s ease !important;
     position: relative !important;
+    display: block !important;
+    min-width: 0% !important;
+    max-width: 100% !important;
 }
 
-@keyframes shimmer {
-    0% { background-position: 200% 0; }
-    100% { background-position: -200% 0; }
+.progress-bar-fill {
+    height: 100%;
+    border-radius: 8px;
+    transition: width 0.6s ease;
+    position: relative;
+    display: block;
+    min-width: 0%;
+    max-width: 100%;
 }
 
-.passing-threshold.passing-threshold {
+html body div.progress-bar-fill.completed.progress-bar-fill.completed.progress-bar-fill.completed {
+    background: linear-gradient(90deg, #28a745, #34ce57) !important;
+    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3) !important;
+}
+
+.progress-bar-fill.completed {
+    background: linear-gradient(90deg, #28a745, #34ce57);
+    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+}
+
+html body div.progress-bar-fill.in-progress.progress-bar-fill.in-progress.progress-bar-fill.in-progress {
+    background: linear-gradient(90deg, #ffc107, #ffd43b) !important;
+    box-shadow: 0 2px 8px rgba(255, 193, 7, 0.3) !important;
+}
+
+.progress-bar-fill.in-progress {
+    background: linear-gradient(90deg, #ffc107, #ffd43b);
+    box-shadow: 0 2px 8px rgba(255, 193, 7, 0.3);
+}
+
+/* Passing Threshold */
+.passing-threshold {
     position: absolute !important;
-    top: -8px !important;
-    bottom: -8px !important;
+    top: -4px !important;
+    bottom: -4px !important;
     width: 2px !important;
     z-index: 2 !important;
     transform: translateX(-1px) !important;
 }
 
-.threshold-marker.threshold-marker {
-    width: 4px !important;
-    height: 36px !important;
-    background: #ff6b6b !important;
-    border-radius: 2px !important;
+.threshold-marker {
+    width: 3px !important;
+    height: 20px !important;
+    background: #dc3545 !important;
+    border-radius: 1px !important;
     position: relative !important;
-    box-shadow: 0 2px 8px rgba(255, 107, 107, 0.4) !important;
 }
 
-.threshold-marker.threshold-marker::before {
-    content: '';
-    position: absolute;
-    top: -3px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 0;
-    height: 0;
-    border-left: 4px solid transparent;
-    border-right: 4px solid transparent;
-    border-bottom: 6px solid #ff6b6b;
-}
-
-.threshold-marker.threshold-marker::after {
-    content: '';
-    position: absolute;
-    bottom: -3px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 0;
-    height: 0;
-    border-left: 4px solid transparent;
-    border-right: 4px solid transparent;
-    border-top: 6px solid #ff6b6b;
-}
-
-.threshold-label.threshold-label {
+.threshold-label {
     position: absolute !important;
-    top: -30px !important;
+    top: -20px !important;
     left: 50% !important;
     transform: translateX(-50%) !important;
-    background: #ff6b6b !important;
+    background: #dc3545 !important;
     color: white !important;
-    padding: 4px 8px !important;
-    border-radius: 8px !important;
-    font-size: 0.7rem !important;
+    padding: 2px 6px !important;
+    border-radius: 4px !important;
+    font-size: 0.6rem !important;
     font-weight: 600 !important;
     white-space: nowrap !important;
-    box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3) !important;
 }
 
-.threshold-label.threshold-label::after {
-    content: '';
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 0;
-    height: 0;
-    border-left: 4px solid transparent;
-    border-right: 4px solid transparent;
-    border-top: 4px solid #ff6b6b;
-}
-
-.progress-labels.progress-labels {
+/* Progress Labels */
+.progress-labels {
     display: flex !important;
     justify-content: space-between !important;
-    margin-top: 8px !important;
-    font-size: 0.8rem !important;
-    color: rgba(255, 255, 255, 0.7) !important;
+    margin-top: 6px !important;
+    font-size: 0.7rem !important;
+    color: #6c757d !important;
     position: relative !important;
     z-index: 1 !important;
 }
 
-.score-status.score-status {
-    margin-bottom: 20px !important;
+.progress-description {
+    margin-top: 6px !important;
+    text-align: center !important;
+    font-size: 0.7rem !important;
+    color: #6c757d !important;
+    font-weight: 400 !important;
+}
+
+/* Score Status - ปรับให้กะทัดรัด */
+.score-status {
+    margin-bottom: 16px !important;
     position: relative !important;
     z-index: 1 !important;
 }
 
-.status-row.status-row {
+.status-row {
     display: flex !important;
     justify-content: space-between !important;
     align-items: center !important;
-    margin-bottom: 8px !important;
-    background: rgba(255, 255, 255, 0.1) !important;
-    padding: 8px 12px !important;
-    border-radius: 10px !important;
-    backdrop-filter: blur(10px) !important;
+    margin-bottom: 6px !important;
+    background: #f8f9fa !important;
+    padding: 6px 10px !important;
+    border-radius: 6px !important;
+    border: 1px solid #e9ecef !important;
 }
 
-.status-item.status-item {
+.status-item {
     display: flex !important;
     justify-content: space-between !important;
     align-items: center !important;
     width: 100% !important;
 }
 
-.status-label.status-label {
-    font-size: 0.9rem !important;
-    color: rgba(255, 255, 255, 0.9) !important;
+.status-label {
+    font-size: 0.75rem !important;
+    color: #495057 !important;
     font-weight: 500 !important;
 }
 
-.status-value.status-value {
-    font-size: 0.9rem !important;
+.status-value {
+    font-size: 0.75rem !important;
     font-weight: 600 !important;
-    color: white !important;
+    color: #212529 !important;
 }
 
-.status-value.status-value.passed {
-    color: #81c784 !important;
-    text-shadow: 0 1px 2px rgba(129, 199, 132, 0.5) !important;
+.status-value.passed {
+    color: #28a745 !important;
     font-weight: 700 !important;
 }
 
-.status-value.status-value.needed {
-    color: #ffb74d !important;
-    text-shadow: 0 1px 2px rgba(255, 183, 77, 0.5) !important;
+.status-value.needed {
+    color: #ffc107 !important;
     font-weight: 700 !important;
 }
 
-.overall-status.overall-status {
+/* Overall Status - ปรับให้กะทัดรัด */
+.overall-status {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    gap: 10px !important;
-    padding: 15px !important;
-    border-radius: 15px !important;
+    gap: 8px !important;
+    padding: 12px !important;
+    border-radius: 8px !important;
     font-weight: 600 !important;
     position: relative !important;
     z-index: 1 !important;
+    font-size: 0.8rem !important;
 }
 
-.overall-status.overall-status.passed {
-    background: rgba(129, 199, 132, 0.2) !important;
-    border: 2px solid rgba(129, 199, 132, 0.5) !important;
-    color: #81c784 !important;
+.overall-status.passed {
+    background: #d4edda !important;
+    border: 1px solid #c3e6cb !important;
+    color: #155724 !important;
 }
 
-.overall-status.overall-status.in-progress {
-    background: rgba(244, 143, 177, 0.2) !important;
-    border: 2px solid rgba(244, 143, 177, 0.5) !important;
-    color: #f48fb1 !important;
+.overall-status.in-progress {
+    background: #fff3cd !important;
+    border: 1px solid #ffeaa7 !important;
+    color: #856404 !important;
 }
 
-.status-icon.status-icon {
-    font-size: 1.2rem !important;
-}
-
-.status-text.status-text {
+.status-icon {
     font-size: 1rem !important;
 }
 
-/* เพิ่ม CSS classes ใหม่สำหรับส่วนที่เพิ่มเข้ามา */
-
-.progress-summary.progress-summary {
-    margin-top: 15px !important;
-    padding: 10px !important;
-    background: rgba(255, 255, 255, 0.1) !important;
-    border-radius: 8px !important;
-    border: 1px solid rgba(255, 255, 255, 0.2) !important;
-    backdrop-filter: blur(10px) !important;
+.status-text {
+    font-size: 0.8rem !important;
 }
 
-.progress-label.progress-label {
-    color: #ffffff !important;
-    font-weight: 500 !important;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+/* Status Details */
+.status-details {
+    font-size: 0.7rem !important;
+    margin-top: 6px !important;
+    padding: 6px !important;
+    background: #f8f9fa !important;
+    border-radius: 4px !important;
+    border: 1px solid #e9ecef !important;
 }
 
-.progress-value.progress-value {
+.status-details > div {
+    margin-bottom: 3px !important;
+    padding: 3px !important;
+    background: #ffffff !important;
+    border-radius: 3px !important;
+    border: 1px solid #e9ecef !important;
+}
+
+.status-details > div:last-child {
+    margin-bottom: 0 !important;
+}
+
+/* Enhanced Status Rows */
+.status-row.enhanced {
+    background: #e3f2fd !important;
+    border: 1px solid #bbdefb !important;
+}
+
+.status-row.enhanced .status-label {
+    color: #1976d2 !important;
+    font-weight: 600 !important;
+}
+
+.status-row.enhanced .status-value {
+    color: #1976d2 !important;
+    font-weight: 700 !important;
+}
+
+/* Condition Items */
+.condition-item {
+    margin-bottom: 4px !important;
+    padding: 3px !important;
+    background: #ffffff !important;
+    border-radius: 3px !important;
+    border: 1px solid #e9ecef !important;
+    font-size: 0.7rem !important;
+}
+
+.condition-item:last-child {
+    margin-bottom: 0 !important;
+}
+
+.condition-item .score-status {
+    color: #28a745 !important;
+    font-weight: 600 !important;
+}
+
+.condition-item .progress-status {
+    color: #ffc107 !important;
+    font-weight: 600 !important;
+}
+
+/* Overall Status Summary */
+.overall-status-summary {
+    margin-top: 6px !important;
+    padding: 4px !important;
+    border-radius: 4px !important;
+    border: 1px solid !important;
+    text-align: center !important;
     font-weight: bold !important;
-    font-size: 1.1rem !important;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+    font-size: 0.75rem !important;
 }
 
-.progress-value.progress-value.completed {
-    color: #81c784 !important;
+.overall-status-summary.passed {
+    background: #d4edda !important;
+    border-color: #c3e6cb !important;
+    color: #155724 !important;
 }
 
-.progress-value.progress-value.in-progress {
-    color: #ffb74d !important;
+.overall-status-summary.in-progress {
+    background: #fff3cd !important;
+    border-color: #ffeaa7 !important;
+    color: #856404 !important;
 }
 
-.progress-100-line.progress-100-line {
+/* Progress Bar Mini - เพิ่ม CSS Specificity */
+html body div.progress-bar-mini.progress-bar-mini.progress-bar-mini {
+    width: 100% !important;
+    height: 8px !important;
+    background: #e9ecef !important;
+    border-radius: 4px !important;
+    overflow: hidden !important;
+    border: 1px solid #dee2e6 !important;
+    position: relative !important;
+    display: block !important;
+}
+
+.progress-bar-mini {
+    width: 100%;
+    height: 8px;
+    background: #e9ecef;
+    border-radius: 4px;
+    overflow: hidden;
+    border: 1px solid #dee2e6;
+    position: relative;
+    display: block;
+}
+
+html body div.progress-bar-mini-fill.progress-bar-mini-fill.progress-bar-mini-fill {
+    height: 100% !important;
+    transition: width 0.3s ease !important;
+    border-radius: 4px !important;
+    position: relative !important;
+    display: block !important;
+    min-width: 0% !important;
+    max-width: 100% !important;
+}
+
+.progress-bar-mini-fill {
+    height: 100%;
+    transition: width 0.3s ease;
+    border-radius: 4px;
+    position: relative;
+    display: block;
+    min-width: 0%;
+    max-width: 100%;
+}
+
+html body div.progress-bar-mini-fill.completed.progress-bar-mini-fill.completed.progress-bar-mini-fill.completed {
+    background: linear-gradient(90deg, #28a745, #34ce57) !important;
+    box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3) !important;
+}
+
+.progress-bar-mini-fill.completed {
+    background: linear-gradient(90deg, #28a745, #34ce57);
+    box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3);
+}
+
+html body div.progress-bar-mini-fill.in-progress.progress-bar-mini-fill.in-progress.progress-bar-mini-fill.in-progress {
+    background: linear-gradient(90deg, #ffc107, #ffd43b) !important;
+    box-shadow: 0 2px 4px rgba(255, 193, 7, 0.3) !important;
+}
+
+.progress-bar-mini-fill.in-progress {
+    background: linear-gradient(90deg, #ffc107, #ffd43b);
+    box-shadow: 0 2px 4px rgba(255, 193, 7, 0.3);
+}
+
+/* Progress Status Message - เพิ่ม CSS Specificity */
+html body div.progress-status-message.progress-status-message.progress-status-message {
+    margin-top: 6px !important;
+    text-align: center !important;
+    font-size: 0.7rem !important;
+    font-weight: 500 !important;
+    display: block !important;
+    position: relative !important;
+}
+
+.progress-status-message {
+    margin-top: 6px;
+    text-align: center;
+    font-size: 0.7rem;
+    font-weight: 500;
+    display: block;
+    position: relative;
+}
+
+html body div.progress-status-message.completed.progress-status-message.completed.progress-status-message.completed {
+    color: #28a745 !important;
+}
+
+.progress-status-message.completed {
+    color: #28a745;
+}
+
+html body div.progress-status-message.in-progress.progress-status-message.in-progress.progress-status-message.in-progress {
+    color: #ffc107 !important;
+}
+
+.progress-status-message.in-progress {
+    color: #ffc107;
+}
+
+/* Progress 100 Line */
+.progress-100-line {
     position: absolute !important;
     left: 100% !important;
     top: 0 !important;
     bottom: 0 !important;
     width: 2px !important;
-    background-color: #81c784 !important;
+    background-color: #28a745 !important;
     z-index: 2 !important;
 }
 
-.status-details.status-details {
-    font-size: 0.8rem !important;
-    margin-top: 8px !important;
-    padding: 8px !important;
-    background: rgba(255, 255, 255, 0.15) !important;
-    border-radius: 4px !important;
-    backdrop-filter: blur(10px) !important;
-}
-
-.status-details.status-details > div {
-    margin-bottom: 4px !important;
-    padding: 4px !important;
-    background: rgba(0, 0, 0, 0.3) !important;
-    border-radius: 3px !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-}
-
-.status-details.status-details > div:last-child {
-    margin-bottom: 0 !important;
-}
-
-/* ปรับปรุงสีของ status rows ที่เพิ่มเข้ามา */
-.status-row.status-row.enhanced {
-    background: rgba(255, 255, 255, 0.15) !important;
-    border: 1px solid rgba(255, 255, 255, 0.2) !important;
-    backdrop-filter: blur(10px) !important;
-}
-
-.status-row.status-row.enhanced .status-label {
-    color: #ffffff !important;
-    font-weight: 600 !important;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5) !important;
-}
-
-.status-row.status-row.enhanced .status-value {
-    color: #ffffff !important;
-    font-weight: 700 !important;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5) !important;
-}
-
-/* ปรับปรุงสีของ progress description */
-.progress-description.progress-description {
-    margin-top: 8px !important;
-    text-align: center !important;
-    font-size: 0.8rem !important;
-    color: #ffffff !important;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5) !important;
-    font-weight: 500 !important;
-}
-
-/* ปรับปรุงสีของ status summary */
-.status-summary.status-summary {
-    margin-top: 8px !important;
-    padding: 6px !important;
-    border-radius: 4px !important;
-    border: 1px solid !important;
-    text-align: center !important;
-    font-weight: bold !important;
-    font-size: 0.9rem !important;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5) !important;
-}
-
-.status-summary.status-summary.passed {
-    background: rgba(129, 199, 132, 0.3) !important;
-    border-color: #81c784 !important;
-    color: #81c784 !important;
-}
-
-.status-summary.status-summary.in-progress {
-    background: rgba(244, 143, 177, 0.3) !important;
-    border-color: #f48fb1 !important;
-    color: #f48fb1 !important;
-}
-
-/* ปรับปรุงสีของ progress bar fill */
-.progress-bar-fill.progress-bar-fill.enhanced {
-    background: linear-gradient(90deg, #81c784, #4caf50, #81c784) !important;
-    background-size: 200% 100% !important;
-    animation: shimmer 2s ease-in-out infinite !important;
-    box-shadow: 
-        0 2px 10px rgba(129, 199, 132, 0.4) !important,
-        inset 0 1px 0 rgba(255, 255, 255, 0.5) !important;
-}
-
-.progress-bar-fill.progress-bar-fill.warning {
-    background: linear-gradient(90deg, #ffb74d, #ff9800, #ffb74d) !important;
-    background-size: 200% 100% !important;
-    animation: shimmer 2s ease-in-out infinite !important;
-    box-shadow: 
-        0 2px 10px rgba(255, 183, 77, 0.4) !important,
-        inset 0 1px 0 rgba(255, 255, 255, 0.5) !important;
-}
-
-/* ปรับปรุงสีของ progress bar สำหรับความคืบหน้า */
-.progress-bar-mini.progress-bar-mini {
-    width: 100% !important;
-    height: 8px !important;
-    background: rgba(255, 255, 255, 0.2) !important;
-    border-radius: 4px !important;
-    overflow: hidden !important;
-    border: 1px solid rgba(255, 255, 255, 0.3) !important;
-}
-
-.progress-bar-mini-fill.progress-bar-mini-fill {
-    height: 100% !important;
-    transition: width 0.3s ease !important;
-    border-radius: 4px !important;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
-}
-
-.progress-bar-mini-fill.progress-bar-mini-fill.completed {
-    background: linear-gradient(90deg, #81c784, #4caf50) !important;
-}
-
-.progress-bar-mini-fill.progress-bar-mini-fill.in-progress {
-    background: linear-gradient(90deg, #ffb74d, #ff9800) !important;
-}
-
-/* ปรับปรุงสีของ progress status message */
-.progress-status-message.progress-status-message {
-    margin-top: 8px !important;
-    text-align: center !important;
-    font-size: 0.8rem !important;
-    font-weight: 500 !important;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5) !important;
-}
-
-.progress-status-message.progress-status-message.completed {
-    color: #81c784 !important;
-}
-
-.progress-status-message.progress-status-message.in-progress {
-    color: #ffb74d !important;
-}
-
-/* ปรับปรุงสีของ condition details */
-.condition-details.condition-details {
-    margin-top: 10px !important;
-    padding: 8px !important;
-    background: rgba(255, 255, 255, 0.1) !important;
-    border-radius: 4px !important;
-    border: 1px solid rgba(255, 255, 255, 0.2) !important;
-}
-
-.condition-details.condition-details .status-label {
-    color: #ffffff !important;
-    font-weight: 600 !important;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5) !important;
-}
-
-.condition-details.condition-details .status-value {
-    color: #ffffff !important;
-    font-weight: 700 !important;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5) !important;
-}
-
-/* ปรับปรุงสีของ condition items */
-.condition-item.condition-item {
-    margin-bottom: 5px !important;
-    padding: 4px !important;
-    background: rgba(0, 0, 0, 0.3) !important;
-    border-radius: 3px !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-}
-
-.condition-item.condition-item:last-child {
-    margin-bottom: 0 !important;
-}
-
-.condition-item.condition-item .score-status {
-    color: #81c784 !important;
-    font-weight: 600 !important;
-}
-
-.condition-item.condition-item .progress-status {
-    color: #ffb74d !important;
-    font-weight: 600 !important;
-}
-
-/* ปรับปรุงสีของ overall status summary */
-.overall-status-summary.overall-status-summary {
-    margin-top: 8px !important;
-    padding: 6px !important;
-    border-radius: 4px !important;
-    border: 1px solid !important;
-    text-align: center !important;
-    font-weight: bold !important;
-    font-size: 0.9rem !important;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5) !important;
-}
-
-.overall-status-summary.overall-status-summary.passed {
-    background: rgba(129, 199, 132, 0.3) !important;
-    border-color: #81c784 !important;
-    color: #81c784 !important;
-}
-
-.overall-status-summary.overall-status-summary.in-progress {
-    background: rgba(244, 143, 177, 0.3) !important;
-    border-color: #f48fb1 !important;
-    color: #f48fb1 !important;
+.progress-100-line > div {
+    position: absolute !important;
+    top: -16px !important;
+    left: -12px !important;
+    background-color: #28a745 !important;
+    color: white !important;
+    padding: 1px 4px !important;
+    border-radius: 2px !important;
+    font-size: 0.6rem !important;
+    white-space: nowrap !important;
 }
 
 /* Responsive Design */
 @media (max-width: 768px) {
-    .score-progress-container.score-progress-container {
-        padding: 20px 15px !important;
+    .score-progress-container {
+        padding: 16px !important;
     }
     
-    .score-summary.score-summary {
-        gap: 10px !important;
+    .score-summary {
+        gap: 6px !important;
     }
     
-    .score-value.score-value {
-        font-size: 1.5rem !important;
+    .score-value {
+        font-size: 1rem !important;
     }
     
-    .threshold-label.threshold-label {
-        font-size: 0.6rem !important;
-        padding: 3px 6px !important;
+    .threshold-label {
+        font-size: 0.5rem !important;
+        padding: 1px 4px !important;
     }
     
-    .status-row.status-row {
-        padding: 6px 10px !important;
+    .status-row {
+        padding: 4px 8px !important;
     }
     
-    .status-label.status-label,
-    .status-value.status-value {
-        font-size: 0.8rem !important;
+    .status-label,
+    .status-value {
+        font-size: 0.7rem !important;
     }
 }
 
 @media (max-width: 480px) {
-    .score-summary.score-summary {
+    .score-summary {
         flex-direction: column !important;
-        gap: 5px !important;
+        gap: 4px !important;
     }
     
-    .score-divider.score-divider {
+    .score-divider {
         display: none !important;
     }
     
-    .overall-status.overall-status {
+    .overall-status {
         flex-direction: column !important;
-        gap: 5px !important;
+        gap: 4px !important;
     }
+}
+
+/* ✅ New Compact Design for Overall Status */
+.overall-status-compact {
+    background: #f8f9fa !important;
+    border-radius: 8px !important;
+    padding: 12px !important;
+    margin-top: 12px !important;
+    border: 1px solid #e9ecef !important;
+    position: relative !important;
+    overflow: hidden !important;
+}
+
+.overall-status-compact.passed {
+    background: #e8f5e8 !important;
+    border-color: #c3e6cb !important;
+}
+
+.overall-status-compact.in-progress {
+    background: #fff3cd !important;
+    border-color: #ffeaa7 !important;
+}
+
+.status-header {
+    display: flex !important;
+    align-items: center !important;
+    margin-bottom: 8px !important;
+    gap: 8px !important;
+}
+
+.status-header .status-icon {
+    font-size: 16px !important;
+    flex-shrink: 0 !important;
+}
+
+.status-header .status-text {
+    font-weight: 600 !important;
+    font-size: 13px !important;
+    color: #2c3e50 !important;
+    flex: 1 !important;
+}
+
+.status-details-compact {
+    display: flex !important;
+        flex-direction: column !important;
+    gap: 6px !important;
+}
+
+.status-row-compact {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    padding: 4px 0 !important;
+}
+
+.status-indicator {
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    width: 16px !important;
+    height: 16px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 50% !important;
+    flex-shrink: 0 !important;
+}
+
+.status-indicator.passed {
+    background: #28a745 !important;
+    color: white !important;
+}
+
+.status-indicator.failed {
+    background: #dc3545 !important;
+    color: white !important;
+}
+
+.status-label-compact {
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    color: #6c757d !important;
+    min-width: 60px !important;
+}
+
+.status-value-compact {
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    flex: 1 !important;
+}
+
+.status-value-compact.passed {
+    color: #28a745 !important;
+}
+
+.status-value-compact.failed {
+    color: #dc3545 !important;
+}
+
+.status-summary-compact {
+    margin-top: 6px !important;
+    padding: 6px 8px !important;
+    border-radius: 4px !important;
+    font-size: 10px !important;
+    font-weight: 500 !important;
+    text-align: center !important;
+    line-height: 1.3 !important;
+}
+
+.status-summary-compact.passed {
+    background: #d4edda !important;
+    color: #155724 !important;
+    border: 1px solid #c3e6cb !important;
+}
+
+.status-summary-compact.in-progress {
+    background: #fff3cd !important;
+    color: #856404 !important;
+    border: 1px solid #ffeaa7 !important;
+}
+
+/* ✅ Responsive for Compact Design */
+@media (max-width: 768px) {
+    .overall-status-compact {
+        padding: 10px !important;
+    }
+    
+    .status-header .status-text {
+        font-size: 12px !important;
+    }
+    
+    .status-label-compact {
+        font-size: 10px !important;
+        min-width: 50px !important;
+    }
+    
+    .status-value-compact {
+        font-size: 10px !important;
+    }
+    
+    .status-summary-compact {
+        font-size: 9px !important;
+        padding: 4px 6px !important;
+    }
+}
+
+/* ✅ Override Bootstrap and other CSS */
+html body div.score-progress-container * {
+    box-sizing: border-box !important;
+}
+
+html body div.score-progress-container .progress,
+html body div.score-progress-container .progress-bar,
+html body div.score-progress-container .progress-bar-striped,
+html body div.score-progress-container .progress-bar-animated {
+    all: unset !important;
+    display: revert !important;
+}
+
+html body div.score-progress-container .progress {
+    display: block !important;
+    height: auto !important;
+    background: transparent !important;
+    border-radius: 0 !important;
+    overflow: visible !important;
+}
+
+html body div.score-progress-container .progress-bar {
+    display: block !important;
+    height: auto !important;
+    background: transparent !important;
+    border-radius: 0 !important;
+    transition: none !important;
+    width: auto !important;
+}
+
+/* Force display for progress elements */
+html body div.score-progress-container div[class*="progress"] {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+html body div.score-progress-container span[class*="progress"] {
+    display: inline-block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* ✅ Force display for specific progress elements */
+html body div.score-progress-container .progress-summary,
+html body div.score-progress-container .progress-bar-mini,
+html body div.score-progress-container .progress-bar-mini-fill,
+html body div.score-progress-container .progress-status-message {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    position: relative !important;
+    z-index: 10 !important;
+}
+
+/* ✅ Ensure progress bar has minimum width */
+html body div.progress-bar-mini-fill[style*="width: 0%"] {
+    min-width: 2px !important;
+    background: #e9ecef !important;
+}
+
+html body div.progress-bar-mini-fill[style*="width: 0%"]:after {
+    content: '' !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    background: #dee2e6 !important;
+    border-radius: 4px !important;
 }

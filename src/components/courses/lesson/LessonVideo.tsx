@@ -15,6 +15,8 @@ interface LessonVideoProps {
   onGoToQuiz?: () => void;
   // ✅ เพิ่ม prop ใหม่สำหรับการไปบทเรียนถัดไป (lesson ถัดไป)
   onGoToNextLesson?: () => void;
+  // ✅ เพิ่ม prop ใหม่สำหรับการไปเนื้อหาล่าสุดที่ดูได้
+  onGoToLatestContent?: () => void;
 }
 
 const LessonVideo = ({ 
@@ -26,105 +28,58 @@ const LessonVideo = ({
   hasQuiz = false,
   onGoToQuiz,
   // ✅ เพิ่ม prop ใหม่สำหรับการไปบทเรียนถัดไป (lesson ถัดไป)
-  onGoToNextLesson
+  onGoToNextLesson,
+  // ✅ เพิ่ม prop ใหม่สำหรับการไปเนื้อหาล่าสุดที่ดูได้
+  onGoToLatestContent
 }: LessonVideoProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<Plyr | null>(null);
   const hasCompletedRef = useRef(false);
+  const lastSaveTimeRef = useRef(0);
 
   const [progress, setProgress] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [lastSavedTime, setLastSavedTime] = useState<Date | null>(null);
-  const [savedPosition, setSavedPosition] = useState<number | null>(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [currentUserId, setCurrentUserId] = useState<string>('');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
+  const [loadedPosition, setLoadedPosition] = useState<number | null>(null);
 
-  // สร้าง key สำหรับ localStorage
+  // ✅ สร้าง key สำหรับ localStorage (ไม่แยกตาม user)
   const getStorageKey = () => {
-    const userId = localStorage.getItem('userId') || 'anonymous';
-    return `video_progress_lesson_${lessonId}_${youtubeId}_user_${userId}`;
+    const key = `video_progress_lesson_${lessonId}_${youtubeId}`;
+    return key;
   };
 
-  // ล้าง localStorage ของ user เก่าเมื่อเปลี่ยน user
-  const clearOldUserData = (newUserId: string) => {
-    if (currentUserId && currentUserId !== newUserId) {
-      console.log(`เปลี่ยน user จาก ${currentUserId} เป็น ${newUserId} - ล้างข้อมูลเก่า`);
-      
-      // ล้างข้อมูลทั้งหมดของ user เก่า
-      const allKeys = Object.keys(localStorage);
-      const oldUserKeys = allKeys.filter(key => key.includes(`user_${currentUserId}`));
-      
-      oldUserKeys.forEach(key => {
-        console.log(`ล้างข้อมูล user เก่า: ${key}`);
-        localStorage.removeItem(key);
-      });
-      
-      // อัปเดต currentUserId
-      setCurrentUserId(newUserId);
-    } else if (!currentUserId) {
-      // ครั้งแรกที่โหลด
-      setCurrentUserId(newUserId);
-    }
-  };
 
-  // ตรวจสอบและล้างข้อมูล user เก่า
-  const checkAndClearUserData = () => {
-    const userId = localStorage.getItem('userId') || 'anonymous';
-    if (userId !== currentUserId) {
-      clearOldUserData(userId);
-    }
-  };
-
-  // ล้างข้อมูลทั้งหมดของ user ปัจจุบัน (สำหรับกรณี logout)
-  const clearCurrentUserData = () => {
-    if (currentUserId && currentUserId !== '') {
-      console.log(`ล้างข้อมูลทั้งหมดของ user ปัจจุบัน: ${currentUserId}`);
-      
-      const allKeys = Object.keys(localStorage);
-      const currentUserKeys = allKeys.filter(key => key.includes(`user_${currentUserId}`));
-      
-      currentUserKeys.forEach(key => {
-        console.log(`ล้างข้อมูล: ${key}`);
-        localStorage.removeItem(key);
-      });
-      
-      setCurrentUserId(''); // ตั้งค่าเป็น '' เฉพาะเมื่อ currentUserId มีค่า
-    }
-  };
-
-  // ตรวจสอบการ logout (เมื่อไม่มี userId หรือ token)
-  const checkLogout = () => {
-    const userId = localStorage.getItem('userId');
-    const token = localStorage.getItem('token');
-    
-    if (!userId || !token) {
-      console.log('ตรวจพบการ logout - ล้างข้อมูลทั้งหมด');
-      clearCurrentUserData();
-    }
-  };
-
-  // บันทึกความก้าวหน้าไปที่ localStorage
+  // ✅ บันทึกความก้าวหน้าไปที่ localStorage (ไม่แยกตาม user)
   const saveToLocalStorage = (currentTime: number, duration: number) => {
+    const percentage = (currentTime / duration) * 100;
+    const isCompleted = percentage >= 100;
+    
+    // ✅ ถ้าดูครบ 100% แล้ว ให้ล้างข้อมูลออกจาก localStorage
+    if (isCompleted) {
+      const storageKey = getStorageKey();
+      localStorage.removeItem(storageKey);
+      return null;
+    }
+    
     const progressData = {
       position: currentTime,
       duration: duration,
-      percentage: (currentTime / duration) * 100,
-      completed: currentTime >= duration * 0.9,
-      lastUpdated: new Date().toISOString() 
+      percentage: percentage,
+      completed: isCompleted,
+      lastUpdated: new Date().toISOString()
     };
     
     const storageKey = getStorageKey();
     localStorage.setItem(storageKey, JSON.stringify(progressData));
-    
     setLastSavedTime(new Date());
-    console.log(`บันทึก Local: ${currentTime.toFixed(1)}/${duration.toFixed(1)} (${progressData.percentage.toFixed(1)}%)`);
     
     return progressData;
   };
 
-  // โหลดความก้าวหน้าจาก localStorage
+  // ✅ โหลดความก้าวหน้าจาก localStorage (ไม่แยกตาม user)
   const loadFromLocalStorage = () => {
     const storageKey = getStorageKey();
     const saved = localStorage.getItem(storageKey);
@@ -132,11 +87,11 @@ const LessonVideo = ({
     if (saved) {
       try {
         const progressData = JSON.parse(saved);
-        console.log("โหลดจาก Local:", progressData);
         return progressData;
       } catch (error) {
         console.error("Error parsing localStorage data:", error);
       }
+    } else {
     }
     return null;
   };
@@ -144,13 +99,11 @@ const LessonVideo = ({
   // บันทึกความก้าวหน้าไปที่ Server
   const saveToServer = async (completed?: boolean) => {
     if (!isOnline) {
-      console.log("ไม่สามารถเชื่อมต่ออินเทอร์เน็ต");
       return null;
     }
   
     const token = localStorage.getItem('token');
     if (!token || token === 'null' || token === 'undefined') {
-      console.log("ไม่มี token หรือ token ไม่ถูกต้อง - ข้ามการบันทึกไปยัง server");
       return null;
     }
   
@@ -171,7 +124,6 @@ const LessonVideo = ({
         );
         
         if (response.data.success) {
-          console.log(`✅ บันทึก Server: Video เสร็จแล้ว`);
           setSaveStatus('success');
           // ซ่อน success message หลังจาก 3 วินาที
           setTimeout(() => setSaveStatus('idle'), 3000);
@@ -196,13 +148,11 @@ const LessonVideo = ({
   
   const loadFromServer = async () => {
     if (!isOnline) {
-      console.log("ไม่สามารถเชื่อมต่ออินเทอร์เน็ต");
       return null;
     }
   
     const token = localStorage.getItem('token');
     if (!token || token === 'null' || token === 'undefined') {
-      console.log("ไม่มี token หรือ token ไม่ถูกต้อง - ข้ามการโหลดจาก server");
       return null;
     }
   
@@ -215,10 +165,8 @@ const LessonVideo = ({
       
       if (response.data.success && response.data.progress) {
         const progressData = response.data.progress;
-        console.log("โหลดจาก Server:", progressData);
         
         if (progressData.video_completed) {
-          console.log("🌐 โหลดจาก Server ใน loadFromServer - วิดีโอเสร็จแล้ว");
           setIsCompleted(true);
           hasCompletedRef.current = true;
           // ✅ ป้องกันการเรียก onComplete ซ้ำ
@@ -271,14 +219,14 @@ const LessonVideo = ({
     setIsCompleted(false);
     hasCompletedRef.current = false;
     
-    // ✅ ใช้ onGoToNextLesson ถ้ามี (สำหรับวิดีโอบทเรียน)
-    // เพื่อไปบทเรียนถัดไป (lesson ถัดไป) แทนที่จะเป็น item ถัดไปใน section เดียวกัน
-    if (onGoToNextLesson) {
-      console.log("🎯 ใช้ onGoToNextLesson - ไปบทเรียนถัดไป (lesson ถัดไป)");
+    // ✅ ใช้ onGoToLatestContent ถ้ามี (สำหรับไปเนื้อหาล่าสุดที่ดูได้)
+    if (onGoToLatestContent) {
+      onGoToLatestContent();
+    } else if (onGoToNextLesson) {
+      // ✅ ใช้ onGoToNextLesson ถ้าไม่มี onGoToLatestContent (สำหรับวิดีโอบทเรียน)
       onGoToNextLesson();
     } else if (onNextLesson) {
       // ✅ ใช้ onNextLesson ถ้าไม่มี onGoToNextLesson (สำหรับเนื้อหาถัดไป)
-      console.log("🎯 ใช้ onNextLesson - ไปเนื้อหาถัดไป");
       onNextLesson();
     }
   };
@@ -291,14 +239,14 @@ const LessonVideo = ({
     setIsCompleted(false);
     hasCompletedRef.current = false;
     
-    // ✅ ใช้ onGoToNextLesson ถ้ามี (สำหรับวิดีโอบทเรียน)
-    // เพื่อไปบทเรียนถัดไป (lesson ถัดไป) แทนที่จะเป็น item ถัดไปใน section เดียวกัน
-    if (onGoToNextLesson) {
-      console.log("🎯 ใช้ onGoToNextLesson - ไปบทเรียนถัดไป (lesson ถัดไป)");
+    // ✅ ใช้ onGoToLatestContent ถ้ามี (สำหรับไปเนื้อหาล่าสุดที่ดูได้)
+    if (onGoToLatestContent) {
+      onGoToLatestContent();
+    } else if (onGoToNextLesson) {
+      // ✅ ใช้ onGoToNextLesson ถ้าไม่มี onGoToLatestContent (สำหรับวิดีโอบทเรียน)
       onGoToNextLesson();
     } else if (onGoToQuiz) {
       // ✅ ใช้ onGoToQuiz ถ้าไม่มี onGoToNextLesson (สำหรับแบบทดสอบ)
-      console.log("🎯 ใช้ onGoToQuiz - ไปทำแบบทดสอบ");
       onGoToQuiz();
     }
   };
@@ -317,73 +265,50 @@ const LessonVideo = ({
     };
   }, []);
 
-  // ตรวจสอบการเปลี่ยนแปลงของ userId (ครั้งแรกเท่านั้น)
+  // ตรวจสอบ localStorage เมื่อโหลดครั้งแรก
   useEffect(() => {
-            // console.log("🔍 ตรวจสอบ userId ครั้งแรก");
-    checkAndClearUserData();
+    // ไม่ต้องแสดง debug logs
   }, []); // ✅ เรียกครั้งเดียวตอน mount
-
-  // ตรวจสอบ userId เมื่อ currentUserId เปลี่ยน
-  useEffect(() => {
-    const userId = localStorage.getItem('userId') || 'anonymous';
-    const token = localStorage.getItem('token');
-  
-    // ตรวจสอบการเปลี่ยนแปลงของ userId
-    if (userId !== currentUserId) {
-      clearOldUserData(userId);
-    }
-  
-    // ตรวจสอบการ logout เฉพาะเมื่อ userId และ token มีค่า
-    if (userId !== 'anonymous' && token) {
-      checkLogout();
-    }
-  }, [currentUserId]); // ✅ เพิ่ม semicolon และ dependency array ครบ
 
 
   // เมื่อ lessonId หรือ youtubeId เปลี่ยน
   useEffect(() => {
-            // console.log(`🔄 โหลดวิดีโอใหม่: Lesson ID: ${lessonId}, YouTube ID: ${youtubeId}`);
     
-    // ✅ ตรวจสอบและล้างข้อมูล user เก่าก่อน (เรียกครั้งเดียว)
-    const userId = localStorage.getItem('userId') || 'anonymous';
-    if (userId !== currentUserId) {
-      checkAndClearUserData();
-    }
-    
-    // ✅ รีเซ็ตสถานะทั้งหมดเมื่อเปลี่ยนบทเรียน
+    // ✅ รีเซ็ตสถานะทั้งหมดเมื่อเปลี่ยนบทเรียน (แต่ไม่รีเซ็ต progress จนกว่าจะโหลดจาก localStorage)
     hasCompletedRef.current = false;
-    setProgress(0);
     setShowCompletionModal(false);
-    setIsCompleted(false);
-    setSavedPosition(null);
     setLastSavedTime(null);
+    setLoadedPosition(null);
     
     // รีเซ็ต player state
     if (playerRef.current) {
-      playerRef.current.currentTime = 0;
-      playerRef.current.pause();
+      try {
+        playerRef.current.currentTime = 0;
+        playerRef.current.pause();
+      } catch (error) {
+      }
     }
     
-    // ล้าง localStorage ของบทเรียนเก่า
+    // ✅ ล้าง localStorage ของบทเรียนเก่าของ user ปัจจุบัน (เฉพาะเมื่อเปลี่ยนบทเรียน)
     const currentStorageKey = getStorageKey();
+    const userId = localStorage.getItem('userId') || 'anonymous';
     const allKeys = Object.keys(localStorage);
-    const lessonKeys = allKeys.filter(key => key.includes('video_progress_lesson_'));
+    const userLessonKeys = allKeys.filter(key => key.includes(`video_progress_user_${userId}_lesson_`));
     
-    lessonKeys.forEach(key => {
+    
+    userLessonKeys.forEach(key => {
       if (key !== currentStorageKey) {
-        console.log(`ล้าง localStorage เก่า: ${key}`);
         localStorage.removeItem(key);
+      } else {
       }
     });
     
-    // โหลดข้อมูลจาก localStorage
+    // โหลดข้อมูลจาก localStorage ก่อน
     const localProgress = loadFromLocalStorage();
     if (localProgress) {
       setProgress(localProgress.percentage || 0);
-      setSavedPosition(localProgress.position > 0 ? localProgress.position : null);
       
-      if (localProgress.completed && !hasCompletedRef.current) {
-        console.log("📱 โหลดจาก localStorage - วิดีโอเสร็จแล้ว");
+      if (localProgress.completed) {
         setIsCompleted(true);
         hasCompletedRef.current = true;
         // ✅ ป้องกันการเรียก onComplete ซ้ำ
@@ -391,15 +316,17 @@ const LessonVideo = ({
           onComplete();
         }
       }
+    } else {
+      setProgress(0);
+      setIsCompleted(false);
     }
     
     // โหลดข้อมูลจาก Server
     const loadServerProgress = async () => {
       const serverProgress = await loadFromServer();
       if (serverProgress && serverProgress.position > 0) {
-        setSavedPosition(serverProgress.position);
+        // Server position loaded
         if (serverProgress.completed && !hasCompletedRef.current) {
-          console.log("🌐 โหลดจาก Server - วิดีโอเสร็จแล้ว");
           setIsCompleted(true);
           hasCompletedRef.current = true;
           // ✅ ป้องกันการเรียก onComplete ซ้ำ
@@ -418,8 +345,16 @@ const LessonVideo = ({
 
   // สร้าง player
   useEffect(() => {
-    if (containerRef.current && youtubeId && !playerRef.current) {
-      console.log(`🎬 สร้าง player ใหม่สำหรับ YouTube ID: ${youtubeId}`);
+    if (containerRef.current && youtubeId) {
+      
+      // ✅ Cleanup player เก่าก่อนสร้างใหม่
+      if (playerRef.current) {
+        try {
+          playerRef.current.destroy();
+        } catch (error) {
+        }
+        playerRef.current = null;
+      }
       
       // ล้าง container เดิม
       while (containerRef.current.firstChild) {
@@ -444,24 +379,31 @@ const LessonVideo = ({
 
       // เมื่อ player พร้อม
       playerRef.current.on('ready', () => {
-        console.log("Player พร้อมแล้ว");
         
         // รอให้ duration โหลด
         const checkDuration = setInterval(() => {
           if (playerRef.current?.duration && playerRef.current.duration > 0) {
             clearInterval(checkDuration);
-            console.log(`Duration: ${playerRef.current.duration} วินาที`);
             
             // โหลดตำแหน่งที่บันทึกไว้จาก localStorage
             const localProgress = loadFromLocalStorage();
             if (localProgress && localProgress.position > 0 && playerRef.current) {
               // ลอง seek ไปยังตำแหน่งที่บันทึก
               try {
-                playerRef.current.currentTime = localProgress.position;
-                console.log(`เริ่มเล่นจากตำแหน่ง: ${localProgress.position} วินาที`);
+                // ✅ ตรวจสอบว่า player ยังมีอยู่และพร้อมใช้งาน
+                if (playerRef.current && playerRef.current.currentTime !== undefined) {
+                  // รอสักครู่ให้ player พร้อม
+                  setTimeout(() => {
+                    if (playerRef.current) {
+                      playerRef.current.currentTime = localProgress.position;
+                      setLoadedPosition(localProgress.position);
+                    }
+                  }, 1000); // รอ 1 วินาที
+                } else {
+                }
               } catch (error) {
-                console.log("ไม่สามารถ seek ได้ - YouTube restriction");
               }
+            } else {
             }
           }
         }, 500);
@@ -469,14 +411,14 @@ const LessonVideo = ({
 
       // เมื่อเริ่มเล่น
       playerRef.current.on('play', () => {
-        console.log("เริ่มเล่นวิดีโอ");
         // ไม่ต้องบันทึกอัตโนมัติแล้ว
       });
 
       // เมื่อหยุดเล่น
       playerRef.current.on('pause', () => {
-        console.log("หยุดเล่นวิดีโอ");
-        // ไม่ต้องบันทึกเมื่อ pause
+        if (playerRef.current && playerRef.current.duration > 0) {
+          saveToLocalStorage(playerRef.current.currentTime, playerRef.current.duration);
+        }
       });
 
       // เมื่อเวลาเปลี่ยน (สำหรับอัปเดต progress bar)
@@ -488,9 +430,17 @@ const LessonVideo = ({
           
           setProgress(currentProgress);
           
+          // ✅ บันทึกอัตโนมัติทุกๆ 3 วินาที
+          const now = Date.now();
+          const SAVE_INTERVAL = 3000; // 3 วินาที
+          
+          if (now - lastSaveTimeRef.current >= SAVE_INTERVAL) {
+            saveToLocalStorage(currentTime, duration);
+            lastSaveTimeRef.current = now;
+          }
+          
           // ตรวจสอบว่าดูจบแล้วหรือยัง (90%)
           if (currentProgress >= 90 && !hasCompletedRef.current) {
-            console.log("วิดีโอดูถึง 90% - ถือว่าจบ");
             
             // บันทึกเฉพาะเมื่อจบแล้ว
             saveToLocalStorage(currentTime, duration);
@@ -516,7 +466,6 @@ const LessonVideo = ({
       // เมื่อเลื่อนตำแหน่ง
       playerRef.current.on('seeked', () => {
         if (playerRef.current && playerRef.current.duration > 0) {
-          console.log("เลื่อนตำแหน่งวิดีโอ - บันทึกเฉพาะใน localStorage");
           saveToLocalStorage(playerRef.current.currentTime, playerRef.current.duration);
           // ไม่ส่งไป server เมื่อ seek
         }
@@ -524,7 +473,6 @@ const LessonVideo = ({
 
       // เมื่อวิดีโอจบ
       playerRef.current.on('ended', async () => {
-        console.log("วิดีโอจบแล้ว - Ended Event");
         
         if (playerRef.current) {
           // บันทึกว่าดูจบแล้ว
@@ -557,12 +505,17 @@ const LessonVideo = ({
     // Cleanup
     return () => {
       if (playerRef.current) {
-        // บันทึกครั้งสุดท้ายก่อน destroy
-        if (playerRef.current.currentTime && playerRef.current.duration) {
-          saveToLocalStorage(playerRef.current.currentTime, playerRef.current.duration);
-          saveToServer(hasCompletedRef.current);
+        try {
+          // บันทึกครั้งสุดท้ายก่อน destroy
+          if (playerRef.current.currentTime && playerRef.current.duration) {
+            saveToLocalStorage(playerRef.current.currentTime, playerRef.current.duration);
+            saveToServer(hasCompletedRef.current);
+          }
+          playerRef.current.destroy();
+        } catch (error) {
+        } finally {
+          playerRef.current = null;
         }
-        playerRef.current.destroy();
       }
     };
   }, [youtubeId]); // Changed dependency to only youtubeId
@@ -570,179 +523,178 @@ const LessonVideo = ({
   // Cleanup เมื่อ component unmount
   useEffect(() => {
     return () => {
-      // stopAutoSave(); // ลบออก
-      // ล้างข้อมูลเมื่อ component unmount
+      // บันทึกครั้งสุดท้ายก่อน destroy
       if (playerRef.current) {
-        // บันทึกครั้งสุดท้ายก่อน destroy
-        if (playerRef.current.currentTime && playerRef.current.duration) {
-          saveToLocalStorage(playerRef.current.currentTime, playerRef.current.duration);
-          saveToServer(hasCompletedRef.current);
+        try {
+          if (playerRef.current.currentTime && playerRef.current.duration) {
+            saveToLocalStorage(playerRef.current.currentTime, playerRef.current.duration);
+            saveToServer(hasCompletedRef.current);
+          }
+          playerRef.current.destroy();
+        } catch (error) {
         }
-        playerRef.current.destroy();
       }
     };
   }, []);
 
-  if (!youtubeId) { // Changed condition to directly check youtubeId
+  if (!youtubeId) {
     return (
-      <div className="video-loading">
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">กำลังโหลดวิดีโอ...</span>
+      <div className="modern-video-container">
+        <div className="video-loading">
+          <div className="loading-spinner"></div>
+          <p>กำลังโหลดวิดีโอ...</p>
         </div>
-        <p className="mt-3">กำลังโหลดวิดีโอ...</p>
       </div>
     );
   }
 
   return (
-    <div className="">
-      <div className="lesson-title">
-        <h3>{currentLesson}</h3>
-      </div>
-      
-      <div ref={containerRef} className="video-player"></div>
-      <div className="lesson-progress">
-        <div className="progress-bar" style={{ width: `${progress}%` }}></div>
-      </div>
-      
-      {isCompleted && (
-        <div className="completion-badge">
-          <i className="fas fa-check-circle me-2"></i>
-          <span>บทเรียนนี้เรียนจบแล้ว</span>
-        </div>
-      )}
-      
-      <div className="video-controls-info">
-        <div className="video-status">
-          {playerRef.current?.playing ? (
-            <span className="status-playing">
-              <i className="fas fa-play-circle me-1"></i> กำลังเล่น
-            </span>
-          ) : (
-            <span className="status-paused">
-              <i className="fas fa-pause-circle me-1"></i> หยุดชั่วคราว
-            </span>
-          )}
-        </div>
-        <div className="video-progress-info">
-          <span>
-            <i className="fas fa-chart-line me-1"></i> 
-            {(progress || 0).toFixed(0)}% ของวิดีโอ
-          </span>
-          {lastSavedTime && (
-            <span className="ms-3 text-muted small">
-              <i className="fas fa-save me-1"></i>
-              บันทึกล่าสุด: {lastSavedTime.toLocaleTimeString()}
-            </span>
-          )}
-          {savedPosition && (
-            <span className="ms-3 text-info small">
-              <i className="fas fa-bookmark me-1"></i>
-              ตำแหน่งที่บันทึก: {Math.floor(savedPosition / 60)}:{(savedPosition % 60).toString().padStart(2, '0')}
-            </span>
-          )}
-          {!isOnline && (
-            <span className="ms-3 text-warning small">
-              <i className="fas fa-wifi-slash me-1"></i>
-              ทำงานแบบออฟไลน์
-            </span>
-          )}
-          {/* แสดงสถานะการบันทึก */}
-          {saveStatus === 'saving' && (
-            <span className="ms-3 text-primary small">
-              <i className="fas fa-spinner fa-spin me-1"></i>
-              กำลังบันทึก...
-            </span>
-          )}
-          {saveStatus === 'success' && (
-            <span className="ms-3 text-success small">
-              <i className="fas fa-check-circle me-1"></i>
-              บันทึกสำเร็จ
-            </span>
-          )}
-          {saveStatus === 'error' && (
-            <span className="ms-3 text-danger small">
-              <i className="fas fa-exclamation-circle me-1"></i>
-              บันทึกไม่สำเร็จ
-            </span>
-          )}
+    <div className="modern-video-container">
+      {/* Video Header */}
+      <div className="video-header">
+        <h2 className="video-title">{currentLesson}</h2>
+        <div className="video-progress-indicator">
+          {Math.round(progress)}% เสร็จสิ้น
         </div>
       </div>
 
-      {/* ปุ่มควบคุมเพิ่มเติม */}
-      <div className="video-additional-controls mt-0 p-3 bg-white shadow-sm rounded-bottom">
+      {/* Video Player Container */}
+      <div className="video-player-container">
+        <div ref={containerRef} className="video-player"></div>
+        
+        {/* Completion Badge */}
         {isCompleted && (
-          <>
-            <button 
-              className="btn-rewatch-inline me-2" 
-              onClick={handleRewatch}
-            >
-              <i className="fas fa-redo me-1"></i> ดูซ้ำ
-            </button>
-            
-            {hasQuiz && onGoToQuiz && (
-              <button 
-                className="btn-go-to-quiz-inline me-2" 
-                onClick={handleGoToQuiz}
-              >
-                <i className="fas fa-tasks me-1"></i> ทำแบบทดสอบ
-              </button>
-            )}
-            
-            {onNextLesson && (
-              <button 
-                className="btn-next-lesson-inline" 
-                onClick={handleNextLesson}
-              >
-                <i className="fas fa-arrow-right me-1"></i> ไปเนื้อหาถัดไป
-              </button>
-            )}
-          </>
+          <div className="completion-badge">
+            <i className="fas fa-check-circle"></i>
+            <span>เรียนจบแล้ว</span>
+          </div>
         )}
       </div>
 
-      {/* Modal เมื่อดูวิดีโอจบ */}
+      {/* Progress Bar */}
+      <div className="video-progress-bar">
+        <div className="progress-fill" style={{ width: `${progress}%` }}></div>
+      </div>
+
+      {/* Video Controls */}
+      <div className="video-controls">
+        <div className="video-status">
+          {playerRef.current?.playing ? (
+            <span className="status-playing">
+              <i className="fas fa-play-circle"></i> กำลังเล่น
+            </span>
+          ) : (
+            <span className="status-paused">
+              <i className="fas fa-pause-circle"></i> หยุดชั่วคราว
+            </span>
+          )}
+        </div>
+        <div className="video-time">
+          {lastSavedTime && (
+            <span>
+              <i className="fas fa-save"></i> บันทึก: {lastSavedTime.toLocaleTimeString()}
+            </span>
+          )}
+          {!isOnline && (
+            <span>
+              <i className="fas fa-wifi-slash"></i> ออฟไลน์
+            </span>
+          )}
+          {saveStatus === 'saving' && (
+            <span>
+              <i className="fas fa-spinner fa-spin"></i> กำลังบันทึก...
+            </span>
+          )}
+          {saveStatus === 'success' && (
+            <span>
+              <i className="fas fa-check-circle"></i> บันทึกสำเร็จ
+            </span>
+          )}
+          {saveStatus === 'error' && (
+            <span>
+              <i className="fas fa-exclamation-circle"></i> บันทึกไม่สำเร็จ
+            </span>
+          )}
+          {loadedPosition && (
+            <span>
+              <i className="fas fa-bookmark"></i> โหลดจาก: {Math.floor(loadedPosition / 60)}:{(loadedPosition % 60).toString().padStart(2, '0')}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Action Buttons */}
+      {isCompleted && (
+        <div className="video-actions">
+          <button 
+            className="btn-modern btn-secondary" 
+            onClick={handleRewatch}
+          >
+            <i className="fas fa-redo"></i>
+            ดูซ้ำ
+          </button>
+          
+          {hasQuiz && onGoToQuiz && (
+            <button 
+              className="btn-modern btn-primary" 
+              onClick={handleGoToQuiz}
+            >
+              <i className="fas fa-tasks"></i>
+              ทำแบบทดสอบ
+            </button>
+          )}
+          
+          {onNextLesson && (
+            <button 
+              className="btn-modern btn-primary" 
+              onClick={handleNextLesson}
+            >
+              <i className="fas fa-arrow-right"></i>
+              ไปเนื้อหาถัดไป
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Completion Modal */}
       {showCompletionModal && (
-        <div className="video-completion-modal">
-          <div className="video-completion-modal-content">
-            <div className="video-completion-header">
-              <h4>คุณดูวิดีโอจบแล้ว</h4>
-              <button 
-                className="close-button" 
-                onClick={() => setShowCompletionModal(false)}
-              >
-                &times;
-              </button>
-            </div>
-            <div className="video-completion-body">
+        <div className="completion-modal">
+          <div className="completion-modal-content">
+            <div className="completion-header">
               <div className="completion-icon">
                 <i className="fas fa-check-circle"></i>
               </div>
-              <h5>ยินดีด้วย! คุณได้เรียนรู้เนื้อหาบทเรียนนี้เรียบร้อยแล้ว</h5>
+              <h3 className="completion-title">ยินดีด้วย!</h3>
+              <p className="completion-subtitle">คุณได้เรียนรู้เนื้อหาบทเรียนนี้เรียบร้อยแล้ว</p>
+            </div>
+            <div className="completion-body">
               <p>คุณต้องการทำอะไรต่อไป?</p>
-              <div className="video-completion-buttons">
+              <div className="completion-buttons">
                 <button 
-                  className="btn-rewatch" 
+                  className="btn-modern btn-secondary" 
                   onClick={handleRewatch}
                 >
-                  <i className="fas fa-redo me-1"></i> ดูซ้ำ
+                  <i className="fas fa-redo"></i>
+                  ดูซ้ำ
                 </button>
                 
                 {hasQuiz && onGoToQuiz && (
                   <button 
-                    className="btn-go-to-quiz" 
+                    className="btn-modern btn-primary" 
                     onClick={handleGoToQuiz}
                   >
-                    <i className="fas fa-tasks me-1"></i> ทำแบบทดสอบ
+                    <i className="fas fa-tasks"></i>
+                    ทำแบบทดสอบ
                   </button>
                 )}
                 
                 {onNextLesson && (
                   <button 
-                    className="btn-next-lesson" 
+                    className="btn-modern btn-primary" 
                     onClick={handleNextLesson}
                   >
-                    <i className="fas fa-arrow-right me-1"></i> ไปเนื้อหาถัดไป
+                    <i className="fas fa-arrow-right"></i>
+                    ไปเนื้อหาถัดไป
                   </button>
                 )}
               </div>

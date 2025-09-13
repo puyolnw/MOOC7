@@ -16,6 +16,8 @@ interface LessonQuizProps {
     // ✅ เพิ่ม prop ใหม่สำหรับการไปบทเรียนถัดไป (lesson ถัดไป)
     // ใช้สำหรับแบบทดสอบของแต่ละบท เพื่อไปบทเรียนถัดไป (section ถัดไป)
     onGoToNextLesson?: () => void;
+    // ✅ เพิ่ม prop ใหม่สำหรับการไปเนื้อหาล่าสุดที่ดูได้
+    onGoToLatestContent?: () => void;
     // ✅ เพิ่ม prop สำหรับเกณฑ์ผ่านแบบทดสอบ
     passingPercentage?: number;
 }
@@ -52,6 +54,7 @@ interface Attachment {
 interface Answer {
     question_id: number;
     choice_id?: number;
+    choice_ids?: number[]; // ✅ เพิ่มสำหรับ Multiple Choice
     text_answer?: string;
     attachment_ids?: number[];
     is_correct?: boolean;
@@ -168,6 +171,8 @@ const LessonQuiz = ({
     // ✅ เพิ่ม prop ใหม่สำหรับการไปบทเรียนถัดไป (lesson ถัดไป)
     // ใช้สำหรับแบบทดสอบของแต่ละบท เพื่อไปบทเรียนถัดไป (section ถัดไป)
     onGoToNextLesson,
+    // ✅ เพิ่ม prop ใหม่สำหรับการไปเนื้อหาล่าสุดที่ดูได้
+    onGoToLatestContent,
     // ✅ เพิ่ม prop สำหรับเกณฑ์ผ่านแบบทดสอบ
     passingPercentage = 65,
 }: LessonQuizProps) => {
@@ -183,6 +188,7 @@ const LessonQuiz = ({
     const [previousAttempts, setPreviousAttempts] = useState<Attempt[]>([]);
     const [uploadedAttachments, setUploadedAttachments] = useState<Attachment[]>([]);
     const [hasCompleted, setHasCompleted] = useState(false);
+    const [showDetailedResultsState, setShowDetailedResultsState] = useState(false);
 
     // For single choice questions (SC, TF)
     const [selectedSingleAnswers, setSelectedSingleAnswers] = useState<number[]>([]);
@@ -946,7 +952,11 @@ const LessonQuiz = ({
                         safeOnComplete();
                         
                         setTimeout(() => {
-                            if (onGoToNextLesson) {
+                            if (onGoToLatestContent) {
+                                console.log("🎯 ใช้ onGoToLatestContent - ไปเนื้อหาล่าสุดที่ดูได้");
+                                resetAllStates();
+                                onGoToLatestContent();
+                            } else if (onGoToNextLesson) {
                                 console.log("🎯 ใช้ onGoToNextLesson - ไปบทเรียนถัดไป");
                                 resetAllStates();
                                 onGoToNextLesson();
@@ -1007,7 +1017,11 @@ const LessonQuiz = ({
                         safeOnComplete();
                         
                         setTimeout(() => {
-                            if (onGoToNextLesson) {
+                            if (onGoToLatestContent) {
+                                console.log("🎯 ใช้ onGoToLatestContent - ไปเนื้อหาล่าสุดที่ดูได้");
+                                resetAllStates();
+                                onGoToLatestContent();
+                            } else if (onGoToNextLesson) {
                                 console.log("🎯 ใช้ onGoToNextLesson - ไปบทเรียนถัดไป");
                                 resetAllStates();
                                 onGoToNextLesson();
@@ -1033,9 +1047,13 @@ const LessonQuiz = ({
         if (isPassed || isAwaitingReview) {
             safeOnComplete();
             
-            // ✅ แก้ไข: ใช้ onGoToNextLesson เป็นหลัก สำหรับแบบทดสอบของแต่ละบท
+            // ✅ แก้ไข: ใช้ onGoToLatestContent เป็นหลัก สำหรับไปเนื้อหาล่าสุดที่ดูได้
             setTimeout(() => {
-                if (onGoToNextLesson) {
+                if (onGoToLatestContent) {
+                    console.log("🎯 ใช้ onGoToLatestContent - ไปเนื้อหาล่าสุดที่ดูได้");
+                    resetAllStates();
+                    onGoToLatestContent();
+                } else if (onGoToNextLesson) {
                     console.log("🎯 ใช้ onGoToNextLesson - ไปบทเรียนถัดไป (lesson ถัดไป)");
                     resetAllStates();
                     onGoToNextLesson();
@@ -1064,6 +1082,15 @@ const LessonQuiz = ({
             setQuestions(formattedQuestions);
             checkIfSpecialQuiz(formattedQuestions);
         }
+    };
+
+    // ✅ Task 2: ฟังก์ชันแสดงผลละเอียด
+    const showDetailedResults = () => {
+        setShowDetailedResultsState(true);
+    };
+
+    const hideDetailedResults = () => {
+        setShowDetailedResultsState(false);
     };
 
     const isCurrentQuestionAnswered = () => {
@@ -1132,9 +1159,23 @@ const LessonQuiz = ({
                             <h2 className="mb-4 fw-bold">คุณไม่ผ่านแบบทดสอบนี้</h2>
                             <div className="score-info card mb-4">
                                 <div className="card-body">
-                                    <div className="score-item d-flex justify-content-between align-items-center mb-2">
-                                        <span>คะแนนของคุณ:</span>
-                                        <span className="score fw-bold">{latestAttempt.score} / {latestAttempt.max_score}</span>
+                                    <div className="score-grid">
+                                        <div className="score-item">
+                                            <span>คะแนนของคุณ</span>
+                                            <span className="score fw-bold">{latestAttempt.score} / {latestAttempt.max_score}</span>
+                                        </div>
+                                        <div className="score-item">
+                                            <span>เกณฑ์ผ่าน</span>
+                                            <span className="fw-bold">{PASSING_PERCENTAGE}%</span>
+                                        </div>
+                                        <div className="score-item">
+                                            <span>ประเภทแบบทดสอบ</span>
+                                            <span className="badge bg-info">Normal Quiz</span>
+                                        </div>
+                                        <div className="score-item">
+                                            <span>สถานะ</span>
+                                            <span className="badge bg-danger">ไม่ผ่าน</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -1183,6 +1224,163 @@ const LessonQuiz = ({
         );
     }
 
+    // ✅ Task 2: แสดงผลละเอียด
+    if (showDetailedResultsState) {
+        const latestAttempt = previousAttempts[0];
+        if (!latestAttempt || !latestAttempt.answers) {
+            return (
+                <div className="quiz-container">
+                    <div className="alert alert-warning">
+                        <i className="fas fa-exclamation-triangle me-2"></i>
+                        ไม่พบข้อมูลคำตอบที่ละเอียด
+                    </div>
+                    <button className="btn btn-secondary" onClick={hideDetailedResults}>
+                        <i className="fas fa-arrow-left me-2"></i>
+                        กลับไปยังผลลัพธ์
+                    </button>
+                </div>
+            );
+        }
+
+        return (
+            <div className="quiz-container">
+                <div className="detailed-results-container">
+                    <div className="detailed-results-header mb-4">
+                        <button className="btn btn-outline-secondary mb-3" onClick={hideDetailedResults}>
+                            <i className="fas fa-arrow-left me-2"></i>
+                            กลับไปยังผลลัพธ์
+                        </button>
+                        <h2 className="text-center">
+                            <i className="fas fa-chart-bar me-2"></i>
+                            ผลคะแนนละเอียด
+                        </h2>
+                        <div className="text-center text-muted">
+                            คะแนนรวม: {latestAttempt.score} / {latestAttempt.max_score} คะแนน
+                            ({Math.round((latestAttempt.score / latestAttempt.max_score) * 100)}%)
+                        </div>
+                    </div>
+
+                    <div className="detailed-questions">
+                        {questions.map((question, index) => {
+                            const userAnswer = latestAttempt.answers.find(ans => ans.question_id === question.question_id);
+                            const isCorrect = userAnswer?.is_correct || false;
+                            const scoreEarned = userAnswer?.score_earned || 0;
+
+                            return (
+                                <div key={index} className={`detailed-question-card card mb-3 ${isCorrect ? 'border-success' : 'border-danger'}`}>
+                                    <div className="card-header d-flex justify-content-between align-items-center">
+                                        <h5 className="mb-0">
+                                            คำถามที่ {index + 1}
+                                            <span className={`badge ms-2 ${isCorrect ? 'bg-success' : 'bg-danger'}`}>
+                                                {isCorrect ? 'ถูก' : 'ผิด'}
+                                            </span>
+                                        </h5>
+                                        <span className="badge bg-primary">
+                                            {scoreEarned} / {question.score} คะแนน
+                                        </span>
+                                    </div>
+                                    <div className="card-body">
+                                        <div className="question-text mb-3">
+                                            <strong>คำถาม:</strong> {question.title}
+                                        </div>
+                                        
+                                        <div className="answer-section">
+                                            <div className="row">
+                                                <div className="col-md-6">
+                                                    <div className="user-answer">
+                                                        <h6 className="text-primary">
+                                                            <i className="fas fa-user me-2"></i>
+                                                            คำตอบของคุณ:
+                                                        </h6>
+                                                        {question.type === "SC" || question.type === "TF" ? (
+                                                            <div className="answer-choice">
+                                                                {userAnswer?.choice_id && (
+                                                                    <span className="badge bg-info">
+                                                                        {question.choices.find(c => c.choice_id === userAnswer.choice_id)?.text || 'ไม่พบคำตอบ'}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        ) : question.type === "MC" ? (
+                                                            <div className="answer-choices">
+                                                                {userAnswer?.choice_ids?.map((choiceId: number) => (
+                                                                    <span key={choiceId} className="badge bg-info me-1">
+                                                                        {question.choices.find(c => c.choice_id === choiceId)?.text || 'ไม่พบคำตอบ'}
+                                                                    </span>
+                                                                ))}
+                                                            </div>
+                                                        ) : question.type === "FB" ? (
+                                                            <div className="text-answer">
+                                                                <p className="bg-light p-2 rounded">
+                                                                    {userAnswer?.text_answer || 'ไม่มีคำตอบ'}
+                                                                </p>
+                                                                {userAnswer?.attachments && userAnswer.attachments.length > 0 && (
+                                                                    <div className="attachments mt-2">
+                                                                        <small className="text-muted">ไฟล์แนบ:</small>
+                                                                        {userAnswer.attachments.map((attachment, attIndex) => (
+                                                                            <div key={attIndex} className="attachment-item">
+                                                                                <a href={attachment.file_url} target="_blank" rel="noopener noreferrer">
+                                                                                    <i className="fas fa-file me-1"></i>
+                                                                                    {attachment.file_name}
+                                                                                </a>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        ) : null}
+                                                    </div>
+                                                </div>
+                                                <div className="col-md-6">
+                                                    <div className="correct-answer">
+                                                        <h6 className="text-success">
+                                                            <i className="fas fa-check-circle me-2"></i>
+                                                            คำตอบที่ถูกต้อง:
+                                                        </h6>
+                                                        {question.type === "SC" || question.type === "TF" ? (
+                                                            <div className="correct-choice">
+                                                                {question.choices.find(c => c.is_correct) && (
+                                                                    <span className="badge bg-success">
+                                                                        {question.choices.find(c => c.is_correct)?.text}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        ) : question.type === "MC" ? (
+                                                            <div className="correct-choices">
+                                                                {question.choices.filter(c => c.is_correct).map(choice => (
+                                                                    <span key={choice.choice_id} className="badge bg-success me-1">
+                                                                        {choice.text}
+                                                                    </span>
+                                                                ))}
+                                                            </div>
+                                                        ) : question.type === "FB" ? (
+                                                            <div className="correct-text">
+                                                                <p className="text-muted">
+                                                                    <i className="fas fa-info-circle me-1"></i>
+                                                                    คำตอบประเภท Fill in Blank จะถูกตรวจโดยอาจารย์
+                                                                </p>
+                                                            </div>
+                                                        ) : null}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    <div className="detailed-results-footer text-center mt-4">
+                        <button className="btn btn-primary" onClick={hideDetailedResults}>
+                            <i className="fas fa-arrow-left me-2"></i>
+                            กลับไปยังผลลัพธ์
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     if (showResult) {
         return (
             <div className="quiz-container">
@@ -1221,23 +1419,23 @@ const LessonQuiz = ({
                         <div className="score-info card mb-4">
                             <div className="card-body">
                                 {score !== null && score !== undefined ? (
-                                    <div>
-                                        <div className="score-item d-flex justify-content-between align-items-center mb-2">
-                                            <span>คะแนนของคุณ:</span>
+                                    <div className="score-grid">
+                                        <div className="score-item">
+                                            <span>คะแนนของคุณ</span>
                                             <span className="score fw-bold">{score} / {maxScore}</span>
                                         </div>
-                                        <div className="score-item d-flex justify-content-between align-items-center mb-2">
-                                            <span>เกณฑ์ผ่าน:</span>
+                                        <div className="score-item">
+                                            <span>เกณฑ์ผ่าน</span>
                                             <span className="fw-bold">{PASSING_PERCENTAGE}%</span>
                                         </div>
-                                        <div className="score-item d-flex justify-content-between align-items-center mb-2">
-                                            <span>ประเภทแบบทดสอบ:</span>
+                                        <div className="score-item">
+                                            <span>ประเภทแบบทดสอบ</span>
                                             <span className={`badge ${isSpecialQuiz ? "bg-warning" : "bg-info"}`}>
-                                                {isSpecialQuiz ? "Special Quiz (มี Fill in Blank)" : "Normal Quiz"}
+                                                {isSpecialQuiz ? "Special Quiz" : "Normal Quiz"}
                                             </span>
                                         </div>
-                                        <div className="score-item d-flex justify-content-between align-items-center">
-                                            <span>สถานะ:</span>
+                                        <div className="score-item">
+                                            <span>สถานะ</span>
                                             <span className={`badge ${isPassed ? "bg-success" : "bg-danger"}`}>
                                                 {isPassed ? "ผ่าน" : "ไม่ผ่าน"}
                                             </span>
@@ -1400,15 +1598,13 @@ const LessonQuiz = ({
                         <div className="d-grid gap-2 col-md-6 mx-auto">
                             {isPassed ? (
                                 <div className="d-flex flex-column gap-2">
+                                    {/* ✅ Task 1: เปลี่ยนปุ่มไปยังบทเรียนถัดไปเป็นปุ่มไปยังบทเรียนล่าสุด */}
                                     <button className="btn btn-success btn-lg" onClick={handleFinish}>
-                                        <i className="fas fa-arrow-right me-2"></i>
-                                        {onNextLesson ? "ไปยังบทเรียนถัดไป" : "เสร็จสิ้นการเรียน"}
+                                        <i className="fas fa-play-circle me-2"></i>
+                                        {onGoToLatestContent ? "ไปยังบทเรียนล่าสุด" : "เสร็จสิ้นการเรียน"}
                                     </button>
-                                    {/* ✅ Task 1: เพิ่มปุ่มดูผลคะแนนทั้งหมด */}
-                                    <button className="btn btn-outline-primary" onClick={() => {
-                                        // สามารถเพิ่ม logic เพื่อไปยังหน้าสรุปผลคะแนนทั้งหมดได้ที่นี่
-                                        console.log("ดูผลคะแนนทั้งหมด");
-                                    }}>
+                                    {/* ✅ Task 2: เพิ่มปุ่มดูผลคะแนนทั้งหมด */}
+                                    <button className="btn btn-outline-primary" onClick={showDetailedResults}>
                                         <i className="fas fa-chart-bar me-2"></i>
                                         ดูผลคะแนนทั้งหมด
                                     </button>
@@ -1527,95 +1723,121 @@ const LessonQuiz = ({
                         </div>
                     )}
 
-                    {/* Fill in the Blank Questions */}
+                    {/* Fill in the Blank Questions - Modern Design */}
                     {questions[currentQuestion]?.type === "FB" && (
-                        <div className="text-answer">
-                            <div className="alert alert-warning mb-3">
-                                <i className="fas fa-info-circle me-2"></i>
-                                <strong>คำถามประเภท Fill in Blank:</strong> คำตอบของคุณจะต้องรอการตรวจจากอาจารย์
-                            </div>
-                            
-                            <textarea
-                                className="form-control"
-                                placeholder="พิมพ์คำตอบของคุณที่นี่..."
-                                value={textAnswers[currentQuestion] || ""}
-                                onChange={handleTextAnswerChange}
-                                rows={5}
-                            ></textarea>
-
-                            {/* File Upload Section (only for FB questions) */}
-                            <div className="file-upload-section mt-3">
-                                <p className="mb-2">
-                                    <i className="fas fa-paperclip me-2"></i>
-                                    แนบไฟล์เพิ่มเติม (ถ้ามี)
-                                </p>
-
-                                <div className="input-group mb-3">
-                                    <input
-                                        type="file"
-                                        className="form-control"
-                                        id="fileUpload"
-                                        onChange={handleFileChange}
-                                        multiple
-                                        ref={fileInputRef}
-                                        accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
-                                    />
-                                    <button
-                                        className="btn btn-outline-secondary"
-                                        type="button"
-                                        onClick={() => fileInputRef.current?.click()}
-                                    >
-                                        เลือกไฟล์
-                                    </button>
+                        <div className="essay-question-container">
+                            {/* Essay Question Header */}
+                            <div className="essay-question-header">
+                                <div className="essay-question-icon">
+                                    <i className="fas fa-edit"></i>
                                 </div>
+                                <div className="essay-question-info">
+                                    <div className="essay-question-type">คำถามแบบอัตนัย</div>
+                                    <h3 className="essay-question-title">
+                                        {questions[currentQuestion]?.title}
+                                    </h3>
+                                </div>
+                            </div>
 
-                                {/* Show uploaded files */}
-                                {(files.filter((f) => f.questionIndex === currentQuestion).length > 0 ||
-                                    uploadedAttachments.length > 0) && (
-                                    <div className="uploaded-files mt-2">
-                                        <p className="mb-2">ไฟล์ที่แนบ:</p>
-                                        <ul className="list-group">
-                                            {files
-                                                .filter((f) => f.questionIndex === currentQuestion)
-                                                .map((fileObj, index) => (
-                                                    <li
-                                                        key={index}
-                                                        className="list-group-item d-flex justify-content-between align-items-center"
-                                                    >
-                                                        <div>
-                                                            <i className="fas fa-file me-2"></i>
-                                                            {fileObj.file.name} ({(fileObj.file.size / 1024).toFixed(2)} KB)
-                                                        </div>
-                                                        <button
-                                                            className="btn btn-sm btn-danger"
-                                                            onClick={() => handleRemoveFile(index)}
-                                                        >
-                                                            <i className="fas fa-times"></i>
-                                                        </button>
-                                                    </li>
-                                                ))}
-                                            {uploadedAttachments.map((attachment, index) => (
-                                                <li key={index} className="list-group-item">
-                                                    <a
-                                                        href={attachment.file_url}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                    >
-                                                        <i className="fas fa-file me-2"></i>
-                                                        {attachment.file_name}
-                                                    </a>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                )}
-
-                                <p className="text-muted small mt-2">
-                                    <i className="fas fa-info-circle me-1"></i>
-                                    สามารถอัปโหลดไฟล์ได้สูงสุด 10 ไฟล์ ขนาดไม่เกิน 50MB ต่อไฟล์ 
-                                    (รองรับ .pdf, .doc, .docx, .xls, .xlsx, .jpg, .jpeg, .png)
+                            {/* Essay Instructions */}
+                            <div className="essay-instructions">
+                                <div className="essay-instructions-title">คำแนะนำ</div>
+                                <p className="essay-instructions-text">
+                                    คำตอบของคุณจะต้องรอการตรวจจากอาจารย์ กรุณาตอบให้ครบถ้วนและชัดเจน
                                 </p>
                             </div>
+
+                            {/* Essay Answer Section */}
+                            <div className="essay-answer-section">
+                                <textarea
+                                    className="essay-textarea"
+                                    placeholder="พิมพ์คำตอบของคุณที่นี่... ใช้พื้นที่นี้เพื่อเขียนคำตอบที่ครบถ้วนและชัดเจน"
+                                    value={textAnswers[currentQuestion] || ""}
+                                    onChange={handleTextAnswerChange}
+                                ></textarea>
+
+                                {/* Character Counter */}
+                                <div className="essay-character-counter">
+                                    <span className="essay-word-count">
+                                        {textAnswers[currentQuestion]?.split(/\s+/).filter(word => word.length > 0).length || 0} คำ
+                                    </span>
+                                    <span className="essay-min-words">ขั้นต่ำ: 50 คำ</span>
+                                </div>
+                            </div>
+
+                            {/* File Upload Section - Modern Design */}
+                            <div className="essay-file-upload">
+                                <div className="essay-upload-icon">
+                                    <i className="fas fa-cloud-upload-alt"></i>
+                                </div>
+                                <div className="essay-upload-text">แนบไฟล์เพิ่มเติม</div>
+                                <div className="essay-upload-hint">รองรับไฟล์ PDF, DOC, DOCX, XLS, XLSX, JPG, PNG</div>
+                                
+                                <input
+                                    type="file"
+                                    className="d-none"
+                                    id="essayFileUpload"
+                                    onChange={handleFileChange}
+                                    multiple
+                                    ref={fileInputRef}
+                                    accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+                                />
+                                
+                                <button
+                                    className="btn btn-primary mt-3"
+                                    type="button"
+                                    onClick={() => fileInputRef.current?.click()}
+                                    style={{
+                                        background: 'linear-gradient(135deg, #9c27b0, #7b1fa2)',
+                                        border: 'none',
+                                        borderRadius: '8px',
+                                        padding: '10px 20px',
+                                        fontWeight: '500'
+                                    }}
+                                >
+                                    <i className="fas fa-plus me-2"></i>
+                                    เลือกไฟล์
+                                </button>
+                            </div>
+
+                            {/* Show uploaded files - Modern Design */}
+                            {(files.filter((f) => f.questionIndex === currentQuestion).length > 0 ||
+                                uploadedAttachments.length > 0) && (
+                                <div className="essay-file-list">
+                                    {files
+                                        .filter((f) => f.questionIndex === currentQuestion)
+                                        .map((fileObj, index) => (
+                                            <div key={index} className="essay-file-item">
+                                                <i className="essay-file-icon fas fa-file"></i>
+                                                <span className="essay-file-name">{fileObj.file.name}</span>
+                                                <span className="essay-file-size">
+                                                    {(fileObj.file.size / 1024).toFixed(1)} KB
+                                                </span>
+                                                <button
+                                                    className="essay-file-remove"
+                                                    onClick={() => handleRemoveFile(index)}
+                                                >
+                                                    <i className="fas fa-times"></i>
+                                                </button>
+                                            </div>
+                                        ))}
+                                    {uploadedAttachments.map((attachment, index) => (
+                                        <div key={index} className="essay-file-item">
+                                            <i className="essay-file-icon fas fa-file"></i>
+                                            <a
+                                                href={attachment.file_url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="essay-file-name"
+                                                style={{ textDecoration: 'none', color: 'inherit' }}
+                                            >
+                                                {attachment.file_name}
+                                            </a>
+                                            <span className="essay-file-size">ไฟล์เดิม</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>

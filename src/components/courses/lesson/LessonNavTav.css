@@ -1,0 +1,559 @@
+/* ✅ LessonNavTav Custom CSS - ป้องกัน CSS Override */
+
+/* Container */
+html body div.lesson-nav-tab-container.lesson-nav-tab-container.lesson-nav-tab-container {
+  background: #ffffff !important;
+  border-radius: 16px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08) !important;
+  border: 1px solid #e9ecef !important;
+  overflow: hidden !important;
+}
+
+.lesson-nav-tab-container {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 0;
+  margin: 0;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e9ecef;
+  overflow: hidden;
+}
+
+/* Header */
+html body div.lesson-nav-tab-header.lesson-nav-tab-header.lesson-nav-tab-header {
+  display: flex !important;
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%) !important;
+  border-bottom: 2px solid #e9ecef !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  gap: 0 !important;
+}
+
+.lesson-nav-tab-header {
+  display: flex;
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  border-bottom: 2px solid #e9ecef;
+  padding: 0;
+  margin: 0;
+  gap: 0;
+}
+
+/* Tab Buttons */
+html body button.lesson-nav-tab-button.lesson-nav-tab-button.lesson-nav-tab-button {
+  flex: 1 !important;
+  border: none !important;
+  background: transparent !important;
+  padding: 16px 20px !important;
+  font-size: 0.95rem !important;
+  font-weight: 500 !important;
+  color: #6c757d !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  position: relative !important;
+  border-radius: 0 !important;
+  margin: 0 !important;
+  outline: none !important;
+}
+
+.lesson-nav-tab-button {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 16px 20px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #6c757d;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  border-radius: 0;
+  margin: 0;
+  outline: none;
+}
+
+/* Active Tab Button */
+html body button.lesson-nav-tab-button.lesson-nav-tab-active.lesson-nav-tab-button.lesson-nav-tab-active.lesson-nav-tab-button.lesson-nav-tab-active {
+  background: linear-gradient(135deg, #4caf50, #66bb6a) !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3) !important;
+}
+
+.lesson-nav-tab-button.lesson-nav-tab-active {
+  background: linear-gradient(135deg, #4caf50, #66bb6a);
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+}
+
+/* Hover Effect */
+html body button.lesson-nav-tab-button:hover:not(.lesson-nav-tab-active).lesson-nav-tab-button:hover:not(.lesson-nav-tab-active).lesson-nav-tab-button:hover:not(.lesson-nav-tab-active) {
+  background: linear-gradient(135deg, #e8f5e8, #f1f8e9) !important;
+  color: #2e7d32 !important;
+  transform: translateY(-1px) !important;
+}
+
+.lesson-nav-tab-button:hover:not(.lesson-nav-tab-active) {
+  background: linear-gradient(135deg, #e8f5e8, #f1f8e9);
+  color: #2e7d32;
+  transform: translateY(-1px);
+}
+
+/* Tab Content */
+html body div.lesson-nav-tab-content.lesson-nav-tab-content.lesson-nav-tab-content {
+  padding: 24px !important;
+  background: #ffffff !important;
+  min-height: 200px !important;
+}
+
+.lesson-nav-tab-content {
+  padding: 24px;
+  background: #ffffff;
+  min-height: 200px;
+}
+
+/* Tab Panels */
+html body div.lesson-nav-tab-panel.lesson-nav-tab-panel.lesson-nav-tab-panel {
+  display: none !important;
+  opacity: 0 !important;
+  transition: opacity 0.3s ease !important;
+}
+
+.lesson-nav-tab-panel {
+  display: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+html body div.lesson-nav-tab-panel.lesson-nav-tab-show.lesson-nav-tab-panel.lesson-nav-tab-show.lesson-nav-tab-panel.lesson-nav-tab-show {
+  display: block !important;
+  opacity: 1 !important;
+}
+
+.lesson-nav-tab-panel.lesson-nav-tab-show {
+  display: block;
+  opacity: 1;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  html body div.lesson-nav-tab-header.lesson-nav-tab-header.lesson-nav-tab-header {
+    flex-direction: column !important;
+  }
+  
+  .lesson-nav-tab-header {
+    flex-direction: column;
+  }
+  
+  html body button.lesson-nav-tab-button.lesson-nav-tab-button.lesson-nav-tab-button {
+    padding: 14px 16px !important;
+    font-size: 0.9rem !important;
+    border-bottom: 1px solid #e9ecef !important;
+  }
+  
+  .lesson-nav-tab-button {
+    padding: 14px 16px;
+    font-size: 0.9rem;
+    border-bottom: 1px solid #e9ecef;
+  }
+  
+  html body button.lesson-nav-tab-button:last-child.lesson-nav-tab-button:last-child.lesson-nav-tab-button:last-child {
+    border-bottom: none !important;
+  }
+  
+  .lesson-nav-tab-button:last-child {
+    border-bottom: none;
+  }
+  
+  html body div.lesson-nav-tab-content.lesson-nav-tab-content.lesson-nav-tab-content {
+    padding: 20px !important;
+  }
+  
+  .lesson-nav-tab-content {
+    padding: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  html body button.lesson-nav-tab-button.lesson-nav-tab-button.lesson-nav-tab-button {
+    padding: 12px 14px !important;
+    font-size: 0.85rem !important;
+  }
+  
+  .lesson-nav-tab-button {
+    padding: 12px 14px;
+    font-size: 0.85rem;
+  }
+  
+  html body div.lesson-nav-tab-content.lesson-nav-tab-content.lesson-nav-tab-content {
+    padding: 16px !important;
+  }
+  
+  .lesson-nav-tab-content {
+    padding: 16px;
+  }
+}
+
+/* Override Bootstrap and other CSS */
+html body div.lesson-nav-tab-container * {
+  box-sizing: border-box !important;
+}
+
+html body div.lesson-nav-tab-container .nav,
+html body div.lesson-nav-tab-container .nav-tabs,
+html body div.lesson-nav-tab-container .nav-item,
+html body div.lesson-nav-tab-container .nav-link,
+html body div.lesson-nav-tab-container .tab-content,
+html body div.lesson-nav-tab-container .tab-pane {
+  all: unset !important;
+  display: revert !important;
+}
+
+html body div.lesson-nav-tab-container .nav-tabs {
+  border-bottom: none !important;
+}
+
+html body div.lesson-nav-tab-container .nav-link {
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: inherit !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+html body div.lesson-nav-tab-container .tab-content {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+html body div.lesson-nav-tab-container .tab-pane {
+  display: none !important;
+  opacity: 0 !important;
+}
+
+html body div.lesson-nav-tab-container .tab-pane.active,
+html body div.lesson-nav-tab-container .tab-pane.show {
+  display: block !important;
+  opacity: 1 !important;
+}
+
+/* ✅ Lesson Attachments Custom CSS */
+html body div.lesson-attachments-container.lesson-attachments-container.lesson-attachments-container {
+  padding: 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
+}
+
+.lesson-attachments-container {
+  padding: 0;
+  margin: 0;
+  background: transparent;
+}
+
+html body div.lesson-attachments-header.lesson-attachments-header.lesson-attachments-header {
+  margin-bottom: 1.5rem !important;
+  text-align: center !important;
+}
+
+.lesson-attachments-header {
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+html body div.lesson-attachments-header h4.lesson-attachments-header h4.lesson-attachments-header h4 {
+  font-size: 1.2rem !important;
+  font-weight: 600 !important;
+  color: #2c3e50 !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.lesson-attachments-header h4 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 0.5rem;
+}
+
+html body div.lesson-attachments-header p.lesson-attachments-header p.lesson-attachments-header p {
+  color: #6c757d !important;
+  font-size: 0.9rem !important;
+  margin: 0 !important;
+}
+
+.lesson-attachments-header p {
+  color: #6c757d;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+html body div.lesson-attachments-list.lesson-attachments-list.lesson-attachments-list {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+}
+
+.lesson-attachments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+html body div.lesson-attachment-item.lesson-attachment-item.lesson-attachment-item {
+  background: #ffffff !important;
+  border: 1px solid #e9ecef !important;
+  border-radius: 12px !important;
+  padding: 16px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05) !important;
+}
+
+.lesson-attachment-item {
+  background: #ffffff;
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+html body div.lesson-attachment-item:hover.lesson-attachment-item:hover.lesson-attachment-item:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1) !important;
+  border-color: #4caf50 !important;
+}
+
+.lesson-attachment-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  border-color: #4caf50;
+}
+
+html body div.lesson-attachment-info.lesson-attachment-info.lesson-attachment-info {
+  display: flex !important;
+  align-items: center !important;
+  flex: 1 !important;
+}
+
+.lesson-attachment-info {
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+
+html body div.lesson-attachment-icon.lesson-attachment-icon.lesson-attachment-icon {
+  width: 40px !important;
+  height: 40px !important;
+  background: linear-gradient(135deg, #f8f9fa, #e9ecef) !important;
+  border-radius: 8px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin-right: 12px !important;
+  font-size: 1.2rem !important;
+}
+
+.lesson-attachment-icon {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+  font-size: 1.2rem;
+}
+
+html body div.lesson-attachment-details.lesson-attachment-details.lesson-attachment-details {
+  flex: 1 !important;
+}
+
+.lesson-attachment-details {
+  flex: 1;
+}
+
+html body h6.lesson-attachment-name.lesson-attachment-name.lesson-attachment-name {
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+  color: #2c3e50 !important;
+  margin-bottom: 4px !important;
+}
+
+.lesson-attachment-name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 4px;
+}
+
+html body p.lesson-attachment-meta.lesson-attachment-meta.lesson-attachment-meta {
+  font-size: 0.85rem !important;
+  color: #6c757d !important;
+  margin: 0 !important;
+}
+
+.lesson-attachment-meta {
+  font-size: 0.85rem;
+  color: #6c757d;
+  margin: 0;
+}
+
+html body div.lesson-attachment-actions.lesson-attachment-actions.lesson-attachment-actions {
+  margin-left: 16px !important;
+}
+
+.lesson-attachment-actions {
+  margin-left: 16px;
+}
+
+html body a.lesson-attachment-button.lesson-attachment-button.lesson-attachment-button {
+  background: linear-gradient(135deg, #4caf50, #66bb6a) !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 8px !important;
+  padding: 8px 16px !important;
+  font-size: 0.85rem !important;
+  font-weight: 500 !important;
+  text-decoration: none !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3) !important;
+}
+
+.lesson-attachment-button {
+  background: linear-gradient(135deg, #4caf50, #66bb6a);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+}
+
+html body a.lesson-attachment-button:hover.lesson-attachment-button:hover.lesson-attachment-button:hover {
+  background: linear-gradient(135deg, #45a049, #5cb85c) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4) !important;
+  color: #ffffff !important;
+  text-decoration: none !important;
+}
+
+.lesson-attachment-button:hover {
+  background: linear-gradient(135deg, #45a049, #5cb85c);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+  color: #ffffff;
+  text-decoration: none;
+}
+
+/* Empty State */
+html body div.attachments-empty.attachments-empty.attachments-empty {
+  text-align: center !important;
+  padding: 3rem 1rem !important;
+  color: #6c757d !important;
+}
+
+.attachments-empty {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #6c757d;
+}
+
+html body div.attachments-empty i.attachments-empty i.attachments-empty i {
+  font-size: 3rem !important;
+  margin-bottom: 1rem !important;
+  color: #dee2e6 !important;
+}
+
+.attachments-empty i {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  color: #dee2e6;
+}
+
+html body div.attachments-empty p.attachments-empty p.attachments-empty p {
+  font-size: 1rem !important;
+  margin: 0 !important;
+}
+
+.attachments-empty p {
+  font-size: 1rem;
+  margin: 0;
+}
+
+/* Loading State */
+html body div.attachments-loading.attachments-loading.attachments-loading {
+  text-align: center !important;
+  padding: 3rem 1rem !important;
+  color: #6c757d !important;
+}
+
+.attachments-loading {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #6c757d;
+}
+
+html body div.attachments-loading p.attachments-loading p.attachments-loading p {
+  margin-top: 1rem !important;
+  font-size: 1rem !important;
+}
+
+.attachments-loading p {
+  margin-top: 1rem;
+  font-size: 1rem;
+}
+
+/* Responsive Design for Attachments */
+@media (max-width: 768px) {
+  html body div.lesson-attachment-item.lesson-attachment-item.lesson-attachment-item {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+  }
+  
+  .lesson-attachment-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  html body div.lesson-attachment-actions.lesson-attachment-actions.lesson-attachment-actions {
+    margin-left: 0 !important;
+    align-self: stretch !important;
+  }
+  
+  .lesson-attachment-actions {
+    margin-left: 0;
+    align-self: stretch;
+  }
+  
+  html body a.lesson-attachment-button.lesson-attachment-button.lesson-attachment-button {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+  
+  .lesson-attachment-button {
+    width: 100%;
+    justify-content: center;
+  }
+}

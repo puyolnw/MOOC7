@@ -20,6 +20,8 @@ const ScoreProgressBar: React.FC<ScoreProgressBarProps> = ({
     passingPercentage: propPassingPercentage,
     isSubjectPassed: propIsSubjectPassed
 }) => {
+    // ✅ Debug log เพื่อดูค่า progressPercentage
+    console.log('🎯 ScoreProgressBar received progressPercentage:', progressPercentage);
     const currentScoreNum = Number(currentScore) || 0;
     const passingScoreNum = Number(passingScore) || 0;
     const scoreNeeded = Math.max(0, passingScoreNum - currentScoreNum);
@@ -66,13 +68,6 @@ const ScoreProgressBar: React.FC<ScoreProgressBarProps> = ({
                     </span>
                 </div>
                 
-                {/* Progress Bar สำหรับความคืบหน้า */}
-                <div className="progress-bar-mini">
-                    <div className={`progress-bar-mini-fill ${progressPercentage >= 100 ? 'completed' : 'in-progress'}`}
-                         style={{ width: `${Math.min(100, Math.max(0, progressPercentage))}%` }}>
-                    </div>
-                </div>
-                
                 {/* Progress Status */}
                 <div className={`progress-status-message ${progressPercentage >= 100 ? 'completed' : 'in-progress'}`}>
                     {progressPercentage >= 100 ? '🎯 ครบ 100% - พร้อมทำแบบทดสอบท้ายบทเรียน' : '📚 ยังไม่ครบ 100% - ต้องเรียนให้ครบก่อน'}
@@ -82,9 +77,9 @@ const ScoreProgressBar: React.FC<ScoreProgressBarProps> = ({
             {/* Progress Bar */}
             <div className="progress-bar-container">
                 <div className="progress-bar-wrapper">
-                    {/* Main Progress - แสดงความคืบหน้าจริง (ไม่ใช่คะแนน) */}
+                    {/* Main Progress - แสดงความคืบหน้าจริง */}
                     <div 
-                        className={`progress-bar-fill ${progressPercentage >= 100 ? 'enhanced' : 'warning'}`}
+                        className={`progress-bar-fill ${progressPercentage >= 100 ? 'completed' : 'in-progress'}`}
                         style={{ 
                             width: `${Math.min(100, Math.max(0, progressPercentage))}%`
                         }}
@@ -99,7 +94,7 @@ const ScoreProgressBar: React.FC<ScoreProgressBarProps> = ({
                             top: '0',
                             bottom: '0',
                             width: '2px',
-                            backgroundColor: '#81c784',
+                            backgroundColor: '#28a745',
                             zIndex: 2
                         }}
                     >
@@ -107,7 +102,7 @@ const ScoreProgressBar: React.FC<ScoreProgressBarProps> = ({
                             position: 'absolute',
                             top: '-20px',
                             left: '-15px',
-                            backgroundColor: '#81c784',
+                            backgroundColor: '#28a745',
                             color: 'white',
                             padding: '2px 6px',
                             borderRadius: '3px',
@@ -116,17 +111,6 @@ const ScoreProgressBar: React.FC<ScoreProgressBarProps> = ({
                         }}>
                             100%
                         </div>
-                    </div>
-                    
-                    {/* Passing Threshold Line */}
-                    <div 
-                        className="passing-threshold"
-                        style={{ 
-                            left: `${Math.min(100, Math.max(0, passingPercentage))}%`
-                        }}
-                    >
-                        <div className="threshold-marker"></div>
-                        <div className="threshold-label">ผ่าน: {passingScoreNum.toFixed(0)}</div>
                     </div>
                 </div>
                 
@@ -187,31 +171,41 @@ const ScoreProgressBar: React.FC<ScoreProgressBarProps> = ({
                 )}
             </div>
 
-            {/* Overall Status */}
-            <div className={`overall-status ${isSubjectPassed ? 'passed' : 'in-progress'}`}>
-                <div className="status-icon">
-                    {isSubjectPassed ? '🎉' : '📚'}
-                </div>
-                <div className="status-text">
-                    {isSubjectPassed ? 'ผ่านเกณฑ์การประเมิน' : 'กำลังดำเนินการเรียน'}
+            {/* Overall Status - Compact Design */}
+            <div className={`overall-status-compact ${isSubjectPassed ? 'passed' : 'in-progress'}`}>
+                <div className="status-header">
+                    <div className="status-icon">
+                        {isSubjectPassed ? '🎉' : '📚'}
+                    </div>
+                    <div className="status-text">
+                        {isSubjectPassed ? 'ผ่านเกณฑ์การประเมิน' : 'กำลังดำเนินการเรียน'}
+                    </div>
                 </div>
                 
-                {/* ✅ แสดงรายละเอียดสถานะการผ่าน */}
+                {/* ✅ แสดงรายละเอียดสถานะการผ่าน - Compact Layout */}
                 {propIsSubjectPassed !== undefined && (
-                    <div className="status-details">
-                        <div className="condition-item">
-                            <span className={isPassed ? 'score-status' : 'progress-status'}>
-                                {isPassed ? '✓' : '✗'} คะแนน: {isPassed ? 'ผ่าน' : 'ไม่ผ่าน'} ({currentScoreNum.toFixed(0)}/{passingScoreNum.toFixed(0)})
+                    <div className="status-details-compact">
+                        <div className="status-row-compact">
+                            <span className={`status-indicator ${isPassed ? 'passed' : 'failed'}`}>
+                                {isPassed ? '✓' : '✗'}
+                            </span>
+                            <span className="status-label-compact">คะแนน:</span>
+                            <span className={`status-value-compact ${isPassed ? 'passed' : 'failed'}`}>
+                                {isPassed ? 'ผ่าน' : 'ไม่ผ่าน'} ({currentScoreNum.toFixed(0)}/{passingScoreNum.toFixed(0)})
                             </span>
                         </div>
-                        <div className="condition-item">
-                            <span className={progressPercentage >= 100 ? 'score-status' : 'progress-status'}>
-                                {progressPercentage >= 100 ? '✓' : '✗'} ความคืบหน้า: {progressPercentage >= 100 ? 'ครบ 100%' : `${progressPercentage.toFixed(1)}%`}
+                        <div className="status-row-compact">
+                            <span className={`status-indicator ${progressPercentage >= 100 ? 'passed' : 'failed'}`}>
+                                {progressPercentage >= 100 ? '✓' : '✗'}
+                            </span>
+                            <span className="status-label-compact">ความคืบหน้า:</span>
+                            <span className={`status-value-compact ${progressPercentage >= 100 ? 'passed' : 'failed'}`}>
+                                {progressPercentage >= 100 ? 'ครบ 100%' : `${progressPercentage.toFixed(1)}%`}
                             </span>
                         </div>
                         
-                        {/* ✅ แสดงข้อความสรุป */}
-                        <div className={`overall-status-summary ${isSubjectPassed ? 'passed' : 'in-progress'}`}>
+                        {/* ✅ แสดงข้อความสรุป - Compact */}
+                        <div className={`status-summary-compact ${isSubjectPassed ? 'passed' : 'in-progress'}`}>
                             {isSubjectPassed 
                                 ? '🎉 ผ่านเกณฑ์การประเมิน (คะแนน + ความคืบหน้า)' 
                                 : '📚 ต้องผ่านทั้งคะแนนและความคืบหน้า 100%'

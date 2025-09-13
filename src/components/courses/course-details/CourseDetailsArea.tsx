@@ -36,7 +36,8 @@ const CourseDetailsArea = ({ single_course, onEnroll }: CourseDetailsAreaProps) 
                   <Link to="/course">{single_course.category}</Link>
                 </li>
                 <li className="department">
-                  <i className="flaticon-department"></i>{single_course.department}
+                  <i className="flaticon-department"></i>
+                  <span>{single_course.department}</span>
                 </li>
               </ul>
               <h2 className="title">{single_course.title}</h2>

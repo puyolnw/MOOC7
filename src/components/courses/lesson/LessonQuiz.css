@@ -1,8 +1,21 @@
+/* ✅ Task 3: ป้องกัน CSS Override ด้วย specificity สูง - ออกแบบใหม่ทั้งหมด */
+html body div.lesson-quiz-container.lesson-quiz-container.lesson-quiz-container {
+  background-color: #fff !important;
+  border-radius: 12px !important;
+  padding: 16px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08) !important;
+  max-width: 500px !important;
+  margin: 0 auto !important;
+  width: 100% !important;
+}
+
 .lesson-quiz-container {
   background-color: #fff;
-  border-radius: 8px;
-  padding: 30px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  max-width: 600px;
+  margin: 0 auto;
 }
 
 .quiz-header {
@@ -528,7 +541,311 @@ color: #4CAF50;
 flex: 1;
 }
 
-/* Text Answer */
+/* ===========================================
+   ESSAY QUESTION DESIGN - MODERN LAYOUT
+   =========================================== */
+
+/* Essay Question Container */
+.essay-question-container {
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  border-radius: 16px;
+  padding: 32px;
+  margin: 24px 0;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.essay-question-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #4CAF50, #66BB6A, #81C784);
+}
+
+/* Essay Question Header */
+.essay-question-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #e8f5e9;
+}
+
+.essay-question-icon {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #4CAF50, #66BB6A);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 16px;
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+}
+
+.essay-question-icon i {
+  color: white;
+  font-size: 20px;
+}
+
+.essay-question-info {
+  flex: 1;
+}
+
+.essay-question-type {
+  display: inline-block;
+  background: linear-gradient(135deg, #e8f5e9, #f1f8e9);
+  color: #2e7d32;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.essay-question-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1b5e20;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Essay Answer Section */
+.essay-answer-section {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  border: 2px solid #e8f5e9;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.essay-answer-section:focus-within {
+  border-color: #4CAF50;
+  box-shadow: 0 0 0 4px rgba(76, 175, 80, 0.1);
+  transform: translateY(-2px);
+}
+
+/* Essay Textarea */
+.essay-textarea {
+  width: 100%;
+  min-height: 200px;
+  padding: 20px;
+  border: none;
+  border-radius: 8px;
+  background: #fafafa;
+  font-size: 16px;
+  line-height: 1.6;
+  color: #2e7d32;
+  resize: vertical;
+  transition: all 0.3s ease;
+  font-family: inherit;
+}
+
+.essay-textarea:focus {
+  outline: none;
+  background: white;
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.15);
+}
+
+.essay-textarea::placeholder {
+  color: #81c784;
+  font-style: italic;
+}
+
+/* Essay Character Counter */
+.essay-character-counter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e8f5e9;
+  font-size: 14px;
+  color: #66bb6a;
+}
+
+.essay-word-count {
+  font-weight: 500;
+}
+
+.essay-min-words {
+  color: #ff9800;
+  font-weight: 600;
+}
+
+/* Essay Instructions */
+.essay-instructions {
+  background: linear-gradient(135deg, #fff3e0, #ffe0b2);
+  border: 1px solid #ffcc02;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+  position: relative;
+}
+
+.essay-instructions::before {
+  content: '💡';
+  position: absolute;
+  top: -8px;
+  left: 16px;
+  background: white;
+  padding: 0 8px;
+  font-size: 16px;
+}
+
+.essay-instructions-title {
+  font-weight: 600;
+  color: #e65100;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.essay-instructions-text {
+  color: #bf360c;
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Essay File Upload */
+.essay-file-upload {
+  background: #f3e5f5;
+  border: 2px dashed #9c27b0;
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+  margin-top: 20px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.essay-file-upload:hover {
+  background: #e1bee7;
+  border-color: #7b1fa2;
+  transform: translateY(-2px);
+}
+
+.essay-file-upload.dragover {
+  background: #ce93d8;
+  border-color: #6a1b9a;
+  transform: scale(1.02);
+}
+
+.essay-upload-icon {
+  font-size: 32px;
+  color: #9c27b0;
+  margin-bottom: 12px;
+}
+
+.essay-upload-text {
+  color: #6a1b9a;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.essay-upload-hint {
+  color: #8e24aa;
+  font-size: 12px;
+}
+
+/* Essay File List */
+.essay-file-list {
+  margin-top: 16px;
+}
+
+.essay-file-item {
+  display: flex;
+  align-items: center;
+  background: white;
+  border: 1px solid #e1bee7;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 8px;
+  transition: all 0.2s ease;
+}
+
+.essay-file-item:hover {
+  background: #fce4ec;
+  border-color: #f48fb1;
+}
+
+.essay-file-icon {
+  color: #9c27b0;
+  margin-right: 12px;
+  font-size: 16px;
+}
+
+.essay-file-name {
+  flex: 1;
+  color: #6a1b9a;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.essay-file-size {
+  color: #8e24aa;
+  font-size: 12px;
+  margin-right: 12px;
+}
+
+.essay-file-remove {
+  background: #f44336;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s ease;
+}
+
+.essay-file-remove:hover {
+  background: #d32f2f;
+  transform: scale(1.1);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .essay-question-container {
+    padding: 20px;
+    margin: 16px 0;
+  }
+  
+  .essay-question-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .essay-question-icon {
+    margin-bottom: 12px;
+    margin-right: 0;
+  }
+  
+  .essay-textarea {
+    min-height: 150px;
+    padding: 16px;
+    font-size: 14px;
+  }
+  
+  .essay-file-upload {
+    padding: 16px;
+  }
+}
+
+/* Legacy Support - Keep old classes for compatibility */
 .text-answer {
 margin-bottom: 20px;
 }
@@ -1205,10 +1522,800 @@ transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
   animation: fadeIn 0.5s ease-out;
 }
 
+/* ✅ แก้ไข quiz-container - ลดช่องว่าง */
+html body div.quiz-container.quiz-container.quiz-container {
+  padding: 0 !important;
+  margin: 0 !important;
+  max-width: 100% !important;
+  width: 100% !important;
+}
+
+.quiz-container {
+  padding: 0;
+  margin: 0;
+  max-width: 100%;
+  width: 100%;
+}
+
 .awaiting-review {
   animation: fadeIn 0.5s ease-out;
 }
 
 .result {
   animation: fadeIn 0.5s ease-out;
+}
+
+/* ✅ ออกแบบใหม่ทั้งหมดสำหรับ Result Container */
+html body div.result-container.result-container.result-container {
+  padding: 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
+}
+
+.result-container {
+  padding: 0;
+  margin: 0;
+  background: transparent;
+}
+
+/* ✅ ออกแบบใหม่สำหรับ Result Card - ลดช่องว่าง */
+html body div.result.card.result.card.result.card {
+  border: none !important;
+  box-shadow: none !important;
+  padding: 20px !important;
+  margin: 0 !important;
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%) !important;
+  border-radius: 16px !important;
+  max-width: 100% !important;
+  width: 100% !important;
+}
+
+.result.card {
+  border: none;
+  box-shadow: none;
+  padding: 24px;
+  margin: 0;
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  border-radius: 16px;
+}
+
+/* ✅ ออกแบบใหม่สำหรับ Icon Container - ลดขนาด */
+html body div.icon-container.icon-container.icon-container {
+  margin-bottom: 12px !important;
+  text-align: center !important;
+}
+
+.icon-container {
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+html body span.icon-circle.icon-circle.icon-circle {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 60px !important;
+  height: 60px !important;
+  border-radius: 50% !important;
+  margin: 0 auto !important;
+}
+
+.icon-circle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  margin: 0 auto;
+}
+
+html body span.icon-circle.bg-success-light.icon-circle.bg-success-light.icon-circle.bg-success-light {
+  background: linear-gradient(135deg, #4caf50, #66bb6a) !important;
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3) !important;
+}
+
+.icon-circle.bg-success-light {
+  background: linear-gradient(135deg, #4caf50, #66bb6a);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+}
+
+html body span.icon-circle.bg-danger-light.icon-circle.bg-danger-light.icon-circle.bg-danger-light {
+  background: linear-gradient(135deg, #f44336, #ef5350) !important;
+  box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3) !important;
+}
+
+.icon-circle.bg-danger-light {
+  background: linear-gradient(135deg, #f44336, #ef5350);
+  box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3);
+}
+
+/* ✅ ออกแบบใหม่สำหรับ Title - ลดขนาดและช่องว่าง */
+html body h2.mb-4.fw-bold.h2.mb-4.fw-bold.h2.mb-4.fw-bold {
+  font-size: 1.4rem !important;
+  margin-bottom: 12px !important;
+  color: #2c3e50 !important;
+  text-align: center !important;
+  font-weight: 600 !important;
+}
+
+.result h2 {
+  font-size: 1.5rem;
+  margin-bottom: 16px;
+  color: #2c3e50;
+  text-align: center;
+  font-weight: 600;
+}
+
+/* ✅ ออกแบบใหม่สำหรับ Alert - ลดช่องว่าง */
+html body div.alert.alert-success.alert.alert-success.alert.alert-success {
+  margin-bottom: 12px !important;
+  padding: 10px 14px !important;
+  border: none !important;
+  border-radius: 8px !important;
+  background: linear-gradient(135deg, #e8f5e8, #f1f8e9) !important;
+  color: #2e7d32 !important;
+  font-size: 0.9rem !important;
+}
+
+.alert.alert-success {
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #e8f5e8, #f1f8e9);
+  color: #2e7d32;
+  font-size: 0.9rem;
+}
+
+html body div.alert.alert-danger.alert.alert-danger.alert.alert-danger {
+  margin-bottom: 16px !important;
+  padding: 12px 16px !important;
+  border: none !important;
+  border-radius: 8px !important;
+  background: linear-gradient(135deg, #ffebee, #fce4ec) !important;
+  color: #c62828 !important;
+  font-size: 0.9rem !important;
+}
+
+.alert.alert-danger {
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #ffebee, #fce4ec);
+  color: #c62828;
+  font-size: 0.9rem;
+}
+
+/* ✅ ออกแบบใหม่สำหรับ Score Info Card - ลดช่องว่าง */
+html body div.score-info.card.score-info.card.score-info.card {
+  margin-bottom: 16px !important;
+  border: none !important;
+  border-radius: 12px !important;
+  background: linear-gradient(135deg, #f8f9fa, #ffffff) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06) !important;
+}
+
+.score-info.card {
+  margin-bottom: 20px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #f8f9fa, #ffffff);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+html body div.score-info .card-body.score-info .card-body.score-info .card-body {
+  padding: 16px !important;
+}
+
+.score-info .card-body {
+  padding: 16px;
+}
+
+/* ✅ CSS สำหรับ score-grid */
+html body div.score-grid.score-grid.score-grid {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 12px !important;
+  width: 100% !important;
+}
+
+.score-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  width: 100%;
+}
+
+html body div.score-item.score-item.score-item {
+  margin-bottom: 0 !important;
+  padding: 12px !important;
+  border: none !important;
+  border-radius: 8px !important;
+  background: linear-gradient(135deg, #f8f9fa, #ffffff) !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05) !important;
+  flex: 1 !important;
+  min-width: 120px !important;
+  text-align: center !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: center !important;
+}
+
+.score-item {
+  margin-bottom: 0;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #f8f9fa, #ffffff);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  flex: 1;
+  min-width: 120px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+html body div.score-item:last-child.score-item:last-child.score-item:last-child {
+  border-bottom: none !important;
+  margin-bottom: 0 !important;
+}
+
+.score-item:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+/* ✅ สไตล์สำหรับข้อความใน score-item */
+html body div.score-item span.score-item span.score-item span {
+  font-weight: 600 !important;
+  color: #2c3e50 !important;
+  font-size: 1rem !important;
+  margin-bottom: 4px !important;
+}
+
+.score-item span {
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 1rem;
+  margin-bottom: 4px;
+}
+
+html body div.score-item span.score.score.score {
+  font-size: 1.1rem !important;
+  font-weight: 700 !important;
+  color: #4caf50 !important;
+}
+
+.score-item .score {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #4caf50;
+}
+
+/* ✅ สไตล์สำหรับ badge */
+html body div.score-item span.badge.score-item span.badge.score-item span.badge {
+  font-size: 0.8rem !important;
+  padding: 4px 8px !important;
+  border-radius: 6px !important;
+  font-weight: 500 !important;
+}
+
+.score-item .badge {
+  font-size: 0.8rem;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-weight: 500;
+}
+
+/* ✅ ออกแบบใหม่สำหรับปุ่ม - สีใหม่และขนาดที่เหมาะสม */
+html body div.d-grid.gap-2.col-md-6.mx-auto.d-grid.gap-2.col-md-6.mx-auto.d-grid.gap-2.col-md-6.mx-auto {
+  gap: 12px !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.d-grid.gap-2.col-md-6.mx-auto {
+  gap: 12px;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* ✅ แก้ไขปุ่มที่อยู่ขอบ - ครอบคลุมทุก class */
+html body div.d-grid.gap-2.col-md-6.mx-auto div.d-flex.flex-column.gap-2.d-grid.gap-2.col-md-6.mx-auto div.d-flex.flex-column.gap-2.d-grid.gap-2.col-md-6.mx-auto div.d-flex.flex-column.gap-2 {
+  gap: 12px !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.d-grid.gap-2.col-md-6.mx-auto .d-flex.flex-column.gap-2 {
+  gap: 12px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+html body div.d-flex.flex-column.gap-2.d-flex.flex-column.gap-2.d-flex.flex-column.gap-2 {
+  gap: 10px !important;
+  width: 100% !important;
+}
+
+.d-flex.flex-column.gap-2 {
+  gap: 12px;
+}
+
+/* ✅ ปุ่มหลัก - สีเขียวสวย - ครอบคลุมทุก class */
+html body button.btn.btn-success.btn-lg.btn.btn-success.btn-lg.btn.btn-success.btn-lg,
+html body div.d-grid.gap-2.col-md-6.mx-auto button.btn.btn-success.btn-lg,
+html body div.d-flex.flex-column.gap-2 button.btn.btn-success.btn-lg {
+  background: linear-gradient(135deg, #4caf50, #66bb6a) !important;
+  border: none !important;
+  border-radius: 10px !important;
+  padding: 12px 24px !important;
+  font-size: 1rem !important;
+  font-weight: 500 !important;
+  color: white !important;
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3) !important;
+  transition: all 0.3s ease !important;
+  width: 100% !important;
+  margin: 0 !important;
+}
+
+.btn.btn-success.btn-lg {
+  background: linear-gradient(135deg, #4caf50, #66bb6a);
+  border: none;
+  border-radius: 10px;
+  padding: 12px 24px;
+  font-size: 1rem;
+  font-weight: 500;
+  color: white;
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+html body button.btn.btn-success.btn-lg:hover.btn.btn-success.btn-lg:hover.btn.btn-success.btn-lg:hover {
+  background: linear-gradient(135deg, #45a049, #5cb85c) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 16px rgba(76, 175, 80, 0.4) !important;
+}
+
+.btn.btn-success.btn-lg:hover {
+  background: linear-gradient(135deg, #45a049, #5cb85c);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(76, 175, 80, 0.4);
+}
+
+/* ✅ ปุ่มรอง - สีน้ำเงินสวย - ครอบคลุมทุก class */
+html body button.btn.btn-outline-primary.btn.btn-outline-primary.btn.btn-outline-primary,
+html body div.d-grid.gap-2.col-md-6.mx-auto button.btn.btn-outline-primary,
+html body div.d-flex.flex-column.gap-2 button.btn.btn-outline-primary {
+  background: linear-gradient(135deg, #2196f3, #42a5f5) !important;
+  border: none !important;
+  border-radius: 10px !important;
+  padding: 12px 24px !important;
+  font-size: 1rem !important;
+  font-weight: 500 !important;
+  color: white !important;
+  box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3) !important;
+  transition: all 0.3s ease !important;
+  width: 100% !important;
+  margin: 0 !important;
+}
+
+.btn.btn-outline-primary {
+  background: linear-gradient(135deg, #2196f3, #42a5f5);
+  border: none;
+  border-radius: 10px;
+  padding: 12px 24px;
+  font-size: 1rem;
+  font-weight: 500;
+  color: white;
+  box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+html body button.btn.btn-outline-primary:hover.btn.btn-outline-primary:hover.btn.btn-outline-primary:hover {
+  background: linear-gradient(135deg, #1976d2, #1e88e5) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 16px rgba(33, 150, 243, 0.4) !important;
+}
+
+.btn.btn-outline-primary:hover {
+  background: linear-gradient(135deg, #1976d2, #1e88e5);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(33, 150, 243, 0.4);
+}
+
+/* ✅ ปุ่มทำใหม่ - สีส้มสวย */
+html body button.btn.btn-primary.btn-lg.btn.btn-primary.btn-lg.btn.btn-primary.btn-lg {
+  background: linear-gradient(135deg, #ff9800, #ffb74d) !important;
+  border: none !important;
+  border-radius: 10px !important;
+  padding: 12px 24px !important;
+  font-size: 1rem !important;
+  font-weight: 500 !important;
+  color: white !important;
+  box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3) !important;
+  transition: all 0.3s ease !important;
+  width: 100% !important;
+}
+
+.btn.btn-primary.btn-lg {
+  background: linear-gradient(135deg, #ff9800, #ffb74d);
+  border: none;
+  border-radius: 10px;
+  padding: 12px 24px;
+  font-size: 1rem;
+  font-weight: 500;
+  color: white;
+  box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3);
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+html body button.btn.btn-primary.btn-lg:hover.btn.btn-primary.btn-lg:hover.btn.btn-primary.btn-lg:hover {
+  background: linear-gradient(135deg, #f57c00, #ff9800) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 16px rgba(255, 152, 0, 0.4) !important;
+}
+
+.btn.btn-primary.btn-lg:hover {
+  background: linear-gradient(135deg, #f57c00, #ff9800);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(255, 152, 0, 0.4);
+}
+
+/* ✅ Task 2: CSS สำหรับผลละเอียด */
+html body div.detailed-results-container.detailed-results-container.detailed-results-container {
+  background-color: #f8f9fa !important;
+  border-radius: 12px !important;
+  padding: 30px !important;
+  margin: 20px 0 !important;
+}
+
+.detailed-results-container {
+  background-color: #f8f9fa;
+  border-radius: 12px;
+  padding: 30px;
+  margin: 20px 0;
+}
+
+html body div.detailed-results-header.detailed-results-header.detailed-results-header {
+  text-align: center !important;
+  margin-bottom: 30px !important;
+  padding-bottom: 20px !important;
+  border-bottom: 2px solid #dee2e6 !important;
+}
+
+.detailed-results-header {
+  text-align: center;
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #dee2e6;
+}
+
+html body div.detailed-question-card.detailed-question-card.detailed-question-card {
+  border: 2px solid !important;
+  border-radius: 10px !important;
+  margin-bottom: 20px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+  transition: transform 0.2s ease !important;
+}
+
+.detailed-question-card {
+  border: 2px solid;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease;
+}
+
+html body div.detailed-question-card:hover.detailed-question-card:hover.detailed-question-card:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+.detailed-question-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+html body div.answer-section.answer-section.answer-section {
+  margin-top: 20px !important;
+}
+
+.answer-section {
+  margin-top: 20px;
+}
+
+html body div.user-answer.user-answer.user-answer {
+  background-color: #e3f2fd !important;
+  padding: 15px !important;
+  border-radius: 8px !important;
+  border-left: 4px solid #2196f3 !important;
+}
+
+.user-answer {
+  background-color: #e3f2fd;
+  padding: 15px;
+  border-radius: 8px;
+  border-left: 4px solid #2196f3;
+}
+
+html body div.correct-answer.correct-answer.correct-answer {
+  background-color: #e8f5e8 !important;
+  padding: 15px !important;
+  border-radius: 8px !important;
+  border-left: 4px solid #4caf50 !important;
+}
+
+.correct-answer {
+  background-color: #e8f5e8;
+  padding: 15px;
+  border-radius: 8px;
+  border-left: 4px solid #4caf50;
+}
+
+html body div.attachment-item.attachment-item.attachment-item {
+  margin: 5px 0 !important;
+  padding: 8px !important;
+  background-color: #fff !important;
+  border-radius: 4px !important;
+  border: 1px solid #dee2e6 !important;
+}
+
+.attachment-item {
+  margin: 5px 0;
+  padding: 8px;
+  background-color: #fff;
+  border-radius: 4px;
+  border: 1px solid #dee2e6;
+}
+
+html body div.attachment-item a.attachment-item a.attachment-item a {
+  color: #007bff !important;
+  text-decoration: none !important;
+}
+
+.attachment-item a {
+  color: #007bff;
+  text-decoration: none;
+}
+
+html body div.attachment-item a:hover.attachment-item a:hover.attachment-item a:hover {
+  text-decoration: underline !important;
+}
+
+.attachment-item a:hover {
+  text-decoration: underline;
+}
+
+/* ✅ แก้ไข Bootstrap Grid System - บังคับให้ปุ่มเต็มความกว้าง */
+html body div.d-grid.gap-2.col-md-6.mx-auto.d-grid.gap-2.col-md-6.mx-auto.d-grid.gap-2.col-md-6.mx-auto {
+  flex: 0 0 100% !important;
+  max-width: 100% !important;
+  width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+.d-grid.gap-2.col-md-6.mx-auto {
+  flex: 0 0 100%;
+  max-width: 100%;
+  width: 100%;
+  margin-left: 0;
+  margin-right: 0;
+}
+
+/* ✅ บังคับให้ปุ่มเต็มความกว้าง */
+html body div.d-grid.gap-2.col-md-6.mx-auto button.btn.btn-success.btn-lg,
+html body div.d-grid.gap-2.col-md-6.mx-auto button.btn.btn-outline-primary,
+html body div.d-grid.gap-2.col-md-6.mx-auto button.btn.btn-primary.btn-lg {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  display: block !important;
+}
+
+.d-grid.gap-2.col-md-6.mx-auto button {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  display: block;
+}
+
+/* ✅ Responsive Design - ออกแบบใหม่ทั้งหมด */
+@media (max-width: 768px) {
+  /* Container */
+  html body div.lesson-quiz-container.lesson-quiz-container.lesson-quiz-container {
+    padding: 16px !important;
+    margin: 10px !important;
+    max-width: calc(100% - 20px) !important;
+  }
+  
+  .lesson-quiz-container {
+    padding: 16px;
+    margin: 10px;
+    max-width: calc(100% - 20px);
+  }
+  
+  /* Result Card */
+  html body div.result.card.result.card.result.card {
+    padding: 20px !important;
+  }
+  
+  .result.card {
+    padding: 20px;
+  }
+  
+  /* Icon */
+  html body span.icon-circle.icon-circle.icon-circle {
+    width: 50px !important;
+    height: 50px !important;
+  }
+  
+  .icon-circle {
+    width: 50px;
+    height: 50px;
+  }
+  
+  /* Title */
+  html body h2.mb-4.fw-bold.h2.mb-4.fw-bold.h2.mb-4.fw-bold {
+    font-size: 1.3rem !important;
+    margin-bottom: 12px !important;
+  }
+  
+  .result h2 {
+    font-size: 1.3rem;
+    margin-bottom: 12px;
+  }
+  
+  /* Score Info */
+  html body div.score-info .card-body.score-info .card-body.score-info .card-body {
+    padding: 12px !important;
+  }
+  
+  .score-info .card-body {
+    padding: 12px;
+  }
+  
+  /* Score Grid - 2 columns on tablet */
+  html body div.score-grid.score-grid.score-grid {
+    gap: 8px !important;
+  }
+  
+  .score-grid {
+    gap: 8px;
+  }
+  
+  /* Score Items - 2 columns on tablet */
+  html body div.score-item.score-item.score-item {
+    flex: 0 0 calc(50% - 4px) !important;
+    min-width: auto !important;
+    padding: 10px !important;
+  }
+  
+  .score-item {
+    flex: 0 0 calc(50% - 4px);
+    min-width: auto;
+    padding: 10px;
+  }
+  
+  /* Buttons */
+  html body button.btn.btn-success.btn-lg.btn.btn-success.btn-lg.btn.btn-success.btn-lg,
+  html body button.btn.btn-outline-primary.btn.btn-outline-primary.btn.btn-outline-primary,
+  html body button.btn.btn-primary.btn-lg.btn.btn-primary.btn-lg.btn.btn-primary.btn-lg {
+    padding: 10px 20px !important;
+    font-size: 0.9rem !important;
+  }
+  
+  .btn.btn-success.btn-lg,
+  .btn.btn-outline-primary,
+  .btn.btn-primary.btn-lg {
+    padding: 10px 20px;
+    font-size: 0.9rem;
+  }
+  
+  /* Detailed Results */
+  html body div.detailed-results-container.detailed-results-container.detailed-results-container {
+    padding: 16px !important;
+    margin: 10px 0 !important;
+  }
+  
+  .detailed-results-container {
+    padding: 16px;
+    margin: 10px 0;
+  }
+  
+  html body div.answer-section .row.answer-section .row.answer-section .row {
+    flex-direction: column !important;
+  }
+  
+  .answer-section .row {
+    flex-direction: column;
+  }
+  
+  html body div.answer-section .col-md-6.answer-section .col-md-6.answer-section .col-md-6 {
+    margin-bottom: 12px !important;
+  }
+  
+  .answer-section .col-md-6 {
+    margin-bottom: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Extra small screens */
+  html body div.lesson-quiz-container.lesson-quiz-container.lesson-quiz-container {
+    padding: 12px !important;
+    margin: 5px !important;
+    max-width: calc(100% - 10px) !important;
+  }
+  
+  .lesson-quiz-container {
+    padding: 12px;
+    margin: 5px;
+    max-width: calc(100% - 10px);
+  }
+  
+  html body div.result.card.result.card.result.card {
+    padding: 16px !important;
+  }
+  
+  .result.card {
+    padding: 16px;
+  }
+  
+  html body h2.mb-4.fw-bold.h2.mb-4.fw-bold.h2.mb-4.fw-bold {
+    font-size: 1.2rem !important;
+  }
+  
+  .result h2 {
+    font-size: 1.2rem;
+  }
+  
+  html body button.btn.btn-success.btn-lg.btn.btn-success.btn-lg.btn.btn-success.btn-lg,
+  html body button.btn.btn-outline-primary.btn.btn-outline-primary.btn.btn-outline-primary,
+  html body button.btn.btn-primary.btn-lg.btn.btn-primary.btn-lg.btn.btn-primary.btn-lg {
+    padding: 8px 16px !important;
+    font-size: 0.85rem !important;
+  }
+  
+  .btn.btn-success.btn-lg,
+  .btn.btn-outline-primary,
+  .btn.btn-primary.btn-lg {
+    padding: 8px 16px;
+    font-size: 0.85rem;
+  }
+  
+  /* Score Grid - 1 column on mobile */
+  html body div.score-grid.score-grid.score-grid {
+    gap: 6px !important;
+  }
+  
+  .score-grid {
+    gap: 6px;
+  }
+  
+  /* Score Items - 1 column on mobile */
+  html body div.score-item.score-item.score-item {
+    flex: 0 0 100% !important;
+    min-width: auto !important;
+    padding: 8px !important;
+  }
+  
+  .score-item {
+    flex: 0 0 100%;
+    min-width: auto;
+    padding: 8px;
+  }
 }

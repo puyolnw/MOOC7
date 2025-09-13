@@ -24,12 +24,26 @@ interface Department {
     description: string;
 }
 
+// Cache สำหรับ menu data เพื่อป้องกันการดึงข้อมูลซ้ำ
+let menuDataCache: MenuItem[] | null = null;
+let cacheTimestamp: number = 0;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 นาที
+
 const useMenuData = () => {
     const [menuData, setMenuData] = useState<MenuItem[]>([]);
+    const [isLoading, setIsLoading] = useState<boolean>(false);
     const apiURL = import.meta.env.VITE_API_URL;
 
     useEffect(() => {
         const fetchDepartments = async () => {
+            // ตรวจสอบ cache ก่อน
+            const now = Date.now();
+            if (menuDataCache && (now - cacheTimestamp) < CACHE_DURATION) {
+                setMenuData(menuDataCache);
+                return;
+            }
+
+            setIsLoading(true);
             try {
                 const token = localStorage.getItem('token');
                 const response = await axios.get(`${apiURL}/api/courses/subjects/departments/list`, {
@@ -63,7 +77,7 @@ const useMenuData = () => {
                         }))
                     };
 
-                    setMenuData([
+                    const newMenuData = [
                         {
                             id: 1,
                             title: "หน้าแรก",
@@ -80,18 +94,28 @@ const useMenuData = () => {
                             title: "เกี่ยวกับเรา",
                             link: "/about-us",
                         }
-                
-                    ]);
+                    ];
+
+                    // อัปเดต cache
+                    menuDataCache = newMenuData;
+                    cacheTimestamp = now;
+                    setMenuData(newMenuData);
                 }
             } catch (error) {
                 console.error('Error fetching departments:', error);
+                // ใช้ cache เก่าถ้ามี
+                if (menuDataCache) {
+                    setMenuData(menuDataCache);
+                }
+            } finally {
+                setIsLoading(false);
             }
         };
 
         fetchDepartments();
     }, [apiURL]);
 
-    return menuData;
+    return { menuData, isLoading };
 };
 
 export default useMenuData;

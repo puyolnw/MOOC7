@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import InjectableSvg from "../../../hooks/InjectableSvg";
-import { Link } from "react-router-dom";
 import BtnArrow from "../../../svg/BtnArrow";
 import VideoPopup from "../../../modals/VideoPopup";
 
@@ -96,16 +95,6 @@ interface SidebarProps {
                          ใบประกาศนียบัตร
                          <span>ใช่</span>
                       </li>
-                   </ul>
-                </div>
-                <div className="courses__details-social">
-                   <h5 className="title">แบ่งปันหลักสูตรนี้:</h5>
-                   <ul className="list-wrap">
-                      <li><Link to="#"><i className="fab fa-facebook-f"></i></Link></li>
-                      <li><Link to="#"><i className="fab fa-twitter"></i></Link></li>
-                      <li><Link to="#"><i className="fab fa-whatsapp"></i></Link></li>
-                      <li><Link to="#"><i className="fab fa-instagram"></i></Link></li>
-                      <li><Link to="#"><i className="fab fa-youtube"></i></Link></li>
                    </ul>
                 </div>
                 <div className="courses__details-enroll">

@@ -152,11 +152,69 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
     const [scoreStructure, setScoreStructure] = useState<any>({});
     // ✅ เพิ่ม state สำหรับ subject passing percentage
     const [subjectPassingPercentage, setSubjectPassingPercentage] = useState<number>(80);
+    // ✅ เพิ่ม state สำหรับ modal เนื้อหาที่ล็อค
+    const [showLockedModal, setShowLockedModal] = useState<boolean>(false);
+    const [lockedContentData, setLockedContentData] = useState<any>(null);
     // ✅ เพิ่ม state เพื่อป้องกันการเรียก updatePaymentStatus ซ้ำ
     const [completionStatusSent, setCompletionStatusSent] = useState(false);
     // ✅ เพิ่ม ref เพื่อป้องกันการ refresh ซ้ำ
     const refreshInProgressRef = useRef(false);
     // ✅ เพิ่ม state สำหรับ Debug Modal
+
+    // ✅ ฟังก์ชันสำหรับแสดง modal เนื้อหาที่ล็อค
+    const handleShowLockedModal = (data: any) => {
+        setLockedContentData(data);
+        setShowLockedModal(true);
+        
+        // ✅ Scroll ไปที่ตำแหน่ง modal และ focus
+        setTimeout(() => {
+            const modal = document.querySelector('.locked-content-modal');
+            if (modal) {
+                modal.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'center',
+                    inline: 'center'
+                });
+                // Focus ที่ปุ่มปิด modal
+                const closeBtn = modal.querySelector('.close-btn') as HTMLElement;
+                if (closeBtn) {
+                    closeBtn.focus();
+                }
+            }
+        }, 100);
+    };
+
+    // ✅ ฟังก์ชันปิด modal
+    const handleCloseLockedModal = () => {
+        setShowLockedModal(false);
+        setLockedContentData(null);
+    };
+
+    // ✅ เพิ่ม keyboard navigation สำหรับ modal
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (showLockedModal) {
+                if (event.key === 'Escape') {
+                    handleCloseLockedModal();
+                } else if (event.key === 'Enter' && event.target === document.querySelector('.close-btn')) {
+                    handleCloseLockedModal();
+                }
+            }
+        };
+
+        if (showLockedModal) {
+            document.addEventListener('keydown', handleKeyDown);
+            // ป้องกันการ scroll ของ body เมื่อ modal เปิด
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+
+        return () => {
+            document.removeEventListener('keydown', handleKeyDown);
+            document.body.style.overflow = 'unset';
+        };
+    }, [showLockedModal]);
     const [showDebugModal, setShowDebugModal] = useState(false);
 
     // ฟังก์ชันคำนวณคะแนนต่างๆ สำหรับ Real Score System
@@ -749,14 +807,10 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
                         <div style={{ marginBottom: '25px', padding: '15px', backgroundColor: '#2a2a2a', borderRadius: '8px' }}>
                             <h3 style={{ color: '#4fc3f7', marginBottom: '10px' }}>💯 2. คะแนนดิบของวิชา</h3>
                             <div style={{ paddingLeft: '15px' }}>
-                                <p><strong>คะแนนปัจจุบัน:</strong> <span style={{ color: '#81c784' }}>{calculateCurrentScore()}</span></p>
-                                <p><strong>คะแนนเต็ม:</strong> <span style={{ color: '#81c784' }}>{calculateMaxScore()}</span></p>
-                                <p><strong>คะแนนผ่าน:</strong> <span style={{ color: '#81c784' }}>{calculatePassingScore()}</span></p>
-                                <p><strong>แหล่งข้อมูล:</strong> <code style={{ color: '#ffb74d' }}>calculated from scoreStructure hierarchy</code></p>
-                        <p><strong>ข้อมูลคะแนนที่ใช้:</strong> <code style={{ color: '#81c784' }}>weight_percentage + progress status</code></p>
                         <p><strong>คะแนนปัจจุบัน:</strong> <span style={{ color: '#81c784' }}>{calculateCurrentScore().toFixed(2)}</span></p>
                         <p><strong>คะแนนเต็ม:</strong> <span style={{ color: '#81c784' }}>{calculateMaxScore().toFixed(2)}</span></p>
-                        <p><strong>เกณฑ์ผ่าน:</strong> <span style={{ color: '#81c784' }}>{calculatePassingScore().toFixed(2)}</span></p>
+                                <p><strong>คะแนนผ่าน:</strong> <span style={{ color: '#81c784' }}>{calculatePassingScore().toFixed(2)}</span></p>
+                                <p><strong>แหล่งข้อมูล:</strong> <code style={{ color: '#ffb74d' }}>calculated from scoreStructure hierarchy</code></p>
                             </div>
                         </div>
 
@@ -768,7 +822,6 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
                                 <p><strong>มีแบบทดสอบก่อนเรียน:</strong> <span style={{ color: !!scoreStructure?.pre_test ? '#81c784' : '#f48fb1' }}>{!!scoreStructure?.pre_test ? 'มี' : 'ไม่มี'}</span></p>
                                 <p><strong>มีแบบทดสอบหลังเรียน:</strong> <span style={{ color: !!scoreStructure?.post_test ? '#81c784' : '#f48fb1' }}>{!!scoreStructure?.post_test ? 'มี' : 'ไม่มี'}</span></p>
                                 <p><strong>แหล่งข้อมูล:</strong> <code style={{ color: '#ffb74d' }}>scoreStructure API</code></p>
-                        <p><strong>ข้อมูลคะแนน:</strong> <code style={{ color: '#81c784' }}>weight_percentage + progress status</code></p>
                             </div>
                         </div>
 
@@ -795,6 +848,7 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
                         {scoreStructure?.big_lessons && scoreStructure.big_lessons.length > 0 && (
                             <div style={{ marginBottom: '25px', padding: '15px', backgroundColor: '#2a2a2a', borderRadius: '8px' }}>
                                 <h3 style={{ color: '#4fc3f7', marginBottom: '10px' }}>📖 4.2 Big Lessons ({scoreStructure.big_lessons.length} บท)</h3>
+                                <div style={{ paddingLeft: '15px' }}>
                                 {scoreStructure.big_lessons.map((bl: any, blIndex: number) => {
                                     const totalItems = (bl.lessons?.length || 0) + (bl.quiz ? 1 : 0);
                                     const completedItems = (bl.lessons?.filter((l: any) => l.video_completed)?.length || 0) + 
@@ -872,8 +926,151 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
                                         </div>
                                     );
                                 })}
+                                </div>
                             </div>
                         )}
+
+                        {/* 4.4 Sub Lessons Summary */}
+                        {scoreStructure?.big_lessons && scoreStructure.big_lessons.length > 0 && (
+                            <div style={{ marginBottom: '25px', padding: '15px', backgroundColor: '#2a2a2a', borderRadius: '8px' }}>
+                                <h3 style={{ color: '#4fc3f7', marginBottom: '10px' }}>📝 4.4 สรุป Sub Lessons</h3>
+                                <div style={{ paddingLeft: '15px' }}>
+                                    {(() => {
+                                        const totalSubLessons = scoreStructure.big_lessons.reduce((total: number, bl: any) => 
+                                            total + (bl.lessons?.length || 0), 0);
+                                        const completedSubLessons = scoreStructure.big_lessons.reduce((total: number, bl: any) => 
+                                            total + (bl.lessons?.filter((l: any) => l.video_completed)?.length || 0), 0);
+                                        const progress = totalSubLessons > 0 ? (completedSubLessons / totalSubLessons) * 100 : 0;
+                                        
+                                        return (
+                                            <>
+                                                <p><strong>จำนวน Sub Lessons ทั้งหมด:</strong> <span style={{ color: '#81c784' }}>{totalSubLessons}</span></p>
+                                                <p><strong>เสร็จแล้ว:</strong> <span style={{ color: '#81c784' }}>{completedSubLessons}</span></p>
+                                                <p><strong>ยังไม่เสร็จ:</strong> <span style={{ color: '#f48fb1' }}>{totalSubLessons - completedSubLessons}</span></p>
+                                                <p><strong>ความคืบหน้า:</strong> <span style={{ color: progress >= 90 ? '#81c784' : '#ffb74d' }}>{progress.toFixed(1)}%</span></p>
+                                            </>
+                                        );
+                                    })()}
+                                    <p style={{ fontSize: '0.8rem', color: '#888', marginTop: '10px' }}>
+                                        <strong>แหล่งข้อมูล:</strong> <code>lessons table + student_lesson_progress</code>
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 4.5 Quiz Summary */}
+                        {scoreStructure?.big_lessons && scoreStructure.big_lessons.length > 0 && (
+                            <div style={{ marginBottom: '25px', padding: '15px', backgroundColor: '#2a2a2a', borderRadius: '8px' }}>
+                                <h3 style={{ color: '#4fc3f7', marginBottom: '10px' }}>🧩 4.5 สรุป Quiz ทั้งหมด</h3>
+                                <div style={{ paddingLeft: '15px' }}>
+                                    {(() => {
+                                        let totalQuizzes = 0;
+                                        let passedQuizzes = 0;
+                                        let awaitingReview = 0;
+                                        let failedQuizzes = 0;
+                                        let notAttempted = 0;
+                                        
+                                        // Count pre-test
+                                        if (scoreStructure.pre_test) {
+                                            totalQuizzes++;
+                                            if (scoreStructure.pre_test.progress?.passed) passedQuizzes++;
+                                            else if (scoreStructure.pre_test.progress?.awaiting_review) awaitingReview++;
+                                            else if (scoreStructure.pre_test.progress?.completed) failedQuizzes++;
+                                            else notAttempted++;
+                                        }
+                                        
+                                        // Count post-test
+                                        if (scoreStructure.post_test) {
+                                            totalQuizzes++;
+                                            if (scoreStructure.post_test.progress?.passed) passedQuizzes++;
+                                            else if (scoreStructure.post_test.progress?.awaiting_review) awaitingReview++;
+                                            else if (scoreStructure.post_test.progress?.completed) failedQuizzes++;
+                                            else notAttempted++;
+                                        }
+                                        
+                                        // Count big lesson quizzes
+                                        scoreStructure.big_lessons.forEach((bl: any) => {
+                                            if (bl.quiz) {
+                                                totalQuizzes++;
+                                                if (bl.quiz.progress?.passed) passedQuizzes++;
+                                                else if (bl.quiz.progress?.awaiting_review) awaitingReview++;
+                                                else if (bl.quiz.progress?.completed) failedQuizzes++;
+                                                else notAttempted++;
+                                            }
+                                            
+                                            // Count sub lesson quizzes
+                                            bl.lessons?.forEach((lesson: any) => {
+                                                if (lesson.quiz) {
+                                                    totalQuizzes++;
+                                                    if (lesson.quiz.progress?.passed) passedQuizzes++;
+                                                    else if (lesson.quiz.progress?.awaiting_review) awaitingReview++;
+                                                    else if (lesson.quiz.progress?.completed) failedQuizzes++;
+                                                    else notAttempted++;
+                                                }
+                                            });
+                                        });
+                                        
+                                        const progress = totalQuizzes > 0 ? (passedQuizzes / totalQuizzes) * 100 : 0;
+                                        
+                                        return (
+                                            <>
+                                                <p><strong>จำนวน Quiz ทั้งหมด:</strong> <span style={{ color: '#81c784' }}>{totalQuizzes}</span></p>
+                                                <p><strong>ผ่าน:</strong> <span style={{ color: '#81c784' }}>{passedQuizzes}</span></p>
+                                                <p><strong>รอตรวจ:</strong> <span style={{ color: '#ffb74d' }}>{awaitingReview}</span></p>
+                                                <p><strong>ไม่ผ่าน:</strong> <span style={{ color: '#f48fb1' }}>{failedQuizzes}</span></p>
+                                                <p><strong>ยังไม่ทำ:</strong> <span style={{ color: '#bdbdbd' }}>{notAttempted}</span></p>
+                                                <p><strong>อัตราการผ่าน:</strong> <span style={{ color: progress >= 80 ? '#81c784' : '#ffb74d' }}>{progress.toFixed(1)}%</span></p>
+                                            </>
+                                        );
+                                    })()}
+                                    <p style={{ fontSize: '0.8rem', color: '#888', marginTop: '10px' }}>
+                                        <strong>แหล่งข้อมูล:</strong> <code>quizzes table + student_quiz_attempts</code>
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 4.6 Progress Requirements */}
+                        <div style={{ marginBottom: '25px', padding: '15px', backgroundColor: '#2a2a2a', borderRadius: '8px' }}>
+                            <h3 style={{ color: '#4fc3f7', marginBottom: '10px' }}>📊 4.6 เงื่อนไขความคืบหน้า</h3>
+                            <div style={{ paddingLeft: '15px' }}>
+                                <div style={{ marginBottom: '15px' }}>
+                                    <h4 style={{ color: '#ffb74d', marginBottom: '8px' }}>🎯 Pre-test:</h4>
+                                    <p>• ต้องผ่าน Pre-test ก่อนถึงจะเรียน Big Lessons ได้</p>
+                                    <p>• สถานะปัจจุบัน: <span style={{ 
+                                        color: scoreStructure?.pre_test?.progress?.passed ? '#81c784' : 
+                                               scoreStructure?.pre_test?.progress?.completed ? '#f48fb1' : '#ffb74d' 
+                                    }}>
+                                        {scoreStructure?.pre_test?.progress?.passed ? '✅ ผ่าน' : 
+                                         scoreStructure?.pre_test?.progress?.completed ? '❌ ไม่ผ่าน' : '⏳ ยังไม่ทำ'}
+                                    </span></p>
+                                </div>
+                                
+                                <div style={{ marginBottom: '15px' }}>
+                                    <h4 style={{ color: '#ffb74d', marginBottom: '8px' }}>📖 Big Lessons:</h4>
+                                    <p>• ต้องเรียน Sub Lessons ให้ครบก่อนถึงจะทำ Big Lesson Quiz ได้</p>
+                                    <p>• ต้องผ่าน Big Lesson Quiz ก่อนถึงจะเรียน Big Lesson ถัดไปได้</p>
+                                </div>
+                                
+                                <div style={{ marginBottom: '15px' }}>
+                                    <h4 style={{ color: '#ffb74d', marginBottom: '8px' }}>🏁 Post-test:</h4>
+                                    <p>• ต้องผ่าน Pre-test และเรียน Sub Lessons ครบ 90% ขึ้นไป</p>
+                                    <p>• สถานะปัจจุบัน: <span style={{ 
+                                        color: scoreStructure?.post_test?.progress?.passed ? '#81c784' :
+                                               scoreStructure?.post_test?.progress?.awaiting_review ? '#ffb74d' :
+                                               scoreStructure?.post_test?.progress?.completed ? '#f48fb1' : '#bdbdbd'
+                                    }}>
+                                        {scoreStructure?.post_test?.progress?.passed ? '✅ ผ่าน' :
+                                         scoreStructure?.post_test?.progress?.awaiting_review ? '⏳ รอตรวจ' :
+                                         scoreStructure?.post_test?.progress?.completed ? '❌ ไม่ผ่าน' : '⏳ ยังไม่ทำ'}
+                                    </span></p>
+                                </div>
+                                
+                                <p style={{ fontSize: '0.8rem', color: '#888', marginTop: '10px' }}>
+                                    <strong>แหล่งข้อมูล:</strong> <code>score_management + progress calculation logic</code>
+                                </p>
+                            </div>
+                        </div>
 
                         {/* 4.7 Post-test */}
                         {scoreStructure?.post_test && (
@@ -929,7 +1126,7 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
                         )}
 
                         {/* 4.8 Data Sources */}
-                        <div style={{ marginBottom: '20px', padding: '15px', backgroundColor: '#2a2a2a', borderRadius: '8px' }}>
+                        <div style={{ marginBottom: '25px', padding: '15px', backgroundColor: '#2a2a2a', borderRadius: '8px' }}>
                             <h3 style={{ color: '#4fc3f7', marginBottom: '10px' }}>🗄️ 4.8 แหล่งข้อมูลจาก Database Tables</h3>
                             <div style={{ paddingLeft: '15px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '10px' }}>
                                 <div><code style={{ color: '#ffb74d' }}>subjects</code> - ข้อมูลวิชา</div>
@@ -942,19 +1139,181 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
                             </div>
                         </div>
 
-                        {/* Frontend vs Backend Status */}
-                        <div style={{ marginTop: '20px', padding: '15px', backgroundColor: '#1a3a1a', borderRadius: '8px', border: '2px solid #4caf50' }}>
-                            <h3 style={{ color: '#81c784', marginBottom: '10px' }}>⚖️ สถานะข้อมูล Frontend vs Backend</h3>
-                            <div style={{ paddingLeft: '15px' }}>
-                                <p><strong>Frontend lessonData:</strong> <span style={{ color: '#ffb74d' }}>{lessonData.length} sections</span></p>
-                                <p><strong>Backend scoreStructure:</strong> <span style={{ color: '#ffb74d' }}>{scoreStructure?.big_lessons?.length || 0} big_lessons</span></p>
-                                <p><strong>Frontend subjectQuizzes:</strong> <span style={{ color: '#ffb74d' }}>{subjectQuizzes.length} quizzes</span></p>
-                                <div style={{ marginTop: '10px', padding: '10px', backgroundColor: '#0d2f0d', borderRadius: '5px' }}>
-                                    <p style={{ color: '#a5d6a7', fontSize: '0.9rem' }}>
-                                        <strong>สถานะ:</strong> {Object.keys(scoreStructure).length > 0 ? 
-                                            '✅ ข้อมูล Backend ถูกโหลดและส่งไป Frontend เรียบร้อย' : 
-                                            '❌ ข้อมูล Backend ยังไม่ถูกโหลด'}
+                        {/* 4.9 โครงสร้างของวิชานี้ */}
+                        <div style={{ marginBottom: '25px', padding: '15px', backgroundColor: '#2a2a2a', borderRadius: '8px' }}>
+                            <h3 style={{ color: '#4fc3f7', marginBottom: '10px' }}>📋 4.9 โครงสร้างของวิชานี้</h3>
+                            <div style={{ paddingLeft: '15px', fontSize: '0.8rem', maxHeight: '400px', overflowY: 'auto' }}>
+                                
+                                {/* ชื่อวิชา */}
+                                <div style={{ marginBottom: '10px' }}>
+                                    <p style={{ margin: '4px 0', color: '#ffb74d', fontWeight: 'bold', fontSize: '1rem' }}>
+                                        📚 {currentSubjectTitle || 'ไม่มีข้อมูล'}
                                     </p>
+                                </div>
+
+                                {/* ข้อสอบก่อนเรียน */}
+                                {scoreStructure?.pre_test && (
+                                    <div style={{ marginBottom: '10px', marginLeft: '15px' }}>
+                                        <p style={{ margin: '4px 0', color: '#81c784' }}>
+                                            🎯 ข้อสอบก่อนเรียน: {scoreStructure.pre_test.title}
+                                            <span style={{ color: '#ffb74d', marginLeft: '10px' }}>
+                                                ({scoreStructure.pre_test.weight_percentage || 0} คะแนน)
+                                            </span>
+                                            <span style={{ 
+                                                color: scoreStructure.pre_test.progress?.passed ? '#81c784' : 
+                                                       scoreStructure.pre_test.progress?.completed ? '#f48fb1' : '#ffb74d',
+                                                marginLeft: '10px',
+                                                fontWeight: 'bold'
+                                            }}>
+                                                [{scoreStructure.pre_test.progress?.passed ? '✅ ผ่าน' : 
+                                                  scoreStructure.pre_test.progress?.completed ? '❌ ไม่ผ่าน' : '⏳ ยังไม่ทำ'}]
+                                            </span>
+                                        </p>
+                                        {/* Debug: ตรวจสอบข้อมูลคะแนน */}
+                                        <div style={{ marginLeft: '20px', fontSize: '0.7rem', color: '#888' }}>
+                                            <p>🔍 Debug: progress = {JSON.stringify(scoreStructure.pre_test.progress)}</p>
+                                            <p>🔍 Debug: weight_percentage = {scoreStructure.pre_test.weight_percentage || 'ไม่มีข้อมูล'}</p>
+                            </div>
+                        </div>
+                                )}
+
+                                {/* บทเรียนใหญ่ */}
+                                {scoreStructure?.big_lessons && scoreStructure.big_lessons.map((bl: any, blIndex: number) => (
+                                    <div key={bl.id} style={{ marginBottom: '10px', marginLeft: '15px' }}>
+                                        <p style={{ margin: '4px 0', color: '#4fc3f7', fontWeight: 'bold' }}>
+                                            📖 บทเรียนใหญ่ {blIndex + 1}: {bl.title}
+                                        </p>
+                                        
+                                        {/* บทเรียนย่อย */}
+                                        {bl.lessons && bl.lessons.map((lesson: any, lIndex: number) => (
+                                            <div key={lesson.id} style={{ marginLeft: '20px', marginBottom: '6px' }}>
+                                                <p style={{ margin: '2px 0', color: '#e0e0e0' }}>
+                                                    📹 บทเรียนย่อย {blIndex + 1}.{lIndex + 1}: {lesson.title}
+                                                    <span style={{ color: '#ffb74d', marginLeft: '10px' }}>
+                                                        ({lesson.weight_percentage || 0} คะแนน)
+                                                    </span>
+                                                    <span style={{ 
+                                                        color: lesson.video_completed ? '#81c784' : '#ffb74d',
+                                                        marginLeft: '10px',
+                                                        fontWeight: 'bold'
+                                                    }}>
+                                                        [{lesson.video_completed ? '✅ ดูแล้ว' : '⏳ ยังไม่ดู'}]
+                                                    </span>
+                                                </p>
+                                                
+                                                {/* แบบทดสอบย่อย */}
+                                                {lesson.quiz && (
+                                                    <div style={{ marginLeft: '15px' }}>
+                                                        <p style={{ margin: '2px 0', color: '#b39ddb' }}>
+                                                            📝 แบบทดสอบย่อย {blIndex + 1}.{lIndex + 1}: {lesson.quiz.title}
+                                                            <span style={{ color: '#ffb74d', marginLeft: '10px' }}>
+                                                                ({lesson.quiz.weight_percentage || 0} คะแนน)
+                                                            </span>
+                                                            <span style={{ 
+                                                                color: lesson.quiz.progress?.passed ? '#81c784' :
+                                                                       lesson.quiz.progress?.awaiting_review ? '#ffb74d' :
+                                                                       lesson.quiz.progress?.completed ? '#f48fb1' : '#ffb74d',
+                                                                marginLeft: '10px',
+                                                                fontWeight: 'bold'
+                                                            }}>
+                                                                [{lesson.quiz.progress?.passed ? '✅ ผ่าน' :
+                                                                  lesson.quiz.progress?.awaiting_review ? '⏳ รอตรวจ' :
+                                                                  lesson.quiz.progress?.completed ? '❌ ไม่ผ่าน' : '⏳ ยังไม่ทำ'}]
+                                                            </span>
+                                                        </p>
+                                                        {/* Debug: ตรวจสอบข้อมูลคะแนน */}
+                                                        <div style={{ marginLeft: '10px', fontSize: '0.7rem', color: '#888' }}>
+                                                            <p>🔍 Debug: quiz progress = {JSON.stringify(lesson.quiz.progress)}</p>
+                                                            <p>🔍 Debug: weight_percentage = {lesson.quiz.weight_percentage || 'ไม่มีข้อมูล'}</p>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                        
+                                        {/* แบบทดสอบท้ายบทใหญ่ */}
+                                        {bl.quiz && (
+                                            <div style={{ marginLeft: '20px', marginBottom: '6px' }}>
+                                                <p style={{ margin: '2px 0', color: '#f48fb1' }}>
+                                                    🎯 แบบทดสอบท้ายบทใหญ่ {blIndex + 1}: {bl.quiz.title}
+                                                    <span style={{ color: '#ffb74d', marginLeft: '10px' }}>
+                                                        ({bl.quiz.weight_percentage || 0} คะแนน)
+                                                    </span>
+                                                    <span style={{ 
+                                                        color: bl.quiz.progress?.passed ? '#81c784' :
+                                                               bl.quiz.progress?.awaiting_review ? '#ffb74d' :
+                                                               bl.quiz.progress?.completed ? '#f48fb1' : '#ffb74d',
+                                                        marginLeft: '10px',
+                                                        fontWeight: 'bold'
+                                                    }}>
+                                                        [{bl.quiz.progress?.passed ? '✅ ผ่าน' :
+                                                          bl.quiz.progress?.awaiting_review ? '⏳ รอตรวจ' :
+                                                          bl.quiz.progress?.completed ? '❌ ไม่ผ่าน' : '⏳ ยังไม่ทำ'}]
+                                                    </span>
+                                                </p>
+                                                {/* Debug: ตรวจสอบข้อมูลคะแนน */}
+                                                <div style={{ marginLeft: '10px', fontSize: '0.7rem', color: '#888' }}>
+                                                    <p>🔍 Debug: big lesson quiz progress = {JSON.stringify(bl.quiz.progress)}</p>
+                                                    <p>🔍 Debug: weight_percentage = {bl.quiz.weight_percentage || 'ไม่มีข้อมูล'}</p>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+
+                                {/* แบบทดสอบท้ายบทเรียน */}
+                                {scoreStructure?.post_test && (
+                                    <div style={{ marginBottom: '10px', marginLeft: '15px' }}>
+                                        <p style={{ margin: '4px 0', color: '#ff6b6b', fontWeight: 'bold' }}>
+                                            🏁 แบบทดสอบท้ายบทเรียน: {scoreStructure.post_test.title}
+                                            <span style={{ color: '#ffb74d', marginLeft: '10px' }}>
+                                                ({scoreStructure.post_test.weight_percentage || 0} คะแนน)
+                                            </span>
+                                            <span style={{ 
+                                                color: scoreStructure.post_test.progress?.passed ? '#81c784' :
+                                                       scoreStructure.post_test.progress?.awaiting_review ? '#ffb74d' :
+                                                       scoreStructure.post_test.progress?.completed ? '#f48fb1' : '#ffb74d',
+                                                marginLeft: '10px',
+                                                fontWeight: 'bold'
+                                            }}>
+                                                [{scoreStructure.post_test.progress?.passed ? '✅ ผ่าน' :
+                                                  scoreStructure.post_test.progress?.awaiting_review ? '⏳ รอตรวจ' :
+                                                  scoreStructure.post_test.progress?.completed ? '❌ ไม่ผ่าน' : '⏳ ยังไม่ทำ'}]
+                                            </span>
+                                        </p>
+                                        {/* Debug: ตรวจสอบข้อมูลคะแนน */}
+                                        <div style={{ marginLeft: '20px', fontSize: '0.7rem', color: '#888' }}>
+                                            <p>🔍 Debug: post-test progress = {JSON.stringify(scoreStructure.post_test.progress)}</p>
+                                            <p>🔍 Debug: weight_percentage = {scoreStructure.post_test.weight_percentage || 'ไม่มีข้อมูล'}</p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* สรุปคะแนนรวม */}
+                                <div style={{ marginTop: '15px', padding: '10px', backgroundColor: '#333', borderRadius: '6px' }}>
+                                    <p style={{ margin: '4px 0', color: '#ffb74d', fontWeight: 'bold', fontSize: '1rem' }}>
+                                        💯 สรุปคะแนนรวม: {calculateCurrentScore().toFixed(2)} / {calculateMaxScore().toFixed(2)} คะแนน
+                                    </p>
+                                    {/* Debug: ตรวจสอบการคำนวณคะแนน */}
+                                    <div style={{ marginTop: '8px', fontSize: '0.7rem', color: '#888' }}>
+                                        <p>🔍 Debug: calculateCurrentScore() = {calculateCurrentScore().toFixed(2)}</p>
+                                        <p>🔍 Debug: calculateMaxScore() = {calculateMaxScore().toFixed(2)}</p>
+                                        <p>🔍 Debug: scoreStructure object keys = {Object.keys(scoreStructure || {}).join(', ')}</p>
+                                    </div>
+                                </div>
+
+                                {/* ข้อมูลฐานข้อมูลที่ใช้ */}
+                                <div style={{ marginTop: '15px', padding: '10px', backgroundColor: '#1a3a1a', borderRadius: '6px', border: '1px solid #4caf50' }}>
+                                    <p style={{ margin: '4px 0', color: '#81c784', fontWeight: 'bold', fontSize: '0.9rem' }}>
+                                        🗄️ ข้อมูลฐานข้อมูลที่ใช้ในการคำนวณคะแนน:
+                                    </p>
+                                    <div style={{ marginLeft: '10px', fontSize: '0.7rem', color: '#a5d6a7' }}>
+                                        <p>• <code>quiz_attempts</code> - เก็บคะแนนที่ได้จากแบบทดสอบ (score, max_score, passed)</p>
+                                        <p>• <code>quiz_progress</code> - เก็บสถานะความก้าวหน้า (completed, passed, awaiting_review)</p>
+                                        <p>• <code>lesson_progress</code> - เก็บสถานะการดูวิดีโอ (video_completed, completed)</p>
+                                        <p>• <code>video_progress</code> - เก็บความคืบหน้าการดูวิดีโอ (watched_seconds, video_duration)</p>
+                                        <p>• <code>score_change_logs</code> - เก็บประวัติการเปลี่ยนแปลงคะแนน</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1715,15 +2074,12 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
             return;
         }
 
-        // ✅ ตั้งค่าแบบทดสอบก่อนเรียนเป็นบทเรียนแรกเสมอ
+        // ✅ หาบทเรียนที่ยังไม่ได้เรียนเป็นลำดับแรก
         const bigPreTest = subjectQuizzes.find(q => q.type === "big_pre_test");
         
-        // ✅ เพิ่มการตรวจสอบ flag ว่าได้ออกจาก Big Pre-test แล้วหรือไม่
-        const hasLeftBigPreTest = localStorage.getItem('hasLeftBigPreTest') === 'true';
-        
-        if (bigPreTest && !hasLeftBigPreTest) {
-            console.log("🎯 ตั้งค่าแบบทดสอบก่อนเรียนเป็นบทเรียนแรกเสมอ:", bigPreTest.title);
-            // ✅ ไม่ต้อง reset YouTube ID ที่นี่
+        // ✅ ตรวจสอบว่าแบบทดสอบก่อนเรียนเสร็จแล้วหรือไม่
+        if (bigPreTest && !bigPreTest.completed) {
+            console.log("🎯 แสดงแบบทดสอบก่อนเรียนเพราะยังไม่ได้ทำ:", bigPreTest.title);
             setCurrentLessonId(`-1000-${bigPreTest.quiz_id}`);
             setCurrentLesson(bigPreTest.title);
             setCurrentView("quiz");
@@ -1740,27 +2096,22 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
                 status: bigPreTest.status || "not_started"
             });
             setCurrentQuizData(null);
-            // อัปเดต sidebarActiveAccordion ให้ตรงกับแบบทดสอบก่อนเรียนใหญ่
             setSidebarActiveAccordion(-1000);
             intendedAccordionState.current = -1000;
             console.log("🎯 Set intendedAccordionState to -1000 for big pre-test");
-        } else if (bigPreTest && hasLeftBigPreTest) {
-            console.log("🎯 ข้าม Big Pre-test เพราะได้ออกจากแล้ว - ไปบทเรียนแรกแทน");
-            // ข้าม Big Pre-test และไปบทเรียนแรกแทน
         } else {
-            // ✅ ถ้าไม่มีแบบทดสอบก่อนเรียน ให้หาบทเรียนแรกที่สามารถเรียนได้ (ไม่ถูกล็อค)
+            // ✅ หาบทเรียนที่ยังไม่ได้เรียนเป็นลำดับแรก
             let foundLesson = false;
             
             for (let sectionIndex = 0; sectionIndex < lessonData.length; sectionIndex++) {
                 const section = lessonData[sectionIndex];
                 for (let itemIndex = 0; itemIndex < section.items.length; itemIndex++) {
                     const item = section.items[itemIndex];
-                    // หาบทเรียนแรกที่ไม่ถูกล็อค (ไม่ต้องตรวจสอบ completed)
-                    if (!item.lock) {
-                        console.log(`🎯 ตั้งค่าบทเรียนแรกที่สามารถเรียนได้: ${item.title}`);
+                    // ✅ หาบทเรียนแรกที่ไม่ถูกล็อคและยังไม่ได้เรียน
+                    if (!item.lock && !item.completed) {
+                        console.log(`🎯 ตั้งค่าบทเรียนที่ยังไม่ได้เรียน: ${item.title}`);
                         
-                        // ✅ ไม่ต้อง reset YouTube ID ที่นี่
-                        setCurrentLessonId(`${section.id}-${item.id}`);
+                        setCurrentLessonId(`${section.id}-${itemIndex}`);
                         setCurrentLesson(item.title);
                         setCurrentView(item.type);
                         setCurrentLessonData({
@@ -1811,13 +2162,12 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
                 if (foundLesson) break;
             }
             
-            // ถ้าไม่พบบทเรียนที่สามารถเรียนได้ ให้ตรวจสอบแบบทดสอบหลังเรียน
+            // ✅ ถ้าไม่พบบทเรียนที่ยังไม่ได้เรียน ให้ตรวจสอบแบบทดสอบหลังเรียน
             if (!foundLesson) {
                 const postTest = subjectQuizzes.find(q => q.type === "post_test");
-                if (postTest && !postTest.locked) {
-                    console.log("🎯 ตั้งค่าแบบทดสอบหลังเรียนเป็นบทเรียนแรก");
+                if (postTest && !postTest.locked && !postTest.completed) {
+                    console.log("🎯 แสดงแบบทดสอบหลังเรียนเพราะยังไม่ได้ทำ:", postTest.title);
                     
-                    // ✅ ไม่ต้อง reset YouTube ID ที่นี่
                     setCurrentLessonId(`-2000-${postTest.quiz_id}`);
                     setCurrentLesson(postTest.title);
                     setCurrentView("quiz");
@@ -1834,49 +2184,53 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
                         status: postTest.status || "not_started"
                     });
                     setCurrentQuizData(null);
-                    // อัปเดต sidebarActiveAccordion ให้ตรงกับแบบทดสอบหลังเรียน
                     setSidebarActiveAccordion(-2000);
                     intendedAccordionState.current = -2000;
                     foundLesson = true;
                 } else if (lessonData.length > 0 && lessonData[0].items.length > 0) {
-                    // Fallback: ใช้บทเรียนแรก
-                    console.log("🎯 Fallback - ใช้บทเรียนแรก");
-                    const firstSection = lessonData[0];
-                    const firstItem = firstSection.items[0];
-                    // ✅ ไม่ต้อง reset YouTube ID ที่นี่
-                    setCurrentLessonId(`${firstSection.id}-${firstItem.id}`);
-                    setCurrentLesson(firstItem.title);
-                    setCurrentView(firstItem.type);
+                    // ✅ Fallback: ใช้บทเรียนแรกที่ยังไม่ได้เรียน
+                    console.log("🎯 Fallback - หาบทเรียนแรกที่ยังไม่ได้เรียน");
+                    let fallbackFound = false;
+                    
+                    for (let sectionIndex = 0; sectionIndex < lessonData.length; sectionIndex++) {
+                        const section = lessonData[sectionIndex];
+                        for (let itemIndex = 0; itemIndex < section.items.length; itemIndex++) {
+                            const item = section.items[itemIndex];
+                            if (!item.lock) {
+                                console.log(`🎯 Fallback - ใช้บทเรียน: ${item.title}`);
+                                setCurrentLessonId(`${section.id}-${itemIndex}`);
+                                setCurrentLesson(item.title);
+                                setCurrentView(item.type);
                     setCurrentLessonData({
-                        ...firstItem,
-                        quiz_id: firstSection.quiz_id,
-                        big_lesson_id: firstSection.id,
-                    });
+                                    ...item,
+                                    quiz_id: section.quiz_id,
+                                    big_lesson_id: section.id,
+                                });
+                                fallbackFound = true;
+                                break;
+                            }
+                        }
+                        if (fallbackFound) break;
+                    }
 
-                    // ✅ ตั้งค่า YouTube ID ให้ถูกต้องสำหรับวิดีโอทันที
-                    if (firstItem.type === "video" && firstItem.video_url) {
-                        const videoId = extractYoutubeId(firstItem.video_url);
+                    // ✅ ตั้งค่า YouTube ID และ Quiz Data สำหรับ fallback
+                    if (fallbackFound) {
+                        const currentItem = lessonData.find(s => s.id === parseInt(currentLessonId.split('-')[0]))?.items[parseInt(currentLessonId.split('-')[1])];
+                        if (currentItem) {
+                            if (currentItem.type === "video" && currentItem.video_url) {
+                                const videoId = extractYoutubeId(currentItem.video_url);
                         if (videoId) {
                             setYoutubeId(videoId);
                             console.log("🎥 ตั้งค่า YouTube ID สำหรับ fallback:", videoId);
                         } else {
-                            console.log("⚠️ ไม่สามารถสกัด YouTube ID จาก fallback URL:", firstItem.video_url);
-                            setYoutubeId(""); // Set to empty if URL is bad
+                                    console.log("⚠️ ไม่สามารถสกัด YouTube ID จาก fallback URL:", currentItem.video_url);
+                                    setYoutubeId("");
                         }
-                    } else if (firstItem.type === "quiz") {
-                        setYoutubeId(""); // Explicitly clear youtubeId for quizzes
+                            } else if (currentItem.type === "quiz") {
+                                setYoutubeId("");
                     }
-
-                    if (firstSection.quiz_id) {
-                        const firstLesson = courseData?.subjects[0]?.lessons[0];
-                        if (firstLesson?.quiz) {
-                            setCurrentQuizData(firstLesson.quiz);
                         }
                     }
-                    
-                    // อัปเดต sidebarActiveAccordion ให้ตรงกับ section แรก
-                        // setSidebarActiveAccordion(firstSection.id); // ✅ ลบการเปลี่ยน accordion state เพื่อป้องกันการปิด
-                        intendedAccordionState.current = firstSection.id;
                 }
             }
         }
@@ -2470,14 +2824,28 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
                     console.log("🔄 Updating quiz state after completion:", currentLessonData.quiz_id);
                     await updateQuizState(currentLessonData.quiz_id);
                 }
-            
-            // Refresh ข้อมูลแบบทดสอบและบทเรียนโดยไม่ reset sidebar
-            await refreshLessonDataWithoutReset();
+                
+                // ✅ สำหรับ video completion ให้ refresh ข้อมูลทันที
+                if (currentView === "video" && currentLessonData?.lesson_id) {
+                    console.log("🔄 Updating video completion status for lesson:", currentLessonData.lesson_id);
+                    
+                    // รอสักครู่เพื่อให้ database อัปเดตเสร็จ
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    
+                    // Refresh ข้อมูลแบบทดสอบและบทเรียนโดยไม่ reset sidebar
+                    await refreshLessonDataWithoutReset();
+                    
+                    // ✅ อัปเดต lesson completion status โดยตรง
+                    await updateLessonCompletionStatus(lessonData);
+                } else {
+                    // Refresh ข้อมูลแบบทดสอบและบทเรียนโดยไม่ reset sidebar
+                    await refreshLessonDataWithoutReset();
+                }
                 
                 // Reset flag หลังจากเสร็จสิ้น
                 setTimeout(() => {
                     refreshInProgressRef.current = false;
-                }, 1000);
+                }, 2000); // ✅ เพิ่มเวลาเป็น 2 วินาที
             
             console.log("✅ Lesson completed successfully - staying on current lesson");
             } else {
@@ -3147,6 +3515,136 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
         
     }, [currentLessonId, lessonData, findAndSetNextLesson]);
 
+    // ✅ ฟังก์ชันใหม่สำหรับไปที่เนื้อหาล่าสุดที่ดูได้
+    const goToLatestAvailableContent = useCallback(() => {
+        console.log("🎯 goToLatestAvailableContent called - finding latest available content");
+        
+        if (!lessonData || lessonData.length === 0) {
+            console.error("❌ No lesson data available");
+            return;
+        }
+        
+        // ✅ ตรวจสอบแบบทดสอบก่อนเรียนก่อน
+        const bigPreTest = subjectQuizzes.find(q => q.type === "big_pre_test");
+        if (bigPreTest && !bigPreTest.completed) {
+            console.log("🎯 ไปที่แบบทดสอบก่อนเรียนเพราะยังไม่ได้ทำ:", bigPreTest.title);
+            setCurrentLessonId(`-1000-${bigPreTest.quiz_id}`);
+            setCurrentLesson(bigPreTest.title);
+            setCurrentView("quiz");
+            setCurrentLessonData({
+                id: bigPreTest.quiz_id,
+                lesson_id: 0,
+                title: bigPreTest.title,
+                lock: false,
+                completed: bigPreTest.completed || false,
+                type: "quiz",
+                quizType: "special",
+                duration: bigPreTest.completed ? "100%" : "0%",
+                quiz_id: bigPreTest.quiz_id,
+                status: bigPreTest.status || "not_started"
+            });
+            setCurrentQuizData(null);
+            setSidebarActiveAccordion(-1000);
+            intendedAccordionState.current = -1000;
+            return;
+        }
+        
+        // ✅ หาเนื้อหาล่าสุดที่ยังไม่จบ
+        let latestUncompletedContent = null;
+        let latestSectionId = null;
+        let latestItemId = null;
+        
+        // ไล่จาก section แรกไป section สุดท้าย
+        for (let sectionIndex = 0; sectionIndex < lessonData.length; sectionIndex++) {
+            const section = lessonData[sectionIndex];
+            
+            // ไล่จาก item แรกไป item สุดท้ายใน section
+            for (let itemIndex = 0; itemIndex < section.items.length; itemIndex++) {
+                const item = section.items[itemIndex];
+                
+                // ตรวจสอบว่าไม่ถูกล็อคและยังไม่จบ
+                if (!item.lock && !item.completed) {
+                    latestUncompletedContent = item;
+                    latestSectionId = section.id;
+                    latestItemId = itemIndex;
+                    console.log(`🎯 พบเนื้อหาล่าสุดที่ยังไม่จบ: ${item.title} (Section: ${section.id}, Item: ${itemIndex})`);
+                }
+            }
+        }
+        
+        // ✅ ถ้าพบเนื้อหาที่ยังไม่จบ ให้ไปที่นั้น
+        if (latestUncompletedContent && latestSectionId !== null && latestItemId !== null) {
+            console.log(`🎯 ไปที่เนื้อหาล่าสุดที่ยังไม่จบ: ${latestUncompletedContent.title}`);
+            
+            setCurrentLessonId(`${latestSectionId}-${latestItemId}`);
+            setCurrentLesson(latestUncompletedContent.title);
+            setCurrentView(latestUncompletedContent.type);
+            setCurrentLessonData({
+                ...latestUncompletedContent,
+                quiz_id: latestUncompletedContent.type === "quiz" ? latestUncompletedContent.quiz_id : lessonData.find(s => s.id === latestSectionId)?.quiz_id,
+                big_lesson_id: latestSectionId,
+            });
+            
+            // ตั้งค่า YouTube ID สำหรับวิดีโอ
+            if (latestUncompletedContent.type === "video" && latestUncompletedContent.video_url) {
+                const videoId = extractYoutubeId(latestUncompletedContent.video_url);
+                if (videoId) {
+                    setYoutubeId(videoId);
+                    console.log("🎥 ตั้งค่า YouTube ID สำหรับเนื้อหาล่าสุด:", videoId);
+                } else {
+                    console.log("⚠️ ไม่สามารถสกัด YouTube ID จาก URL:", latestUncompletedContent.video_url);
+                    setYoutubeId("");
+                }
+            } else if (latestUncompletedContent.type === "quiz") {
+                setYoutubeId(""); // Clear YouTube ID สำหรับ quiz
+            }
+            
+            // ตั้งค่า Quiz Data สำหรับแบบทดสอบ
+            if (latestUncompletedContent.type === "quiz") {
+                const section = lessonData.find(s => s.id === latestSectionId);
+                if (section) {
+                    setCurrentQuizDataFromLesson(latestUncompletedContent, section);
+                }
+            }
+            
+            // อัปเดต sidebarActiveAccordion ให้ตรงกับ section ที่เลือก
+            intendedAccordionState.current = latestSectionId;
+            console.log("🎯 Setting sidebarActiveAccordion to:", latestSectionId, "for latest content:", latestUncompletedContent.title);
+            return;
+        }
+        
+        // ✅ ถ้าไม่พบเนื้อหาที่ยังไม่จบ ให้ตรวจสอบแบบทดสอบหลังเรียน
+        const postTest = subjectQuizzes.find(q => q.type === "post_test");
+        if (postTest && !postTest.locked && !postTest.completed) {
+            console.log("🎯 ไปที่แบบทดสอบหลังเรียนเพราะยังไม่ได้ทำ:", postTest.title);
+            
+            setCurrentLessonId(`-2000-${postTest.quiz_id}`);
+            setCurrentLesson(postTest.title);
+            setCurrentView("quiz");
+            setCurrentLessonData({
+                id: postTest.quiz_id,
+                lesson_id: 0,
+                title: postTest.title,
+                lock: false,
+                completed: postTest.completed || false,
+                type: "quiz",
+                quizType: "special",
+                duration: postTest.completed ? "100%" : "0%",
+                quiz_id: postTest.quiz_id,
+                status: postTest.status || "not_started"
+            });
+            setCurrentQuizData(null);
+            setSidebarActiveAccordion(-2000);
+            intendedAccordionState.current = -2000;
+            return;
+        }
+        
+        // ✅ ถ้าไม่พบเนื้อหาที่ยังไม่จบเลย แสดงข้อความว่าจบแล้ว
+        console.log("🎉 ไม่พบเนื้อหาที่ยังไม่จบ - หลักสูตรจบแล้ว");
+        alert("ยินดีด้วย! คุณได้เรียนจบหลักสูตรนี้แล้ว 🎉");
+        
+    }, [lessonData, subjectQuizzes, extractYoutubeId]);
+
     // ฟังก์ชันช่วยตั้งค่า Quiz Data
     const setCurrentQuizDataFromLesson = (item: LessonItem, section: SectionData) => {
         if (!courseData) return;
@@ -3360,6 +3858,13 @@ const handleSelectLesson = useCallback((
             intendedAccordionState.current = currentActiveAccordion;
             console.log("🔄 หลังเรียก setSidebarActiveAccordion - sidebarActiveAccordion state:", currentActiveAccordion);
             
+            // ✅ เพิ่มการ force update sidebar ทันทีสำหรับ video completion
+            if (currentView === "video") {
+                console.log("🔄 Force updating sidebar for video completion...");
+                // Trigger re-render ของ sidebar โดยการอัปเดต lessonData
+                setLessonData(prevData => [...prevData]);
+            }
+            
             // ✅ เพิ่มการตรวจสอบว่า accordion state ถูกตั้งค่าถูกต้องหรือไม่
             setTimeout(() => {
                 console.log("🔄 ตรวจสอบ accordion state หลังจาก refresh:", {
@@ -3388,75 +3893,6 @@ const handleSelectLesson = useCallback((
         }
     }, [currentSubjectId, courseId, subjectId, API_URL]);
 
-    // ✅ เพิ่มฟังก์ชันที่ขาดหายไป
-    const handlePreviousLesson = useCallback(() => {
-        console.log("🔄 handlePreviousLesson called with currentLessonId:", currentLessonId);
-        console.log("🔄 lessonData:", lessonData);
-        if (!currentLessonId) {
-            console.error("❌ Missing currentLessonId");
-            return;
-        }
-
-        const [currentSectionId, currentItemId] = currentLessonId.split("-").map(Number);
-        let foundPrevious = false;
-
-        // หาบทเรียนก่อนหน้า
-        for (let sectionIndex = lessonData.length - 1; sectionIndex >= 0; sectionIndex--) {
-            const section = lessonData[sectionIndex];
-            
-            for (let itemIndex = section.items.length - 1; itemIndex >= 0; itemIndex--) {
-                const item = section.items[itemIndex];
-                
-                // ถ้าเจอบทปัจจุบัน ให้หาบทก่อนหน้า
-                if (section.id === currentSectionId && item.id === currentItemId) {
-                    // หาบทก่อนหน้าที่ไม่ถูกล็อค
-                    for (let prevSectionIndex = sectionIndex; prevSectionIndex >= 0; prevSectionIndex--) {
-                        const prevSection = lessonData[prevSectionIndex];
-                        const startItemIndex = prevSectionIndex === sectionIndex ? itemIndex - 1 : prevSection.items.length - 1;
-                        
-                        for (let prevItemIndex = startItemIndex; prevItemIndex >= 0; prevItemIndex--) {
-                            const prevItem = prevSection.items[prevItemIndex];
-                            
-                            // ตรวจสอบว่าไม่ถูกล็อค
-                            if (!prevItem.lock) {
-                                setCurrentLessonId(`${prevSection.id}-${prevItem.id}`);
-                                setCurrentLesson(prevItem.title);
-                                setCurrentView(prevItem.type);
-                                
-                                // อัปเดต sidebarActiveAccordion ให้ตรงกับ section ที่เลือก
-                                intendedAccordionState.current = prevSection.id;
-                                
-                                // ตั้งค่า YouTube ID ทันทีเมื่อเปลี่ยนบทเรียน
-                                if (prevItem.type === "video" && prevItem.video_url) {
-                                    const videoId = extractYoutubeId(prevItem.video_url);
-                                    if (videoId) {
-                                        setYoutubeId(videoId);
-                                        console.log("🎥 ตั้งค่า YouTube ID สำหรับบทก่อนหน้า:", videoId);
-                                    } else {
-                                        console.log("⚠️ ไม่สามารถสกัด YouTube ID สำหรับบทก่อนหน้า");
-                                        setYoutubeId("");
-                                    }
-                                } else if (prevItem.type === "quiz") {
-                                    // Reset YouTube ID เมื่อเปลี่ยนเป็นแบบทดสอบ
-                                    setYoutubeId("");
-                                }
-                                
-                                foundPrevious = true;
-                                break;
-                            }
-                        }
-                        
-                        if (foundPrevious) break;
-                    }
-                    
-                    if (!foundPrevious) {
-                        alert("นี่คือบทเรียนแรกแล้ว");
-                    }
-                    return;
-                }
-            }
-        }
-    }, [currentLessonId, lessonData, extractYoutubeId]);
 
 const handleNextLesson = useCallback(() => {
         console.log("🚀 handleNextLesson called with currentLessonId:", currentLessonId);
@@ -3782,17 +4218,19 @@ const handleNextLesson = useCallback(() => {
                             position: 'sticky',
                             top: '20px'
                         }}>
-                            <h2 className="title" style={{
-                                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                                WebkitBackgroundClip: 'text',
-                                WebkitTextFillColor: 'transparent',
-                                backgroundClip: 'text',
+                            <h2 className="lesson-subject-title" style={{
+                                color: '#2c3e50',
                                 fontSize: '1.4rem',
                                 fontWeight: '700',
                                 marginBottom: '25px',
-                                textAlign: 'center'
+                                textAlign: 'center',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '10px'
                             }}>
-                                📚 วิชา: {currentSubjectTitle || ""}
+                                <span className="subject-icon">📖</span>
+                                <span>วิชา: {currentSubjectTitle || ""}</span>
                             </h2>
                             <LessonFaq
                                 onViewChange={setCurrentView}
@@ -3804,12 +4242,13 @@ const handleNextLesson = useCallback(() => {
                                 activeAccordion={sidebarActiveAccordion}
                                 onAccordionChange={setSidebarActiveAccordion}
                                 hierarchicalData={scoreStructure}
+                                onShowLockedModal={handleShowLockedModal}
                             />
                             <ScoreProgressBar
                                 currentScore={calculateCurrentScore()}
                                 maxScore={calculateMaxScore()}
                                 passingScore={calculatePassingScore()}
-                                progressPercentage={progress}
+                                progressPercentage={progress || calculateOverallProgress()}
                                 subjectTitle={currentSubjectTitle}
                                 passingPercentage={subjectPassingPercentage}
                                 isSubjectPassed={isSubjectPassed()}
@@ -3878,91 +4317,6 @@ const handleNextLesson = useCallback(() => {
                              backdropFilter: 'blur(10px)',
                              border: '1px solid rgba(255, 255, 255, 0.2)'
                          }}>
-                            {/* Navigation Controls */}
-                            <div className="lesson-navigation-controls mb-4" style={{
-                                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                                padding: '20px',
-                                borderRadius: '15px',
-                                boxShadow: '0 8px 32px rgba(102, 126, 234, 0.15)',
-                                backdropFilter: 'blur(8px)',
-                                border: '1px solid rgba(255, 255, 255, 0.18)'
-                            }}>
-                                <div className="d-flex justify-content-between align-items-center">
-                                    <button 
-                                        className="btn btn-light btn-navigation"
-                                        onClick={handlePreviousLesson}
-                                        disabled={loading}
-                                        style={{
-                                            borderRadius: '12px',
-                                            padding: '12px 20px',
-                                            fontWeight: '500',
-                                            background: 'rgba(255, 255, 255, 0.9)',
-                                            border: 'none',
-                                            transition: 'all 0.3s ease',
-                                            boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)'
-                                        }}
-                                        onMouseEnter={(e) => {
-                                            e.currentTarget.style.transform = 'translateY(-2px)';
-                                            e.currentTarget.style.boxShadow = '0 6px 20px rgba(0, 0, 0, 0.15)';
-                                        }}
-                                        onMouseLeave={(e) => {
-                                            e.currentTarget.style.transform = 'translateY(0)';
-                                            e.currentTarget.style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.1)';
-                                        }}
-                                    >
-                                        <i className="fas fa-chevron-left me-2" style={{color: '#667eea'}}></i>
-                                        <span style={{color: '#333'}}>บทก่อนหน้า</span>
-                                    </button>
-                                    
-                                    <div className="lesson-info text-center" style={{flex: 1, margin: '0 20px'}}>
-                                        {currentLessonData && (
-                                            <div style={{
-                                                background: 'rgba(255, 255, 255, 0.15)',
-                                                padding: '12px 20px',
-                                                borderRadius: '25px',
-                                                backdropFilter: 'blur(10px)',
-                                                border: '1px solid rgba(255, 255, 255, 0.2)'
-                                            }}>
-                                                <div style={{color: 'white', fontWeight: '600', fontSize: '16px'}}>
-                                                    <i className={`fas ${currentView === 'video' ? 'fa-play-circle' : 'fa-question-circle'} me-2`} 
-                                                       style={{color: '#ffd700'}}></i>
-                                                    {currentLesson}
-                                                </div>
-                                                <small style={{color: 'rgba(255, 255, 255, 0.8)', fontSize: '12px'}}>
-                                                    {currentView === 'video' ? 'วิดีโอบทเรียน' : 'แบบทดสอบ'}
-                                                </small>
-                                            </div>
-                                        )}
-                                    </div>
-                                    
-                                    <button 
-                                        className="btn btn-warning btn-navigation"
-                                        onClick={handleNextLesson}
-                                        disabled={loading}
-                                        style={{
-                                            borderRadius: '12px',
-                                            padding: '12px 20px',
-                                            fontWeight: '500',
-                                            background: 'linear-gradient(45deg, #ffd700, #ffed4e)',
-                                            border: 'none',
-                                            color: '#333',
-                                            transition: 'all 0.3s ease',
-                                            boxShadow: '0 4px 15px rgba(255, 215, 0, 0.3)'
-                                        }}
-                                        onMouseEnter={(e) => {
-                                            e.currentTarget.style.transform = 'translateY(-2px)';
-                                            e.currentTarget.style.boxShadow = '0 6px 20px rgba(255, 215, 0, 0.4)';
-                                        }}
-                                        onMouseLeave={(e) => {
-                                            e.currentTarget.style.transform = 'translateY(0)';
-                                            e.currentTarget.style.boxShadow = '0 4px 15px rgba(255, 215, 0, 0.3)';
-                                        }}
-                                    >
-                                        <span>บทถัดไป</span>
-                                        <i className="fas fa-chevron-right ms-2"></i>
-                                    </button>
-                                </div>
-                            </div>
                             
                             {currentView === "quiz" ? (
                                 <LessonQuiz
@@ -3974,6 +4328,7 @@ const handleNextLesson = useCallback(() => {
                                     lessonId={currentLessonData?.lesson_id || 0}
                                     onRefreshProgress={refreshProgress}
                                     onGoToNextLesson={goToNextLesson}
+                                    onGoToLatestContent={goToLatestAvailableContent}
                                     passingPercentage={subjectPassingPercentage}
                                 />
                             ) : (
@@ -3984,6 +4339,7 @@ const handleNextLesson = useCallback(() => {
                                     lessonId={currentLessonData?.lesson_id || 0}
                                     onNextLesson={handleNextLesson}
                                     onGoToNextLesson={goToNextLesson}
+                                    onGoToLatestContent={goToLatestAvailableContent}
                                 />
                             )}
                         </div>
@@ -4010,8 +4366,121 @@ const handleNextLesson = useCallback(() => {
         
         {/* ✅ Debug Modal */}
         {renderDebugModal()}
+
+        {/* ✅ Modal สำหรับเนื้อหาที่ล็อค */}
+        {showLockedModal && lockedContentData && (
+            <div 
+                className="locked-content-modal-overlay" 
+                onClick={handleCloseLockedModal}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="modal-title"
+                aria-describedby="modal-description"
+            >
+                <div className="locked-content-modal" onClick={(e) => e.stopPropagation()}>
+                    <div className="modal-header">
+                        <div className="modal-icon" aria-hidden="true">⚠️</div>
+                        <h3 id="modal-title">เนื้อหายังไม่พร้อมใช้งาน</h3>
+                        <button 
+                            className="close-btn" 
+                            onClick={handleCloseLockedModal}
+                            aria-label="ปิดหน้าต่าง"
+                            tabIndex={1}
+                        >
+                            ✕
+                        </button>
+                    </div>
+                    
+                    <div className="modal-content" id="modal-description">
+                        {/* Compact Info Section */}
+                        <div className="compact-info">
+                            <div className="info-row">
+                                <span className="info-label">📖 บทเรียน:</span>
+                                <span className="info-value">{lockedContentData.sectionTitle}</span>
+                            </div>
+                            <div className="info-row">
+                                <span className="info-label">📝 แบบทดสอบ:</span>
+                                <span className="info-value">{lockedContentData.quizTitle}</span>
+                            </div>
+                        </div>
+
+                        {/* Progress Section */}
+                        <div className="progress-section">
+                            <div className="progress-header">
+                                <span className="progress-title">📹 ความคืบหน้า ({lockedContentData.totalVideos} วิดีโอ)</span>
+                            </div>
+                            <div className="progress-stats">
+                                <div className="stat completed">
+                                    <span className="stat-icon">✅</span>
+                                    <span className="stat-text">จบแล้ว {lockedContentData.completedVideos}</span>
+                                </div>
+                                <div className="stat incomplete">
+                                    <span className="stat-icon">⏳</span>
+                                    <span className="stat-text">ยังไม่จบ {lockedContentData.totalVideos - lockedContentData.completedVideos}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Videos List */}
+                        {lockedContentData.incompleteVideos && lockedContentData.incompleteVideos.length > 0 && (
+                            <div className="videos-section">
+                                <div className="videos-header">
+                                    <span className="videos-title">📋 วิดีโอที่ต้องเรียนให้จบ</span>
+                                </div>
+                                <div className="videos-list">
+                                    {lockedContentData.incompleteVideos.map((video: any, index: number) => (
+                                        <div key={index} className="video-item">
+                                            <span className="video-number">{index + 1}.</span>
+                                            <span className="video-title">{video.title}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Requirements List */}
+                        {lockedContentData.requirements && lockedContentData.requirements.length > 0 && (
+                            <div className="requirements-section">
+                                <div className="requirements-header">
+                                    <span className="requirements-title">📋 เงื่อนไขที่ต้องทำ</span>
+                                </div>
+                                <div className="requirements-list">
+                                    {lockedContentData.requirements.map((requirement: string, index: number) => (
+                                        <div key={index} className="requirement-item">
+                                            <span className="requirement-number">{index + 1}.</span>
+                                            <span className="requirement-text">{requirement}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Message */}
+                        <div className="message-section">
+                            <span className="message-icon">💡</span>
+                            <span className="message-text">
+                                {lockedContentData.requirements && lockedContentData.requirements.length > 0 
+                                    ? "กรุณาทำตามเงื่อนไขข้างต้นก่อนทำแบบทดสอบ"
+                                    : "กรุณาเรียนวิดีโอให้จบก่อนทำแบบทดสอบท้ายบท"
+                                }
+                            </span>
+                        </div>
+                    </div>
+
+                    <div className="modal-footer">
+                        <button 
+                            className="btn-understand" 
+                            onClick={handleCloseLockedModal}
+                            tabIndex={2}
+                            autoFocus
+                        >
+                            เข้าใจแล้ว
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
         </>
     );
 };
-
 export default LessonArea;

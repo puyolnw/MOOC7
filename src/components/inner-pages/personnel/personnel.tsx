@@ -23,6 +23,9 @@ const Personnel: React.FC = () => {
   const [selectedDepartment, setSelectedDepartment] = useState<string>('all');
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [animateCards, setAnimateCards] = useState<boolean>(false);
+  const [avatarErrors, setAvatarErrors] = useState<Set<string>>(new Set());
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
   const apiUrl = import.meta.env.VITE_API_URL;
 
   // กำหนดลำดับ ranking ที่ต้องการให้แสดง (จากบนลงล่าง)
@@ -31,16 +34,25 @@ const Personnel: React.FC = () => {
   useEffect(() => {
     const fetchInstructors = async () => {
       try {
+        setIsLoading(true);
+        setError(null);
         const response = await axios.get(`${apiUrl}/api/accounts/instructors/public`);
         if (response.data.success) {
           setInstructors(response.data.instructors);
+          console.log(`✅ Loaded ${response.data.instructors.length} instructors for personnel page`);
+        } else {
+          setError('ไม่สามารถโหลดข้อมูลบุคลากรได้');
         }
       } catch (error) {
-        console.error('Error fetching instructors:', error);
+        // Log เฉพาะ error message สั้นๆ
+        console.error('❌ Failed to load personnel data:', error instanceof Error ? error.message : 'Unknown error');
+        setError('เกิดข้อผิดพลาดในการโหลดข้อมูลบุคลากร');
+      } finally {
+        setIsLoading(false);
+        setAnimateCards(true);
       }
     };
     fetchInstructors();
-    setAnimateCards(true);
   }, [apiUrl]);
 
   const filteredInstructors = instructors.filter(instructor => {
@@ -83,6 +95,92 @@ const Personnel: React.FC = () => {
       setSelectedInstructor(null);
     }, 300);
   };
+
+  // ฟังก์ชันจัดการ error ของ avatar
+  const handleAvatarError = (fileId: string) => {
+    // ไม่ log error ใน console เพราะเป็นเรื่องปกติที่ไฟล์อาจไม่พบ
+    setAvatarErrors(prev => new Set(prev).add(fileId));
+  };
+
+  // ฟังก์ชันสร้าง URL ของ avatar
+  const getAvatarUrl = (instructor: InstructorType) => {
+    if (!instructor.avatar_file_id || avatarErrors.has(instructor.avatar_file_id)) {
+      return "/assets/img/icons/userdefault.png";
+    }
+    return `${apiUrl}/api/accounts/instructors/avatar/${instructor.avatar_file_id}`;
+  };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <section className="personnel-area section-py-120">
+        <div className="container">
+          <div className="row">
+            <div className="col-lg-12">
+              <div className="section__title text-center mb-50">
+                <span className="sub-title">ทีมงานของเรา</span>
+                <h2 className="title">บุคลากรของมหาวิทยาลัย</h2>
+                <p className="section-desc">
+                  มหาวิทยาลัยของเรามีบุคลากรที่มีความเชี่ยวชาญในสาขาต่างๆ <br />
+                  พร้อมให้ความรู้และประสบการณ์แก่นักศึกษา
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="row">
+            <div className="col-12 text-center">
+              <div className="loading-spinner">
+                <div className="spinner-border text-primary" role="status">
+                  <span className="visually-hidden">กำลังโหลด...</span>
+                </div>
+                <p className="mt-3">กำลังโหลดข้อมูลบุคลากร...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <section className="personnel-area section-py-120">
+        <div className="container">
+          <div className="row">
+            <div className="col-lg-12">
+              <div className="section__title text-center mb-50">
+                <span className="sub-title">ทีมงานของเรา</span>
+                <h2 className="title">บุคลากรของมหาวิทยาลัย</h2>
+                <p className="section-desc">
+                  มหาวิทยาลัยของเรามีบุคลากรที่มีความเชี่ยวชาญในสาขาต่างๆ <br />
+                  พร้อมให้ความรู้และประสบการณ์แก่นักศึกษา
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="row">
+            <div className="col-12 text-center">
+              <div className="error-state">
+                <div className="error-icon">
+                  <i className="fas fa-exclamation-triangle"></i>
+                </div>
+                <h3>เกิดข้อผิดพลาด</h3>
+                <p>{error}</p>
+                <button 
+                  className="btn btn-primary"
+                  onClick={() => window.location.reload()}
+                >
+                  <i className="fas fa-redo"></i>
+                  ลองใหม่
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <>
@@ -206,10 +304,17 @@ const Personnel: React.FC = () => {
                           >
                             <div className="modern-personnel-card">
                               <div className="card-image">
-                                <img src={instructor.avatar_file_id
-                                  ? `${apiUrl}/api/accounts/instructors/avatar/${instructor.avatar_file_id}`
-                                  : "/assets/img/userdefault.png"
-                                } alt={`${instructor.first_name} ${instructor.last_name}`} />
+                                <img 
+                                  src={getAvatarUrl(instructor)}
+                                  alt={`${instructor.first_name} ${instructor.last_name}`}
+                                  onError={(e) => {
+                                    // ป้องกันไม่ให้แสดง error ใน console
+                                    e.preventDefault();
+                                    if (instructor.avatar_file_id) {
+                                      handleAvatarError(instructor.avatar_file_id);
+                                    }
+                                  }}
+                                />
                                 <div className="card-overlay">
                                   <button 
                                     className="view-details-btn"
@@ -270,10 +375,17 @@ const Personnel: React.FC = () => {
                   >
                     <div className="modern-personnel-card">
                       <div className="card-image">
-                        <img src={instructor.avatar_file_id
-                          ? `${apiUrl}/api/accounts/instructors/avatar/${instructor.avatar_file_id}`
-                          : "/assets/img/userdefault.png"
-                        } alt={`${instructor.first_name} ${instructor.last_name}`} />
+                        <img 
+                          src={getAvatarUrl(instructor)}
+                          alt={`${instructor.first_name} ${instructor.last_name}`}
+                          onError={(e) => {
+                            // ป้องกันไม่ให้แสดง error ใน console
+                            e.preventDefault();
+                            if (instructor.avatar_file_id) {
+                              handleAvatarError(instructor.avatar_file_id);
+                            }
+                          }}
+                        />
                         <div className="card-overlay">
                           <button 
                             className="view-details-btn"
@@ -368,10 +480,17 @@ const Personnel: React.FC = () => {
                 <div className="col-lg-4 col-md-5">
                   <div className="personnel-profile">
                     <div className="profile-image">
-                      <img src={selectedInstructor.avatar_file_id
-                        ? `${apiUrl}/api/accounts/instructors/avatar/${selectedInstructor.avatar_file_id}`
-                        : "public/assets/img/userdefault.png"
-                      } alt={`${selectedInstructor.first_name} ${selectedInstructor.last_name}`} />
+                      <img 
+                        src={getAvatarUrl(selectedInstructor)}
+                        alt={`${selectedInstructor.first_name} ${selectedInstructor.last_name}`}
+                        onError={(e) => {
+                          // ป้องกันไม่ให้แสดง error ใน console
+                          e.preventDefault();
+                          if (selectedInstructor.avatar_file_id) {
+                            handleAvatarError(selectedInstructor.avatar_file_id);
+                          }
+                        }}
+                      />
                     </div>
                     <div className="profile-info">
                       <div className="info-item">

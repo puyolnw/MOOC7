@@ -1,0 +1,599 @@
+/* ✅ Lesson Instructors Custom CSS - ป้องกัน CSS Override */
+
+/* Container */
+html body div.lesson-instructors-container.lesson-instructors-container.lesson-instructors-container {
+  padding: 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
+}
+
+.lesson-instructors-container {
+  padding: 0;
+  margin: 0;
+  background: transparent;
+}
+
+/* Header */
+html body div.lesson-instructors-header.lesson-instructors-header.lesson-instructors-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  margin-bottom: 2rem !important;
+  padding: 1.5rem !important;
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%) !important;
+  border-radius: 12px !important;
+  border: 1px solid #e9ecef !important;
+}
+
+.lesson-instructors-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  border-radius: 12px;
+  border: 1px solid #e9ecef;
+}
+
+html body div.lesson-instructors-header-content.lesson-instructors-header-content.lesson-instructors-header-content {
+  display: flex !important;
+  align-items: center !important;
+  flex: 1 !important;
+}
+
+.lesson-instructors-header-content {
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+
+html body div.lesson-instructors-icon.lesson-instructors-icon.lesson-instructors-icon {
+  width: 50px !important;
+  height: 50px !important;
+  background: linear-gradient(135deg, #4caf50, #66bb6a) !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin-right: 1rem !important;
+  color: white !important;
+  font-size: 1.3rem !important;
+}
+
+.lesson-instructors-icon {
+  width: 50px;
+  height: 50px;
+  background: linear-gradient(135deg, #4caf50, #66bb6a);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 1rem;
+  color: white;
+  font-size: 1.3rem;
+}
+
+html body div.lesson-instructors-text.lesson-instructors-text.lesson-instructors-text {
+  flex: 1 !important;
+}
+
+.lesson-instructors-text {
+  flex: 1;
+}
+
+html body h2.lesson-instructors-title.lesson-instructors-title.lesson-instructors-title {
+  font-size: 1.3rem !important;
+  font-weight: 600 !important;
+  color: #2c3e50 !important;
+  margin-bottom: 0.25rem !important;
+}
+
+.lesson-instructors-title {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 0.25rem;
+}
+
+html body p.lesson-instructors-subtitle.lesson-instructors-subtitle.lesson-instructors-subtitle {
+  font-size: 0.9rem !important;
+  color: #6c757d !important;
+  margin: 0 !important;
+}
+
+.lesson-instructors-subtitle {
+  font-size: 0.9rem;
+  color: #6c757d;
+  margin: 0;
+}
+
+html body div.lesson-instructors-count.lesson-instructors-count.lesson-instructors-count {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  background: linear-gradient(135deg, #4caf50, #66bb6a) !important;
+  color: white !important;
+  padding: 1rem !important;
+  border-radius: 12px !important;
+  min-width: 80px !important;
+}
+
+.lesson-instructors-count {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: linear-gradient(135deg, #4caf50, #66bb6a);
+  color: white;
+  padding: 1rem;
+  border-radius: 12px;
+  min-width: 80px;
+}
+
+html body span.lesson-instructors-count-number.lesson-instructors-count-number.lesson-instructors-count-number {
+  font-size: 1.5rem !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+}
+
+.lesson-instructors-count-number {
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+html body span.lesson-instructors-count-label.lesson-instructors-count-label.lesson-instructors-count-label {
+  font-size: 0.8rem !important;
+  font-weight: 500 !important;
+  opacity: 0.9 !important;
+}
+
+.lesson-instructors-count-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  opacity: 0.9;
+}
+
+/* Grid */
+html body div.lesson-instructors-grid.lesson-instructors-grid.lesson-instructors-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)) !important;
+  gap: 1.5rem !important;
+}
+
+.lesson-instructors-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+/* Instructor Card */
+html body div.lesson-instructor-card.lesson-instructor-card.lesson-instructor-card {
+  background: #ffffff !important;
+  border: 1px solid #e9ecef !important;
+  border-radius: 16px !important;
+  overflow: hidden !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
+  position: relative !important;
+}
+
+.lesson-instructor-card {
+  background: #ffffff;
+  border: 1px solid #e9ecef;
+  border-radius: 16px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  position: relative;
+}
+
+html body div.lesson-instructor-card:hover.lesson-instructor-card:hover.lesson-instructor-card:hover {
+  transform: translateY(-4px) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1) !important;
+  border-color: #4caf50 !important;
+}
+
+.lesson-instructor-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  border-color: #4caf50;
+}
+
+html body div.lesson-instructor-card-inner.lesson-instructor-card-inner.lesson-instructor-card-inner {
+  padding: 1.5rem !important;
+  position: relative !important;
+  z-index: 2 !important;
+}
+
+.lesson-instructor-card-inner {
+  padding: 1.5rem;
+  position: relative;
+  z-index: 2;
+}
+
+/* Avatar Section */
+html body div.lesson-instructor-avatar-section.lesson-instructor-avatar-section.lesson-instructor-avatar-section {
+  text-align: center !important;
+  margin-bottom: 1rem !important;
+}
+
+.lesson-instructor-avatar-section {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+html body div.lesson-instructor-avatar-container.lesson-instructor-avatar-container.lesson-instructor-avatar-container {
+  position: relative !important;
+  display: inline-block !important;
+}
+
+.lesson-instructor-avatar-container {
+  position: relative;
+  display: inline-block;
+}
+
+html body img.lesson-instructor-avatar.lesson-instructor-avatar.lesson-instructor-avatar {
+  width: 80px !important;
+  height: 80px !important;
+  border-radius: 50% !important;
+  object-fit: cover !important;
+  border: 3px solid #ffffff !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+}
+
+.lesson-instructor-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+html body div.lesson-instructor-verified-badge.lesson-instructor-verified-badge.lesson-instructor-verified-badge {
+  position: absolute !important;
+  bottom: 0 !important;
+  right: 0 !important;
+  width: 24px !important;
+  height: 24px !important;
+  background: linear-gradient(135deg, #4caf50, #66bb6a) !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: white !important;
+  font-size: 0.7rem !important;
+  border: 2px solid #ffffff !important;
+}
+
+.lesson-instructor-verified-badge {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 24px;
+  height: 24px;
+  background: linear-gradient(135deg, #4caf50, #66bb6a);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 0.7rem;
+  border: 2px solid #ffffff;
+}
+
+/* Info Section */
+html body div.lesson-instructor-info-section.lesson-instructor-info-section.lesson-instructor-info-section {
+  text-align: center !important;
+}
+
+.lesson-instructor-info-section {
+  text-align: center;
+}
+
+html body div.lesson-instructor-header.lesson-instructor-header.lesson-instructor-header {
+  margin-bottom: 1rem !important;
+}
+
+.lesson-instructor-header {
+  margin-bottom: 1rem;
+}
+
+html body h3.lesson-instructor-name.lesson-instructor-name.lesson-instructor-name {
+  font-size: 1.1rem !important;
+  font-weight: 600 !important;
+  color: #2c3e50 !important;
+  margin-bottom: 0.25rem !important;
+}
+
+.lesson-instructor-name {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 0.25rem;
+}
+
+html body p.lesson-instructor-position.lesson-instructor-position.lesson-instructor-position {
+  font-size: 0.9rem !important;
+  color: #4caf50 !important;
+  font-weight: 500 !important;
+  margin: 0 !important;
+}
+
+.lesson-instructor-position {
+  font-size: 0.9rem;
+  color: #4caf50;
+  font-weight: 500;
+  margin: 0;
+}
+
+/* Bio Section */
+html body div.lesson-instructor-bio-section.lesson-instructor-bio-section.lesson-instructor-bio-section {
+  margin-bottom: 1rem !important;
+}
+
+.lesson-instructor-bio-section {
+  margin-bottom: 1rem;
+}
+
+html body p.lesson-instructor-bio.lesson-instructor-bio.lesson-instructor-bio {
+  font-size: 0.85rem !important;
+  color: #6c757d !important;
+  line-height: 1.5 !important;
+  margin: 0 !important;
+}
+
+.lesson-instructor-bio {
+  font-size: 0.85rem;
+  color: #6c757d;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Social Section */
+html body div.lesson-instructor-social-section.lesson-instructor-social-section.lesson-instructor-social-section {
+  display: flex !important;
+  justify-content: center !important;
+}
+
+.lesson-instructor-social-section {
+  display: flex;
+  justify-content: center;
+}
+
+html body div.lesson-instructor-social-links.lesson-instructor-social-links.lesson-instructor-social-links {
+  display: flex !important;
+  gap: 8px !important;
+}
+
+.lesson-instructor-social-links {
+  display: flex;
+  gap: 8px;
+}
+
+html body a.lesson-instructor-social-link.lesson-instructor-social-link.lesson-instructor-social-link {
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-decoration: none !important;
+  transition: all 0.3s ease !important;
+  font-size: 0.8rem !important;
+}
+
+.lesson-instructor-social-link {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  font-size: 0.8rem;
+}
+
+html body a.lesson-instructor-social-email.lesson-instructor-social-email.lesson-instructor-social-email {
+  background: #e3f2fd !important;
+  color: #1976d2 !important;
+}
+
+.lesson-instructor-social-email {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+html body a.lesson-instructor-social-phone.lesson-instructor-social-phone.lesson-instructor-social-phone {
+  background: #e8f5e8 !important;
+  color: #2e7d32 !important;
+}
+
+.lesson-instructor-social-phone {
+  background: #e8f5e8;
+  color: #2e7d32;
+}
+
+html body a.lesson-instructor-social-linkedin.lesson-instructor-social-linkedin.lesson-instructor-social-linkedin {
+  background: #e3f2fd !important;
+  color: #0d47a1 !important;
+}
+
+.lesson-instructor-social-linkedin {
+  background: #e3f2fd;
+  color: #0d47a1;
+}
+
+html body a.lesson-instructor-social-website.lesson-instructor-social-website.lesson-instructor-social-website {
+  background: #fff3e0 !important;
+  color: #f57c00 !important;
+}
+
+.lesson-instructor-social-website {
+  background: #fff3e0;
+  color: #f57c00;
+}
+
+html body a.lesson-instructor-social-link:hover.lesson-instructor-social-link:hover.lesson-instructor-social-link:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2) !important;
+  text-decoration: none !important;
+}
+
+.lesson-instructor-social-link:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  text-decoration: none;
+}
+
+/* Hover Overlay */
+html body div.lesson-instructor-hover-overlay.lesson-instructor-hover-overlay.lesson-instructor-hover-overlay {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.9), rgba(102, 187, 106, 0.9)) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  opacity: 0 !important;
+  transition: opacity 0.3s ease !important;
+  border-radius: 16px !important;
+}
+
+.lesson-instructor-hover-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.9), rgba(102, 187, 106, 0.9));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  border-radius: 16px;
+}
+
+html body div.lesson-instructor-card:hover .lesson-instructor-hover-overlay.lesson-instructor-card:hover .lesson-instructor-hover-overlay.lesson-instructor-card:hover .lesson-instructor-hover-overlay {
+  opacity: 1 !important;
+}
+
+.lesson-instructor-card:hover .lesson-instructor-hover-overlay {
+  opacity: 1;
+}
+
+html body div.lesson-instructor-overlay-content.lesson-instructor-overlay-content.lesson-instructor-overlay-content {
+  text-align: center !important;
+  color: white !important;
+}
+
+.lesson-instructor-overlay-content {
+  text-align: center;
+  color: white;
+}
+
+html body div.lesson-instructor-overlay-content i.lesson-instructor-overlay-content i.lesson-instructor-overlay-content i {
+  font-size: 2rem !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.lesson-instructor-overlay-content i {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+html body div.lesson-instructor-overlay-content span.lesson-instructor-overlay-content span.lesson-instructor-overlay-content span {
+  font-size: 0.9rem !important;
+  font-weight: 500 !important;
+}
+
+.lesson-instructor-overlay-content span {
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+/* Empty State */
+html body div.lesson-instructors-empty-state.lesson-instructors-empty-state.lesson-instructors-empty-state {
+  text-align: center !important;
+  padding: 3rem 1rem !important;
+  color: #6c757d !important;
+}
+
+.lesson-instructors-empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #6c757d;
+}
+
+html body div.lesson-instructors-empty-icon.lesson-instructors-empty-icon.lesson-instructors-empty-icon {
+  font-size: 4rem !important;
+  margin-bottom: 1rem !important;
+  color: #dee2e6 !important;
+}
+
+.lesson-instructors-empty-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  color: #dee2e6;
+}
+
+html body h3.lesson-instructors-empty-title.lesson-instructors-empty-title.lesson-instructors-empty-title {
+  font-size: 1.2rem !important;
+  font-weight: 600 !important;
+  color: #495057 !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.lesson-instructors-empty-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 0.5rem;
+}
+
+html body p.lesson-instructors-empty-description.lesson-instructors-empty-description.lesson-instructors-empty-description {
+  font-size: 1rem !important;
+  color: #6c757d !important;
+  margin: 0 !important;
+}
+
+.lesson-instructors-empty-description {
+  font-size: 1rem;
+  color: #6c757d;
+  margin: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  html body div.lesson-instructors-header.lesson-instructors-header.lesson-instructors-header {
+    flex-direction: column !important;
+    text-align: center !important;
+    gap: 1rem !important;
+  }
+  
+  .lesson-instructors-header {
+    flex-direction: column;
+    text-align: center;
+    gap: 1rem;
+  }
+  
+  html body div.lesson-instructors-grid.lesson-instructors-grid.lesson-instructors-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+  
+  .lesson-instructors-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}
+
+/* Override Bootstrap and other CSS */
+html body div.lesson-instructors-container * {
+  box-sizing: border-box !important;
+}

@@ -173,7 +173,6 @@ const CourseArea = () => {
               startOffset={startOffset}
               endOffset={Math.min(endOffset, totalItems)}
               totalItems={totalItems}
-              setCourses={setCourses}
               handleTabClick={handleTabClick}
               activeTab={activeTab}
               searchQuery={searchQuery}
