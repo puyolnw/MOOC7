@@ -1405,7 +1405,7 @@ const LessonArea = ({ courseId, subjectId }: LessonAreaProps) => {
                     if (token) {
                         console.log('🚀 Calling fetchScoreItems directly with subjectId:', subject.subject_id);
                         const scoreResponse = await axios.get(
-                            `${API_URL}/api/subjects/${subject.subject_id}/scores-hierarchical`,
+                            `${API_URL}/api/learn/subject/${subject.subject_id}/scores-hierarchical`,
                             {
                                 headers: { Authorization: `Bearer ${token}` }
                             }

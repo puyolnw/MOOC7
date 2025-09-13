@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { toast } from "react-toastify";
+import axios from "axios";
 import "./InstructorGrading.css";
 
 interface Question {
@@ -28,6 +29,8 @@ interface Answer {
     question_title: string;
     question_type: string;
     question_max_score: number;
+    upload_time?: string;
+    updated_time?: string;
     attachments: Attachment[];
 }
 
@@ -52,6 +55,7 @@ interface Attempt {
     answers: Answer[];
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Subject {
     subject_id: number;
     subject_name: string;
@@ -70,41 +74,11 @@ interface SubjectSummary {
     is_home_faculty?: boolean;
 }
 
-// Mock data for instructor grading
-const mockSubjects: Subject[] = [
-    {
-        subject_id: 1,
-        subject_name: "การเขียนโปรแกรมคอมพิวเตอร์เบื้องต้น",
-        subject_code: "CS101",
-        department_id: 1
-    },
-    {
-        subject_id: 2,
-        subject_name: "โครงสร้างข้อมูลและอัลกอริทึม",
-        subject_code: "CS102",
-        department_id: 1
-    },
-    {
-        subject_id: 3,
-        subject_name: "การออกแบบและพัฒนาเว็บไซต์",
-        subject_code: "CS103",
-        department_id: 1
-    },
-    {
-        subject_id: 4,
-        subject_name: "ฐานข้อมูลและการจัดการข้อมูล",
-        subject_code: "CS104",
-        department_id: 2
-    },
-    {
-        subject_id: 5,
-        subject_name: "การเขียนโปรแกรมเชิงวัตถุ",
-        subject_code: "CS105",
-        department_id: 2
-    }
-];
+// Mock data for instructor grading (using Special Quiz API instead)
 
-const mockAttempts: Attempt[] = [
+// Mock data removed - using Special Quiz API instead
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const _mockAttempts: Attempt[] = [
     {
         attempt_id: 1,
         user_id: 1001,
@@ -318,7 +292,9 @@ const mockAttempts: Attempt[] = [
     }
 ];
 
-const mockQuestions: Question[] = [
+// Mock data removed - using Special Quiz API instead
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const _mockQuestions: Question[] = [
     {
         question_id: 1,
         title: "อธิบายความหมายของการเขียนโปรแกรม",
@@ -428,6 +404,71 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
 
     const apiURL = import.meta.env.VITE_API_URL;
 
+    // ฟังก์ชันดึงข้อมูล Special Quiz attempts จาก API จริง
+    const fetchSpecialQuizAttempts = async () => {
+        try {
+            console.log("🔍 [InstructorGrading] Fetching special quiz attempts...");
+            console.log("🔍 [InstructorGrading] API URL:", `${apiURL}/api/special-quiz/attempts/instructor`);
+            console.log("🔍 [InstructorGrading] Auth token:", localStorage.getItem("token") ? "Present" : "Missing");
+            
+            const response = await axios.get(
+                `${apiURL}/api/special-quiz/attempts/instructor`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem("token")}`,
+                    },
+                }
+            );
+
+            console.log("🔍 [InstructorGrading] Raw response:", response);
+            console.log("🔍 [InstructorGrading] Response data:", response.data);
+
+            if (response.data.success) {
+                console.log("✅ [InstructorGrading] Special quiz attempts loaded:", response.data.attempts);
+                console.log("📊 [InstructorGrading] Number of attempts:", response.data.attempts?.length || 0);
+                return response.data.attempts || [];
+            } else {
+                console.error("❌ [InstructorGrading] Failed to fetch attempts:", response.data.message);
+                throw new Error(response.data.message || "Failed to fetch attempts");
+            }
+        } catch (error) {
+            console.error("❌ [InstructorGrading] Error fetching special quiz attempts:", error);
+            if (axios.isAxiosError(error)) {
+                console.error("❌ [InstructorGrading] Response status:", error.response?.status);
+                console.error("❌ [InstructorGrading] Response data:", error.response?.data);
+            }
+            throw error;
+        }
+    };
+
+    // ฟังก์ชันส่งคะแนนไปยัง Special Quiz API
+    const submitGradeToAPI = async (attemptId: number, answers: any[]) => {
+        try {
+            console.log("📤 [InstructorGrading] Submitting grade for attempt:", attemptId, answers);
+            const response = await axios.post(
+                `${apiURL}/api/special-quiz/attempt/${attemptId}/grade`,
+                { answers },
+                {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem("token")}`,
+                        "Content-Type": "application/json",
+                    },
+                }
+            );
+
+            if (response.data.success) {
+                console.log("✅ [InstructorGrading] Grade submitted successfully:", response.data);
+                return response.data;
+            } else {
+                console.error("❌ [InstructorGrading] Failed to submit grade:", response.data.message);
+                throw new Error(response.data.message || "Failed to submit grade");
+            }
+        } catch (error) {
+            console.error("❌ [InstructorGrading] Error submitting grade:", error);
+            throw error;
+        }
+    };
+
     // ฟังก์ชันหาคำถามจาก question_id
     const findQuestion = (questionId: number): Question | undefined => {
         return questions.find((q) => q.question_id === questionId);
@@ -443,19 +484,22 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
             setLoading(true);
             setError(null);
 
-            // Simulate API delay
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
             if (isPopup && selectedAttemptId) {
-                // โหมด Popup: ดึงข้อมูล attempt เฉพาะ
+                // โหมด Popup: ดึงข้อมูล attempt เฉพาะจาก Special Quiz API
+                console.log("🔍 [InstructorGrading] Loading popup mode for attempt:", selectedAttemptId);
                 setCurrentAttemptId(selectedAttemptId);
-                const attempt = mockAttempts.find(a => a.attempt_id === selectedAttemptId);
+                
+                // ดึงข้อมูล attempts จาก Special Quiz API
+                const attempts = await fetchSpecialQuizAttempts();
+                const attempt = attempts.find((a: any) => a.attempt_id === selectedAttemptId);
                 
                 if (!attempt || !attempt.answers) {
-                    setError("ข้อมูลการทำแบบทดสอบไม่ถูกต้อง");
+                    setError("ไม่พบข้อมูลการทำแบบทดสอบ หรือข้อมูลไม่ครบถ้วน");
                     setLoading(false);
                     return;
                 }
+
+                console.log("✅ [InstructorGrading] Loaded attempt data:", attempt);
 
                 setAttemptAnswers(attempt.answers);
                 setStudentInfo({
@@ -464,18 +508,28 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
                     attemptDate: new Date(attempt.end_time).toLocaleString(),
                 });
 
-                // Set questions based on quiz_id
-                const quizQuestions = mockQuestions.filter(q => 
-                    [1, 2, 3, 4].includes(q.question_id) // Questions for quiz 1
-                );
-                setQuestions(quizQuestions);
-                setQuizTitle(attempt.quiz_title);
+                // สร้าง questions จากข้อมูลใน attempt.answers
+                const uniqueQuestions: Question[] = [];
+                attempt.answers.forEach((answer: any) => {
+                    const existingQuestion = uniqueQuestions.find(q => q.question_id === answer.question_id);
+                    if (!existingQuestion) {
+                        uniqueQuestions.push({
+                            question_id: answer.question_id,
+                            title: answer.question_title || `คำถามที่ ${answer.question_id}`,
+                            type: answer.question_type || "FB",
+                            score: answer.question_max_score || 10,
+                        });
+                    }
+                });
+
+                setQuestions(uniqueQuestions);
+                setQuizTitle(attempt.quiz_title || `แบบทดสอบ #${attempt.quiz_id}`);
 
                 const initialScores: { [key: number]: number } = {};
                 const initialIsCorrect: { [key: number]: boolean } = {};
                 const initialFeedback: { [key: number]: string } = {};
 
-                attempt.answers.forEach((answer) => {
+                attempt.answers.forEach((answer: any) => {
                     initialScores[answer.question_id] = answer.score_earned || 0;
                     initialIsCorrect[answer.question_id] = answer.is_correct || false;
                     initialFeedback[answer.question_id] = "";
@@ -487,7 +541,7 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
 
                 let total = 0;
                 let maxTotal = 0;
-                quizQuestions.forEach((q: Question) => {
+                uniqueQuestions.forEach((q: Question) => {
                     const questionScore = getQuestionMaxScore(q);
                     maxTotal += questionScore;
                     if (initialScores[q.question_id] !== undefined) {
@@ -499,42 +553,63 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
                 setTotalMaxScore(maxTotal);
                 setCurrentView('grading');
             } else {
-                // โหมด Non-Popup: ดึงรายวิชาทั้งหมดที่อาจารย์สอน
+                // โหมด Non-Popup: ดึงรายวิชาทั้งหมดที่อาจารย์สอนจาก Special Quiz API
                 setInstructorFaculty("คณะวิทยาการคอมพิวเตอร์");
 
-                // สร้าง SubjectSummary จาก mock data
-                const subjectSummaries: SubjectSummary[] = mockSubjects.map((subject: Subject) => {
-                    // หางานที่รอตรวจสำหรับรายวิชานี้
-                    const subjectAttempts = mockAttempts.filter((attempt: Attempt) =>
-                        attempt.subject_id === subject.subject_id
-                    );
+                try {
+                    const attempts = await fetchSpecialQuizAttempts();
+                    console.log("✅ [InstructorGrading] All attempts loaded:", attempts);
+
+                    if (!attempts || attempts.length === 0) {
+                        console.log("ℹ️ [InstructorGrading] No attempts found");
+                        setSubjectSummaries([]);
+                        setError("ไม่มีงานรอตรวจในขณะนี้ กรุณาตรวจสอบ:\n• นักเรียนได้ส่งแบบทดสอบแบบอัตนัยแล้วหรือยัง\n• รายวิชาที่ได้รับมอบหมายให้สอน\n• การเชื่อมโยงระหว่าง quiz กับ subject");
+                        return;
+                    }
+
+                    // จัดกลุ่ม attempts ตาม subject
+                    const subjectGroups: {[subjectId: number]: any} = {};
                     
-                    const pendingAttempts = subjectAttempts.filter(attempt => 
-                        attempt.score === -1 || attempt.score === undefined
-                    );
+                    attempts.forEach((attempt: any) => {
+                        const subjectId = attempt.subject_id || 999;
+                        const subjectTitle = attempt.subject_title || `รายวิชา #${subjectId}`;
+                        const subjectCode = attempt.subject_code || `CODE${subjectId}`;
+                        
+                        if (!subjectGroups[subjectId]) {
+                            subjectGroups[subjectId] = {
+                                subject_id: subjectId,
+                                subject_title: subjectTitle,
+                                subject_code: subjectCode,
+                                pending_count: 0,
+                                attempts: [],
+                                department_name: "วิทยาการคอมพิวเตอร์",
+                                faculty: "คณะวิทยาการคอมพิวเตอร์",
+                                is_home_faculty: true
+                            };
+                        }
+                        subjectGroups[subjectId].attempts.push(attempt);
+                        subjectGroups[subjectId].pending_count++;
+                    });
 
-                    const isHomeFaculty = subject.department_id === 1; // CS subjects
-
-                    return {
-                        subject_id: subject.subject_id,
-                        subject_title: subject.subject_name,
-                        subject_code: subject.subject_code,
-                        pending_count: pendingAttempts.length,
-                        attempts: subjectAttempts,
-                        department_name: subject.department_id === 1 ? "วิทยาการคอมพิวเตอร์" : "เทคโนโลยีสารสนเทศ",
-                        faculty: subject.department_id === 1 ? "คณะวิทยาการคอมพิวเตอร์" : "คณะเทคโนโลยีสารสนเทศ",
-                        is_home_faculty: isHomeFaculty
-                    };
-                });
-
-                // เรียงลำดับ: คณะเดียวกันก่อน แล้วเรียงตามจำนวนงานรอตรวจ
-                subjectSummaries.sort((a, b) => {
-                    if (a.is_home_faculty && !b.is_home_faculty) return -1;
-                    if (!a.is_home_faculty && b.is_home_faculty) return 1;
-                    return b.pending_count - a.pending_count;
-                });
-
-                setSubjectSummaries(subjectSummaries);
+                    const subjects = Object.values(subjectGroups);
+                    console.log("📊 [InstructorGrading] Subject summaries:", subjects);
+                    console.log("📊 [InstructorGrading] Total subjects with pending work:", subjects.length);
+                    
+                    // เรียงลำดับตามจำนวนงานรอตรวจ
+                    subjects.sort((a: any, b: any) => b.pending_count - a.pending_count);
+                    
+                    setSubjectSummaries(subjects);
+                    
+                    // แสดง summary ใน console
+                    subjects.forEach((subject: any) => {
+                        console.log(`📋 [InstructorGrading] ${subject.subject_code}: ${subject.pending_count} งานรอตรวจ`);
+                    });
+                    
+                } catch (error) {
+                    console.error("❌ [InstructorGrading] Error loading subjects:", error);
+                    setError("ไม่สามารถโหลดข้อมูลรายวิชาได้: " + (error instanceof Error ? error.message : 'Unknown error'));
+                    setSubjectSummaries([]);
+                }
             }
         } catch (error) {
             console.error("Error loading data:", error);
@@ -588,7 +663,7 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
         }));
     };
 
-    // ฟังก์ชันบันทึกการให้คะแนน
+    // ฟังก์ชันบันทึกการให้คะแนน - ใช้ Special Quiz API จริง
     const handleSaveGrading = async () => {
         const attemptIdToUse = selectedAttemptId || currentAttemptId;
         if (!attemptIdToUse) {
@@ -598,15 +673,27 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
         try {
             setIsSaving(true);
 
-            // Simulate API delay
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            // เตรียมข้อมูลคะแนนสำหรับส่ง API
+            const answersToGrade = attemptAnswers.map(answer => ({
+                question_id: answer.question_id,
+                score_earned: scores[answer.question_id] || 0,
+                is_correct: isCorrect[answer.question_id] || false,
+            }));
 
-            // Mock successful grading
-            toast.success("บันทึกการให้คะแนนเรียบร้อยแล้ว");
+            console.log("📤 [InstructorGrading] Submitting grades:", {
+                attemptId: attemptIdToUse,
+                answers: answersToGrade
+            });
+
+            // เรียก API ส่งคะแนน
+            const result = await submitGradeToAPI(attemptIdToUse, answersToGrade);
+
+            toast.success("✅ บันทึกการให้คะแนนเรียบร้อยแล้ว");
+            console.log("✅ [InstructorGrading] Grade submission successful:", result);
 
             if (onGraded && attemptIdToUse !== null && attemptIdToUse !== undefined) {
                 const totalScore = Object.values(scores).reduce((sum, score) => sum + score, 0);
-                const passed = totalScore >= Math.ceil(totalMaxScore * 0.65);
+                const passed = result.passed || (totalScore >= Math.ceil(totalMaxScore * 0.65));
                 onGraded(attemptIdToUse, passed);
             }
 
@@ -618,8 +705,9 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
                 loadData();
             }
         } catch (error) {
-            console.error("Error saving grading:", error);
-            toast.error("เกิดข้อผิดพลาดในการบันทึกการให้คะแนน");
+            console.error("❌ [InstructorGrading] Error saving grading:", error);
+            const errorMessage = error instanceof Error ? error.message : 'เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ';
+            toast.error(`เกิดข้อผิดพลาดในการบันทึกการให้คะแนน: ${errorMessage}`);
         } finally {
             setIsSaving(false);
         }
@@ -643,10 +731,8 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
 
         for (const attempt of attempts) {
             try {
-                // Use mock questions based on quiz_id
-                const quizQuestions = mockQuestions.filter(q => 
-                    attempt.quiz_id === 1 ? [1, 2, 3, 4].includes(q.question_id) : [5, 6, 7, 8].includes(q.question_id)
-                );
+                // Create questions from attempt data (no longer using mock)
+                const quizQuestions: Question[] = [];
                 
                 const initialScores: {[questionId: number]: number} = {};
                 const initialFeedback: {[questionId: number]: string} = {};
@@ -693,7 +779,7 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
         }));
     };
 
-    // ฟังก์ชันบันทึกการตรวจด่วน
+    // ฟังก์ชันบันทึกการตรวจด่วน - ใช้ Special Quiz API จริง
     const handleQuickSave = async (attemptId: number) => {
         const attemptData = quickGradingData[attemptId];
         if (!attemptData) return;
@@ -701,17 +787,27 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
         try {
             setQuickGradingSaving(prev => ({ ...prev, [attemptId]: true }));
 
-            // Simulate API delay
-            await new Promise(resolve => setTimeout(resolve, 1500));
+            // เตรียมข้อมูลคะแนนสำหรับส่ง API
+            const answersToGrade = attemptData.questions.map(question => ({
+                question_id: question.question_id,
+                score_earned: attemptData.scores[question.question_id] || 0,
+                is_correct: (attemptData.scores[question.question_id] || 0) > 0,
+            }));
 
-            // Mock successful grading
-            toast.success("บันทึกการให้คะแนนเรียบร้อยแล้ว");
+            console.log("📤 [InstructorGrading] Quick save for attempt:", attemptId, answersToGrade);
+
+            // เรียก API ส่งคะแนน
+            const result = await submitGradeToAPI(attemptId, answersToGrade);
+
+            toast.success("✅ บันทึกการให้คะแนนเรียบร้อยแล้ว");
+            console.log("✅ [InstructorGrading] Quick save successful:", result);
             
             // รีเฟรชข้อมูล
             loadData();
         } catch (error) {
-            console.error("Error saving quick grading:", error);
-            toast.error("เกิดข้อผิดพลาดในการบันทึกการให้คะแนน");
+            console.error("❌ [InstructorGrading] Error saving quick grading:", error);
+            const errorMessage = error instanceof Error ? error.message : 'เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ';
+            toast.error(`เกิดข้อผิดพลาดในการบันทึกการให้คะแนน: ${errorMessage}`);
         } finally {
             setQuickGradingSaving(prev => ({ ...prev, [attemptId]: false }));
         }
@@ -722,8 +818,9 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
         try {
             setLoading(true);
 
-            // Find attempt from mock data
-            const attempt = mockAttempts.find(a => a.attempt_id === attemptId);
+            // Find attempt from API data (no longer using mock)
+            const attempts = await fetchSpecialQuizAttempts();
+            const attempt = attempts.find((a: any) => a.attempt_id === attemptId);
             
             if (!attempt) {
                 toast.error("ไม่พบข้อมูลการทำแบบทดสอบ");
@@ -739,10 +836,8 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
                 attemptDate: new Date(attempt.end_time).toLocaleString(),
             });
 
-            // Set questions based on quiz_id
-            const quizQuestions = mockQuestions.filter(q => 
-                attempt.quiz_id === 1 ? [1, 2, 3, 4].includes(q.question_id) : [5, 6, 7, 8].includes(q.question_id)
-            );
+            // Create questions from attempt data
+            const quizQuestions: Question[] = [];
             setQuestions(quizQuestions);
             setQuizTitle(attempt.quiz_title);
 
@@ -750,7 +845,7 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
             const initialIsCorrect: { [key: number]: boolean } = {};
             const initialFeedback: { [key: number]: string } = {};
 
-            attempt.answers.forEach((answer) => {
+                attempt.answers.forEach((answer: any) => {
                 initialScores[answer.question_id] = answer.score_earned || 0;
                 initialIsCorrect[answer.question_id] = answer.is_correct || false;
                 initialFeedback[answer.question_id] = "";
@@ -927,19 +1022,70 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
                                             คะแนนเต็ม: {getQuestionMaxScore(question)} คะแนน
                                         </span>
                                     </div>
-                                    <div className="card-body">
-                                        <div className="question-text mb-3">
-                                            <h6>คำถาม:</h6>
-                                            <p>{question.title}</p>
-                                        </div>
+                    <div className="card-body">
+                        <div className="question-text mb-3">
+                            <div className="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6>คำถาม:</h6>
+                                    <p className="mb-0">{question.title}</p>
+                                </div>
+                                <div className="text-end">
+                                    <div className="badge bg-secondary">
+                                        คำถามที่ {index + 1} จาก {questions.length}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
 
                                         <div className="answer-text mb-3">
-                                            <h6>คำตอบของผู้เรียน:</h6>
-                                            <div className="p-3 bg-light rounded">
+                                            <div className="d-flex justify-content-between align-items-center mb-2">
+                                                <h6 className="mb-0">คำตอบของผู้เรียน:</h6>
+                                                {answer.upload_time && (
+                                                    <small className="text-muted">
+                                                        <i className="fas fa-clock me-1"></i>
+                                                        ส่งเมื่อ: {new Date(answer.upload_time).toLocaleString('th-TH')}
+                                                    </small>
+                                                )}
+                                            </div>
+                                            <div className="answer-display-box p-3 border rounded position-relative" 
+                                                 style={{
+                                                     backgroundColor: '#f8f9fa',
+                                                     border: '2px solid #e9ecef',
+                                                     minHeight: '80px'
+                                                 }}>
                                                 {answer.text_answer ? (
-                                                    <p className="mb-0">{answer.text_answer}</p>
+                                                    <div>
+                                                        <div className="answer-content" style={{
+                                                            fontSize: '0.95rem',
+                                                            lineHeight: '1.6',
+                                                            whiteSpace: 'pre-wrap',
+                                                            wordBreak: 'break-word'
+                                                        }}>
+                                                            {answer.text_answer}
+                                                        </div>
+                                                        <div className="answer-info mt-2 pt-2 border-top">
+                                                            <small className="text-muted">
+                                                                <i className="fas fa-info-circle me-1"></i>
+                                                                ความยาว: {answer.text_answer.length} ตัวอักษร
+                                                            </small>
+                                                        </div>
+                                                    </div>
                                                 ) : (
-                                                    <p className="text-muted mb-0">ไม่มีคำตอบข้อความ</p>
+                                                    <div className="text-center py-3">
+                                                        <i className="fas fa-exclamation-triangle text-warning me-2"></i>
+                                                        <span className="text-muted">ไม่มีคำตอบข้อความ</span>
+                                                    </div>
+                                                )}
+                                                
+                                                {/* ป้าย "ล่าสุด" สำหรับคำตอบที่ส่งล่าสุด */}
+                                                {answer.upload_time && (
+                                                    <div className="latest-badge position-absolute top-0 end-0" 
+                                                         style={{transform: 'translate(10px, -10px)'}}>
+                                                        <span className="badge bg-success">
+                                                            <i className="fas fa-star me-1"></i>
+                                                            ล่าสุด
+                                                        </span>
+                                                    </div>
                                                 )}
                                             </div>
                                         </div>
@@ -1315,9 +1461,60 @@ const InstructorGrading: React.FC<InstructorGradingProps> = ({
                                                                         </div>
 
                                                                         <div className="mb-2">
-                                                                            <small className="text-muted">คำตอบ:</small>
-                                                                            <div className="small p-2 bg-light rounded" style={{fontSize: '0.8rem', maxHeight: '60px', overflow: 'hidden'}}>
-                                                                                {answer?.text_answer || 'ไม่มีคำตอบ'}
+                                                                            <div className="d-flex justify-content-between align-items-center mb-1">
+                                                                                <small className="text-muted fw-bold">คำตอบ:</small>
+                                                                                {answer?.upload_time && (
+                                                                                    <small className="text-muted">
+                                                                                        <i className="fas fa-clock me-1"></i>
+                                                                                        {new Date(answer.upload_time).toLocaleString('th-TH', { 
+                                                                                            month: 'short', 
+                                                                                            day: 'numeric', 
+                                                                                            hour: '2-digit', 
+                                                                                            minute: '2-digit' 
+                                                                                        })}
+                                                                                    </small>
+                                                                                )}
+                                                                            </div>
+                                                                            <div className="answer-preview-box position-relative p-2 border rounded" 
+                                                                                 style={{
+                                                                                     fontSize: '0.8rem', 
+                                                                                     maxHeight: '80px', 
+                                                                                     overflow: 'hidden',
+                                                                                     backgroundColor: answer?.text_answer ? '#f8f9fa' : '#fff3cd',
+                                                                                     border: answer?.text_answer ? '1px solid #dee2e6' : '1px solid #ffeaa7'
+                                                                                 }}>
+                                                                                {answer?.text_answer ? (
+                                                                                    <div>
+                                                                                        <div style={{
+                                                                                            whiteSpace: 'pre-wrap',
+                                                                                            wordBreak: 'break-word',
+                                                                                            lineHeight: '1.4'
+                                                                                        }}>
+                                                                                            {answer.text_answer.length > 150 ? 
+                                                                                                answer.text_answer.substring(0, 150) + '...' : 
+                                                                                                answer.text_answer
+                                                                                            }
+                                                                                        </div>
+                                                                                        {answer.text_answer.length > 150 && (
+                                                                                            <div className="text-end mt-1">
+                                                                                                <small className="text-primary">
+                                                                                                    <i className="fas fa-expand-alt me-1"></i>
+                                                                                                    คลิกเพื่อดูเต็ม
+                                                                                                </small>
+                                                                                            </div>
+                                                                                        )}
+                                                                                        <div className="answer-stats position-absolute bottom-0 end-0 p-1">
+                                                                                            <span className="badge bg-info" style={{fontSize: '0.6rem'}}>
+                                                                                                {answer.text_answer.length} ตัวอักษร
+                                                                                            </span>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                ) : (
+                                                                                    <div className="text-center py-1 text-warning">
+                                                                                        <i className="fas fa-exclamation-triangle me-1"></i>
+                                                                                        ไม่มีคำตอบ
+                                                                                    </div>
+                                                                                )}
                                                                             </div>
                                                                         </div>
 

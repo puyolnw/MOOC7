@@ -70,6 +70,23 @@ html body div.lesson__sidebar .accordion .status-awaiting.status-awaiting.status
     border: 1px solid #ffecb3 !important;
 }
 
+/* ✅ เพิ่มสไตล์สำหรับรายการที่รอตรวจ */
+html body div.lesson__sidebar .lesson-item.awaiting-review.awaiting-review {
+    background: #fff8e1 !important;
+    border-left: 4px solid #ff9800 !important;
+}
+
+html body div.lesson__sidebar .lesson-item.awaiting-review .lesson-icon.quiz {
+    color: #ff9800 !important;
+    animation: pulse-awaiting 2s infinite !important;
+}
+
+@keyframes pulse-awaiting {
+    0% { opacity: 1; }
+    50% { opacity: 0.6; }
+    100% { opacity: 1; }
+}
+
 html body div.lesson__sidebar .accordion .status-not-passed.status-not-passed.status-not-passed {
     background: #ffebee !important;
     color: #c62828 !important;

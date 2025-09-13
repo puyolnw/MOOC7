@@ -211,7 +211,8 @@ const LessonQuiz = ({
     const PASSING_PERCENTAGE = passingPercentage;
 
     // ✅ เพิ่มฟังก์ชัน reset state ทั้งหมด
-    const resetAllStates = () => {
+    const resetAllStates = (preserveAwaitingReview = false) => {
+        console.log("🔄 [DEBUG] resetAllStates called - preserveAwaitingReview:", preserveAwaitingReview);
         setCurrentQuestion(0);
         setShowResult(false);
         setScore(0);
@@ -220,7 +221,10 @@ const LessonQuiz = ({
         setLoading(true);
         setQuestions([]);
         setIsSpecialQuiz(false);
+        // ✅ เก็บสถานะ awaiting review ไว้ถ้า preserveAwaitingReview = true
+        if (!preserveAwaitingReview) {
         setIsAwaitingReview(false);
+        }
         setPreviousAttempts([]);
         setUploadedAttachments([]);
         setHasCompleted(false);
@@ -234,6 +238,12 @@ const LessonQuiz = ({
     const checkIfSpecialQuiz = (questions: Question[]) => {
         const hasFillInBlank = questions.some(q => q.type === "FB");
         setIsSpecialQuiz(hasFillInBlank);
+        console.log("🎯 Quiz Type Detection:", {
+            total_questions: questions.length,
+            fb_questions: questions.filter(q => q.type === "FB").length,
+            has_fill_in_blank: hasFillInBlank,
+            is_special_quiz: hasFillInBlank
+        });
         return hasFillInBlank;
     };
 
@@ -305,16 +315,19 @@ const LessonQuiz = ({
 
     const submitSpecialQuiz = async () => {
         if (!currentAttemptId) {
-            console.error("No active attempt");
+            console.error("❌ [SubmitSpecialQuiz] No active attempt");
             return;
         }
 
         try {
             const token = localStorage.getItem("token");
             if (!token) {
-                console.error("No token found");
+                console.error("❌ [SubmitSpecialQuiz] No token found");
                 return;
             }
+
+            console.log("📤 [SubmitSpecialQuiz] Submitting attempt ID:", currentAttemptId);
+            console.log("📤 [SubmitSpecialQuiz] API URL:", `${API_URL}/api/special-quiz/attempt/${currentAttemptId}/submit`);
 
             const response = await axios.post(
                 `${API_URL}/api/special-quiz/attempt/${currentAttemptId}/submit`,
@@ -324,13 +337,20 @@ const LessonQuiz = ({
                 }
             );
 
+            console.log("📤 [SubmitSpecialQuiz] Response:", response.data);
+
             if (response.data.success) {
                 setIsAwaitingReview(true);
                 setHasCompleted(true);
-                console.log("✅ Special quiz submitted successfully");
+                console.log("✅ [SubmitSpecialQuiz] Special quiz submitted successfully");
+                console.log("✅ [SubmitSpecialQuiz] Attempt status:", response.data.attempt?.status);
             }
         } catch (error: any) {
-            console.error("Error submitting special quiz:", error);
+            console.error("❌ [SubmitSpecialQuiz] Error submitting special quiz:", error);
+            if (axios.isAxiosError(error)) {
+                console.error("❌ [SubmitSpecialQuiz] Response status:", error.response?.status);
+                console.error("❌ [SubmitSpecialQuiz] Response data:", error.response?.data);
+            }
         }
     };
 
@@ -348,32 +368,48 @@ const LessonQuiz = ({
     const renderSpecialQuizUI = () => {
         if (!isSpecialQuiz) return null;
 
+        const fbQuestions = questions.filter(q => q.type === "FB");
+        const objectiveQuestions = questions.filter(q => q.type !== "FB");
+
         return (
             <div className="special-quiz-ui">
-                <div className="alert alert-warning">
-                    <i className="fas fa-exclamation-triangle me-2"></i>
-                    <strong>Special Quiz:</strong> แบบทดสอบนี้มีคำถามประเภท Fill in Blank ที่ต้องรอตรวจจากอาจารย์
+                <div className="alert alert-info mb-3">
+                    <i className="fas fa-info-circle me-2"></i>
+                    <strong>แบบทดสอบผสม:</strong> แบบทดสอบนี้มีทั้งคำถามปรนัยและอัตนัย
                 </div>
                 
-                <div className="special-quiz-progress mb-3">
-                    <h5>ความคืบหน้า:</h5>
-                    <div className="progress">
-                        <div 
-                            className="progress-bar bg-success" 
-                            style={{ width: `${(submittedAnswers.size / questions.length) * 100}%` }}
-                        >
-                            {submittedAnswers.size} / {questions.length} คำถาม
+                <div className="quiz-breakdown mb-3">
+                    <div className="row">
+                        <div className="col-md-6">
+                            <div className="card border-primary">
+                                <div className="card-body text-center">
+                                    <i className="fas fa-check-circle text-primary fa-2x mb-2"></i>
+                                    <h6>คำถามปรนัย</h6>
+                                    <p className="mb-1">{objectiveQuestions.length} ข้อ</p>
+                                    <small className="text-muted">ตรวจอัตโนมัติ</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="col-md-6">
+                            <div className="card border-warning">
+                                <div className="card-body text-center">
+                                    <i className="fas fa-edit text-warning fa-2x mb-2"></i>
+                                    <h6>คำถามอัตนัย</h6>
+                                    <p className="mb-1">{fbQuestions.length} ข้อ</p>
+                                    <small className="text-muted">รอตรวจจากอาจารย์</small>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <div className="special-quiz-instructions">
-                    <h6>วิธีการทำ:</h6>
+                    <h6><i className="fas fa-list-ol me-2"></i>วิธีการทำ:</h6>
                     <ul>
-                        <li>ตอบคำถามทีละข้อ</li>
-                        <li>สามารถแนบไฟล์ได้ (ถ้าจำเป็น)</li>
-                        <li>กดปุ่ม "ส่งคำตอบ" เมื่อเสร็จทุกข้อ</li>
-                        <li>ผลลัพธ์จะแสดงหลังจากอาจารย์ตรวจเสร็จ</li>
+                        <li><strong>คำถามปรนัย:</strong> เลือกคำตอบและได้ผลทันที</li>
+                        <li><strong>คำถามอัตนัย:</strong> เขียนคำตอบและแนบไฟล์ (ถ้าต้องการ)</li>
+                        <li>ทำให้เสร็จทุกข้อแล้วกด "ส่งคำตอบ"</li>
+                        <li>ผลคะแนนสุดท้ายจะแสดงหลังอาจารย์ตรวจคำถามอัตนัยเสร็จ</li>
                     </ul>
                 </div>
             </div>
@@ -457,6 +493,52 @@ const LessonQuiz = ({
         return null;
     };
 
+    // ฟังก์ชันสำหรับตรวจสอบ Special Quiz attempts
+    const fetchSpecialQuizAttempts = async (quizId: number) => {
+        try {
+            console.log(`🔍 [DEBUG] Fetching special quiz attempts for quizId: ${quizId}`);
+            const response = await axios.get(
+                `${API_URL}/api/special-quiz/attempts/all`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem("token")}`,
+                    },
+                }
+            );
+            console.log(`🔍 [DEBUG] Special quiz attempts response:`, response.data);
+            
+            if (response.data.success && response.data.attempts) {
+                const allAttempts = response.data.attempts;
+                console.log(`🔍 [DEBUG] Found ${allAttempts.length} total special quiz attempts`);
+                
+                // Filter เฉพาะ attempts ของ quiz นี้
+                const quizAttempts = allAttempts.filter((attempt: any) => 
+                    attempt.quiz_id === quizId
+                );
+                console.log(`🔍 [DEBUG] Filtered to ${quizAttempts.length} attempts for this quiz`);
+                
+                // หา attempt ล่าสุดที่รอตรวจ (API จะส่งเฉพาะ awaiting_review มาแล้ว)
+                const awaitingAttempt = quizAttempts.find((attempt: any) => 
+                    attempt.quiz_id === quizId
+                );
+                
+                if (awaitingAttempt) {
+                    console.log(`✅ [DEBUG] Found awaiting review attempt:`, awaitingAttempt);
+                    setIsAwaitingReview(true);
+                    setShowResult(true);
+                    safeOnComplete();
+                }
+                
+                // ต้องดึงข้อมูล completed attempts แยก (เพราะ API นี้ให้เฉพาะ awaiting_review)
+                console.log(`🔍 [DEBUG] Will check individual attempt details...`);
+            } else {
+                console.log(`🔍 [DEBUG] No awaiting review attempts found for quiz ${quizId}`);
+            }
+        } catch (error) {
+            console.error("Error fetching special quiz attempts:", error);
+        }
+    };
+
     // ย้าย fetchQuizData ออกมานอก useEffect
     const fetchQuizData = async (cancelled = false) => {
         if (quizId <= 0) {
@@ -495,74 +577,126 @@ const LessonQuiz = ({
                     console.log("🎯 อัปเดต questions จาก API");
                     setQuestions(mappedQuestions);
                     checkIfSpecialQuiz(mappedQuestions);
+                    
+                    // ✅ เช็คว่าเป็น special quiz แล้วหา attempts
+                    const hasFB = mappedQuestions.some(q => q.type === "FB");
+                    console.log(`🔍 [DEBUG] Has FB questions: ${hasFB}, will check special quiz attempts`);
+                    if (hasFB) {
+                        console.log(`🔍 [DEBUG] This is a Special Quiz, checking for previous attempts...`);
+                        fetchSpecialQuizAttempts(quizId);
+                    }
                 }
                 if (response.data.quiz.status === "awaiting_review") {
                     setIsAwaitingReview(true);
                     setShowResult(true);
                 }
             }
+            // ✅ ใช้ Quiz Status และ Progress API ที่มีอยู่จริง
             try {
-                const attemptsResponse = await axios.get(
-                    `${API_URL}/api/courses/quizzes/${quizId}/attempts`,
-                    {
+                console.log(`🔍 [DEBUG] Fetching quiz data for quizId: ${quizId}`);
+                const [statusResponse, progressResponse] = await Promise.all([
+                    axios.get(`${API_URL}/api/learn/quiz/${quizId}/status`, {
                         headers: {
                             Authorization: `Bearer ${localStorage.getItem("token")}`,
                         },
-                    }
-                );
-                if (attemptsResponse.data.success && attemptsResponse.data.attempts && !cancelled) {
-                    setPreviousAttempts(attemptsResponse.data.attempts);
-                    const latestAttempt = attemptsResponse.data.attempts[0];
-                    if (latestAttempt) {
-                        setScore(latestAttempt.score);
-                        setMaxScore(latestAttempt.max_score);
-                        setIsPassed(latestAttempt.passed);
-                        if (latestAttempt.status === "awaiting_review") {
+                    }),
+                    axios.get(`${API_URL}/api/learn/quiz/${quizId}/progress`, {
+                        headers: {
+                            Authorization: `Bearer ${localStorage.getItem("token")}`,
+                        },
+                    })
+                ]);
+
+                console.log(`🔍 [DEBUG] Status Response:`, statusResponse.data);
+                console.log(`🔍 [DEBUG] Progress Response:`, progressResponse.data);
+
+                if (statusResponse.data.success && !cancelled) {
+                    console.log(`🔍 [DEBUG] Status check: status="${statusResponse.data.status}", isAwaitingReview=${statusResponse.data.isAwaitingReview}`);
+                    if (statusResponse.data.status === "awaiting_review" || statusResponse.data.isAwaitingReview) {
+                        console.log(`✅ [DEBUG] Setting awaiting review from status API`);
                             setIsAwaitingReview(true);
                             setShowResult(true);
                             safeOnComplete();
-                        } else {
-                            setShowResult(true);
-                        }
-                        if (latestAttempt.answers && latestAttempt.answers.some((ans: Answer) => ans.attachments && ans.attachments.length > 0)) {
-                            setUploadedAttachments(
-                                latestAttempt.answers.flatMap((ans: Answer) => ans.attachments || [])
-                            );
-                        }
+                    }
+                }
+
+                if (progressResponse.data.success && progressResponse.data.progress && !cancelled) {
+                    const progress = progressResponse.data.progress;
+                    console.log(`🔍 [DEBUG] Progress data:`, progress);
+                    if (progress.completed || progress.passed) {
+                        console.log(`✅ [DEBUG] Setting quiz results: score=${progress.score}, passed=${progress.passed}`);
+                        setScore(progress.score || 0);
+                        setMaxScore(progress.max_score || 0);
+                        setIsPassed(progress.passed || false);
+                        setShowResult(true);
+                    }
+                    if (progress.awaiting_review) {
+                        console.log(`✅ [DEBUG] Setting awaiting review from progress API`);
+                        setIsAwaitingReview(true);
+                        setShowResult(true);
+                        safeOnComplete();
                     }
                 }
             } catch (error) {
                 if (axios.isAxiosError(error) && error.response?.status === 404) {
-                    setPreviousAttempts([]);
+                    console.log("Quiz status/progress APIs not found - continuing without quiz status");
                 } else {
-                    console.error("Error fetching quiz data:", error);
+                    console.error("Error fetching quiz status/progress:", error);
                 }
+                setPreviousAttempts([]);
             }
+            // ✅ เรียก lesson progress เฉพาะเมื่อมี lessonId (ไม่ใช่ special quiz)
+            if (lessonId && lessonId > 0) {
+                try {
+                    console.log(`🔍 [DEBUG] Fetching lesson progress for lessonId: ${lessonId}`);
             const lessonResponse = await axios.get(
-                `${API_URL}/api/learn/lesson/${quizId}/progress`,
+                        `${API_URL}/api/learn/lesson/${lessonId}/progress`,
                 {
                     headers: {
                         Authorization: `Bearer ${localStorage.getItem("token")}`,
                     },
                 }
             );
+                    console.log(`🔍 [DEBUG] Lesson Response:`, lessonResponse.data);
             if (lessonResponse.data.success && lessonResponse.data.progress && !cancelled) {
+                        console.log(`🔍 [DEBUG] Lesson progress: quiz_awaiting_review=${lessonResponse.data.progress.quiz_awaiting_review}`);
                 if (lessonResponse.data.progress.quiz_awaiting_review) {
+                            console.log(`✅ [DEBUG] Setting awaiting review from lesson progress API`);
                     setIsAwaitingReview(true);
                     setShowResult(true);
                     safeOnComplete();
                 }
             }
+                } catch (lessonError) {
+                    if (axios.isAxiosError(lessonError) && lessonError.response?.status === 404) {
+                        console.log("Lesson progress API not found - skipping lesson progress check");
+                    } else {
+                        console.error("Error fetching lesson progress:", lessonError);
+                    }
+                }
+            }
+            console.log(`🔍 [DEBUG] isSpecialQuiz: ${isSpecialQuiz}, previousAttempts.length: ${previousAttempts.length}`);
             if (isSpecialQuiz && previousAttempts.length > 0) {
+                console.log(`🔍 [DEBUG] Previous attempts:`, previousAttempts);
                 const latestSpecial = previousAttempts.find(a => a.status === "completed" && a.score != null);
+                console.log(`🔍 [DEBUG] Latest special attempt:`, latestSpecial);
                 if (latestSpecial) {
                     fetchSpecialQuizScore(latestSpecial.attempt_id).then((specialAttempt) => {
+                        console.log(`🔍 [DEBUG] Special attempt data:`, specialAttempt);
                         if (specialAttempt) {
                             setScore(specialAttempt.score);
                             setMaxScore(specialAttempt.max_score);
                             setIsPassed(specialAttempt.passed);
                             setShowResult(true);
+                            // ✅ ตรวจสอบสถานะ awaiting_review แทนการตั้งเป็น false เสมอ
+                            if (specialAttempt.status === "awaiting_review") {
+                                console.log(`✅ [DEBUG] Setting awaiting review from special quiz attempt`);
+                                setIsAwaitingReview(true);
+                                safeOnComplete();
+                            } else {
+                                console.log(`🔍 [DEBUG] Special quiz completed, status: ${specialAttempt.status}`);
                             setIsAwaitingReview(false);
+                            }
                         }
                     });
                 }
@@ -582,6 +716,7 @@ const LessonQuiz = ({
     useEffect(() => {
         let cancelled = false;
         console.log("🎯 LessonQuiz useEffect: quizId =", quizId);
+        console.log("🔍 [DEBUG] Initial props:", { quizId, lessonId, isCompleted, isSpecialQuiz });
         
         // ✅ Reset เฉพาะ state ที่จำเป็น แทนการใช้ resetAllStates()
         setCurrentQuestion(0);
@@ -595,6 +730,7 @@ const LessonQuiz = ({
         setTextAnswers([]);
         setFiles([]);
         setHasCompleted(false);
+        console.log("🔄 [DEBUG] States reset for quiz reload");
         
         // รอสักครู่แล้วค่อยโหลดข้อมูลใหม่
         const timer = setTimeout(() => {
@@ -707,18 +843,24 @@ const LessonQuiz = ({
         setFiles((prevFiles) => prevFiles.filter((_, i) => i !== index));
     };
 
-    // ส่งคำตอบไปยัง API
+    // ส่งคำตอบไปยัง API (เฉพาะคำถามปรนัย)
     const submitQuizAnswers = async () => {
         try {
             const formData = new FormData();
 
-            // จัดรูปแบบคำตอบตามที่ API คาดหวัง
+            // จัดรูปแบบคำตอบตามที่ API คาดหวัง (เฉพาะคำถามปรนัย SC, MC, TF)
             const answers = questions
                 .map((question, index) => {
                     // ตรวจสอบว่า question_id มีค่า
                     if (!question.question_id) {
                         console.error("พบคำถามที่ไม่มี question_id:", question);
                                                 return null; // ข้ามคำถามนี้
+                    }
+
+                    // ⚠️ ข้าม FB questions เพราะจะส่งผ่าน SpecialQuiz API แล้ว
+                    if (question.type === "FB") {
+                        console.log(`⏭️ Skipping FB question ${question.question_id} - handled by SpecialQuiz API`);
+                        return null;
                     }
 
                     const answer: any = {
@@ -741,12 +883,6 @@ const LessonQuiz = ({
                             }
                             break;
 
-                        case "FB":
-                            if (textAnswers[index]) {
-                                answer.text_answer = textAnswers[index];
-                            }
-                            break;
-
                         default:
                             return null;
                     }
@@ -754,6 +890,8 @@ const LessonQuiz = ({
                     return answer;
                 })
                 .filter((a) => a !== null);
+
+            console.log("📤 Submitting objective answers:", answers);
 
             // แปลงคำตอบเป็นรูปแบบที่ API ต้องการ
             answers.forEach((answer, index) => {
@@ -923,24 +1061,51 @@ const LessonQuiz = ({
         if (currentQuestion < questions.length - 1) {
             setCurrentQuestion(currentQuestion + 1);
         } else {
-            // ✅ แก้ไข: รองรับ Special Quiz
+            // ✅ แก้ไข: รองรับ Mixed Quiz - ส่งแยกกันระหว่างปรนัยและอัตนัย
             if (isSpecialQuiz) {
-                // สำหรับ Special Quiz ให้ส่งคำตอบทีละข้อ
-                const currentQuestionData = questions[currentQuestion];
-                if (currentQuestionData.type === "FB") {
-                    const textAnswer = textAnswers[currentQuestion] || "";
-                    const file = files.find(f => f.questionIndex === currentQuestion)?.file;
-                    
-                    await submitSingleAnswer(currentQuestionData.question_id, textAnswer, file);
+                console.log("🎯 Processing Mixed Quiz submission...");
+                
+                // 1. ส่งคำตอบปรนัย (SC, MC, TF) ผ่าน API เดิม
+                const objectiveQuestions = questions.filter(q => q.type !== "FB");
+                if (objectiveQuestions.length > 0) {
+                    console.log("📤 Submitting objective questions...");
+                    const objectiveResult = await submitQuizAnswers();
+                    if (objectiveResult) {
+                        console.log("✅ Objective questions submitted successfully");
+                    }
                 }
                 
-                // ส่ง Special Quiz เมื่อเสร็จทุกข้อ
+                // 2. ส่งคำตอบอัตนัย (FB) ผ่าน SpecialQuiz API
+                const fbQuestions = questions.filter(q => q.type === "FB");
+                if (fbQuestions.length > 0) {
+                    console.log("📝 Submitting subjective questions...");
+                    
+                    // ส่งคำตอบทีละข้อสำหรับคำถาม FB
+                    for (let i = 0; i < questions.length; i++) {
+                        const questionData = questions[i];
+                        if (questionData.type === "FB") {
+                            const textAnswer = textAnswers[i] || "";
+                            const file = files.find(f => f.questionIndex === i)?.file;
+                            
+                            // ตรวจสอบว่าส่งคำตอบข้อนี้แล้วหรือยัง
+                            if (!submittedAnswers.has(questionData.question_id)) {
+                                console.log(`📝 Submitting FB answer for question ${questionData.question_id}`);
+                                await submitSingleAnswer(questionData.question_id, textAnswer, file);
+                            }
+                        }
+                    }
+                    
+                    // ส่ง Special Quiz เมื่อเสร็จทุกข้อ FB
+                    console.log("📤 Submitting Special Quiz...");
                 await submitSpecialQuiz();
+                }
+                
                 setShowResult(true);
                 setIsAwaitingReview(true);
                 safeOnComplete();
             } else {
-                // แบบทดสอบปกติ
+                // แบบทดสอบปกติ - ใช้ API เดิม สำหรับคำถามปรนัย (SC, MC, TF)
+                console.log("🎯 Processing Normal Quiz submission...");
                 const result = await submitQuizAnswers();
 
                 if (result) {
@@ -1190,33 +1355,361 @@ const LessonQuiz = ({
                 </div>
             );
         }
-        // กรณีปกติ (รอตรวจจริง)
+        // กรณีปกติ (รอตรวจจริง) - Redesigned UI
         return (
             <div className="quiz-container">
                 <div className="result-container">
-                    <div className="awaiting-review card shadow-sm p-4 text-center">
-                        <div className="icon-container mb-3">
-                            <span className="icon-circle bg-warning-light">
-                                <i className="fas fa-hourglass-half text-warning fa-2x"></i>
+                    <div className="awaiting-review-redesign card border-0 shadow-lg">
+                        {/* Header Section */}
+                        <div 
+                            className="card-header text-white text-center py-4 border-0"
+                            style={{
+                                background: 'linear-gradient(135deg, #ff9500 0%, #ff6b35 100%)',
+                                position: 'relative',
+                                overflow: 'hidden'
+                            }}
+                        >
+                            {/* Background animation */}
+                            <div 
+                                style={{
+                                    position: 'absolute',
+                                    top: 0,
+                                    left: 0,
+                                    right: 0,
+                                    bottom: 0,
+                                    background: 'url("data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23ffffff" fill-opacity="0.1"%3E%3Ccircle cx="30" cy="30" r="4"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
+                                    animation: 'float 3s ease-in-out infinite'
+                                }}
+                            />
+                            
+                            <div className="header-animation mb-3" style={{position: 'relative', zIndex: 2}}>
+                                <div 
+                                    className="rotating-icon"
+                                    style={{
+                                        animation: 'pulse 2s ease-in-out infinite'
+                                    }}
+                                >
+                                    <div 
+                                        className="d-inline-block"
+                                        style={{
+                                            padding: '20px',
+                                            background: 'rgba(255, 255, 255, 0.2)',
+                                            borderRadius: '50%',
+                                            border: '3px solid rgba(255, 255, 255, 0.3)'
+                                        }}
+                                    >
+                                        <i className="fas fa-clock text-white" style={{fontSize: '3rem'}}></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <h2 className="fw-bold mb-2 text-white" style={{position: 'relative', zIndex: 2}}>
+                                รอการตรวจจากอาจารย์
+                            </h2>
+                            <p className="mb-0" style={{color: 'rgba(255, 255, 255, 0.8)', position: 'relative', zIndex: 2}}>
+                                แบบทดสอบของคุณส่งเรียบร้อยแล้ว
+                            </p>
+
+                            {/* Custom CSS Animations */}
+                            <style>{`
+                                @keyframes pulse {
+                                    0%, 100% { transform: scale(1); }
+                                    50% { transform: scale(1.05); }
+                                }
+                                @keyframes float {
+                                    0%, 100% { transform: translateY(0px); }
+                                    50% { transform: translateY(-10px); }
+                                }
+                                @keyframes fadeInUp {
+                                    from {
+                                        opacity: 0;
+                                        transform: translateY(30px);
+                                    }
+                                    to {
+                                        opacity: 1;
+                                        transform: translateY(0);
+                                    }
+                                }
+                                .awaiting-review-redesign {
+                                    animation: fadeInUp 0.6s ease-out;
+                                }
+                                .info-card {
+                                    transition: all 0.3s ease;
+                                    border: 2px solid transparent;
+                                }
+                                .info-card:hover {
+                                    transform: translateY(-5px);
+                                    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+                                    border-color: rgba(var(--bs-primary-rgb), 0.3);
+                                }
+                                .action-buttons button {
+                                    transition: all 0.3s ease;
+                                }
+                                .action-buttons button:hover {
+                                    transform: translateY(-2px);
+                                    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+                                }
+                            `}</style>
+                        </div>
+
+                        {/* Content Section */}
+                        <div className="card-body p-5">
+                            <div className="row align-items-center">
+                                <div className="col-md-8 mx-auto">
+                                    {/* Status Info */}
+                                    <div 
+                                        className="status-info-box rounded-3 p-4 mb-4"
+                                        style={{
+                                            background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
+                                            border: '2px solid #dee2e6',
+                                            position: 'relative',
+                                            overflow: 'hidden'
+                                        }}
+                                    >
+                                        {/* Progress bar animation */}
+                                        <div 
+                                            style={{
+                                                position: 'absolute',
+                                                top: 0,
+                                                left: 0,
+                                                height: '4px',
+                                                width: '100%',
+                                                background: 'linear-gradient(90deg, #ff9500, #ff6b35)',
+                                                animation: 'shimmer 2s infinite'
+                                            }}
+                                        />
+                                        
+                                        <div className="d-flex align-items-start">
+                                            <div className="status-icon me-4">
+                                                <div 
+                                                    className="icon-wrapper rounded-circle p-3"
+                                                    style={{
+                                                        background: 'linear-gradient(135deg, #ff9500 0%, #ff6b35 100%)',
+                                                        color: 'white',
+                                                        boxShadow: '0 4px 15px rgba(255, 149, 0, 0.3)'
+                                                    }}
+                                                >
+                                                    <i className="fas fa-hourglass-half fs-2"></i>
+                                                </div>
+                                            </div>
+                                            <div className="status-content flex-grow-1">
+                                                <div className="d-flex justify-content-between align-items-start mb-2">
+                                                    <h5 className="fw-bold text-dark mb-0">สถานะการส่งงาน</h5>
+                                                    <span 
+                                                        className="badge px-3 py-2"
+                                                        style={{
+                                                            background: 'linear-gradient(135deg, #ffc107 0%, #ff8f00 100%)',
+                                                            color: 'white',
+                                                            fontSize: '0.8rem'
+                                                        }}
+                                                    >
+                                                        <i className="fas fa-clock me-1"></i>
+                                                        รอการตรวจ
                             </span>
                         </div>
-                        <h2 className="mb-3 fw-bold">รอการตรวจจากอาจารย์</h2>
-                        <div className="message-box bg-light p-3 mb-4 rounded">
-                            <p className="mb-2">
+                                                <p className="text-muted mb-3 lh-base">
                                 {isSpecialQuiz 
-                                    ? "แบบทดสอบนี้มีคำถามประเภท Fill in Blank ที่ต้องรอการตรวจจากอาจารย์"
-                                    : "แบบทดสอบนี้ต้องรอการตรวจจากอาจารย์"
+                                                        ? "แบบทดสอบนี้มีคำถามประเภท Fill in Blank ที่จำเป็นต้องให้อาจารย์ตรวจสอบด้วยตนเอง เพื่อให้การประเมินผลมีความแม่นยำและเป็นธรรม"
+                                                        : "แบบทดสอบนี้จำเป็นต้องให้อาจารย์ตรวจสอบก่อนประกาศผลเพื่อความแม่นยำในการประเมิน"
                                 }
                             </p>
-                            <p className="mb-0">
-                                คุณจะได้รับการแจ้งเตือนเมื่ออาจารย์ตรวจแบบทดสอบเสร็จแล้ว
-                            </p>
+                                                <div className="timeline-info">
+                                                    <div className="d-flex align-items-center">
+                                                        <div 
+                                                            className="me-2"
+                                                            style={{
+                                                                width: '12px',
+                                                                height: '12px',
+                                                                background: '#28a745',
+                                                                borderRadius: '50%',
+                                                                animation: 'pulse 2s infinite'
+                                                            }}
+                                                        />
+                                                        <small className="text-success fw-semibold">
+                                                            ส่งงานเรียบร้อยเมื่อ {new Date().toLocaleString('th-TH')}
+                                                        </small>
                         </div>
-                        <div className="d-grid gap-2 col-md-6 mx-auto">
-                            <button className="btn btn-primary btn-lg" onClick={safeOnComplete}>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Additional CSS for shimmer effect */}
+                                        <style>{`
+                                            @keyframes shimmer {
+                                                0% { transform: translateX(-100%); }
+                                                100% { transform: translateX(200%); }
+                                            }
+                                        `}</style>
+                                    </div>
+
+                                    {/* Information Cards */}
+                                    <div className="row mb-5">
+                                        <div className="col-md-6 mb-3">
+                                            <div 
+                                                className="info-card h-100 p-4 rounded-3 text-center"
+                                                style={{
+                                                    background: 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)',
+                                                    border: '2px solid #2196f3',
+                                                    borderRadius: '15px',
+                                                    position: 'relative',
+                                                    overflow: 'hidden'
+                                                }}
+                                            >
+                                                <div 
+                                                    style={{
+                                                        position: 'absolute',
+                                                        top: '-50%',
+                                                        right: '-50%',
+                                                        width: '100px',
+                                                        height: '100px',
+                                                        background: 'rgba(33, 150, 243, 0.1)',
+                                                        borderRadius: '50%'
+                                                    }}
+                                                />
+                                                <div style={{position: 'relative', zIndex: 2}}>
+                                                    <div 
+                                                        className="mb-3"
+                                                        style={{
+                                                            display: 'inline-block',
+                                                            padding: '15px',
+                                                            background: '#2196f3',
+                                                            borderRadius: '50%',
+                                                            color: 'white'
+                                                        }}
+                                                    >
+                                                        <i className="fas fa-bell fs-3"></i>
+                                                    </div>
+                                                    <h6 className="fw-bold text-primary mb-2">การแจ้งเตือน</h6>
+                                                    <small className="text-dark-50">
+                                                        คุณจะได้รับการแจ้งเตือนผ่านระบบ<br />
+                                                        เมื่ออาจารย์ตรวจแบบทดสอบเสร็จ
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="col-md-6 mb-3">
+                                            <div 
+                                                className="info-card h-100 p-4 rounded-3 text-center"
+                                                style={{
+                                                    background: 'linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%)',
+                                                    border: '2px solid #4caf50',
+                                                    borderRadius: '15px',
+                                                    position: 'relative',
+                                                    overflow: 'hidden'
+                                                }}
+                                            >
+                                                <div 
+                                                    style={{
+                                                        position: 'absolute',
+                                                        top: '-50%',
+                                                        right: '-50%',
+                                                        width: '100px',
+                                                        height: '100px',
+                                                        background: 'rgba(76, 175, 80, 0.1)',
+                                                        borderRadius: '50%'
+                                                    }}
+                                                />
+                                                <div style={{position: 'relative', zIndex: 2}}>
+                                                    <div 
+                                                        className="mb-3"
+                                                        style={{
+                                                            display: 'inline-block',
+                                                            padding: '15px',
+                                                            background: '#4caf50',
+                                                            borderRadius: '50%',
+                                                            color: 'white'
+                                                        }}
+                                                    >
+                                                        <i className="fas fa-sync-alt fs-3"></i>
+                                                    </div>
+                                                    <h6 className="fw-bold text-success mb-2">ตรวจสอบผล</h6>
+                                                    <small className="text-dark-50">
+                                                        กดปุ่มรีเฟรชเพื่อตรวจสอบ<br />
+                                                        ผลการตรวจล่าสุดได้ตลอดเวลา
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Action Buttons */}
+                                    <div className="action-buttons text-center">
+                                        <div className="d-grid gap-3 d-md-flex justify-content-md-center">
+                                            <button 
+                                                className="btn btn-lg px-5 py-3"
+                                                onClick={() => fetchQuizData()}
+                                                style={{
+                                                    background: 'linear-gradient(135deg, #28a745 0%, #20c997 100%)',
+                                                    border: 'none',
+                                                    color: 'white',
+                                                    borderRadius: '12px',
+                                                    fontWeight: '600',
+                                                    boxShadow: '0 4px 15px rgba(40, 167, 69, 0.3)',
+                                                    position: 'relative',
+                                                    overflow: 'hidden'
+                                                }}
+                                            >
+                                                <div 
+                                                    style={{
+                                                        position: 'absolute',
+                                                        top: 0,
+                                                        left: '-100%',
+                                                        width: '100%',
+                                                        height: '100%',
+                                                        background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',
+                                                        transition: 'left 0.5s'
+                                                    }}
+                                                    onMouseEnter={(e) => e.currentTarget.style.left = '100%'}
+                                                    onMouseLeave={(e) => e.currentTarget.style.left = '-100%'}
+                                                />
+                                                <span style={{position: 'relative', zIndex: 2}}>
+                                                    <i className="fas fa-sync-alt me-2"></i>
+                                                    รีเฟรชผลตรวจ
+                                                </span>
+                                            </button>
+                                            <button 
+                                                className="btn btn-lg px-5 py-3"
+                                                onClick={safeOnComplete}
+                                                style={{
+                                                    background: 'linear-gradient(135deg, #007bff 0%, #0056b3 100%)',
+                                                    border: 'none',
+                                                    color: 'white',
+                                                    borderRadius: '12px',
+                                                    fontWeight: '600',
+                                                    boxShadow: '0 4px 15px rgba(0, 123, 255, 0.3)',
+                                                    position: 'relative',
+                                                    overflow: 'hidden'
+                                                }}
+                                            >
+                                                <div 
+                                                    style={{
+                                                        position: 'absolute',
+                                                        top: 0,
+                                                        left: '-100%',
+                                                        width: '100%',
+                                                        height: '100%',
+                                                        background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',
+                                                        transition: 'left 0.5s'
+                                                    }}
+                                                    onMouseEnter={(e) => e.currentTarget.style.left = '100%'}
+                                                    onMouseLeave={(e) => e.currentTarget.style.left = '-100%'}
+                                                />
+                                                <span style={{position: 'relative', zIndex: 2}}>
                                 <i className="fas fa-arrow-left me-2"></i>
-                                กลับไปยังบทเรียน
+                                                    กลับไปบทเรียน
+                                                </span>
                             </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Footer Section */}
+                        <div className="card-footer bg-light text-center py-3 border-0">
+                            <small className="text-muted">
+                                <i className="fas fa-info-circle me-1"></i>
+                                หากมีคำถามเพิ่มเติม กรุณาติดต่ออาจารย์ผู้สอน
+                            </small>
                         </div>
                     </div>
                 </div>
@@ -1867,8 +2360,11 @@ const LessonQuiz = ({
                         <>
                             {isSpecialQuiz ? (
                                 <>
-                                    <i className="fas fa-hourglass-half me-2"></i>
-                                    ส่งคำตอบ (รอตรวจ)
+                                    <i className="fas fa-paper-plane me-2"></i>
+                                    ส่งคำตอบทั้งหมด
+                                    <div className="text-sm mt-1" style={{fontSize: '0.75rem', opacity: 0.8}}>
+                                        (อัตนัยรอตรวจ)
+                                    </div>
                                 </>
                             ) : (
                                 <>

@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import './LessonFaq.css';
+import axios from 'axios';
 
 
 interface LessonItem {
@@ -10,7 +11,7 @@ interface LessonItem {
   completed: boolean;
   type: 'video' | 'quiz';
   duration: string;
-  status?: 'passed' | 'failed' | 'awaiting_review';
+  status?: 'passed' | 'failed' | 'awaiting_review' | 'not_started';
   quiz_id?: number;
 }
 
@@ -91,12 +92,71 @@ const LessonFaq = ({
   const [subjectQuizzes, setSubjectQuizzes] = useState<SubjectQuiz[]>([]);
   const [loadingQuizzes, setLoadingQuizzes] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  // ✅ เพิ่ม state สำหรับจัดเก็บสถานะแบบทดสอบที่เสถียร
+  const [stableQuizStatuses, setStableQuizStatuses] = useState<Map<string, string>>(new Map());
+  // ✅ เพิ่ม state สำหรับ Special Quiz status
+  const [specialQuizStatuses, setSpecialQuizStatuses] = useState<Map<number, string>>(new Map());
   // const navigate = useNavigate();
+
+  // ✅ API base URL
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3301';
+
+  // ✅ ฟังก์ชันสำหรับตรวจสอบ Special Quiz status
+  const checkSpecialQuizStatus = async (quizId: number) => {
+    try {
+      console.log(`🔍 [LessonFaq] Checking special quiz status for quizId: ${quizId}`);
+      const response = await axios.get(
+        `${API_URL}/api/special-quiz/attempts/all`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+
+      if (response.data.success && response.data.attempts) {
+        const attempts = response.data.attempts;
+        const quizAttempts = attempts.filter((attempt: any) => attempt.quiz_id === quizId);
+        
+        if (quizAttempts.length > 0) {
+          console.log(`🔍 [LessonFaq] Found ${quizAttempts.length} special quiz attempts for quiz ${quizId}`);
+          // API ส่งเฉพาะ awaiting_review status มา
+          setSpecialQuizStatuses(prev => {
+            const newMap = new Map(prev);
+            newMap.set(quizId, 'awaiting_review');
+            return newMap;
+          });
+          console.log(`✅ [LessonFaq] Set quiz ${quizId} to awaiting_review`);
+          return 'awaiting_review';
+        }
+      }
+    } catch (error) {
+      console.log(`🔍 [LessonFaq] No special quiz attempts found for quiz ${quizId}:`, error);
+    }
+    return null;
+  };
 
   // ใช้ controlled accordion ถ้ามีการส่งค่าจากภายนอก
   const currentActiveAccordion = useMemo(() => {
     return externalActiveAccordion !== undefined ? externalActiveAccordion : activeAccordion;
   }, [externalActiveAccordion, activeAccordion]);
+
+  // ✅ useEffect สำหรับตรวจสอบ Special Quiz status เมื่อ component mount
+  useEffect(() => {
+    if (lessonData.length > 0) {
+      console.log(`🔍 [LessonFaq] Checking special quiz statuses for all quizzes...`);
+      lessonData.forEach(section => {
+        section.items.forEach(item => {
+          if (item.type === 'quiz' && item.quiz_id) {
+            // ตรวจสอบ Special Quiz status
+            setTimeout(() => {
+              checkSpecialQuizStatus(item.quiz_id!);
+            }, 100); // เพิ่ม delay เล็กน้อยเพื่อไม่ให้เรียก API พร้อมกันหมด
+          }
+        });
+      });
+    }
+  }, [lessonData]);
   
   // ✅ เพิ่ม debug log เพื่อดูการเปลี่ยนแปลงของ activeAccordion
   useEffect(() => {
@@ -726,7 +786,63 @@ const LessonFaq = ({
           }
         }
         
-        statusMap.set(key, { itemCompleted, isLocked });
+        // ✅ เพิ่มการจัดเก็บสถานะของแบบทดสอบใน cache
+        let cachedQuizStatus = null;
+        
+        if (item.type === "quiz" && bigLesson) {
+          const lesson = bigLesson.lessons?.find((l: any) => l.quiz?.id === item.lesson_id);
+          if (lesson?.quiz?.progress) {
+            const quizProgress = lesson.quiz.progress;
+            if (quizProgress.awaiting_review) {
+              cachedQuizStatus = 'awaiting_review';
+            } else if (quizProgress.passed) {
+              cachedQuizStatus = 'passed';
+            } else if (quizProgress.completed && !quizProgress.passed) {
+              cachedQuizStatus = 'failed';
+            }
+          } else if (bigLesson.quiz?.id === item.lesson_id && bigLesson.quiz?.progress) {
+            const quizProgress = bigLesson.quiz.progress;
+            if (quizProgress.awaiting_review) {
+              cachedQuizStatus = 'awaiting_review';
+            } else if (quizProgress.passed) {
+              cachedQuizStatus = 'passed';
+            } else if (quizProgress.completed && !quizProgress.passed) {
+              cachedQuizStatus = 'failed';
+            }
+          }
+          
+          // ✅ ตรวจสอบ Special Quiz status ถ้าไม่มีสถานะจาก hierarchical data
+          if (!cachedQuizStatus && item.quiz_id) {
+            const specialStatus = specialQuizStatuses.get(item.quiz_id);
+            if (specialStatus) {
+              cachedQuizStatus = specialStatus;
+            } else {
+              // เรียกตรวจสอบ Special Quiz status (async)
+              checkSpecialQuizStatus(item.quiz_id);
+            }
+          }
+        }
+        
+        statusMap.set(key, { itemCompleted, isLocked, quizStatus: cachedQuizStatus });
+        
+        // ✅ อัปเดต stable quiz statuses เมื่อมีสถานะใหม่
+        if (item.type === "quiz" && cachedQuizStatus) {
+          setStableQuizStatuses(prev => {
+            const newMap = new Map(prev);
+            const currentStableStatus = newMap.get(key);
+            
+            // อัปเดตเฉพาะเมื่อสถานะเปลี่ยนจริงๆ
+            if (currentStableStatus !== cachedQuizStatus) {
+              console.log(`🔄 Stable Status Update: ${item.title}`, {
+                old_stable: currentStableStatus,
+                new_stable: cachedQuizStatus,
+                lesson_id: item.lesson_id
+              });
+              newMap.set(key, cachedQuizStatus);
+            }
+            return newMap;
+          });
+        }
         
         // ✅ Debug: ตรวจสอบผลลัพธ์สุดท้าย
         if (item.type === "quiz") {
@@ -876,28 +992,98 @@ const LessonFaq = ({
                 
                 const itemCompleted = cachedStatus?.itemCompleted ?? item.completed;
                 const isLocked = cachedStatus?.isLocked ?? false;
+                const cachedQuizStatus = cachedStatus?.quizStatus;
                 
                 // ตรวจสอบว่าอยู่ในหน้าปัจจุบันหรือไม่
                 const isCurrentPage = currentLessonId === `${section.id}-${item.id}`;
                 
+                // ✅ เพิ่มการจัดการสถานะรอตรวจสำหรับแบบทดสอบ
+                // ใช้ข้อมูลจาก hierarchical data เพื่อหาสถานะที่ถูกต้อง
+                let itemStatus = item.status;
+                let statusText = "ยังไม่เสร็จ";
+                let statusClass = 'status-not-passed';
+                
+                // ✅ ใช้ stable status เป็นหลัก แล้วค่อย fallback ไปใช้ cached หรือ fresh data
+                if (item.type === "quiz") {
+                  const stableStatus = stableQuizStatuses.get(key);
+                  const specialStatus = item.quiz_id ? specialQuizStatuses.get(item.quiz_id) : null;
+                  
+                  if (stableStatus) {
+                    // ใช้สถานะที่เสถียรที่สุดก่อน
+                    itemStatus = stableStatus;
+                  } else if (specialStatus) {
+                    // ✅ ใช้ Special Quiz status
+                    itemStatus = specialStatus;
+                  } else if (cachedQuizStatus) {
+                    // ใช้สถานะจาก cache ถัดไป
+                    itemStatus = cachedQuizStatus;
+                  } else if (bigLesson) {
+                    // ถ้าไม่มีใน cache ค่อยดึงจาก hierarchical data
+                    const lesson = bigLesson.lessons?.find((l: any) => l.quiz?.id === item.lesson_id);
+                    if (lesson?.quiz?.progress) {
+                      const quizProgress = lesson.quiz.progress;
+                      if (quizProgress.awaiting_review) {
+                        itemStatus = 'awaiting_review';
+                      } else if (quizProgress.passed) {
+                        itemStatus = 'passed';
+                      } else if (quizProgress.completed && !quizProgress.passed) {
+                        itemStatus = 'failed';
+                      }
+                    } else if (bigLesson.quiz?.id === item.lesson_id && bigLesson.quiz?.progress) {
+                      const quizProgress = bigLesson.quiz.progress;
+                      if (quizProgress.awaiting_review) {
+                        itemStatus = 'awaiting_review';
+                      } else if (quizProgress.passed) {
+                        itemStatus = 'passed';
+                      } else if (quizProgress.completed && !quizProgress.passed) {
+                        itemStatus = 'failed';
+                      }
+                    }
+                  }
+                }
+                
+                if (isLocked) {
+                  statusText = "ล็อค";
+                  statusClass = 'status-not-passed';
+                } else if (item.type === "quiz") {
+                  // สำหรับแบบทดสอบ ตรวจสอบสถานะพิเศษ
+                  if (itemStatus === 'awaiting_review') {
+                    statusText = "รอตรวจ";
+                    statusClass = 'status-awaiting';
+                  } else if (itemStatus === 'passed') {
+                    statusText = "ผ่าน";
+                    statusClass = 'status-passed';
+                  } else if (itemStatus === 'failed') {
+                    statusText = "ไม่ผ่าน";
+                    statusClass = 'status-not-passed';
+                  } else if (itemCompleted) {
+                    statusText = "เสร็จ";
+                    statusClass = 'status-passed';
+                  }
+                } else {
+                  // สำหรับวิดีโอ
+                  if (itemCompleted) {
+                    statusText = "เสร็จ";
+                    statusClass = 'status-passed';
+                  }
+                }
+                
                 return (
                   <div
                     key={item.id}
-                    className={`lesson-item ${itemCompleted ? 'completed' : ''} ${isLocked ? 'locked' : ''} ${isCurrentPage ? 'current-page' : ''}`}
+                    className={`lesson-item ${itemCompleted ? 'completed' : ''} ${isLocked ? 'locked' : ''} ${isCurrentPage ? 'current-page' : ''} ${itemStatus === 'awaiting_review' ? 'awaiting-review' : ''}`}
                     onClick={() => handleItemClick(section.id, item, sectionIndex, itemIndex)}
                     style={{ cursor: isLocked ? 'not-allowed' : 'pointer' }}
                   >
                     <div className={`lesson-icon ${item.type} ${isLocked ? 'locked' : ''}`}>
-                      {item.type === "video" ? "▶️" : "❓"}
+                      {item.type === "video" ? "▶️" : 
+                       item.type === "quiz" && itemStatus === 'awaiting_review' ? "⏳" : "❓"}
                     </div>
                     <div className={`lesson-title ${isLocked ? 'locked' : ''}`}>
                       {item.title}
                     </div>
-                    <div className={`lesson-status ${
-                      isLocked ? 'status-not-passed' : 
-                      itemCompleted ? 'status-passed' : 'status-awaiting'
-                    }`}>
-                      {isLocked ? "ล็อค" : itemCompleted ? "เสร็จ" : "ยังไม่เสร็จ"}
+                    <div className={`lesson-status ${statusClass}`}>
+                      {statusText}
                     </div>
                   </div>
                 );
