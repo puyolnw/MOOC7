@@ -1010,10 +1010,10 @@ const LessonFaq = ({
                   
                   if (stableStatus) {
                     // ใช้สถานะที่เสถียรที่สุดก่อน
-                    itemStatus = stableStatus;
+                    itemStatus = stableStatus as 'passed' | 'failed' | 'awaiting_review' | 'not_started';
                   } else if (specialStatus) {
                     // ✅ ใช้ Special Quiz status
-                    itemStatus = specialStatus;
+                    itemStatus = specialStatus as 'passed' | 'failed' | 'awaiting_review' | 'not_started';
                   } else if (cachedQuizStatus) {
                     // ใช้สถานะจาก cache ถัดไป
                     itemStatus = cachedQuizStatus;
